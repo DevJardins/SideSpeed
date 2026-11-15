@@ -11,7 +11,12 @@ Sideload the release APK onto your TV (for example with `adb install` or a file-
 SideSpeed needs a helper running as the shell user. It starts from the APK itself and the app guides you through it.
 
 - **Fire TV / Fire OS:** turn on ADB debugging (Settings > My Fire TV > Developer options). The app shows the `adb` commands to run from a PC on the same network (connect, then one `adb shell` command) each time the helper needs starting.
-- **Google TV / Android TV (e.g. onn 4K Pro):** turn on Wireless debugging (Developer options) and pair in the app with the on-screen code, using the D-pad only. The app then starts the helper itself; starting it from a PC also works.
+- **Google TV / Android TV (e.g. onn 4K Pro):**
+  1. Turn on Wireless debugging (Settings > System > Developer options).
+  2. Open SideSpeed. When the TV asks "Allow debugging?", tick **Always allow**, then **Allow**.
+  3. SideSpeed starts its helper by itself and shows your apps. No PC and no pairing code are needed.
+
+  If your TV doesn't accept direct connections (SideSpeed tells you after a few tries), choose **Pair with a code instead** and enter the code and port from "Pair device with pairing code" with the D-pad. Starting the helper from a PC also works.
 
 ## Requirements and caveats
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
@@ -24,7 +29,7 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 | Device | Status |
 |---|---|
 | Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Helper started from PC, compile verified |
-| onn 4K Pro, Android 14 | In-app Wireless debugging pairing, helper auto-start and compile verified (no PC needed) |
+| onn 4K Pro, Android 14 | Wireless debugging on + "Always allow" (classic connection on port 5555), helper auto-start and compile verified (no PC needed). Pairing with a code works; connecting over the paired TLS link is not yet verified |
 | Other Android TV, Google TV and Fire TV devices | Should work |
 
 ## Building

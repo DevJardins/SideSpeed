@@ -82,11 +82,14 @@ Release APK (R8 on), signed with a local debug key for testing. Results recorded
 
 **Bug found and fixed during this run:** on the onn, SideSpeed connected and sent the launch command, but the helper never started. libadb runs commands over the legacy PTY `shell:` service. When that session closed, the hang-up reached the backgrounded job before `setsid`/`nohup` took effect. This was reproduced from the Mac with `adb shell -tt`. The fix: the launch command now begins with `trap "" HUP` (inherited, no race). It was verified 3/3 over a forced PTY on the onn, and on the Fire TV.
 
-**Wireless Debugging pairing from the TV alone (owner, 2026-11-15):** ✓ The controller rebooted the onn (5555 closed, Wireless debugging off, no helper). The owner then:
+**Wireless Debugging pairing from the TV alone (owner, 2026-11-15), corrected:** The controller rebooted the onn (5555 closed, Wireless debugging off, no helper). The owner then:
 1. turned Wireless debugging on;
 2. opened SideSpeed, which showed the pairing screen;
 3. read the code and port from "Pair device with pairing code";
 4. switched back to SideSpeed and entered them on the D-pad grids;
 5. pressed Pair.
 
-SideSpeed paired, connected over TLS, started the helper and showed the app list. That screen is reached only after a successful nonce-verified helper ping. The pairing code stayed valid after leaving the Settings popup on this device. So no PC is needed on the onn, even after a reboot.
+SideSpeed showed the app list, which is reached only after a successful nonce-verified helper ping. **Correction:** this was first recorded as "paired, connected over TLS". That was wrong. On the onn, turning Wireless debugging on also makes adbd listen on `tcp:5555` (logcat: `adbd listening on tcp:5555`, then `adb wifi started on port …`), and SideSpeed tries the classic `127.0.0.1:5555` connection first. That run connected over 5555 after the standard "Allow debugging?" prompt.
+- Code pairing itself worked: SideSpeed appeared under Paired devices.
+- The TLS connect path is **unverified**.
+- No PC is needed on the onn, even after a reboot: turn Wireless debugging on, open SideSpeed, choose **Always allow**. This is the default flow from design Revision 4; pairing with a code is the fallback for TVs that do not open 5555.
