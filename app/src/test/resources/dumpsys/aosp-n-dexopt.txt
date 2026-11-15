@@ -1,0 +1,16 @@
+Dexopt state:
+  [com.nuvio.tv.beta]
+    Instruction Set: arm
+      path: /data/app/com.nuvio.tv.beta-1/base.apk
+      status: /data/app/com.nuvio.tv.beta-1/oat/arm/base.odex[status=kOatUpToDate, compilation_filter=verify]
+
+  [com.nuvio.tv]
+    Instruction Set: arm
+      path: /data/app/com.nuvio.tv-2/base.apk
+      status: /data/app/com.nuvio.tv-2/oat/arm/base.odex[status=kOatUpToDate, compilation_filter=speed]
+
+  [com.example.other]
+    Instruction Set: arm
+      path: /data/app/com.example.other-1/base.apk
+      status: /data/app/com.example.other-1/oat/arm/base.odex[status=kOatUpToDate, compilation_filter=interpret-only]
+

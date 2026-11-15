@@ -1,0 +1,19 @@
+Dexopt state:
+  [com.nuvio.tv.beta]
+    path: /data/app/~~aaa==/com.nuvio.tv.beta-bbb==/base.apk
+      arm64: [status=verify] [reason=install] [primary-abi]
+        [location is /data/app/~~aaa==/com.nuvio.tv.beta-bbb==/oat/arm64/base.odex]
+
+  [com.nuvio.tv]
+    path: /data/app/~~ccc==/com.nuvio.tv-ddd==/base.apk
+      arm64: [status=speed] [reason=cmdline] [primary-abi]
+        [location is /data/app/~~ccc==/com.nuvio.tv-ddd==/oat/arm64/base.odex]
+    known secondary dex files:
+      /data/user/0/com.nuvio.tv/files/plugin.dex
+        arm64: [status=verify] [reason=unknown]
+
+  [com.example.other]
+    path: /data/app/~~eee==/com.example.other-fff==/base.apk
+      arm64: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~eee==/com.example.other-fff==/oat/arm64/base.odex]
+
