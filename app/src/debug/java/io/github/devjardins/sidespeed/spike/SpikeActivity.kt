@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,8 @@ import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.ui.theme.SideSpeedTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -58,7 +61,23 @@ private const val NUVIO = "com.nuvio.tv"
 class SpikeActivity : ComponentActivity() {
     private val logLines = mutableStateListOf<String>()
     private val adb: AdbBackend by lazy { (application as SideSpeedApp).container.adb }
-    private var lastGoodTarget: AdbTarget? = null
+    private val prefs by lazy { getSharedPreferences("spike", Context.MODE_PRIVATE) }
+
+    /** Persisted so reconnect after a reboot still knows the last good target. */
+    private var lastGoodTarget: AdbTarget?
+        get() = when (prefs.getString("lastGood", null)) {
+            "classic" -> AdbTarget.Classic("127.0.0.1", 5555)
+            "tls" -> AdbTarget.WirelessTls
+            else -> null
+        }
+        set(v) {
+            prefs.edit().putString("lastGood", when (v) {
+                is AdbTarget.Classic -> "classic"
+                AdbTarget.WirelessTls -> "tls"
+                null -> null
+            }).apply()
+        }
+    private var logCounter by mutableIntStateOf(0)
     private var running: Job? = null
 
     private var code by mutableStateOf("")
@@ -67,6 +86,7 @@ class SpikeActivity : ComponentActivity() {
     private fun log(msg: String) {
         Log.i(TAG, msg)
         logLines.add(msg)
+        logCounter++
         if (logLines.size > 500) logLines.removeRange(0, logLines.size - 500)
     }
 
@@ -128,7 +148,7 @@ class SpikeActivity : ComponentActivity() {
                 Btn("9. Send tcpip:5555") { action("tcpip") { tcpip() } }
             }
             val state = rememberLazyListState()
-            LaunchedEffect(logLines.size) {
+            LaunchedEffect(logCounter) {
                 if (logLines.isNotEmpty()) state.scrollToItem(logLines.size - 1)
             }
             LazyColumn(Modifier.weight(1f).fillMaxHeight(), state = state) {
@@ -205,14 +225,14 @@ class SpikeActivity : ComponentActivity() {
     }
 
     /** Runs a shell command, logging each line. Returns exit code (or null if the connection died) and the lines. */
-    private suspend fun runShell(cmd: String): Pair<Int?, List<String>> {
+    private suspend fun runShell(cmd: String, echo: Boolean = true): Pair<Int?, List<String>> {
         val lines = mutableListOf<String>()
         var exit: Int? = null
         log("$ $cmd")
         try {
             adb.shell(cmd).collect { ev ->
                 when (ev) {
-                    is ShellEvent.Line -> { lines += ev.text; log(ev.text) }
+                    is ShellEvent.Line -> { lines += ev.text; if (echo) log(ev.text) }
                     is ShellEvent.Exit -> exit = ev.code
                 }
             }
@@ -226,13 +246,15 @@ class SpikeActivity : ComponentActivity() {
     }
 
     private suspend fun dexopt() {
-        val (exit, lines) = runShell("dumpsys package dexopt")
+        // Full text goes to the file only (not screen/logcat) so the logcat buffer keeps the key results.
+        val (exit, lines) = runShell("dumpsys package dexopt", echo = false)
         val f = File(filesDir, "dexopt.txt")
         f.writeText(lines.joinToString("\n"))
-        log("dexopt exit=$exit, ${lines.size} lines written to ${f.absolutePath}")
+        log("dexopt exit=$exit, ${lines.size} lines (not echoed) written to ${f.absolutePath}")
     }
 
     private suspend fun compile() {
+        val t0 = SystemClock.elapsedRealtime()
         var (exit, lines) = runShell("pm compile -m speed -f $NUVIO")
         if (exit != 0 || lines.none { it.contains("Success") }) {
             log("pm compile failed or no Success line; falling back to cmd package compile")
@@ -240,7 +262,7 @@ class SpikeActivity : ComponentActivity() {
             exit = r.first
             lines = r.second
         }
-        log("compile result: exit=$exit success=${lines.any { it.contains("Success") }}")
+        log("compile result: exit=$exit success=${lines.any { it.contains("Success") }} duration=${SystemClock.elapsedRealtime() - t0} ms")
     }
 
     private suspend fun grantSelf() {
@@ -263,11 +285,21 @@ class SpikeActivity : ComponentActivity() {
             return
         }
         log("ADB settings set to 0 (the connection is expected to die now)")
-        delay(2000)
-        setAdbSettings(1)
-        log("ADB settings set to 1; polling reconnect for up to 20 s")
+        try {
+            delay(2000)
+        } finally {
+            // Never leave ADB off, even if cancelled (other button, activity recreation).
+            withContext(NonCancellable) {
+                try {
+                    setAdbSettings(1)
+                    log("ADB settings set to 1; polling reconnect for up to 20 s")
+                } catch (t: Throwable) {
+                    log("FAILED to re-enable ADB: $t")
+                }
+            }
+        }
         if (last == null) {
-            log("no last good target to reconnect to; connect once first")
+            log("no last good target saved; ADB settings were restored, now press 3 or 1 manually")
             return
         }
         val ok = withTimeoutOrNull(20_000) {

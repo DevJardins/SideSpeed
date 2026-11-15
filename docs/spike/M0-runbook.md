@@ -26,8 +26,8 @@ Below, `<ip>` is the box's IP address (Settings, Network, your Wi-Fi, or the box
    5. **7. pm grant self WRITE_SECURE_SETTINGS**. Should end with exit=0 and no error.
    6. **8. Toggle ADB off -> on**. The connection will drop (expected). Write down: did it say RECONNECTED, and after how many ms? If not, did port 5555 come back on its own? (Check from the PC: `adb connect <ip>:5555`.)
    7. After button 8, press **4. Run id** again: is the connection really working and is the key still trusted (no new prompt)?
-   8. **9. Send tcpip:5555** (just record the result).
-8. Capture from the PC (still on the same network):
+   8. **9. Send tcpip:5555**. Record the result. This may drop the connection. Afterwards, from the PC, run `adb connect <ip>:5555` and write down whether it connects.
+8. Capture from the PC right after the run (the logcat buffer is small and old lines get overwritten, so do this immediately):
    ```
    adb connect <ip>:5555
    adb -s <ip>:5555 shell dumpsys package dexopt > firetv-cube3-dexopt.txt
@@ -49,28 +49,34 @@ Below, `<ip>` is the box's IP address (Settings, Network, your Wi-Fi, or the box
    - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
    - Install Nuvio if not present (`com.nuvio.tv`).
 4. Start **SideSpeed Spike**. Note the startup lines (model, Android version, Wi-Fi IP).
-5. **Test the TV alone, no PC involved** (this is the key question):
+5. **Test pairing from the TV alone** (the key question):
    1. Press **1. Connect 127.0.0.1:5555**. Write down the result (probably fails on this box, which is fine).
-   2. Go to Settings, System, Developer options, Wireless debugging, **Pair device with pairing code**. The code and pairing port are shown on a popup. Note them; the popup may disappear when you leave the screen, in which case read them from the TV popup, then come back to the spike quickly (the popup usually stays valid only while open; if it closes, see "Split-screen note" below).
-   3. In the spike, use the number pad to enter the 6-digit code (select "Typing into: CODE") and then switch to PORT and enter the pairing port. Press **2. Pair**. The log shows the try via 127.0.0.1 and then via the Wi-Fi IP. Write down which worked, or both failed and the exact errors.
-   4. If pairing worked, press **3. Connect TLS (mDNS)**. Write down the result.
-   5. Press **4. Run id**, **5. dumpsys package dexopt**, **6. Compile**, **7. pm grant self**.
+   2. Open Settings, System, Developer options, Wireless debugging, **Pair device with pairing code**. A popup shows a 6-digit code and a pairing port. Leaving that popup normally dismisses it and invalidates the code, so try this once only: with the popup open, switch to **SideSpeed Spike** (Home button, then launch it, or use Recent apps). **Write down whether the popup disappeared when you left it.** If the code is still showing in Recent apps / split screen, enter it; if the popup is gone, stop here and go to step 6 (this is itself an answer).
+   3. If the code is still valid: in the spike, use the number pad to enter the 6-digit code (select "Typing into: CODE") and then switch to PORT and enter the pairing port. Press **2. Pair**. The log shows the try via 127.0.0.1 and then via the Wi-Fi IP. Write down which worked, or both failed and the exact errors.
+   4. If pairing worked, press **3. Connect TLS (mDNS)**, then **4. Run id**. Write down both results (this is the "pairing key works over TLS" test).
+   5. Press **5. dumpsys ...**, **6. Compile**, **7. pm grant self**.
    6. Press **8. Toggle ADB off -> on**. Record RECONNECTED and the ms, or the failure.
-6. **If step 5 pairing from the TV alone failed**, do the one-time PC route: pair from the PC (step 3 above, using `adb pair`), then in the spike press **3. Connect TLS (mDNS)**. Note whether the connection works, and whether Run id works after. This tells us whether a key paired from the PC can be used by the app.
+6. **If pairing from the TV alone failed, test the "Always allow" key over TLS.** (Pairing from the PC only authorizes the PC's key, not the app's, so it does not help the app by itself.) The app's own key has to be trusted over classic port 5555 first:
+   1. On the PC, with the box connected over Wireless debugging: `adb tcpip 5555`. This drops the connection. Then `adb connect <ip>:5555`.
+   2. In the spike press **1. Connect 127.0.0.1:5555**. Accept "Allow debugging?" and tick **Always allow**; press 1 again if needed. Write down whether it worked.
+   3. Press **7. pm grant self** (needed later).
+   4. On the TV, turn Wireless debugging OFF and ON in Developer options so it is active on a TLS port.
+   5. In the spike press **3. Connect TLS (mDNS)**, then **4. Run id**. Write down the result. (This answers: does a key trusted via "Always allow" work over TLS?)
+   6. If the box did not accept 5555 at step 1, say so; that also answers "is 5555 reachable".
 7. **Reboot test (Onn):**
-   1. Make sure button 7 (pm grant self) succeeded before.
+   1. Make sure button 7 (pm grant self) succeeded before, and that a connect (button 3 or 1) worked at some point (the spike remembers the last good target across reboots).
    2. Restart the box (Settings, System, Restart, or unplug for 10 s).
    3. After it boots, go to Settings, System, Developer options. Is **Wireless debugging still ON**? Write it down (yes/no).
    4. Start the spike. Press **3. Connect TLS (mDNS)**. Did it connect without re-pairing? Write it down.
-   5. If Wireless debugging is OFF after reboot: open the spike and press **8. Toggle ADB off -> on** (this needs the grant from button 7 and may not be possible if no connection exists; note that, and note whether you could get the grant to work without ADB). Does Wireless debugging come back ON, and does it reconnect?
-8. Capture from the PC (connect with `adb connect <ip>:<connectport>`, which may be different after reboot):
+   5. If Wireless debugging is OFF after reboot: start the spike and press **8. Toggle ADB off -> on**. This works even with no ADB connection, because it only needs the grant from button 7. This is the key test of "survive reboots". The spike will try to reconnect to the saved target; if it does not, press **3** manually. Write down: did Wireless debugging come back ON, did reconnect work, and how many ms?
+8. Capture from the PC right after the run (the logcat buffer is small; do not wait). Connect with `adb connect <ip>:<connectport>`, which may be different after a reboot. If you can, capture the logcat once before the reboot test too:
    ```
    adb shell dumpsys package dexopt > onn4kpro-dexopt.txt
    adb shell dumpsys package com.nuvio.tv > onn4kpro-pkg.txt
    adb logcat -d -s SideSpeedSpike > onn4kpro-spike.log
    ```
 
-**Split-screen note:** if the pairing popup disappears when the spike takes focus, tell me. It means the pairing code cannot be entered from the TV alone, which is itself an answer to the question.
+
 
 ---
 
