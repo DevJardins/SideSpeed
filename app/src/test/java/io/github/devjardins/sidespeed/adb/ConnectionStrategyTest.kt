@@ -12,6 +12,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
+import java.net.ConnectException
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -84,9 +86,47 @@ class ConnectionStrategyTest {
     }
 
     @Test fun nothingConnects() = runTest(timeout = 10.seconds) {
-        val adb = FakeAdbBackend().apply { failConnect = RuntimeException("refused") }
+        val adb = FakeAdbBackend().apply { failConnect = RuntimeException("handshake failed") }
         val r = strategy(adb) { null }.ensureReady()
         assertEquals(Readiness.NeedsHelperStart("ADB not reachable"), r)
+        assertEquals(StartCause.OTHER, (r as Readiness.NeedsHelperStart).cause)
+    }
+
+    @Test fun closedPortIsReportedAsRefused() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = ConnectException("Connection refused") }
+        val r = strategy(adb) { null }.ensureReady()
+        assertEquals(Readiness.NeedsHelperStart("ADB not reachable", StartCause.REFUSED), r)
+    }
+
+    @Test fun wrappedConnectExceptionIsRefused() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = IOException("wrapped", ConnectException("refused")) }
+        val r = strategy(adb) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals(StartCause.REFUSED, r.cause)
+    }
+
+    @Test fun classicRefusedStaysRefusedWhenTlsAlsoFails() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply {
+            failConnectFor[AdbTarget.Classic()] = ConnectException("refused")
+            failConnectFor[AdbTarget.WirelessTls] = RuntimeException("no mdns")
+        }
+        val r = strategy(adb, tls = true) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals(StartCause.REFUSED, r.cause)
+    }
+
+    @Test fun onLaunchFiresAfterConnectBeforeLaunchCommand() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        adb.on(HelperLaunch.command()) { emptyList<String>() to 0 }
+        var commandsAtLaunch: Int? = null
+        strategy(adb) { if (adb.commands.isNotEmpty()) HelperPing(1, apk) else null }
+            .ensureReady(onLaunch = { commandsAtLaunch = adb.commands.size })
+        assertEquals(0, commandsAtLaunch)
+    }
+
+    @Test fun onLaunchNotCalledWhenRefused() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = ConnectException("refused") }
+        var launched = false
+        strategy(adb) { null }.ensureReady(onLaunch = { launched = true })
+        assertFalse(launched)
     }
 
     @Test fun tlsTriedAfterClassicWhenPaired() = runTest(timeout = 10.seconds) {

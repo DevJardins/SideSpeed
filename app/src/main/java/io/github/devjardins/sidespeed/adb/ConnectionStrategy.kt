@@ -8,11 +8,19 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
+import java.net.ConnectException
+
+/**
+ * Why the helper could not be started on the box. [REFUSED]: the classic ADB port was closed (a quick
+ * "connection refused"), as opposed to a pending "Allow debugging?" prompt, which shows up as
+ * [Readiness.WaitingForAllowPrompt].
+ */
+enum class StartCause { REFUSED, OTHER }
 
 sealed interface Readiness {
     data object HelperReady : Readiness
     data object HelperNeedsRestart : Readiness
-    data class NeedsHelperStart(val reason: String) : Readiness
+    data class NeedsHelperStart(val reason: String, val cause: StartCause = StartCause.OTHER) : Readiness
     data object WaitingForAllowPrompt : Readiness
 }
 
@@ -59,27 +67,29 @@ class ConnectionStrategy(
     private val isFireOs: Boolean,
     private val timeoutMs: Long = 30_000,
 ) {
-    suspend fun ensureReady(): Readiness {
+    /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
+    suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness {
         val ping = helper.ping()
         if (ping != null) {
             return if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
         }
         if (isFireOs) return Readiness.NeedsHelperStart("Fire OS blocks on-box ADB")
-        return connectAndLaunch(killFirst = false)
+        return connectAndLaunch(killFirst = false, onLaunch)
     }
 
     /** Google TV only: kills the stale helper over own-ADB, then relaunches it. */
-    suspend fun restartHelper(): Readiness {
+    suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness {
         if (isFireOs) return Readiness.NeedsHelperStart("Fire OS blocks on-box ADB")
-        return connectAndLaunch(killFirst = true)
+        return connectAndLaunch(killFirst = true, onLaunch)
     }
 
-    private suspend fun connectAndLaunch(killFirst: Boolean): Readiness {
+    private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
         val targets = buildList {
             add(AdbTarget.Classic())
             if (prefs.pairedTls.first()) add(AdbTarget.WirelessTls)
         }
         var connected = false
+        var classicRefused = false
         for (t in targets) {
             val r = try {
                 withTimeout(timeoutMs) { adb.connect(t) }
@@ -87,8 +97,15 @@ class ConnectionStrategy(
                 return Readiness.WaitingForAllowPrompt
             }
             if (r.isSuccess) { connected = true; break }
+            if (t is AdbTarget.Classic && isRefusal(r.exceptionOrNull())) classicRefused = true
         }
-        if (!connected) return Readiness.NeedsHelperStart("ADB not reachable")
+        if (!connected) {
+            return Readiness.NeedsHelperStart(
+                "ADB not reachable",
+                if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
+            )
+        }
+        onLaunch()
 
         try {
             if (killFirst) {
@@ -112,6 +129,10 @@ class ConnectionStrategy(
         }
         return Readiness.NeedsHelperStart("Helper did not start")
     }
+
+    /** A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library). */
+    private fun isRefusal(e: Throwable?): Boolean =
+        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is ConnectException }
 
     companion object {
         const val KILL_COMMAND = "kill \$(pidof sidespeed_helper)"
