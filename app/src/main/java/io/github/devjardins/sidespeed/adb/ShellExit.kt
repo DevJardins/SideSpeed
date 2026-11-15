@@ -3,11 +3,13 @@ package io.github.devjardins.sidespeed.adb
 /**
  * libadb-android speaks the shell v1 protocol, which reports no exit code.
  * Commands are wrapped so the shell echoes its own exit status as a marker line.
+ * The echo is joined with a newline, not `;`: a command ending in `&` (the helper launch) followed by `;`
+ * is a shell syntax error (`&;`), while `&` then a newline is valid.
  */
 object ShellExit {
     const val MARKER = "__SIDESPEED_EXIT__:"
 
-    fun wrap(cmd: String): String = "$cmd; echo $MARKER\$?"
+    fun wrap(cmd: String): String = "$cmd\necho $MARKER\$?"
 
     fun parse(line: String): Int? {
         val trimmed = line.trim()
