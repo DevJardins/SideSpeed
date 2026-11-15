@@ -1,41 +1,81 @@
 package io.github.devjardins.sidespeed.ui.setup
 
+import android.content.ContentResolver
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.devjardins.sidespeed.adb.AdbBackend
 import io.github.devjardins.sidespeed.adb.ConnectionStrategy
 import io.github.devjardins.sidespeed.adb.Readiness
+import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.Prefs
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 sealed interface SetupUiState {
     data object Loading : SetupUiState
     data object NeedsWarningAck : SetupUiState
-    data object Checking : SetupUiState
     data object Ready : SetupUiState
-    data class Result(val readiness: Readiness, val pairMessage: String? = null, val pairing: Boolean = false) :
-        SetupUiState
+
+    /**
+     * The step cards. [detected]: step 1 (debugging switched on). [waiting]: the retry loop is running (step 2,
+     * "Waiting for you…"). [launching]: ADB is connected and the helper is being started (step 3).
+     * [readiness]: the last non-ready result. [refusedHint]: the classic port refused 3 times in a row while
+     * Wireless debugging was on. [showPairing]: the pairing pads, only ever shown on request.
+     */
+    data class Connecting(
+        val detected: Boolean = false,
+        val waiting: Boolean = true,
+        val launching: Boolean = false,
+        val readiness: Readiness? = null,
+        val refusedHint: Boolean = false,
+        val showPairing: Boolean = false,
+        val pairing: Boolean = false,
+        val pairMessage: String? = null,
+    ) : SetupUiState
 }
 
 /** What the VM needs from the strategy; lets tests substitute a fake. */
 interface Readier {
-    suspend fun ensureReady(): Readiness
-    suspend fun restartHelper(): Readiness
+    suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness
+    suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness
 }
 
 class StrategyReadier(private val s: ConnectionStrategy) : Readier {
-    override suspend fun ensureReady() = s.ensureReady()
-    override suspend fun restartHelper() = s.restartHelper()
+    override suspend fun ensureReady(onLaunch: () -> Unit) = s.ensureReady(onLaunch)
+    override suspend fun restartHelper(onLaunch: () -> Unit) = s.restartHelper(onLaunch)
+}
+
+/** Reads `Settings.Global` integers (0 when unset). Readable by any app, no permission needed. */
+fun interface SettingsReader {
+    fun getInt(name: String): Int
+
+    companion object {
+        const val ADB_ENABLED = "adb_enabled"
+        const val ADB_WIFI_ENABLED = "adb_wifi_enabled"
+
+        fun of(resolver: ContentResolver) = SettingsReader { name ->
+            try {
+                Settings.Global.getInt(resolver, name, 0)
+            } catch (_: Exception) {
+                0
+            }
+        }
+    }
 }
 
 class SetupViewModel(
@@ -44,59 +84,110 @@ class SetupViewModel(
     private val prefs: Prefs,
     val isFireOs: Boolean,
     private val wifiIp: () -> String?,
+    private val settings: SettingsReader,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Loading)
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
-    private var job: Job? = null
 
-    /** Whether pairing over Wireless debugging has succeeded before (Google TV). */
-    val pairedTls: Flow<Boolean> = prefs.pairedTls
+    /** The one running loop / pairing job. Replaced only through [launchExclusive]. */
+    private var job: Job? = null
+    private var refusals = 0
 
     fun wifiIp(): String? = wifiIp.invoke()
 
+    /** Called when the setup screen appears. Starts (or restarts) the retry loop once the warning is acked. */
     fun start() {
-        job?.cancel()
-        job = viewModelScope.launch(dispatcher) {
+        if (_state.value == SetupUiState.Ready) _state.value = SetupUiState.Connecting()
+        launchExclusive {
             if (!prefs.lanWarningAcked.first()) {
                 _state.value = SetupUiState.NeedsWarningAck
             } else {
-                check()
+                retryLoop()
             }
         }
     }
 
     fun acknowledgeWarning() {
-        job?.cancel()
-        job = viewModelScope.launch(dispatcher) {
+        launchExclusive {
             prefs.setLanWarningAcked(true)
-            check()
+            retryLoop()
         }
     }
 
+    /** Leaves a stale Ready at once (so the screen does not bounce back), then restarts the loop. */
     fun checkAgain() {
-        job?.cancel()
-        _state.value = SetupUiState.Checking
-        job = viewModelScope.launch(dispatcher) { check() }
+        _state.update { it as? SetupUiState.Connecting ?: SetupUiState.Connecting() }
+        launchExclusive { retryLoop() }
     }
 
-    private suspend fun check() {
-        _state.value = SetupUiState.Checking
-        var r = strategy.ensureReady()
-        if (r == Readiness.HelperNeedsRestart && !isFireOs) r = strategy.restartHelper()
-        _state.value = if (r == Readiness.HelperReady) SetupUiState.Ready else SetupUiState.Result(r)
+    /** Called when the setup screen leaves composition. A pending attempt finishes on its own. */
+    fun stopRetrying() {
+        job?.cancel()
+    }
+
+    fun showPairing() = updateConnecting { it.copy(showPairing = true) }
+
+    fun hidePairing() = updateConnecting { it.copy(showPairing = false) }
+
+    /**
+     * Starts [block] only after the previous job has fully finished, so two ADB connects (or a connect and a
+     * pairing) never run at once: a blocked connect ignores cancellation until libadb returns. The wait is
+     * non-cancellable so a job replaced while it is still waiting keeps the chain intact (otherwise it would
+     * finish early and let the next job start beside a pending connect).
+     */
+    private fun launchExclusive(block: suspend () -> Unit) {
+        val previous = job
+        job = viewModelScope.launch(dispatcher) {
+            withContext(NonCancellable) { previous?.cancelAndJoin() }
+            ensureActive()
+            block()
+        }
+    }
+
+    private fun updateConnecting(f: (SetupUiState.Connecting) -> SetupUiState.Connecting) {
+        _state.update { f(it as? SetupUiState.Connecting ?: SetupUiState.Connecting()) }
+    }
+
+    private fun detected(): Boolean =
+        if (isFireOs) {
+            settings.getInt(SettingsReader.ADB_ENABLED) == 1
+        } else {
+            settings.getInt(SettingsReader.ADB_WIFI_ENABLED) == 1 || settings.getInt(SettingsReader.ADB_ENABLED) == 1
+        }
+
+    /** Attempt, then a [RETRY_DELAY_MS] pause, then the next attempt, until ready. Never overlaps attempts. */
+    private suspend fun retryLoop() {
+        val markLaunching = { updateConnecting { it.copy(launching = true) } }
+        while (true) {
+            val before = detected()
+            updateConnecting { it.copy(detected = before, waiting = true, launching = false) }
+            var r = strategy.ensureReady(markLaunching)
+            if (r == Readiness.HelperNeedsRestart && !isFireOs) r = strategy.restartHelper(markLaunching)
+            if (r == Readiness.HelperReady) {
+                refusals = 0
+                _state.value = SetupUiState.Ready
+                return
+            }
+            val on = detected()
+            val refused = r is Readiness.NeedsHelperStart && r.cause == StartCause.REFUSED
+            refusals = if (refused && on && !isFireOs) refusals + 1 else 0
+            updateConnecting {
+                it.copy(detected = on, launching = false, readiness = r, refusedHint = refusals >= REFUSALS_FOR_HINT)
+            }
+            delay(RETRY_DELAY_MS)
+        }
     }
 
     fun pair(code: String, port: String) {
-        val current = _state.value as? SetupUiState.Result ?: return
+        if (_state.value !is SetupUiState.Connecting) return
         val p = port.toIntOrNull()
         if (code.length != 6 || p == null) {
-            _state.value = current.copy(pairMessage = "Enter the 6-digit code and the pairing port.")
+            updateConnecting { it.copy(pairMessage = "Enter the 6-digit code and the pairing port.") }
             return
         }
-        job?.cancel()
-        job = viewModelScope.launch(dispatcher) {
-            _state.value = current.copy(pairing = true, pairMessage = "Pairing...")
+        updateConnecting { it.copy(pairing = true, pairMessage = "Pairing…") }
+        launchExclusive {
             val r = try {
                 withTimeout(PAIR_TIMEOUT_MS) {
                     var r = adb.pair("127.0.0.1", p, code)
@@ -104,21 +195,28 @@ class SetupViewModel(
                     r
                 }
             } catch (_: TimeoutCancellationException) {
-                _state.value = current.copy(pairMessage = "Pairing timed out")
-                return@launch
+                null
             }
-            if (r.isSuccess) {
-                prefs.setPairedTls(true)
-                check()
-            } else {
-                _state.value = current.copy(
-                    pairMessage = "Pairing failed: ${r.exceptionOrNull()?.message ?: "unknown error"}",
-                )
+            when {
+                r == null -> updateConnecting { it.copy(pairing = false, pairMessage = "Pairing timed out") }
+                r.isSuccess -> {
+                    prefs.setPairedTls(true)
+                    updateConnecting { it.copy(pairing = false, pairMessage = "Paired. Connecting…") }
+                }
+                else -> updateConnecting {
+                    it.copy(
+                        pairing = false,
+                        pairMessage = "Pairing failed: ${r.exceptionOrNull()?.message ?: "unknown error"}",
+                    )
+                }
             }
+            retryLoop()
         }
     }
 
     companion object {
         const val PAIR_TIMEOUT_MS = 30_000L
+        const val RETRY_DELAY_MS = 2_000L
+        const val REFUSALS_FOR_HINT = 3
     }
 }

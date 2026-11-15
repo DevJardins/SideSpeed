@@ -10,7 +10,10 @@ import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.ui.compile.CompileUiState
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
+import io.github.devjardins.sidespeed.ui.compile.formatDuration
 import io.github.devjardins.sidespeed.ui.compile.resultBanner
+import io.github.devjardins.sidespeed.ui.compile.successDetail
+import io.github.devjardins.sidespeed.ui.compile.successTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -126,6 +129,18 @@ class CompileViewModelTest {
         assertEquals(true, v.state.value.result?.success)
     }
 
+    @Test fun durationIsRecorded() = runTest(timeout = 10.seconds) {
+        var now = 10_000L
+        val v = CompileViewModel(CompileRunner(fake()), StatusChecker(fake()), FakePrefs(), dispatcher) {
+            now.also { now += 89_000L }
+        }
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        val s = v.state.value
+        assertEquals(10_000L, s.startedAtMs)
+        assertTrue(s.finishedAtMs > s.startedAtMs)
+        assertEquals((s.finishedAtMs - s.startedAtMs) / 1000, s.durationSeconds)
+    }
+
     @Test fun logIsCapped() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
         adb.on(cmd) { (List(3000) { "l$it" } + "Success") to 0 }
@@ -146,5 +161,51 @@ class ResultBannerTest {
     @Test fun differentMessageIsAppended() {
         assertEquals("Failure: Connection lost", resultBanner(false, "Connection lost"))
         assertEquals("Success: done", resultBanner(true, "done"))
+    }
+}
+
+class ResultTextTest {
+    @Test fun durationUnderAMinuteIsSecondsOnly() {
+        assertEquals("51 s", formatDuration(51))
+        assertEquals("0 s", formatDuration(0))
+        assertEquals("59 s", formatDuration(59))
+    }
+
+    @Test fun durationWithMinutes() {
+        assertEquals("2 min 58 s", formatDuration(178))
+        assertEquals("1 min 0 s", formatDuration(60))
+        assertEquals("12 min 5 s", formatDuration(725))
+    }
+
+    @Test fun successTitle() {
+        assertEquals("Compiled to speed", successTitle(CompileMode.SPEED))
+        assertEquals("Compiled to speed-profile", successTitle(CompileMode.SPEED_PROFILE))
+    }
+
+    @Test fun successDetailWithConfirmedBadge() {
+        assertEquals(
+            "Took 2 min 58 s · status confirmed speed ✓",
+            successDetail(178, CompileMode.SPEED, StatusBadge.SPEED_OK),
+        )
+        assertEquals(
+            "Took 51 s · status confirmed speed-profile",
+            successDetail(51, CompileMode.SPEED_PROFILE, StatusBadge.SPEED_PROFILE),
+        )
+    }
+
+    @Test fun successDetailWithoutUsableBadge() {
+        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, null))
+        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, StatusBadge.UNKNOWN))
+    }
+
+    @Test fun successDetailWhenStatusDisagrees() {
+        assertEquals(
+            "Took 51 s · status shows speed-profile",
+            successDetail(51, CompileMode.SPEED, StatusBadge.SPEED_PROFILE),
+        )
+        assertEquals(
+            "Took 51 s · status shows Not compiled",
+            successDetail(51, CompileMode.SPEED, StatusBadge.NEEDS_RECOMPILE),
+        )
     }
 }

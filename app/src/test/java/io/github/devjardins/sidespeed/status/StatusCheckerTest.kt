@@ -47,4 +47,42 @@ class StatusCheckerTest {
         }
         assertEquals("speed", StatusChecker(runner).check(pkg).filter)
     }
+
+    @Test fun badgesComeFromOneDexoptCall() = runTest {
+        val fake = FakeAdbBackend()
+        fake.on("dumpsys package dexopt") {
+            listOf(
+                "Dexopt state:",
+                "  [a.speed]", "    path: x", "      arm64: [status=speed] [reason=cmdline]",
+                "  [b.profile]", "    path: y", "      arm64: [status=speed-profile] [reason=bg-dexopt]",
+                "  [c.verify]", "    path: z", "      arm64: [status=verify] [reason=install]",
+            ) to 0
+        }
+        val badges = StatusChecker(fake).badges(listOf("a.speed", "b.profile", "c.verify", "d.missing"))
+        assertEquals(
+            mapOf(
+                "a.speed" to StatusBadge.SPEED_OK,
+                "b.profile" to StatusBadge.SPEED_PROFILE,
+                "c.verify" to StatusBadge.NEEDS_RECOMPILE,
+                "d.missing" to StatusBadge.UNKNOWN,
+            ),
+            badges,
+        )
+        assertEquals(listOf("dumpsys package dexopt"), fake.commands)
+    }
+
+    @Test(expected = java.io.IOException::class) fun badgesFailOnNonZeroExit() = runTest {
+        val fake = FakeAdbBackend()
+        fake.on("dumpsys package dexopt") { emptyList<String>() to 1 }
+        StatusChecker(fake).badges(listOf(pkg))
+    }
+
+    @Test fun badgesOnRealOnnDump() = runTest {
+        val dump = javaClass.getResource("/dumpsys/onn4kpro-dexopt.txt")!!.readText().lines()
+        val fake = FakeAdbBackend()
+        fake.on("dumpsys package dexopt") { dump to 0 }
+        val badges = StatusChecker(fake).badges(listOf("com.amazon.amazonvideo.livingroom", "com.android.backupconfirm"))
+        assertEquals(StatusBadge.SPEED_PROFILE, badges["com.amazon.amazonvideo.livingroom"])
+        assertEquals(StatusBadge.NEEDS_RECOMPILE, badges["com.android.backupconfirm"])
+    }
 }

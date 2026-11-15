@@ -3,7 +3,13 @@ package io.github.devjardins.sidespeed.ui
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.status.BadgeSource
 import io.github.devjardins.sidespeed.ui.apps.ManualResult
+import io.github.devjardins.sidespeed.ui.apps.Pill
+import io.github.devjardins.sidespeed.ui.apps.PillTone
+import io.github.devjardins.sidespeed.ui.apps.pillFor
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -15,6 +21,8 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -34,7 +42,59 @@ class AppsViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
     @After fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm(src: AppSource) = AppsViewModel(src, Dispatchers.Unconfined)
+    private class Badges(
+        val result: () -> Map<String, StatusBadge>,
+        val gate: CompletableDeferred<Unit>? = null,
+    ) : BadgeSource {
+        val calls = mutableListOf<Collection<String>>()
+        override suspend fun badges(pkgs: Collection<String>): Map<String, StatusBadge> {
+            calls += pkgs.toList()
+            gate?.await()
+            return result()
+        }
+    }
+
+    private fun vm(src: AppSource, badges: BadgeSource = Badges({ emptyMap() })) =
+        AppsViewModel(src, badges, Dispatchers.Unconfined)
+
+    @Test fun oneStatusCallFillsAllPills() {
+        val gate = CompletableDeferred<Unit>()
+        val badges = Badges(
+            { mapOf("com.nuvio.tv" to StatusBadge.SPEED_OK, "com.store.app" to StatusBadge.NEEDS_RECOMPILE) },
+            gate,
+        )
+        val v = vm(Source(listOf(nuvio, store)), badges)
+        v.load()
+        // "Checking…" until the single call returns.
+        assertTrue(v.state.value.statusLoading)
+        assertEquals(Pill("Checking…", PillTone.NEUTRAL), v.pill("com.nuvio.tv"))
+        assertEquals(Pill("Checking…", PillTone.NEUTRAL), v.pill("com.store.app"))
+        gate.complete(Unit)
+        assertEquals(1, badges.calls.size)
+        assertEquals(setOf("com.nuvio.tv", "com.store.app"), badges.calls.single().toSet())
+        assertEquals(Pill("speed ✓", PillTone.OK), v.pill("com.nuvio.tv"))
+        assertEquals(Pill("Not compiled", PillTone.WARN), v.pill("com.store.app"))
+    }
+
+    @Test fun statusFailureMeansNoPills() {
+        val v = vm(Source(listOf(nuvio, store)), Badges({ throw java.io.IOException("helper gone") }))
+        v.load()
+        assertFalse(v.state.value.statusLoading)
+        assertNull(v.pill("com.nuvio.tv"))
+        assertNull(v.pill("com.store.app"))
+        assertFalse(v.state.value.loading)
+    }
+
+    @Test fun pillLabels() {
+        assertEquals(Pill("speed ✓", PillTone.OK), pillFor(false, StatusBadge.SPEED_OK))
+        assertEquals(Pill("speed-profile", PillTone.WARN), pillFor(false, StatusBadge.SPEED_PROFILE))
+        assertEquals(Pill("Not compiled", PillTone.WARN), pillFor(false, StatusBadge.NEEDS_RECOMPILE))
+        assertNull(pillFor(false, StatusBadge.UNKNOWN))
+        assertNull(pillFor(false, null))
+        assertEquals(Pill("Checking…", PillTone.NEUTRAL), pillFor(true, null))
+        // A reload keeps the known badge instead of flashing "Checking…".
+        assertEquals(Pill("speed ✓", PillTone.OK), pillFor(true, StatusBadge.SPEED_OK))
+    }
 
     @Test fun manualEntryValidation() {
         val v = vm(Source(listOf(nuvio)))
@@ -47,7 +107,7 @@ class AppsViewModelTest {
         val exec = Executors.newSingleThreadExecutor { Thread(it, "io-test") }
         try {
             val src = Source(listOf(store, nuvio))
-            val v = AppsViewModel(src, exec.asCoroutineDispatcher())
+            val v = AppsViewModel(src, Badges({ emptyMap() }), exec.asCoroutineDispatcher())
             v.load()
             runBlocking { withTimeout(10_000) { v.state.first { !it.loading } } }
             assertTrue(src.listThread!!.startsWith("io-test"))

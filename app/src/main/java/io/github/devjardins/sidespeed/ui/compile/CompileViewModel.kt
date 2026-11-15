@@ -25,7 +25,11 @@ data class CompileUiState(
     val result: CompileEvent.Finished? = null,
     val badge: StatusBadge? = null,
     val startedAtMs: Long = 0L,
-)
+    val finishedAtMs: Long = 0L,
+) {
+    /** Whole seconds the finished compile took (0 before it finishes). */
+    val durationSeconds: Long get() = if (finishedAtMs > 0) ((finishedAtMs - startedAtMs) / 1000).coerceAtLeast(0) else 0
+}
 
 const val MAX_LOG_LINES = 2000
 
@@ -65,6 +69,7 @@ class CompileViewModel(
                 finished = CompileEvent.Finished(false, false, e.message ?: "Error")
             }
             val result = finished ?: CompileEvent.Finished(false, false, "Failure")
+            val finishedAt = clock()
             var badge: StatusBadge? = null
             if (result.success) {
                 try {
@@ -82,7 +87,7 @@ class CompileViewModel(
                     StatusBadge.UNKNOWN
                 }
             }
-            _state.value = _state.value.copy(running = false, result = result, badge = badge)
+            _state.value = _state.value.copy(running = false, result = result, badge = badge, finishedAtMs = finishedAt)
         }
     }
 

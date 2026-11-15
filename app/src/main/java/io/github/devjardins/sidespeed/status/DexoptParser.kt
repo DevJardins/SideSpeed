@@ -10,8 +10,10 @@ object DexoptParser {
     private val filterRegex = Regex("""compilation_filter=([a-z-]+)""")
     private const val SECONDARY_MARKER = "known secondary dex files"
 
-    fun parse(dump: String, pkg: String): CompilerStatus {
-        val lines = dump.lines()
+    fun parse(dump: String, pkg: String): CompilerStatus = parse(dump.lines(), pkg)
+
+    /** Same as [parse], on a dump already split into lines (to parse many packages from one dump). */
+    fun parse(lines: List<String>, pkg: String): CompilerStatus {
         val header = "[$pkg]"
         // `dumpsys package <pkg>` repeats "[pkg]" in several sections (key sets, dexopt state, compiler stats);
         // the first block that carries any status/filter text is the dexopt block.

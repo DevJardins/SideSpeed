@@ -11,7 +11,9 @@ import io.github.devjardins.sidespeed.adb.LibAdbBackend
 import io.github.devjardins.sidespeed.data.DataStorePrefs
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperClient
+import io.github.devjardins.sidespeed.apps.AppIcons
 import io.github.devjardins.sidespeed.apps.InstalledApps
+import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
 import java.net.Inet4Address
@@ -27,6 +29,10 @@ class AppContainer(context: Context) {
     val prefs: Prefs = DataStorePrefs(appContext)
 
     val installedApps = InstalledApps(appContext)
+
+    val appIcons = AppIcons(appContext)
+
+    val settings: SettingsReader = SettingsReader.of(appContext.contentResolver)
 
     /** Only use after Setup reports the helper ready. */
     val compileRunner: CompileRunner by lazy { CompileRunner(helper) }

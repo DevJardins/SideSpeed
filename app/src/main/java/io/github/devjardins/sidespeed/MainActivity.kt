@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp) as T
+                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp, c.settings) as T
         })[SetupViewModel::class.java]
     }
 
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         val c = (application as SideSpeedApp).container
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = AppsViewModel(c.installedApps) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = AppsViewModel(c.installedApps, c.statusChecker) as T
         })[AppsViewModel::class.java]
     }
 
@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val icons = (application as SideSpeedApp).container.appIcons
             SideSpeedTheme {
                 // Not saveable: after process death HelperClient has no verified port, so always re-check
                 // through Setup (a fast ping when the helper is alive).
@@ -66,13 +67,17 @@ class MainActivity : ComponentActivity() {
                     app == null -> AppsScreen(
                         appsVm,
                         lastCompile = (application as SideSpeedApp).container.prefs::lastCompile,
+                        icon = icons::load,
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running
-                        BackHandler { if (!running) { selected = null; selectedPkg = null } }
+                        val back = { if (!running) { selected = null; selectedPkg = null } }
+                        BackHandler { back() }
                         CompileScreen(
                             compileVm, app, selectedMode,
+                            icon = icons::load,
+                            onBack = back,
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
                         )
                     }
