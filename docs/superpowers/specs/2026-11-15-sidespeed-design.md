@@ -1,8 +1,15 @@
 # SideSpeed — Design
 
 Date: 2026-11-15
-Status: approved by owner 2026-11-15; revision 2 (built-in helper + phone companion) approved 2026-11-15
+Status: approved by owner 2026-11-15; revision 2 (built-in helper + phone companion) approved 2026-11-15; revision 3 (owner decision: no automatic ADB off/on; helper transport changed after M0b) 2026-11-15
 Source spec: [`SPEC.md`](../../../SPEC.md) (repo root). This document builds on it and wins where they differ.
+
+## Revision 3 summary (2026-11-15)
+
+- **Removed by owner decision:** every feature that switches ADB or Wireless Debugging off or on automatically. That means "ADB only while working", "Keep ADB on", the automatic re-enable in "Survive reboots", and the helper's settings requests. Reason: the M0b test showed that switching ADB off on the Fire TV Cube left it off and needed manual recovery, and making this reliable across devices would cost far more than it's worth. SideSpeed's job is compiling sideloaded apps.
+- **Instead:** the README, setup and Settings state plainly that ADB debugging (or Wireless Debugging) must stay on for SideSpeed to work, alongside the LAN-exposure caution.
+- **Helper transport changed:** SELinux on Fire OS denied the app (`untrusted_app`) connecting to the helper's abstract Unix socket (`connectto` on a `shell` socket). A loopback TCP connection from the app to a shell-owned listener worked. See "Talking to it".
+- Sections below that describe the removed features are kept, struck out under "Removed in revision 3", so the history is visible. Builders must not implement them.
 
 ## Intent and the why
 
@@ -116,12 +123,18 @@ Backgrounded and detached (`setsid`/`nohup` or equivalent) so it survives the AD
 - **Google TV / Wireless Debugging devices:** SideSpeed itself, over its own ADB connection (Approach A), right after connecting. No PC.
 - **Fire TV and any device where on-box ADB is blocked:** a PC (`adb shell sh <path>/start.sh`, shown on screen) or the phone companion (milestone M4), once per boot.
 
-**Talking to it.** The helper listens on a Linux abstract local socket (for example `@sidespeed_helper`). On every connection it checks the caller's uid with `SO_PEERCRED` (`LocalSocket.getPeerCredentials()`) and accepts only SideSpeed's uid, looked up from PackageManager at helper start. Hidden-API Binder delivery, as Shizuku does it, is not needed; the builder may choose Binder instead if there's a strong reason, and must note it.
+**Talking to it (revision 3).** The helper listens on loopback TCP (`127.0.0.1`, a fixed port chosen by the builder, with a fallback range), never on other interfaces. The abstract Unix socket from revision 2 is blocked by SELinux for normal apps (M0b, Fire OS 7.7).
+
+Because TCP has no `SO_PEERCRED`, the helper must confirm the caller is SideSpeed on every connection. The builder picks one of these, verifies it on both test devices, and notes the choice:
+- **(a)** Look up the connecting socket's owner uid in `/proc/net/tcp` / `/proc/net/tcp6`, matching on the client's port; the shell user can read these. Accept only SideSpeed's uid.
+- **(b)** A shared secret written by the helper at start to a place only SideSpeed can read, presented by the app on each connection.
+- **(c)** Shizuku-style Binder hand-off, if (a) and (b) both fail.
+
+Anything else is refused and logged.
 
 **What it accepts.** A fixed set of requests, not arbitrary shell:
 - compile `<package>` `<mode>`, with the package validated by the same package-name rule as the app;
 - `dumpsys package dexopt` / `dumpsys package <package>`;
-- read and write `adb_enabled` / `adb_wifi_enabled`;
 - `ping` and `version`, so SideSpeed can see the helper is alive and matches its APK.
 
 Output streams back line by line with the exit code.
@@ -131,7 +144,7 @@ Output streams back line by line with the exit code.
 2. Else Approach A (classic, then TLS); if connected, start the helper through it, then use the helper.
 3. Else show the "Start SideSpeed's helper" screen: PC command or phone companion.
 
-**Lifetime and ADB-off.** The helper ends at reboot and leaves nothing installed. Whether it keeps running after ADB debugging is switched off is unverified; test it on the Fire TV Cube (M0b). If it survives, "ADB only while working" on Fire TV becomes "turn ADB off once the helper is running". If it doesn't, ADB stays on there and the LAN warning stays.
+**Lifetime.** The helper ends at reboot and leaves nothing installed. ADB debugging stays on, as revision 3 requires. The helper does not switch ADB off or on.
 
 **Security.** The helper is the one shell-uid component. It must refuse other uids, accept only the fixed request set, never pass input to a shell unvalidated, and log refusals. A reviewer with security focus checks it before it ships.
 
@@ -142,7 +155,7 @@ A separate small Android phone app, in this repo as a second module, sharing the
 - **After a TV reboot:** a background check, about every 15 minutes (WorkManager's minimum), sees that the helper isn't running. Two modes, chosen by the user: silent restart (default, the builder's pick) or a notification with a one-tap "Re-enable SideSpeed" button.
 - No servers, accounts or cloud push; everything stays on the home network.
 - Android only (iOS can't do this). A desktop app is out of scope; the README gives the PC command.
-- **Trade-offs to state in the app:** on Fire TV with the phone route, ADB debugging must stay on so the phone can reach the TV, which conflicts with "ADB only while working". The phone holds a key the TV trusts.
+- **Trade-offs to state in the app:** on Fire TV with the phone route, ADB debugging must stay on so the phone can reach the TV, which revision 3 requires anyway. The phone holds a key the TV trusts.
 - Designed in detail in its own plan after M1–M3 work on both boxes.
 
 ### Advanced route: one-time PC/phone help (owner-approved fallback)
@@ -151,52 +164,7 @@ Pairing may not work from the TV alone, because the stock pairing dialog closes 
 
 1. SideSpeed shows the device's IP and one command to run from a PC or phone: `adb connect <ip>:5555` (or the wireless-debugging pair/connect pair of commands), then `adb tcpip 5555`. The screen also offers a short link or QR code to a README section with the steps.
 2. SideSpeed connects to `127.0.0.1:5555` and the user accepts "Always allow". SideSpeed's own key is now trusted.
-3. **Survive reboots (opt-in, recommended on these devices):** over that first connection, SideSpeed runs `pm grant <its own package> android.permission.WRITE_SECURE_SETTINGS` on itself, with no extra step for the user.
-4. A `BOOT_COMPLETED` receiver (allowed on Android 8+) and the periodic job then use that permission to:
-   - turn Wireless Debugging back on (`Settings.Global` `adb_wifi_enabled = 1`, Android 11+);
-   - find its port by mDNS;
-   - connect over TLS with the already-trusted key;
-   - optionally send `tcpip:5555`.
-
-   This is the same technique Shizuku uses for its "start on boot (non-root)" mode.
-
-What it needs and what it can't do:
-- Wi-Fi (Wireless Debugging won't turn on over Ethernet).
-- Android 11+.
-- **Ethernet-only boxes on Android 11+ without 5555:** they get the advanced route, but must repeat the PC step after each reboot. The README says so.
-- **Unverified:** that a key trusted through the classic "Always allow" prompt is accepted over the TLS connection. If it isn't, the fallback is a one-time pair from the PC using SideSpeed's own key: export the key through the app, or show the pairing command for it. The M1 spike settles this.
-- **Security:** `WRITE_SECURE_SETTINGS` is a powerful permission. SideSpeed only ever writes `adb_wifi_enabled`, shows the grant clearly in Settings → Diagnostics, and has a "Revoke" button that runs `pm revoke` on itself.
-
-### ADB only while working (default on)
-
-**Why:** security-minded users don't want ADB listening on their network all the time. The owner chose this to be on by default.
-
-**What happens:**
-1. **Grant the permission once.** Over its first working ADB connection (any route, including the plain Fire TV 5555 route with no PC), SideSpeed grants itself `WRITE_SECURE_SETTINGS` with `pm grant`.
-   - This is the same grant "Survive reboots" uses. With it, those two features are one permission.
-   - Setup explains the grant in one screen before doing it.
-2. **Check for updates with ADB off.** Spotting updated apps never needs ADB; it uses PackageManager (`lastUpdateTime`, and `getChangedPackages` on API 26+). ADB is only needed when there is compile work or a status check to do.
-3. **For each batch of work:**
-   1. Turn ADB on: `Settings.Global.ADB_ENABLED = 1`, plus `adb_wifi_enabled = 1` on Wireless Debugging devices.
-   2. Wait for adbd and connect. Use mDNS for the TLS port, with a timeout.
-   3. Run the queued compiles and status checks.
-   4. Turn ADB off again, setting both values back to 0.
-
-   Manual compiles from the UI use the same wrapper.
-4. **"Keep ADB on" switch** (Settings, plus a shortcut on the home screen) for users who want to use ADB from a PC. While it's on, SideSpeed leaves ADB alone. It shows a reminder while it's on, and it can switch itself off after a time limit the user picks.
-5. **Safety net:**
-   - If turning ADB back on doesn't produce a working connection within the timeout, SideSpeed posts a notification explaining how to turn it back on by hand.
-   - After a failure on a device, it turns this mode off for that device, so the device isn't left locked out each time.
-   - Diagnostics shows the last on/off cycle and its result.
-6. **Without the grant** (the user declined, or `pm grant` failed): ADB is left as the user set it, and the LAN warning stays.
-
-**Unverified (M0 spike):** whether setting `adb_enabled` back to 1 brings 5555 back on the Fire TV Cube, and whether `adb_wifi_enabled` brings Wireless Debugging back on the Onn, with keys still trusted.
-
-**Risk wording for the README and setup:**
-- An open port does not give control to anyone on the LAN.
-- **Wireless Debugging** accepts only paired devices.
-- **Classic 5555** shows an "Allow debugging?" prompt for unknown keys.
-- The real risks are someone accepting that prompt by mistake, and bugs in adbd. This mode shrinks how long either is possible.
+3. **After a reboot (revision 3):** SideSpeed does not switch ADB or Wireless Debugging back on by itself. If ADB is unreachable, it says so on the status screen and in a notification, with the steps to turn it back on and, on Fire TV, the helper start command.
 
 ### First-time setup (guided)
 
@@ -242,7 +210,6 @@ These follow SPEC.md. Notes on how each is done:
    - Check interval.
    - Default mode.
    - The opt-in "reopen 5555" toggle.
-   - "ADB only while working" on/off (default on) and the "Keep ADB on" switch.
    - **Connection diagnostics:** detected path, connect test, last error, key fingerprint, and a "forget pairing / regenerate key" action.
    - The persistent LAN-exposure warning.
    - Storage note: `speed` adds about 30–60 MB per app.
@@ -259,14 +226,66 @@ These follow SPEC.md. Notes on how each is done:
 - `./gradlew assembleRelease` produces a signed APK when signing config is present, and an unsigned one otherwise.
 - A GitHub Actions workflow builds and runs unit tests on push. Producing signed release APKs in CI from secrets is a later addition.
 
+## Removed in revision 3 (do not implement)
+
+<details><summary>"Survive reboots" automatic re-enable, and "ADB only while working"</summary>
+
+~~3. **Survive reboots (opt-in, recommended on these devices):** over that first connection, SideSpeed runs `pm grant <its own package> android.permission.WRITE_SECURE_SETTINGS` on itself, with no extra step for the user.
+4. A `BOOT_COMPLETED` receiver (allowed on Android 8+) and the periodic job then use that permission to:
+   - turn Wireless Debugging back on (`Settings.Global` `adb_wifi_enabled = 1`, Android 11+);
+   - find its port by mDNS;
+   - connect over TLS with the already-trusted key;
+   - optionally send `tcpip:5555`.
+
+   This is the same technique Shizuku uses for its "start on boot (non-root)" mode.
+
+What it needs and what it can't do:
+- Wi-Fi (Wireless Debugging won't turn on over Ethernet).
+- Android 11+.
+- **Ethernet-only boxes on Android 11+ without 5555:** they get the advanced route, but must repeat the PC step after each reboot. The README says so.
+- **Unverified:** that a key trusted through the classic "Always allow" prompt is accepted over the TLS connection. If it isn't, the fallback is a one-time pair from the PC using SideSpeed's own key: export the key through the app, or show the pairing command for it. The M1 spike settles this.
+- **Security:** `WRITE_SECURE_SETTINGS` is a powerful permission. SideSpeed only ever writes `adb_wifi_enabled`, shows the grant clearly in Settings → Diagnostics, and has a "Revoke" button that runs `pm revoke` on itself.~~
+
+~~### ADB only while working (default on)
+
+**Why:** security-minded users don't want ADB listening on their network all the time. The owner chose this to be on by default.
+
+**What happens:**
+1. **Grant the permission once.** Over its first working ADB connection (any route, including the plain Fire TV 5555 route with no PC), SideSpeed grants itself `WRITE_SECURE_SETTINGS` with `pm grant`.
+   - This is the same grant "Survive reboots" uses. With it, those two features are one permission.
+   - Setup explains the grant in one screen before doing it.
+2. **Check for updates with ADB off.** Spotting updated apps never needs ADB; it uses PackageManager (`lastUpdateTime`, and `getChangedPackages` on API 26+). ADB is only needed when there is compile work or a status check to do.
+3. **For each batch of work:**
+   1. Turn ADB on: `Settings.Global.ADB_ENABLED = 1`, plus `adb_wifi_enabled = 1` on Wireless Debugging devices.
+   2. Wait for adbd and connect. Use mDNS for the TLS port, with a timeout.
+   3. Run the queued compiles and status checks.
+   4. Turn ADB off again, setting both values back to 0.
+
+   Manual compiles from the UI use the same wrapper.
+4. **"Keep ADB on" switch** (Settings, plus a shortcut on the home screen) for users who want to use ADB from a PC. While it's on, SideSpeed leaves ADB alone. It shows a reminder while it's on, and it can switch itself off after a time limit the user picks.
+5. **Safety net:**
+   - If turning ADB back on doesn't produce a working connection within the timeout, SideSpeed posts a notification explaining how to turn it back on by hand.
+   - After a failure on a device, it turns this mode off for that device, so the device isn't left locked out each time.
+   - Diagnostics shows the last on/off cycle and its result.
+6. **Without the grant** (the user declined, or `pm grant` failed): ADB is left as the user set it, and the LAN warning stays.
+
+**Unverified (M0 spike):** whether setting `adb_enabled` back to 1 brings 5555 back on the Fire TV Cube, and whether `adb_wifi_enabled` brings Wireless Debugging back on the Onn, with keys still trusted.
+
+**Risk wording for the README and setup:**
+- An open port does not give control to anyone on the LAN.
+- **Wireless Debugging** accepts only paired devices.
+- **Classic 5555** shows an "Allow debugging?" prompt for unknown keys.
+- The real risks are someone accepting that prompt by mistake, and bugs in adbd. This mode shrinks how long either is possible.~~
+
+</details>
+
 ## Milestones
 
 0. **M0 — spike on the Onn 4K Pro (throwaway, before any setup UI).** Fire TV result already in (revision 2): on-box ADB is blocked. Remaining on the Onn:
    - Can pairing be done from the TV alone?
    - Is 5555 reachable?
    - Does a key trusted via "Always allow" work over TLS?
-   - Does writing `adb_wifi_enabled` after `pm grant WRITE_SECURE_SETTINGS` bring Wireless Debugging back after a reboot?
-   - Does toggling `adb_enabled` / `adb_wifi_enabled` off and on bring back a working connection on both boxes? Run this on the Fire TV Cube too.
+   - After a reboot, is Wireless Debugging still on? (Record only. SideSpeed will not switch it back on; revision 3.)
    - Capture `dumpsys package dexopt` samples from both boxes.
 
    The results decide the default setup route for Google TV. Report them to the owner before M1's setup UI.
@@ -286,11 +305,12 @@ These follow SPEC.md. Notes on how each is done:
 - Public GPLv3 project in DevJardins/SideSpeed. The target is any Android TV box.
 - Built-in ADB client covering both classic and Wireless Debugging paths (Approach A).
 - If pairing from the TV alone doesn't work, the fallback is a one-time PC/phone step (option a), offered as an "Advanced setup" route.
-- Wants a one-time advanced option that lets SideSpeed reopen access by itself after reboots. This is designed as the "Survive reboots" grant above.
+- ~~Wants a one-time advanced option that lets SideSpeed reopen access by itself after reboots.~~ Withdrawn in revision 3.
 - The owner will test builds on both boxes and send back output.
 - Revision 2: a built-in helper adapted from Shizuku's starter (not the Shizuku app) runs compiles as the shell user, started by SideSpeed itself where on-box ADB works and by a PC or the phone companion where it doesn't (Fire TV).
+- Revision 3: no automatic ADB off/on anywhere; the docs state that ADB must stay on.
 - Revision 2: a phone companion app that restarts the helper after TV reboots, as a later stage (M4). Desktop app out of scope.
-- ADB is switched off between jobs and on only while SideSpeed is working, on by default. This replaces the idea of tying in Obtainium: its "update available" signal comes before the install, and SideSpeed can detect installs itself.
+- ~~ADB is switched off between jobs and on only while SideSpeed is working, on by default.~~ Withdrawn in revision 3: ADB stays on, and the docs say so. This replaces the idea of tying in Obtainium: its "update available" signal comes before the install, and SideSpeed can detect installs itself.
 - Everything in SPEC.md: features, UI stack, minSdk 24, sideload-only signed APK, caveats.
 
 ## Calls made in this design (owner can override)
@@ -301,12 +321,8 @@ These follow SPEC.md. Notes on how each is done:
 - The "reopen 5555 after TLS connect" trick is opt-in and off by default.
 - The pairing code is entered on a D-pad number grid rather than the system keyboard.
 - `allowBackup` is off, so the ADB key never leaves the device.
-- "Survive reboots" uses `WRITE_SECURE_SETTINGS` and `adb_wifi_enabled`. It is opt-in, can be revoked, and SideSpeed grants it to itself over the first connection.
 - An M0 spike comes before any setup UI.
-- "ADB only while working" and "Survive reboots" share one self-granted `WRITE_SECURE_SETTINGS` grant.
-- After a failed re-enable, "ADB only while working" turns itself off on that device.
-- "Keep ADB on" has an optional time limit.
-- Helper transport is an abstract local socket with an `SO_PEERCRED` uid check, not Shizuku's hidden-API Binder hand-off.
+- Helper transport is loopback TCP with a caller check, per revision 3. The builder picks the check method from the listed options.
 - The helper accepts a fixed request set, not arbitrary shell.
 - The helper exits when SideSpeed's APK is updated, and SideSpeed prompts to restart it.
 - Phone companion default is silent restart; notification-and-tap is the alternative mode.
