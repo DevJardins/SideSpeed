@@ -82,4 +82,11 @@ Release APK (R8 on), signed with a local debug key for testing. Results recorded
 
 **Bug found and fixed during this run:** on the onn, SideSpeed connected and sent the launch command, but the helper never started. libadb runs commands over the legacy PTY `shell:` service. When that session closed, the hang-up reached the backgrounded job before `setsid`/`nohup` took effect. This was reproduced from the Mac with `adb shell -tt`. The fix: the launch command now begins with `trap "" HUP` (inherited, no race). It was verified 3/3 over a forced PTY on the onn, and on the Fire TV.
 
-**Still not verified:** pairing through the TV alone with the in-app grid while 5555 is closed (the Wireless Debugging TLS path). In this run 5555 was open, so SideSpeed took the classic route.
+**Wireless Debugging pairing from the TV alone (owner, 2026-11-15):** ✓ The controller rebooted the onn (5555 closed, Wireless debugging off, no helper). The owner then:
+1. turned Wireless debugging on;
+2. opened SideSpeed, which showed the pairing screen;
+3. read the code and port from "Pair device with pairing code";
+4. switched back to SideSpeed and entered them on the D-pad grids;
+5. pressed Pair.
+
+SideSpeed paired, connected over TLS, started the helper and showed the app list. That screen is reached only after a successful nonce-verified helper ping. The pairing code stayed valid after leaving the Settings popup on this device. So no PC is needed on the onn, even after a reboot.

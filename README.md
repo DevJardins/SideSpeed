@@ -24,7 +24,7 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 | Device | Status |
 |---|---|
 | Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Helper started from PC, compile verified |
-| onn 4K Pro, Android 14 | PC-started helper and compile verified; in-app helper start and compile verified; in-app pairing (Wireless debugging only) pending verification |
+| onn 4K Pro, Android 14 | In-app Wireless debugging pairing, helper auto-start and compile verified (no PC needed) |
 | Other Android TV, Google TV and Fire TV devices | Should work |
 
 ## Building

@@ -3,8 +3,8 @@
 Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 
 ## Open before merge
-- ~~The full Google TV run on the onn 4K Pro has not been verified on a device~~ Verified 2026-11-15 (helper auto-start, compile, badge, update restart) after the `trap "" HUP` launch fix; only in-app TLS pairing with 5555 closed remains.: in-app pairing, the helper auto-starting through SideSpeed's own ADB (newline fix 3b92814), compile and badge, and "needs restart" after an update. Record the results in docs/spike/M0-results.md under "M1 verification".
-- Confirm on the onn whether libadb pairing/TLS needs HiddenApiBypass. The dependency is declared but never called.
+- ~~The full Google TV run on the onn 4K Pro has not been verified on a device~~ Verified 2026-11-15 (helper auto-start, compile, badge, update restart) after the `trap "" HUP` launch fix; in-app TLS pairing with 5555 closed also verified by the owner the same day.: in-app pairing, the helper auto-starting through SideSpeed's own ADB (newline fix 3b92814), compile and badge, and "needs restart" after an update. Record the results in docs/spike/M0-results.md under "M1 verification".
+- HiddenApiBypass: pairing and TLS worked on the onn (Android 14) without calling it. Consider removing the unused dependency and its NOTICE entry.
 - Signed release with the owner's keystore (Task 11 Step 2).
 
 ## Rulings made during execution
