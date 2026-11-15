@@ -30,3 +30,19 @@ Fill in one row per question. Use yes / no / n/a plus short notes.
 | Alive while ADB is off (`adboff 60`)? Ping during off answered? Heartbeat gaps? ADB came back by itself? | | | |
 | Exits by itself after `adb install -r` (log line)? | | | |
 | Gone after a reboot? | | | |
+
+## Fire TV Cube Gen 3 — results recorded by the controller (2026-11-15)
+
+Device: AFTGAZL, Fire OS 7.7.1.7 (Android 9, SDK 28).
+
+| Question | Result |
+|---|---|
+| On-box classic ADB (spike button 1) | **Blocked.** adbd accepts the TCP connection, then closes it without AUTH. It answers the same CNXN from the Mac. Matches Amazon's local-ADB block (Fire OS 7.6.6.9+, CVE-2024-27350). |
+| Helper start from PC (setsid + nohup) | Works. uid=2000, parent pid 1, keeps running after `adb shell` returns. `setsid` exists. |
+| App → helper over abstract Unix socket | **Denied by SELinux** (`avc: denied { connectto } untrusted_app → shell unix_stream_socket`). |
+| App uid → shell-uid listener over loopback TCP | Works (tested with run-as + toybox nc). |
+| Compile com.nuvio.tv via helper | Success, **3 min 09 s**. |
+| Helper survives `adb kill-server` (30 s) | Yes, same pid. |
+| Helper survives ADB debugging switched off | **No.** Killed immediately (no heartbeat after the switch), so ADB was never restored; owner re-enabled it by hand. Feature dropped in design revision 3. |
+| Helper exits when SideSpeed is updated | Yes, "self-exit: APK disappeared" ~15 s after `adb install -r`. |
+| Helper gone after reboot | Not run (expected; low value). |
