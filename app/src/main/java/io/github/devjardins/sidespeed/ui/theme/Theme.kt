@@ -1,0 +1,10 @@
+package io.github.devjardins.sidespeed.ui.theme
+
+import androidx.compose.runtime.Composable
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.darkColorScheme
+
+@Composable
+fun SideSpeedTheme(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = darkColorScheme(), content = content)
+}
