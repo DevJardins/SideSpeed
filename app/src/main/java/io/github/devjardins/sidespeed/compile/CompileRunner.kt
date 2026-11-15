@@ -1,13 +1,13 @@
 package io.github.devjardins.sidespeed.compile
 
-import io.github.devjardins.sidespeed.adb.AdbBackend
+import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.adb.ShellEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /** Runs `pm compile`, falling back to `cmd package compile`, streaming output as it arrives. */
-class CompileRunner(private val adb: AdbBackend) {
+class CompileRunner(private val runner: CommandRunner) {
     fun run(pkg: PackageName, mode: CompileMode): Flow<CompileEvent> = flow {
         val tail = "compile -m ${mode.arg} -f ${pkg.value}"
         val commands = listOf("pm $tail", "cmd package $tail")
@@ -16,7 +16,7 @@ class CompileRunner(private val adb: AdbBackend) {
             var exit: Int? = null
             var sawSuccess = false
             try {
-                adb.shell(command).collect { event ->
+                runner.shell(command).collect { event ->
                     when (event) {
                         is ShellEvent.Line -> {
                             if (event.text.trim() == "Success") sawSuccess = true

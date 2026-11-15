@@ -18,6 +18,10 @@ class HelperProtocolTest {
         assertNull(HelperProtocol.parseEnd("x__END__:0"))
     }
 
+    @Test fun ackFileSitsBesideThePortFile() {
+        assertEquals("/data/local/tmp/sidespeed_helper.ack", HelperProtocol.ACK_FILE)
+    }
+
     @Test fun portRangeIsTenPorts() {
         assertEquals(47_310, HELPER_PORT_FIRST)
         assertEquals(47_319, HELPER_PORT_LAST)

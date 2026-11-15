@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import io.github.muntashirakon.adb.AbsAdbConnectionManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -50,15 +51,19 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
             }
         }
 
+    @OptIn(InternalCoroutinesApi::class)
     override fun shell(command: String): Flow<ShellEvent> = flow {
         val stream = try {
             runInterruptible { manager.openStream("shell:" + ShellExit.wrap(command)) }
         } catch (e: Throwable) {
             throw e.asConnectionLost()
         }
-        // Unblock a pending read when the collector is cancelled.
+        // Unblock a pending read when the collector is cancelled. onCancelling: a plain invokeOnCompletion waits
+        // for the job to complete, which it can't while this thread is blocked in the read.
         val job = currentCoroutineContext().job
-        val handle = job.invokeOnCompletion { runCatching { stream.close() } }
+        val handle = job.invokeOnCompletion(onCancelling = true, invokeImmediately = true) {
+            runCatching { stream.close() }
+        }
         try {
             var exited = false
             try {

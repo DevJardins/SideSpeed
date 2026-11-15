@@ -16,8 +16,20 @@ object CommandAllowlist {
     /** Characters a valid request can contain at all: letters, digits, '.', '_', '-' and single spaces. */
     private val ALLOWED_CHARS = Regex("^[A-Za-z0-9._ -]+$")
 
-    /** True for the `ping` request, which the helper answers itself (nothing is executed). */
-    fun isPing(command: String): Boolean = command == PING
+    /** A ping nonce: 16 to 64 ASCII letters and digits. */
+    private val NONCE = Regex("^[A-Za-z0-9]{16,64}$")
+
+    /**
+     * True for `ping` and `ping <nonce>`, which the helper answers itself (nothing is executed).
+     * For the nonce form see [pingNonce] and [HelperProtocol.ACK_FILE].
+     */
+    fun isPing(command: String): Boolean = command == PING || pingNonce(command) != null
+
+    /** The nonce of a `ping <nonce>` request, or null (also for plain `ping`). */
+    fun pingNonce(command: String): String? {
+        if (!command.startsWith("$PING ")) return null
+        return command.substring(PING.length + 1).takeIf { NONCE.matches(it) }
+    }
 
     /** Maps a requested command line to a fixed argv, or null if not allowed. `ping` returns null: see [isPing]. */
     fun toArgv(command: String): List<String>? {

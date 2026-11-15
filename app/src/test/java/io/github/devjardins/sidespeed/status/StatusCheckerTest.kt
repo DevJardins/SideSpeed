@@ -1,7 +1,10 @@
 package io.github.devjardins.sidespeed.status
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import io.github.devjardins.sidespeed.adb.ShellEvent
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -35,5 +38,13 @@ class StatusCheckerTest {
         val fake = FakeAdbBackend()
         fake.dropAfterLines("dumpsys package dexopt", 0)
         StatusChecker(fake).check(pkg)
+    }
+
+    @Test fun runsOnAnyCommandRunner() = runTest {
+        val runner = object : CommandRunner {
+            override fun shell(command: String) =
+                flowOf<ShellEvent>(ShellEvent.Line("  [$pkg]"), ShellEvent.Line("      arm64: [status=speed]"), ShellEvent.Exit(0))
+        }
+        assertEquals("speed", StatusChecker(runner).check(pkg).filter)
     }
 }

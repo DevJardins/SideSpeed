@@ -14,15 +14,18 @@ sealed interface ShellEvent {
     data class Exit(val code: Int) : ShellEvent
 }
 
-class AdbConnectionLost(cause: Throwable? = null) : Exception(cause)
+class AdbConnectionLost : Exception {
+    constructor(cause: Throwable? = null) : super(cause)
+    constructor(message: String, cause: Throwable? = null) : super(message, cause)
+}
 
-interface AdbBackend {
+interface AdbBackend : CommandRunner {
     val isConnected: Boolean
     suspend fun connect(target: AdbTarget): Result<Unit>
     suspend fun pair(host: String, port: Int, code: String): Result<Unit>
 
     /** Emits Lines then exactly one Exit; throws [AdbConnectionLost] if the stream dies first. */
-    fun shell(command: String): Flow<ShellEvent>
+    override fun shell(command: String): Flow<ShellEvent>
 
     /** Opens a raw service (e.g. "tcpip:5555") and returns its full output. */
     suspend fun openService(service: String): Result<String>

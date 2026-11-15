@@ -42,6 +42,34 @@ class CommandAllowlistTest {
         assertEquals(false, CommandAllowlist.isPing("ping x"))
     }
 
+    @Test fun pingWithNonce() {
+        val ok = "abcdefghijklmnop1234"
+        assertEquals(true, CommandAllowlist.isPing("ping $ok"))
+        assertEquals(ok, CommandAllowlist.pingNonce("ping $ok"))
+        assertEquals("A".repeat(16), CommandAllowlist.pingNonce("ping " + "A".repeat(16)))
+        assertEquals("z9".repeat(32), CommandAllowlist.pingNonce("ping " + "z9".repeat(32)))
+        assertNull(CommandAllowlist.pingNonce("ping"))
+        assertNull(CommandAllowlist.toArgv("ping $ok"))
+        listOf(
+            "ping short",
+            "ping bad;chars",
+            "ping bad;charsbad;chars",
+            "ping " + "a".repeat(65),
+            "ping " + "a".repeat(15),
+            "ping  $ok",
+            "ping $ok ",
+            "ping $ok x",
+            "ping abcdefghijklmnop-123",
+            "ping abcdefghijklmnop_123",
+            "ping abcdefghijklmnöp123",
+            "PING $ok",
+        ).forEach {
+            assertEquals(it, false, CommandAllowlist.isPing(it))
+            assertNull(it, CommandAllowlist.pingNonce(it))
+            assertNull(it, CommandAllowlist.toArgv(it))
+        }
+    }
+
     @Test fun briefRejections() {
         listOf(
             "pm compile -m speed -f com.foo;reboot",

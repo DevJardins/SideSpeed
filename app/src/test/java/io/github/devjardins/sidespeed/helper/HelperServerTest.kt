@@ -5,7 +5,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.Timeout
 import java.io.ByteArrayInputStream
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -18,11 +20,15 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 class HelperServerTest {
+    /** Every test runs on its own thread and fails after 10 s instead of hanging the build. */
+    @get:Rule val timeout: Timeout = Timeout.seconds(10)
+
     private val allowed = 10255
     private val loopback = InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1))
     private val server = ServerSocket(0, 16, loopback)
     private val logs: MutableList<String> = Collections.synchronizedList(mutableListOf())
     private val ran: MutableList<List<String>> = Collections.synchronizedList(mutableListOf())
+    private val acks: MutableList<String> = Collections.synchronizedList(mutableListOf())
 
     @After fun tearDown() = server.close()
 
@@ -31,6 +37,7 @@ class HelperServerTest {
         maxConnections: Int = 4,
         requestTimeoutMs: Int = 2_000,
         unreadAtCallerCheck: AtomicInteger? = null,
+        writeAck: (String) -> Unit = { acks += it },
         runner: (List<String>, (String) -> Unit) -> Int = { argv, onLine ->
             ran += argv
             onLine("Success")
@@ -49,6 +56,7 @@ class HelperServerTest {
             },
             pong = { HelperProtocol.pong(2000, "/data/app/x/base.apk") },
             runner = runner,
+            writeAck = writeAck,
             log = { logs += it },
             maxConnections = maxConnections,
             requestTimeoutMs = requestTimeoutMs,
@@ -79,6 +87,34 @@ class HelperServerTest {
     @Test fun pingFromSideSpeed() {
         start()
         assertEquals(listOf("pong v=1 uid=2000 apk=/data/app/x/base.apk", "__END__:0"), exchange("ping\n"))
+    }
+
+    @Test fun plainPingWritesNoAck() {
+        start()
+        exchange("ping\n")
+        assertTrue(acks.isEmpty())
+    }
+
+    @Test fun noncePingWritesAckBeforeReplying() {
+        val nonce = "abcdefghijklmnop1234"
+        start(writeAck = { acks += it; Thread.sleep(100) })
+        assertEquals(listOf("pong v=1 uid=2000 apk=/data/app/x/base.apk", "__END__:0"), exchange("ping $nonce\n"))
+        assertEquals(listOf(nonce), acks.toList())
+        assertTrue(ran.isEmpty())
+    }
+
+    @Test fun ackFailureIsAHelperErrorWithoutPong() {
+        start(writeAck = { throw java.io.IOException("read-only") })
+        val lines = exchange("ping abcdefghijklmnop1234\n")
+        assertEquals("__END__:125", lines.last())
+        assertFalse(lines.toString(), lines.any { it.startsWith("pong") })
+    }
+
+    @Test fun badNoncePingRefused() {
+        start()
+        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("ping short\n"))
+        assertEquals("__END__:126", exchange("ping " + "a".repeat(65) + "\n").last())
+        assertTrue(acks.isEmpty())
     }
 
     @Test fun pingWithoutNewlineEndedByEof() {

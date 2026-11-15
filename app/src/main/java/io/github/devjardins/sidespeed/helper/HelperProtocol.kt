@@ -12,6 +12,7 @@ const val HELPER_PROTOCOL_VERSION = 1
  * (or by the client closing its write side). One request per connection.
  * Response: the command's output lines (stdout and stderr merged), then "__END__:<exit>".
  * Requests the helper refuses get an "error: ..." line and [EXIT_REFUSED].
+ * `ping <nonce>` ([A-Za-z0-9]{16,64}) makes the helper write the nonce to [ACK_FILE] before it answers.
  */
 object HelperProtocol {
     const val END = "__END__:"
@@ -26,6 +27,13 @@ object HelperProtocol {
     /** Port file written by the helper (world-readable) so the app can find it. */
     const val PORT_FILE = "/data/local/tmp/sidespeed_helper.port"
     const val LOG_FILE = "/data/local/tmp/sidespeed_helper.log"
+
+    /**
+     * Proof of identity for `ping <nonce>`: before answering, the helper writes the nonce here (atomically,
+     * world-readable). Apps cannot write /data/local/tmp, so a matching ack means the real shell-uid helper
+     * answered, not another app that grabbed a stale port.
+     */
+    const val ACK_FILE = "/data/local/tmp/sidespeed_helper.ack"
 
     /** Exit code if [line] starts with [END], else null. */
     fun parseEnd(line: String): Int? = if (line.startsWith(END)) line.substring(END.length).toIntOrNull() else null

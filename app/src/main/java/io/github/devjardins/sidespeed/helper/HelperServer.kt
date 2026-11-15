@@ -21,7 +21,8 @@ import kotlin.concurrent.thread
  *     logged. No request byte has been read at this point.
  *  3. One request line is read (printable ASCII, at most [HelperProtocol.MAX_REQUEST_CHARS]) within
  *     [requestTimeoutMs]. After that there is no timeout, since a compile can take minutes.
- *  4. `ping` is answered by [pong]; anything else must map through [CommandAllowlist.toArgv] and is then
+ *  4. `ping` is answered by [pong]; for `ping <nonce>` the nonce is first written by [writeAck] (if that fails
+ *     the reply is [HelperProtocol.EXIT_HELPER_ERROR] with no pong). Anything else must map through [CommandAllowlist.toArgv] and is then
  *     run by [runner] (a fixed argv, no shell). Everything else is refused with [HelperProtocol.EXIT_REFUSED].
  */
 internal class HelperServer(
@@ -30,6 +31,7 @@ internal class HelperServer(
     private val callerUid: (Socket) -> Int?,
     private val pong: () -> String,
     private val runner: (argv: List<String>, onLine: (String) -> Unit) -> Int,
+    private val writeAck: (nonce: String) -> Unit,
     private val log: (String) -> Unit,
     private val maxConnections: Int = MAX_CONNECTIONS,
     private val requestTimeoutMs: Int = REQUEST_TIMEOUT_MS,
@@ -100,6 +102,17 @@ internal class HelperServer(
         socket.soTimeout = 0 // compiles can take minutes
 
         if (CommandAllowlist.isPing(request)) {
+            val nonce = CommandAllowlist.pingNonce(request)
+            if (nonce != null) {
+                try {
+                    writeAck(nonce)
+                } catch (t: Throwable) {
+                    log("uid=$uid: cannot write ping ack: ${t::class.java.simpleName}: ${t.message}")
+                    out.line("error: helper could not write the ping ack: ${t.message}")
+                    out.end(HelperProtocol.EXIT_HELPER_ERROR)
+                    return
+                }
+            }
             out.line(pong())
             out.end(0)
             return

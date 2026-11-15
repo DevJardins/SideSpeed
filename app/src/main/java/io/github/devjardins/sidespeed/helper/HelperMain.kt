@@ -105,6 +105,7 @@ object HelperMain {
             callerUid = { socket -> callerUid(socket, port) },
             pong = { HelperProtocol.pong(Process.myUid(), apk) },
             runner = ::runArgv,
+            writeAck = ::writeAckFile,
             log = ::log,
         ).serve()
         deletePortFileIfOurs(port)
@@ -147,12 +148,25 @@ object HelperMain {
         "" // tcp6 can be absent on kernels without IPv6
     }
 
-    /** Runs a fixed argv (never through a shell), streaming merged stdout/stderr. Returns the exit code. */
+    /**
+     * Runs a fixed argv (never through a shell), streaming merged stdout/stderr. Returns the exit code.
+     * If reading the output fails, the child is destroyed and reaped so it can't linger as a zombie.
+     */
     private fun runArgv(argv: List<String>, onLine: (String) -> Unit): Int {
         val p = ProcessBuilder(argv).redirectErrorStream(true).start()
-        p.outputStream.close()
-        p.inputStream.bufferedReader().useLines { lines -> lines.forEach(onLine) }
-        return p.waitFor()
+        var done = false
+        try {
+            p.outputStream.close()
+            p.inputStream.bufferedReader().useLines { lines -> lines.forEach(onLine) }
+            val code = p.waitFor()
+            done = true
+            return code
+        } finally {
+            if (!done) {
+                p.destroy()
+                try { p.waitFor() } catch (_: InterruptedException) {}
+            }
+        }
     }
 
     private fun lookUpSideSpeedUid(): Int? {
@@ -174,10 +188,8 @@ object HelperMain {
     }
 
     private fun capture(argv: List<String>): List<String> {
-        val p = ProcessBuilder(argv).redirectErrorStream(true).start()
-        p.outputStream.close()
-        val lines = p.inputStream.bufferedReader().readLines()
-        p.waitFor()
+        val lines = mutableListOf<String>()
+        runArgv(argv) { lines += it }
         return lines
     }
 
@@ -194,6 +206,22 @@ object HelperMain {
         } catch (t: Throwable) {
             log("startup: cannot write port file (${t::class.java.simpleName}: ${t.message}); app must scan the range")
         }
+    }
+
+    private val ackLock = Any()
+
+    /**
+     * Writes a ping nonce to [HelperProtocol.ACK_FILE]: temp file, chmod 0644, rename, so a reader never sees a
+     * partial nonce. The nonce was validated by [CommandAllowlist.pingNonce] (alphanumeric only). Throws on
+     * failure so the ping is answered with an error instead of an unprovable pong.
+     */
+    private fun writeAckFile(nonce: String) = synchronized(ackLock) {
+        val target = File(HelperProtocol.ACK_FILE)
+        val tmp = File(HelperProtocol.ACK_FILE + ".tmp")
+        tmp.delete()
+        tmp.writeText("$nonce\n")
+        Os.chmod(tmp.path, "644".toInt(8))
+        if (!tmp.renameTo(target)) throw IOException("rename to ${target.path} failed")
     }
 
     private fun deletePortFileIfOurs(port: Int) {

@@ -1,6 +1,9 @@
 package io.github.devjardins.sidespeed.compile
 
+import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import io.github.devjardins.sidespeed.adb.ShellEvent
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -98,5 +101,16 @@ class CompileRunnerTest {
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED_PROFILE).toList()
         assertEquals(CompileEvent.Attempt(cmd), events.first())
         assertTrue(events.last() is CompileEvent.Finished)
+    }
+
+    @Test fun runsOnAnyCommandRunner() = runTest {
+        val seen = mutableListOf<String>()
+        val runner = object : CommandRunner {
+            override fun shell(command: String) = flowOf<ShellEvent>(ShellEvent.Line("Success"), ShellEvent.Exit(0))
+                .also { seen += command }
+        }
+        val last = CompileRunner(runner).run(pkg, CompileMode.SPEED).toList().last()
+        assertEquals(CompileEvent.Finished(true, false, "Success"), last)
+        assertEquals(listOf(primary), seen)
     }
 }
