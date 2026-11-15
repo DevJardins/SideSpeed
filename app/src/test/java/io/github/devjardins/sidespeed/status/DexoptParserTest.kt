@@ -48,4 +48,36 @@ class DexoptParserTest {
         assertEquals(StatusBadge.SPEED_PROFILE, DexoptParser.badge(CompilerStatus("speed-profile")))
         assertEquals(StatusBadge.NEEDS_RECOMPILE, DexoptParser.badge(CompilerStatus("run-from-apk")))
     }
+
+    private val nuvio = "com.nuvio.tv"
+
+    @Test fun fireTvCubeDexopt() = assertEquals("speed", DexoptParser.parse(sample("firetv-cube3-dexopt.txt"), nuvio).filter)
+
+    @Test fun onnDexopt() = assertEquals("speed", DexoptParser.parse(sample("onn4kpro-dexopt.txt"), nuvio).filter)
+
+    @Test fun onnDexoptBefore() =
+        assertEquals("speed-profile", DexoptParser.parse(sample("onn4kpro-dexopt-before.txt"), nuvio).filter)
+
+    // Both pkg captures contain a "Dexopt state:" block for com.nuvio.tv after the Packages section.
+    @Test fun fireTvCubePkgFallback() = assertEquals("speed", DexoptParser.parse(sample("firetv-cube3-pkg.txt"), nuvio).filter)
+
+    @Test fun onnPkgFallback() = assertEquals("speed", DexoptParser.parse(sample("onn4kpro-pkg.txt"), nuvio).filter)
+
+    @Test fun unresolvedAbiLineMakesResultUnknown() {
+        val dump = "  [a.b]\n    path: x\n      arm64: [status=kOatNeedsRecompilation]\n      arm: [status=speed] [reason=cmdline]\n"
+        val status = DexoptParser.parse(dump, "a.b")
+        assertNull(status.filter)
+        assertEquals(StatusBadge.UNKNOWN, DexoptParser.badge(status))
+    }
+
+    @Test fun unparseableCompilationFilterMakesResultUnknown() {
+        val dump = "  [a.b]\n    path: x\n      arm64: [compilation_filter=]\n      arm: [status=speed]\n"
+        assertNull(DexoptParser.parse(dump, "a.b").filter)
+    }
+
+    @Test fun crlfParsesTheSame() {
+        val crlf = sample("onn4kpro-dexopt.txt").replace("\n", "\r\n")
+        assertEquals("speed", DexoptParser.parse(crlf, nuvio).filter)
+        assertEquals("speed-profile", DexoptParser.parse(sample("onn4kpro-dexopt-before.txt").replace("\n", "\r\n"), nuvio).filter)
+    }
 }

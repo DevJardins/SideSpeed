@@ -13,17 +13,33 @@ object DexoptParser {
     fun parse(dump: String, pkg: String): CompilerStatus {
         val lines = dump.lines()
         val header = "[$pkg]"
-        val start = lines.indexOfFirst { it.trim() == header }
-        if (start < 0) return CompilerStatus(null)
-        val indent = indentOf(lines[start])
+        // `dumpsys package <pkg>` repeats "[pkg]" in several sections (key sets, dexopt state, compiler stats);
+        // the first block that carries any status/filter text is the dexopt block.
+        for (start in lines.indices) {
+            if (lines[start].trim() != header) continue
+            parseBlock(lines, start)?.let { return it }
+        }
+        return CompilerStatus(null)
+    }
 
+    /** Null when the block at [start] mentions no status at all, so the caller can try the next header. */
+    private fun parseBlock(lines: List<String>, start: Int): CompilerStatus? {
+        val indent = indentOf(lines[start])
         val filters = mutableListOf<String>()
+        var mentioned = false
+        var unresolved = false
         for (i in start + 1 until lines.size) {
             val line = lines[i]
             if (line.trimStart().startsWith("[") && indentOf(line) == indent) break
             if (line.contains(SECONDARY_MARKER)) break
-            filterOf(line)?.let { filters += it }
+            if (!line.contains("status=") && !line.contains("compilation_filter")) continue
+            mentioned = true
+            val filter = filterOf(line)
+            if (filter == null) unresolved = true else filters += filter
         }
+        if (!mentioned) return null
+        // A line we cannot read could be the worst ABI, so the honest answer is "unknown".
+        if (unresolved) return CompilerStatus(null)
         // Lowest wins so a half-compiled app never shows "speed"; minBy keeps the first on ties.
         return CompilerStatus(filters.minByOrNull { rank(it) })
     }
