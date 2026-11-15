@@ -597,3 +597,28 @@ The old Task 10 text applies unchanged, with these additions:
   - **Onn:** pair or connect in-app, and the helper auto-starts.
   - **Both:** compile Nuvio, see "speed ✓", and `dumpsys` agrees.
   - **After an update:** the helper reports "needs restart".
+
+### Task 12: "Always allow" setup flow and calm TV theme (design Revision 4)
+
+Implement the spec's "Revision 4" section exactly: the setup flow for Google TV and Fire OS, the app list, the compile screen, and the theme tokens.
+
+**Files (expected):**
+- `ui/theme/Theme.kt` (tokens and type)
+- `ui/setup/SetupScreen.kt`, `SetupViewModel.kt` (retry loop, step state, pads behind a button, refused-3x hint)
+- `ui/apps/AppsScreen.kt`, `AppsViewModel.kt` (icons, one-shot dexopt status per package)
+- `ui/compile/CompileScreen.kt`, `CompileViewModel.kt` (result card, collapsible log, focus)
+- `ConnectionStrategy` only if the "refused vs timed out" distinction needs exposing, plus tests
+
+**Tests:**
+- `SetupViewModel`:
+  - the loop retries until ready, with no overlapping attempts (only one pending at a time; assert with a fake that counts concurrent calls);
+  - the loop stops when ready or when the screen is left;
+  - the refused-3x hint appears only after 3 consecutive refusals;
+  - pads are hidden by default and shown after `showPairing()`;
+  - step 1 detection reads from an injected settings reader.
+- `AppsViewModel`: one dexopt call fills the pills for all rows; "Checking…" first; a failure means no pills.
+- Compile result text: "Took 2 min 58 s" formatting.
+
+**Docs:**
+- Correct `docs/spike/M0-results.md`: the pairing run connected over 5555; code pairing worked, TLS connect is unverified.
+- README Google TV setup: Wireless debugging on, open SideSpeed, Always allow; pair-with-code as the fallback; device table accurate.

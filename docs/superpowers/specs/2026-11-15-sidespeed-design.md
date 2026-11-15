@@ -334,3 +334,65 @@ What it needs and what it can't do:
 - Module layout, DI approach (manual or Hilt), and Room vs DataStore.
 - Exact screen layouts within the UI rules above.
 - Contents of the initial `presets.json`, beyond Nuvio, Stremio, Kodi and SmartTube. Known Nuvio fork package names need looking up.
+
+## Revision 4 (2026-11-15): "Always allow" setup flow and calm TV theme (owner-approved)
+
+**Why.**
+- **Device finding:** on the onn 4K Pro, turning on Wireless debugging also makes adbd listen on `tcp:5555` (`adbd listening on tcp:5555`, then `adb wifi started on port 38341`). SideSpeed's classic connection to `127.0.0.1:5555` then needs only the standard "Allow debugging?" prompt with **Always allow**, and no pairing code. This is the flow the owner wants as the default: turn on Wireless debugging, open SideSpeed, tap Always allow, done.
+- **Correction:** the earlier "TLS pairing verified" note was wrong. That run connected over 5555 too. Code pairing itself worked (SideSpeed appeared under Paired devices), but the TLS connect path is unverified.
+- **Readability:** the owner asked for a readable, pretty UI that is easy on the eyes in a dark room.
+
+**Setup flow (Google TV / non-Fire OS).**
+- **Default screen:** headline "Allow SideSpeed on this TV", with three step cards:
+  1. "Turn on Wireless debugging". Ticked "Detected" when `Settings.Global` `adb_wifi_enabled == 1` or `adb_enabled == 1`.
+  2. "When your TV asks, tick Always allow, then Allow". Shows "Waiting for you…" while a connect attempt is pending or retrying.
+  3. "SideSpeed starts its helper". Shows a spinner while launching.
+  
+  Buttons: "Open developer settings" (initial focus) and "Pair with a code instead".
+- **Retry loop:** SideSpeed retries the readiness check on its own while the setup screen is visible. Attempts run strictly one after another: an attempt finishes, then a 2 s pause, then the next. A second connect is never started while one is pending, so the TV never stacks prompts. When ready, it goes to the app list.
+- **Number pads:** hidden by default. "Pair with a code instead" reveals the pairing grid; it is never shown automatically on top of the default flow. If the classic connection is refused outright (port closed) for 3 consecutive attempts while Wireless debugging is on, a hint appears with focus moved to that button: "Your TV doesn't accept direct connections. Pair with a code instead."
+- **Already allowed or paired:** the same silent retry loop connects and continues. The pads never appear.
+
+**Setup flow (Fire OS).** Same layout and the same automatic retry, polling the helper ping.
+1. "Turn on ADB debugging". Detected via `adb_enabled`.
+2. "Start the helper from a PC". Shows the existing PC commands.
+3. "Helper starts".
+
+**App list.**
+- A "Helper running" badge.
+- Tabs: Sideloaded / All apps / Type a package.
+- A compact mode selector.
+- Rows show the app icon (loaded off the main thread and cached), label, package or "compiled <date>", and a status pill:
+  - "speed ✓", "speed-profile" or "Not compiled", from **one** `dumpsys package dexopt` call parsed per package with `DexoptParser`;
+  - "Checking…" until that call returns;
+  - no pill if the check fails.
+
+**Compile screen.**
+- Header with the app icon, name, package and mode.
+- Before starting: the "can take several minutes" note and "Start compile".
+- While running: "Compiling…" with mm:ss elapsed and the "please wait" note. Back stays blocked.
+- **Success:** a calm result card, "Compiled to speed", "Took 2 min 58 s · status confirmed speed ✓" (badge from the status check).
+- **Failure:** a soft-red card with the message and the log expanded.
+- Buttons: "Back to apps" (focused after finishing), "Compile again", "Show log" / "Hide log". The log is collapsed on success.
+- "Check helper" stays for "Connection lost".
+
+**Theme (dark-room friendly; all colours as Compose constants in `ui/theme`).**
+
+| Token | Value | Use |
+|---|---|---|
+| background | `#10151E` | screen |
+| surface | `#171E29` | cards |
+| button | `#1A222E` | resting buttons and tabs |
+| raised | `#222C38` | focused row |
+| focusButton | `#2A3644` | focused button |
+| textPrimary | `#EEF1F5` | headlines, focused text (never pure white) |
+| textBody | `#D9DEE6` | body |
+| textSecondary | `#8C96A4` | captions, packages |
+| accent (sage) | `#93BFA2` | focus ring (2dp), "done" ticks, icons |
+| okPill | bg `#1D2B24`, text `#9FC9AC` | |
+| warnPill | bg `#2A2620`, text `#C9B48F` | |
+| dangerCard | bg `#2E1F22`, text `#E3B1B1` | |
+
+- **Rules:** no bright fills, no lime, no pure white. Focus is shown by a lighter surface plus the 2dp sage ring.
+- **Type sizes (sp):** headline 28, title 20, body 16, caption 13. Generous padding (overscan-safe 48dp horizontal margins).
+- **Logo:** the logo stays as is for the launcher icon and banner only.
