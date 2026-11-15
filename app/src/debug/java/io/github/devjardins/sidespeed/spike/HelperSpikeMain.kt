@@ -97,6 +97,9 @@ object HelperSpikeMain {
             exitProcess(1)
         }
         log("startup: listening on @$SOCKET_NAME")
+        // Best effort: runs on System.exit and on signals the runtime turns into an orderly shutdown.
+        // SIGKILL (and a SIGTERM the runtime doesn't handle) still skip it, so ADB can stay off then.
+        Runtime.getRuntime().addShutdownHook(Thread { restoreAdbIfNeeded("shutdown") })
 
         thread(name = "heartbeat", isDaemon = true) {
             var n = 0L

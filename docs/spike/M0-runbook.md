@@ -102,7 +102,9 @@ adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app
 ```
 Client exit codes: `254` = could not connect (helper not running), `255` = reply ended without `__END__`.
 
-Stop it (between tests): `adb shell 'kill $(pidof sidespeed_helper)'`
+Stop it (between tests): `adb shell 'kill $(pidof sidespeed_helper)'`. Never stop it while an `adboff` is running: a kill during the sleep can leave ADB off (see C5).
+
+Start each test with a fresh log: `adb shell rm -f /data/local/tmp/sidespeed_helper.log`
 
 Does the device have `setsid`? `adb shell 'command -v setsid'`
 
@@ -139,9 +141,15 @@ Press **12. Compile com.nuvio.tv via helper**. Expected `helper< Success`, `help
 
 ### C4. Does it survive the PC's adb session ending?
 
-On the PC: `adb kill-server`. Wait 30 s. Then press **11** on the TV (Onn: also fine to press it). Did it answer? (From the PC you can also reconnect with `adb connect <ip>:5555` and run the C0 client `ping`; the `pid` must be the same as in C2.)
+On the PC: `adb kill-server`. Wait 30 s. Reconnect (Fire TV: `adb connect <ip>:5555`; Onn: `adb connect <ip>:<connectport>` from the Wireless debugging screen, the port may have changed) and run the C0 client `ping`. Did it answer, with the same `pid` as in C2? Optional if someone is at the TV: press **11** before reconnecting; it should answer too.
 
 ### C5. Does it survive ADB being switched off?
+
+**Before you start: have physical access to the box.** If the helper dies during the off period (crash, kill, SIGKILL), nothing switches ADB back on and the PC can't reach the box. Recovery, in order:
+- In **SideSpeed Spike** press **8. Toggle ADB off -> on**. It writes `adb_enabled` (and `adb_wifi_enabled` on Android 11+) through the app's WRITE_SECURE_SETTINGS grant, so it needs no ADB connection. Make sure button 7 (`pm grant self`) succeeded on this box before C5; check from the PC with `adb shell dumpsys package io.github.devjardins.sidespeed | grep WRITE_SECURE_SETTINGS` (`granted=true`).
+- Or turn **ADB debugging** (Onn: also **Wireless debugging**) back on by hand in Developer options.
+
+**Onn (Wireless Debugging):** `adb_enabled=1` alone may not bring Wireless debugging back, and its connect port can change. After the off period, reconnect with `adb connect <ip>:<connectport>` using the port shown on the Wireless debugging screen, not `:5555`. If Wireless debugging stayed off, press button **8** in the spike (it also writes `adb_wifi_enabled`), or switch it on by hand. Record which was needed.
 
 1. Push a tiny script that pings the helper 20 s later, while ADB is off, and writes the answer to a file. On the PC:
 
@@ -161,13 +169,15 @@ adb shell 'setsid nohup sh /data/local/tmp/ping_off.sh </dev/null >/dev/null 2>&
    adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client "adboff 60"'
    ```
    The adb connection drops (expected); the PC command may hang or end with an error. That is fine: the helper keeps going and switches ADB back on after 60 s.
-3. While ADB is off (if someone is at the TV): press **11**. Does it answer?
-4. After about 70 s: `adb connect <ip>:5555` (accept the prompt if it appears), then:
+3. Optional, if someone is at the TV: while ADB is off, press **11**. Does it answer? (Not needed if the ping script's file is filled in.)
+4. After about 70 s reconnect (Fire TV: `adb connect <ip>:5555`; Onn: see the note above; accept the prompt if it appears), then:
    ```
    adb shell cat /data/local/tmp/sidespeed_ping_during_off.txt
    adb shell 'grep -E "heartbeat|adboff" /data/local/tmp/sidespeed_helper.log | tail -30'
    ```
-   Expected: a `pong ...` line and `exit=0` in the first file, heartbeats every ~5 s with no gap while `adboff=true`, and `adb_enabled 0 -> exit=0` / `adb_enabled 1 -> exit=0` lines. If ADB does not come back after 2 minutes, turn **ADB debugging** back on in Developer options by hand and record that.
+   Expected: a `pong ...` line and `exit=0` in the first file, heartbeats every ~5 s with no gap while `adboff=true`, and `adb_enabled 0 -> exit=0` / `adb_enabled 1 -> exit=0` lines. If ADB does not come back after 2 minutes, use the recovery steps at the top of C5 and record which one worked.
+
+   The heartbeat log is the reliable evidence. The ping script was started from an ADB shell and may die when adbd stops, so an empty or missing `sidespeed_ping_during_off.txt` does not by itself mean the helper died. Gaps in the heartbeats, or a missing `adb_enabled 1` line, do.
 
 ### C6. Does it exit when the APK is updated?
 
