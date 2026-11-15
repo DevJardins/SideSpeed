@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                     app == null -> AppsScreen(
                         appsVm,
                         lastCompile = (application as SideSpeedApp).container.prefs::lastCompile,
-                        icon = icons::load,
+                        icon = icons,
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                     )
                     else -> {
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
                         BackHandler { back() }
                         CompileScreen(
                             compileVm, app, selectedMode,
-                            icon = icons::load,
+                            icon = icons,
                             onBack = back,
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
                         )

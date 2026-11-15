@@ -11,6 +11,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** Where screens get app icons: [cached] for the first frame, [load] off the main thread. */
+interface IconSource {
+    fun cached(pkg: String): ImageBitmap?
+    suspend fun load(pkg: String): ImageBitmap?
+}
+
 /**
  * Small app icons for the list and compile header: loaded on the IO dispatcher and kept in memory.
  * Falls back to the TV banner, then the system default icon.
@@ -18,14 +24,17 @@ import kotlinx.coroutines.withContext
 class AppIcons(
     context: Context,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) {
+) : IconSource {
     private val pm: PackageManager = context.packageManager
     private val sizePx = (ICON_DP * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
-    private val cache = LruCache<String, ImageBitmap>(MAX_CACHED)
+    /** Sized by bytes (ARGB_8888), so a long app list cannot grow it past [MAX_BYTES]. */
+    private val cache = object : LruCache<String, ImageBitmap>(MAX_BYTES) {
+        override fun sizeOf(key: String, value: ImageBitmap): Int = value.width * value.height * 4
+    }
 
-    fun cached(pkg: String): ImageBitmap? = cache.get(pkg)
+    override fun cached(pkg: String): ImageBitmap? = cache.get(pkg)
 
-    suspend fun load(pkg: String): ImageBitmap? {
+    override suspend fun load(pkg: String): ImageBitmap? {
         cache.get(pkg)?.let { return it }
         return withContext(ioDispatcher) {
             val drawable = drawableFor(pkg) ?: return@withContext null
@@ -52,6 +61,6 @@ class AppIcons(
     private companion object {
         /** Rendered at about 36dp; loaded a little larger so it stays sharp. */
         const val ICON_DP = 48
-        const val MAX_CACHED = 300
+        const val MAX_BYTES = 12 * 1024 * 1024
     }
 }

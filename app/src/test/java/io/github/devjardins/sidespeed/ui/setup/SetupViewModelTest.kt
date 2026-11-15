@@ -211,6 +211,71 @@ class SetupViewModelTest {
         r.startTimes.zipWithNext().forEach { (a, b) -> assertTrue("$a -> $b", b - a >= 30_000) }
     }
 
+    @Test fun jobCancelledBeforeItStartsStillWaitsForPendingAttempt() = runSetup {
+        val r = FakeReadier(Readiness.WaitingForAllowPrompt, attemptMs = 30_000, clock = { scheduler.currentTime })
+        val v = vm(r)
+        v.start(); settle()
+        scheduler.advanceTimeBy(5_000)
+        // checkAgain's job is replaced before it is ever dispatched; the chain must still hold.
+        v.checkAgain(); v.start(); settle()
+        scheduler.advanceTimeBy(2 * 60_000L); settle()
+        assertEquals(1, r.maxInFlight)
+        r.startTimes.zipWithNext().forEach { (a, b) -> assertTrue("$a -> $b", b - a >= 30_000) }
+    }
+
+    @Test fun pairingCancelledByLeavingIsResetOnReturn() = runSetup {
+        val r = FakeReadier(Readiness.WaitingForAllowPrompt, attemptMs = 30_000)
+        val v = vm(r)
+        v.start(); settle()
+        v.showPairing()
+        scheduler.advanceTimeBy(5_000)
+        v.pair("123456", "37000"); settle()
+        assertTrue(connecting(v).pairing)
+        assertEquals(SetupViewModel.WAITING_FOR_CHECK, connecting(v).pairMessage)
+        v.stopRetrying() // Home, or Settings to look at Paired devices
+        scheduler.advanceTimeBy(60_000); settle()
+        v.start(); settle()
+        assertFalse(connecting(v).pairing)
+        assertTrue(connecting(v).pairMessage == null)
+    }
+
+    @Test fun pairingCancelledMidPairIsReset() = runSetup {
+        val adb = FakeAdbBackend().apply { hangPair = true }
+        val v = vm(FakeReadier(needsStart), adb)
+        v.start(); settle()
+        v.pair("123456", "37000"); settle()
+        assertEquals("Pairing…", connecting(v).pairMessage)
+        v.stopRetrying(); settle()
+        assertFalse(connecting(v).pairing)
+    }
+
+    @Test fun pairTimeoutStartsWhenPairingBegins() = runSetup {
+        val adb = FakeAdbBackend().apply { hangPair = true }
+        val r = FakeReadier(Readiness.WaitingForAllowPrompt, attemptMs = 20_000)
+        val v = vm(r, adb)
+        v.start(); settle()
+        v.pair("123456", "37000"); settle()
+        assertEquals(SetupViewModel.WAITING_FOR_CHECK, connecting(v).pairMessage)
+        scheduler.advanceTimeBy(20_000); settle()
+        assertEquals("Pairing…", connecting(v).pairMessage)
+        scheduler.advanceTimeBy(SetupViewModel.PAIR_TIMEOUT_MS - 1); settle()
+        assertTrue(connecting(v).pairing)
+        scheduler.advanceTimeBy(1); settle()
+        assertEquals("Pairing timed out", connecting(v).pairMessage)
+    }
+
+    @Test fun startResetsRefusalCount() = runSetup {
+        val r = FakeReadier(refused)
+        val v = vm(r, settings = FakeSettings(wifiOn))
+        v.start(); settle()
+        scheduler.advanceTimeBy(SetupViewModel.RETRY_DELAY_MS); settle() // 2 refusals
+        v.stopRetrying(); v.start(); settle() // 1 since restart
+        scheduler.advanceTimeBy(SetupViewModel.RETRY_DELAY_MS); settle() // 2
+        assertFalse(connecting(v).refusedHint)
+        scheduler.advanceTimeBy(SetupViewModel.RETRY_DELAY_MS); settle() // 3
+        assertTrue(connecting(v).refusedHint)
+    }
+
     @Test fun loopStopsWhenScreenIsLeft() = runSetup {
         val r = FakeReadier(Readiness.WaitingForAllowPrompt)
         val v = vm(r)

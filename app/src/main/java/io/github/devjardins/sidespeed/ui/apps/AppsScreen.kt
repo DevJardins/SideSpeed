@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.apps.AppEntry
+import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.ui.theme.SsButton
@@ -57,14 +58,11 @@ import java.util.Date
 
 private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package") }
 
-/** Loads [pkg]'s icon off the main thread (cached by the loader). */
-typealias IconLoader = suspend (String) -> ImageBitmap?
-
 @Composable
 fun AppsScreen(
     vm: AppsViewModel,
     lastCompile: (String) -> Flow<LastCompile?>,
-    icon: IconLoader,
+    icon: IconSource,
     onSelect: (AppEntry, CompileMode) -> Unit,
 ) {
     val state by vm.state.collectAsState()
@@ -129,8 +127,9 @@ fun AppsScreen(
 }
 
 @Composable
-fun AppIcon(pkg: String, icon: IconLoader, size: androidx.compose.ui.unit.Dp = SsDimens.Icon) {
-    val bitmap by produceState<ImageBitmap?>(null, pkg) { value = icon(pkg) }
+fun AppIcon(pkg: String, icon: IconSource, size: androidx.compose.ui.unit.Dp = SsDimens.Icon) {
+    // Seeded from the cache so a known icon shows on the first frame, with no placeholder flash.
+    val bitmap by produceState(icon.cached(pkg), pkg) { value = icon.cached(pkg) ?: icon.load(pkg) }
     val b = bitmap
     if (b != null) {
         Image(b, contentDescription = null, modifier = Modifier.size(size))
@@ -140,7 +139,7 @@ fun AppIcon(pkg: String, icon: IconLoader, size: androidx.compose.ui.unit.Dp = S
 }
 
 @Composable
-private fun AppRow(app: AppEntry, last: Flow<LastCompile?>, pill: Pill?, icon: IconLoader, onClick: () -> Unit) {
+private fun AppRow(app: AppEntry, last: Flow<LastCompile?>, pill: Pill?, icon: IconSource, onClick: () -> Unit) {
     val lc by last.collectAsState(initial = null)
     SsRow(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(

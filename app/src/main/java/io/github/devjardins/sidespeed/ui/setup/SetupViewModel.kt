@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.Prefs
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -98,6 +99,7 @@ class SetupViewModel(
 
     /** Called when the setup screen appears. Starts (or restarts) the retry loop once the warning is acked. */
     fun start() {
+        refusals = 0
         if (_state.value == SetupUiState.Ready) _state.value = SetupUiState.Connecting()
         launchExclusive {
             if (!prefs.lanWarningAcked.first()) {
@@ -138,7 +140,9 @@ class SetupViewModel(
      */
     private fun launchExclusive(block: suspend () -> Unit) {
         val previous = job
-        job = viewModelScope.launch(dispatcher) {
+        // ATOMIC: a job cancelled before it is dispatched still runs up to the wait below, so it never
+        // completes ahead of the job it replaced.
+        job = viewModelScope.launch(dispatcher, start = CoroutineStart.ATOMIC) {
             withContext(NonCancellable) { previous?.cancelAndJoin() }
             ensureActive()
             block()
@@ -159,6 +163,8 @@ class SetupViewModel(
     /** Attempt, then a [RETRY_DELAY_MS] pause, then the next attempt, until ready. Never overlaps attempts. */
     private suspend fun retryLoop() {
         val markLaunching = { updateConnecting { it.copy(launching = true) } }
+        // The loop never runs beside a pairing, so a pairing flag still set here belongs to a cancelled job.
+        updateConnecting { if (it.pairing) it.copy(pairing = false, pairMessage = null) else it }
         while (true) {
             val before = detected()
             updateConnecting { it.copy(detected = before, waiting = true, launching = false) }
@@ -186,9 +192,12 @@ class SetupViewModel(
             updateConnecting { it.copy(pairMessage = "Enter the 6-digit code and the pairing port.") }
             return
         }
-        updateConnecting { it.copy(pairing = true, pairMessage = "Pairing…") }
+        // A pending check (up to 30 s while the Allow prompt is up) must finish first; say so.
+        updateConnecting { it.copy(pairing = true, pairMessage = WAITING_FOR_CHECK) }
         launchExclusive {
+            updateConnecting { it.copy(pairMessage = PAIRING) }
             val r = try {
+                // The timeout starts only now that pairing actually begins.
                 withTimeout(PAIR_TIMEOUT_MS) {
                     var r = adb.pair("127.0.0.1", p, code)
                     if (r.isFailure) wifiIp()?.let { r = adb.pair(it, p, code) }
@@ -196,18 +205,18 @@ class SetupViewModel(
                 }
             } catch (_: TimeoutCancellationException) {
                 null
+            } finally {
+                // Cancelled (screen left) or done: never leave the Pair button disabled.
+                updateConnecting { if (it.pairing) it.copy(pairing = false, pairMessage = null) else it }
             }
             when {
-                r == null -> updateConnecting { it.copy(pairing = false, pairMessage = "Pairing timed out") }
+                r == null -> updateConnecting { it.copy(pairMessage = "Pairing timed out") }
                 r.isSuccess -> {
                     prefs.setPairedTls(true)
-                    updateConnecting { it.copy(pairing = false, pairMessage = "Paired. Connecting…") }
+                    updateConnecting { it.copy(pairMessage = "Paired. Connecting…") }
                 }
                 else -> updateConnecting {
-                    it.copy(
-                        pairing = false,
-                        pairMessage = "Pairing failed: ${r.exceptionOrNull()?.message ?: "unknown error"}",
-                    )
+                    it.copy(pairMessage = "Pairing failed: ${r.exceptionOrNull()?.message ?: "unknown error"}")
                 }
             }
             retryLoop()
@@ -215,6 +224,8 @@ class SetupViewModel(
     }
 
     companion object {
+        const val WAITING_FOR_CHECK = "Waiting for the current check…"
+        const val PAIRING = "Pairing…"
         const val PAIR_TIMEOUT_MS = 30_000L
         const val RETRY_DELAY_MS = 2_000L
         const val REFUSALS_FOR_HINT = 3

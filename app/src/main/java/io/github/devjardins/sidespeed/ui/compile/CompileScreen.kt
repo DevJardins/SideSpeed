@@ -33,7 +33,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.ui.apps.AppIcon
-import io.github.devjardins.sidespeed.ui.apps.IconLoader
+import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -61,7 +61,7 @@ fun CompileScreen(
     vm: CompileViewModel,
     app: AppEntry,
     mode: CompileMode,
-    icon: IconLoader,
+    icon: IconSource,
     onBack: () -> Unit,
     onCheckHelper: () -> Unit,
 ) {

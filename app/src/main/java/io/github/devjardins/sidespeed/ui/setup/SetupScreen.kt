@@ -43,6 +43,7 @@ import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
+import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
@@ -85,7 +86,7 @@ fun SetupScreen(vm: SetupViewModel, onReady: () -> Unit) {
     SsScreen {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (val s = state) {
                 SetupUiState.Loading, SetupUiState.Ready -> {
@@ -115,11 +116,15 @@ private fun WarningContent(vm: SetupViewModel) {
 
 private enum class StepState { TODO, WAITING, WORKING, DONE }
 
+/**
+ * A step card. It is focusable (no action) so the D-pad can walk through the steps and the column scrolls
+ * with focus: nothing on the setup screen may sit out of reach.
+ */
 @Composable
 private fun StepCard(number: Int, title: String, state: StepState, statusText: String? = null, extra: @Composable () -> Unit = {}) {
-    SsCard(Modifier.fillMaxWidth()) {
+    SsRow(onClick = {}, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            Modifier.padding(horizontal = 24.dp, vertical = 14.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -153,6 +158,25 @@ private fun StepCard(number: Int, title: String, state: StepState, statusText: S
     }
 }
 
+/** A focusable (no action) block of text, so long content below the last button can still be scrolled to. */
+@Composable
+private fun FocusableBlock(content: @Composable () -> Unit) {
+    SsRow(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun Header(subtitle: String, readiness: Readiness?) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(SETUP_HEADLINE, style = SsType.Headline, color = SsColors.TextPrimary)
+        Text(subtitle, style = SsType.Body, color = SsColors.TextSecondary)
+        StatusCaption(readiness)
+    }
+}
+
 @Composable
 private fun GoogleTvContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
     val context = LocalContext.current
@@ -166,7 +190,20 @@ private fun GoogleTvContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
         wasShowingPairing = s.showPairing
     }
 
-    Text(SETUP_HEADLINE, style = SsType.Headline, color = SsColors.TextPrimary)
+    // Buttons right under the headline, so the screen opens at the top with focus on them.
+    Header("SideSpeed connects by itself as soon as your TV allows it.", s.readiness)
+    if (s.refusedHint && !s.showPairing) {
+        Text(REFUSED_HINT, style = SsType.Body, color = SsColors.WarnPillText)
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        SsButton("Open developer settings", onClick = { openDevSettings(context) }, modifier = Modifier.focusRequester(settingsFocus))
+        if (s.showPairing) {
+            SsButton("Hide pairing", onClick = vm::hidePairing, modifier = Modifier.focusRequester(pairFocus))
+        } else {
+            SsButton("Pair with a code instead", onClick = vm::showPairing, modifier = Modifier.focusRequester(pairFocus))
+        }
+    }
+    if (s.showPairing) PairingContent(vm, s)
     StepCard(
         1, "Turn on Wireless debugging",
         if (s.detected) StepState.DONE else StepState.TODO,
@@ -182,24 +219,11 @@ private fun GoogleTvContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
         if (!s.launching && s.waiting) WAITING_TEXT else null,
     )
     StepCard(3, "SideSpeed starts its helper", if (s.launching) StepState.WORKING else StepState.TODO)
-
-    if (s.refusedHint && !s.showPairing) {
-        Text(REFUSED_HINT, style = SsType.Body, color = SsColors.WarnPillText)
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        SsButton("Open developer settings", onClick = { openDevSettings(context) }, modifier = Modifier.focusRequester(settingsFocus))
-        if (s.showPairing) {
-            SsButton("Hide pairing", onClick = vm::hidePairing, modifier = Modifier.focusRequester(pairFocus))
-        } else {
-            SsButton("Pair with a code instead", onClick = vm::showPairing, modifier = Modifier.focusRequester(pairFocus))
-        }
-    }
-    if (s.showPairing) PairingContent(vm, s)
-    StatusCaption(s.readiness)
 }
 
 @Composable
 private fun PairingContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
+    var showPc by remember { mutableStateOf(false) }
     SsCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Pair with a code", style = SsType.Title, color = SsColors.TextPrimary)
@@ -216,15 +240,23 @@ private fun PairingContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 SsButton("Pair", onClick = { vm.pair(code, port) }, enabled = !s.pairing)
+                SsButton(if (showPc) "Hide PC steps" else "Start from a PC instead", onClick = { showPc = !showPc })
                 if (s.pairing) SsSpinner()
                 s.pairMessage?.let { Text(it, style = SsType.Body, color = SsColors.TextBody) }
             }
-            Spacer(Modifier.size(4.dp))
+        }
+    }
+    if (showPc) {
+        FocusableBlock {
             Text(
-                "Or start the helper from a PC on the same network, using the addresses shown under Wireless debugging:",
+                "From a PC on the same network, using the addresses shown under Wireless debugging:",
                 style = SsType.Caption, color = SsColors.TextSecondary,
             )
-            PcCommands(pcStartCommands(DeviceKind.GOOGLE_TV, vm.wifiIp(), HelperLaunch.command(), killFirst = false))
+            val cmds = pcStartCommands(DeviceKind.GOOGLE_TV, vm.wifiIp(), HelperLaunch.command(), killFirst = false)
+            Commands(cmds.connect)
+            Text("(enter the pairing code when asked)", style = SsType.Caption, color = SsColors.TextSecondary)
+            Commands(cmds.run)
+            OtherWays(cmds)
         }
     }
 }
@@ -236,8 +268,10 @@ private fun FireOsContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
     LaunchedEffect(Unit) { runCatching { settingsFocus.requestFocus() } }
     val stale = s.readiness == Readiness.HelperNeedsRestart
     val cmds = pcStartCommands(DeviceKind.FIRE_OS, vm.wifiIp(), HelperLaunch.command(), killFirst = stale)
+    var showOther by remember { mutableStateOf(false) }
 
-    Text(SETUP_HEADLINE, style = SsType.Headline, color = SsColors.TextPrimary)
+    Header("SideSpeed checks automatically every few seconds.", s.readiness)
+    SsButton("Open developer settings", onClick = { openDevSettings(context) }, modifier = Modifier.focusRequester(settingsFocus))
     StepCard(
         1, "Turn on ADB debugging",
         if (s.detected) StepState.DONE else StepState.TODO,
@@ -252,11 +286,17 @@ private fun FireOsContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
         } else {
             Text("From a PC on the same network, run:", style = SsType.Body, color = SsColors.TextBody)
         }
-        PcCommands(cmds)
-        Text("Phone app coming later.", style = SsType.Caption, color = SsColors.TextSecondary)
+        // Only the primary form here; the alternatives sit behind "Other ways to run it".
+        Commands(cmds.connect + cmds.run)
+    }
+    SsButton(if (showOther) "Hide other ways" else "Other ways to run it", onClick = { showOther = !showOther })
+    if (showOther) {
+        FocusableBlock {
+            OtherWays(cmds)
+            Text("Phone app coming later.", style = SsType.Caption, color = SsColors.TextSecondary)
+        }
     }
     StepCard(3, "Helper starts", StepState.TODO, "Checks automatically")
-    SsButton("Open developer settings", onClick = { openDevSettings(context) }, modifier = Modifier.focusRequester(settingsFocus))
 }
 
 /** A quiet line with the last check's result, for troubleshooting. */
@@ -271,20 +311,21 @@ private fun StatusCaption(r: Readiness?) {
     Text(text, style = SsType.Caption, color = SsColors.TextSecondary)
 }
 
+/** Commands in mono at body size; long ones wrap. */
 @Composable
-private fun PcCommands(cmds: PcStartCommands) {
+private fun Commands(lines: List<String>) {
     val mono = SsType.Body.copy(fontFamily = FontFamily.Monospace)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        cmds.connect.forEach { Text(it, style = mono, color = SsColors.TextBody) }
-        if (cmds.connect.any { it.startsWith("adb pair") }) {
-            Text("(enter the pairing code when asked)", style = SsType.Caption, color = SsColors.TextSecondary)
-        }
-        cmds.run.forEach { Text(it, style = mono, color = SsColors.TextBody) }
-        Text(WINDOWS_NOTE, style = SsType.Caption, color = SsColors.TextSecondary)
-        Text("Or type adb shell, then paste:", style = SsType.Caption, color = SsColors.TextSecondary)
-        cmds.shellPaste.forEach { Text(it, style = mono, color = SsColors.TextBody) }
-        Spacer(Modifier.width(1.dp))
+        lines.forEach { Text(it, style = mono, color = SsColors.TextBody, softWrap = true) }
     }
+}
+
+/** The Windows note and the "adb shell, then paste" alternative. */
+@Composable
+private fun OtherWays(cmds: PcStartCommands) {
+    Text(WINDOWS_NOTE, style = SsType.Caption, color = SsColors.TextSecondary)
+    Text("Or type adb shell, then paste:", style = SsType.Caption, color = SsColors.TextSecondary)
+    Commands(cmds.shellPaste)
 }
 
 private fun openDevSettings(context: Context) {
