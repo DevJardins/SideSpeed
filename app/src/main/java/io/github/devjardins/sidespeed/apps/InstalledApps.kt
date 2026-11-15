@@ -7,12 +7,12 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
 
-class InstalledApps(context: Context) {
+class InstalledApps(context: Context) : AppSource {
     private val ownPackage = context.packageName
     private val pm: PackageManager = context.packageManager
 
     /** Launchable apps (LEANBACK_LAUNCHER or LAUNCHER), de-duplicated by package, excluding SideSpeed itself. */
-    fun list(): List<AppEntry> =
+    override fun list(): List<AppEntry> =
         listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)
             .flatMap { queryLaunchable(it) }
             .distinctBy { it.activityInfo.packageName }
@@ -27,7 +27,7 @@ class InstalledApps(context: Context) {
      * without a launcher activity. The label falls back to the package name.
      * Null if the package is not installed.
      */
-    fun find(pkg: String): AppEntry? {
+    override fun find(pkg: String): AppEntry? {
         val info = packageInfo(pkg) ?: return null
         val label = info.applicationInfo?.loadLabel(pm)?.toString()
         return entry(pkg, label, info)

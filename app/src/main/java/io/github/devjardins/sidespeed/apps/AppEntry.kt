@@ -18,3 +18,9 @@ fun sortForPicker(apps: List<AppEntry>): List<AppEntry> =
         compareBy<AppEntry> { !it.isSideloaded }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.label },
     )
+
+/** Where the picker gets its apps; lets view models be tested without a PackageManager. */
+interface AppSource {
+    fun list(): List<AppEntry>
+    fun find(pkg: String): AppEntry?
+}

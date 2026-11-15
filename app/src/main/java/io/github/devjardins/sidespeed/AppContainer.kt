@@ -11,6 +11,9 @@ import io.github.devjardins.sidespeed.adb.LibAdbBackend
 import io.github.devjardins.sidespeed.data.DataStorePrefs
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperClient
+import io.github.devjardins.sidespeed.apps.InstalledApps
+import io.github.devjardins.sidespeed.compile.CompileRunner
+import io.github.devjardins.sidespeed.status.StatusChecker
 import java.net.Inet4Address
 
 class AppContainer(context: Context) {
@@ -22,6 +25,12 @@ class AppContainer(context: Context) {
     val helper: HelperClient = HelperClient()
 
     val prefs: Prefs = DataStorePrefs(appContext)
+
+    val installedApps = InstalledApps(appContext)
+
+    /** Only use after Setup reports the helper ready. */
+    val compileRunner: CompileRunner by lazy { CompileRunner(helper) }
+    val statusChecker: StatusChecker by lazy { StatusChecker(helper) }
 
     val isFireOs: Boolean = Build.MANUFACTURER.equals("Amazon", ignoreCase = true) ||
         appContext.packageManager.hasSystemFeature("amazon.hardware.fire_tv")

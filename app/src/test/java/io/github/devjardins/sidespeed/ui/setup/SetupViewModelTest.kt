@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.ui.setup
 
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
 import io.github.devjardins.sidespeed.adb.Readiness
+import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +35,8 @@ class SetupViewModelTest {
         override suspend fun setLanWarningAcked(v: Boolean) { ack.value = v }
         override val pairedTls: Flow<Boolean> = tls
         override suspend fun setPairedTls(v: Boolean) { tls.value = v }
+        override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
+        override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
     }
 
     private class FakeReadier(val first: Readiness, val restarted: Readiness = Readiness.HelperReady) : Readier {

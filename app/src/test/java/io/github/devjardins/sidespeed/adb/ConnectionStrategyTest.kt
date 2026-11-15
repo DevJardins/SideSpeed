@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.adb
 
+import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
@@ -24,6 +25,8 @@ class ConnectionStrategyTest {
         override suspend fun setLanWarningAcked(v: Boolean) { ack.value = v }
         override val pairedTls: Flow<Boolean> = tlsState
         override suspend fun setPairedTls(v: Boolean) { tlsState.value = v }
+        override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
+        override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
     }
 
     private fun strategy(
