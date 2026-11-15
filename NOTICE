@@ -1,0 +1,28 @@
+SideSpeed
+Licensed under the GNU General Public License v3.0 (see LICENSE).
+
+This product includes or builds on the following third-party work:
+
+Shizuku (https://github.com/RikkaApps/Shizuku)
+  Copyright (c) RikkaW. Apache License 2.0.
+  SideSpeed's technique for starting a helper process as the shell user with
+  app_process is based on Shizuku's starter approach.
+
+libadb-android (https://github.com/MuntashirAkon/libadb-android)
+  Copyright (c) Muntashir Al-Islam. Used under its GPL-3.0-or-later option.
+
+Conscrypt (https://github.com/google/conscrypt)
+  Copyright (c) The Android Open Source Project and Google. Apache License 2.0.
+
+Bouncy Castle (https://www.bouncycastle.org/)
+  Copyright (c) The Legion of the Bouncy Castle Inc. MIT-style license.
+
+sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
+  Derived from OpenJDK sun.security. GPL-2.0 with Classpath Exception.
+
+AndroidX (Jetpack Compose, TV Material, Navigation, DataStore, Core, Activity),
+Kotlin and kotlinx.coroutines
+  Copyright (c) The Android Open Source Project and JetBrains. Apache License 2.0.
+
+HiddenApiBypass (https://github.com/LSPosed/AndroidHiddenApiBypass)
+  Copyright (c) LSPosed. Apache License 2.0.
