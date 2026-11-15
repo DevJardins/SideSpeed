@@ -33,3 +33,14 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Extra entries from the local draft gitignore
+*/build/
+.navigation/
+*.ap_
+*.dex
+keystore.properties
+signing.properties
+.env
+.DS_Store
+Thumbs.db
