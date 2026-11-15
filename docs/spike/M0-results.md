@@ -66,3 +66,20 @@ Device: onn 4K Pro Streaming Device (jarvis2), Android 14 (SDK 34), build URO3.2
 Captured samples: `app/src/test/resources/dumpsys/{onn4kpro-dexopt-before,onn4kpro-dexopt,onn4kpro-pkg,firetv-cube3-dexopt,firetv-cube3-pkg}.txt`.
 
 Fire TV format note: `arm: [status=speed] [reason=unknown]` lines under `path:`, with `used by other apps:` lines in some blocks.
+
+## M1 verification (release build, 2026-11-15)
+
+Release APK (R8 on), signed with a local debug key for testing. Results recorded by the controller over ADB from the Mac, driving the UI with D-pad key events.
+
+| Check | Fire TV Cube Gen 3 (Fire OS 7.7.1.7) | onn 4K Pro (Android 14) |
+|---|---|---|
+| App launches, warning, "I understand" | ✓ | ✓ |
+| Helper start | From the PC (Fire OS blocks on-box ADB) ✓ | **By SideSpeed itself** over its own ADB (port 5555 open) ✓, after the fix below |
+| Helper verified (nonce ping), app list shown | ✓ | ✓ |
+| Sideloaded tab excludes system apps, initial D-pad focus on tab | ✓ | ✓ |
+| Compile com.nuvio.tv from the app | Success, about 3 min, badge "speed ✓", dumpsys `status=speed` | Success, under 75 s, badge "speed ✓", dumpsys `status=speed [reason=cmdline]` |
+| After a SideSpeed update | helper self-exits | helper self-exits; next launch restarts it automatically and returns to the app list ✓ |
+
+**Bug found and fixed during this run:** on the onn, SideSpeed connected and sent the launch command, but the helper never started. libadb runs commands over the legacy PTY `shell:` service. When that session closed, the hang-up reached the backgrounded job before `setsid`/`nohup` took effect. This was reproduced from the Mac with `adb shell -tt`. The fix: the launch command now begins with `trap "" HUP` (inherited, no race). It was verified 3/3 over a forced PTY on the onn, and on the Fire TV.
+
+**Still not verified:** pairing through the TV alone with the in-app grid while 5555 is closed (the Wireless Debugging TLS path). In this run 5555 was open, so SideSpeed took the classic route.

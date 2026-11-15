@@ -3,7 +3,7 @@
 Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 
 ## Open before merge
-- The full Google TV run on the onn 4K Pro has not been verified on a device: in-app pairing, the helper auto-starting through SideSpeed's own ADB (newline fix 3b92814), compile and badge, and "needs restart" after an update. Record the results in docs/spike/M0-results.md under "M1 verification".
+- ~~The full Google TV run on the onn 4K Pro has not been verified on a device~~ Verified 2026-11-15 (helper auto-start, compile, badge, update restart) after the `trap "" HUP` launch fix; only in-app TLS pairing with 5555 closed remains.: in-app pairing, the helper auto-starting through SideSpeed's own ADB (newline fix 3b92814), compile and badge, and "needs restart" after an update. Record the results in docs/spike/M0-results.md under "M1 verification".
 - Confirm on the onn whether libadb pairing/TLS needs HiddenApiBypass. The dependency is declared but never called.
 - Signed release with the owner's keystore (Task 11 Step 2).
 
@@ -60,3 +60,5 @@ Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 - FINDING (for final review fix wave): Sideloaded tab lists Amazon system apps (null installer) — isSideloaded must exclude FLAG_SYSTEM/FLAG_UPDATED_SYSTEM_APP.
 - FINDING (minor): Apps screen has no initial D-pad focus (first key press establishes focus).
 - Device verify Fire TV: compile Success, badge 'speed ✓', dumpsys agrees. FINDING (minor): banner shows 'Success: Success' (message duplicates label).
+
+- Flaky test: HelperClientTest.serverClosingBeforeEndThrows failed once under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
