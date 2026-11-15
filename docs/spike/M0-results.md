@@ -15,3 +15,18 @@ Fill in one row per question. Use yes / no / n/a plus short notes.
 | `pm grant` self WRITE_SECURE_SETTINGS succeeded? | | | |
 | `dumpsys package dexopt` captured (file names)? | | | |
 | Model / Android / Fire OS version | | | |
+
+## M0b: built-in helper (Part C)
+
+| Question | Fire TV Cube | Onn 4K Pro | Notes |
+|---|---|---|---|
+| Which launch form kept the helper running after `adb shell` returned (primary with setsid / fallback 1 nohup only / fallback 2 interactive)? Does the device have `setsid`? | | | |
+| Startup log: `uid=2000`? SideSpeed uid found (not `-1`)? | | | |
+| Button 10 (start via own ADB) worked? (Onn) | n/a | | |
+| Button 11: does the app reach the helper, reply `pong uid=2000`? (Any SELinux `avc` denial?) | | | |
+| PC client (`--client ping` / `id`) works? | | | |
+| Button 12: compile via helper works? Duration (ms)? | | | |
+| Alive 30 s after `adb kill-server` (same pid)? | | | |
+| Alive while ADB is off (`adboff 60`)? Ping during off answered? Heartbeat gaps? ADB came back by itself? | | | |
+| Exits by itself after `adb install -r` (log line)? | | | |
+| Gone after a reboot? | | | |

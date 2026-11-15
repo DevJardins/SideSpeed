@@ -4,7 +4,7 @@ This is a throwaway test build. It answers a few questions about how SideSpeed c
 
 You need: a Mac/PC with `adb` installed, on the same Wi-Fi/network as the TV box, and the APK built from this repo (`app/build/outputs/apk/debug/app-debug.apk`; build it with `./gradlew :app:assembleDebug`).
 
-The spike app appears in the launcher as **SideSpeed Spike**. Its buttons are numbered 1 to 9. Use the D-pad and OK. A log fills the right side; the same lines go to logcat under the tag `SideSpeedSpike`.
+The spike app appears in the launcher as **SideSpeed Spike**. Its buttons are numbered 1 to 12 (10 to 12 are for Part C). Use the D-pad and OK. A log fills the right side; the same lines go to logcat under the tag `SideSpeedSpike`.
 
 Below, `<ip>` is the box's IP address (Settings, Network, your Wi-Fi, or the box's About screen). Use `firetv-cube3` and `onn4kpro` for `<device>` in file names.
 
@@ -80,10 +80,116 @@ Below, `<ip>` is the box's IP address (Settings, Network, your Wi-Fi, or the box
 
 ---
 
+## Part C. Built-in helper (M0b): Fire TV Cube (from a PC) and Onn (button 10)
+
+The helper is a small process inside the SideSpeed APK, started with `app_process` from an ADB shell, so it runs as the shell user (uid 2000). It listens on the abstract socket `@sidespeed_helper` and accepts only SideSpeed's uid and (spike only) uid 2000. It logs to `/data/local/tmp/sidespeed_helper.log` (startup, every request, refusals, a heartbeat every 5 s). It exits by itself when its APK is replaced or removed.
+
+Requests (one line each, every reply ends with `__END__:<exit>`): `ping`, `id`, `compile <pkg>` (runs `pm compile -m speed -f <pkg>`), `adboff <seconds>` (1 to 120: `settings put global adb_enabled 0`, sleep, then `1`).
+
+Below, `adb` means `adb -s <ip>:5555` if more than one device is connected. Install the current debug APK first (`adb install -r app/build/outputs/apk/debug/app-debug.apk`).
+
+### C0. Useful commands
+
+Is it running? `adb shell 'ps -A | grep [s]idespeed_helper'` (Android 7: `ps | grep [s]idespeed_helper`)
+
+Log: `adb shell cat /data/local/tmp/sidespeed_helper.log` (or `... | tail -20`)
+
+Client from the PC (sends one request, prints the reply, exit code = helper's exit code):
+```
+adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client ping; echo exit=$?'
+adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client id; echo exit=$?'
+adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client "compile com.nuvio.tv"; echo exit=$?'
+```
+Client exit codes: `254` = could not connect (helper not running), `255` = reply ended without `__END__`.
+
+Stop it (between tests): `adb shell 'kill $(pidof sidespeed_helper)'`
+
+Does the device have `setsid`? `adb shell 'command -v setsid'`
+
+### C1. Start the helper
+
+**Fire TV (from a PC). Primary command** (uses `setsid` when the device has it, always `nohup`, stdio to /dev/null, backgrounded):
+```
+adb shell 'P=$(pm path io.github.devjardins.sidespeed | cut -d: -f2); if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi; CLASSPATH=$P $S nohup app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.spike.HelperSpikeMain --apk=$P </dev/null >/dev/null 2>&1 &'
+```
+Then check: `adb shell 'ps -A | grep [s]idespeed_helper'` and `adb shell cat /data/local/tmp/sidespeed_helper.log`. The log's startup lines must show `uid=2000` and a `SideSpeed uid=1xxxx` (not `-1`).
+
+**Fallback 1** (`nohup` only, the plan's original form plus `--apk`):
+```
+adb shell 'P=$(pm path io.github.devjardins.sidespeed | cut -d: -f2); CLASSPATH=$P nohup app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.spike.HelperSpikeMain --apk=$P >/dev/null 2>&1 &'
+```
+**Fallback 2** (interactive shell): run `adb shell`, paste the part between the single quotes of the primary command, press Enter, then type `exit`.
+
+**Debug run** (foreground, to see startup errors on the PC; Ctrl-C stops it):
+```
+adb shell 'P=$(pm path io.github.devjardins.sidespeed | cut -d: -f2); CLASSPATH=$P app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.spike.HelperSpikeMain --apk=$P'
+```
+
+Write down which form kept the helper running after `adb shell` returned.
+
+**Onn:** connect the spike to its own ADB first (button 3 or 1), then press **10. Start helper via own ADB**. It runs the same primary command over the spike's own ADB connection, with the APK path from the app, then pings the helper after 1.5 s.
+
+### C2. Ping (button 11)
+
+Press **11. Ping helper**. Expected: `helper< pong uid=2000 pid=<n> apk=<path>` and `helper exit=0`. Write down whether it answered and the uid. If it fails, write down the exact error line; then check for an SELinux denial: `adb logcat -d | grep -i 'avc.*sidespeed\|avc.*connectto'`. Also run the PC client `ping` (C0): if the PC client works but button 11 does not, the app's connection is blocked (SELinux), not the helper.
+
+### C3. Compile (button 12)
+
+Press **12. Compile com.nuvio.tv via helper**. Expected `helper< Success`, `helper exit=0`, and a duration. Write down the duration.
+
+### C4. Does it survive the PC's adb session ending?
+
+On the PC: `adb kill-server`. Wait 30 s. Then press **11** on the TV (Onn: also fine to press it). Did it answer? (From the PC you can also reconnect with `adb connect <ip>:5555` and run the C0 client `ping`; the `pid` must be the same as in C2.)
+
+### C5. Does it survive ADB being switched off?
+
+1. Push a tiny script that pings the helper 20 s later, while ADB is off, and writes the answer to a file. On the PC:
+
+```
+cat > ping_off.sh <<'EOF'
+P=$(pm path io.github.devjardins.sidespeed | cut -d: -f2)
+sleep 20
+CLASSPATH=$P app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client ping > /data/local/tmp/sidespeed_ping_during_off.txt 2>&1
+echo "exit=$? at $(date)" >> /data/local/tmp/sidespeed_ping_during_off.txt
+EOF
+adb push ping_off.sh /data/local/tmp/ping_off.sh
+adb shell 'setsid nohup sh /data/local/tmp/ping_off.sh </dev/null >/dev/null 2>&1 &'
+```
+   (No `setsid` on the device: drop `setsid` from the last line.)
+2. Right away, switch ADB off for 60 s through the helper:
+   ```
+   adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) app_process /system/bin io.github.devjardins.sidespeed.spike.HelperSpikeMain --client "adboff 60"'
+   ```
+   The adb connection drops (expected); the PC command may hang or end with an error. That is fine: the helper keeps going and switches ADB back on after 60 s.
+3. While ADB is off (if someone is at the TV): press **11**. Does it answer?
+4. After about 70 s: `adb connect <ip>:5555` (accept the prompt if it appears), then:
+   ```
+   adb shell cat /data/local/tmp/sidespeed_ping_during_off.txt
+   adb shell 'grep -E "heartbeat|adboff" /data/local/tmp/sidespeed_helper.log | tail -30'
+   ```
+   Expected: a `pong ...` line and `exit=0` in the first file, heartbeats every ~5 s with no gap while `adboff=true`, and `adb_enabled 0 -> exit=0` / `adb_enabled 1 -> exit=0` lines. If ADB does not come back after 2 minutes, turn **ADB debugging** back on in Developer options by hand and record that.
+
+### C6. Does it exit when the APK is updated?
+
+`adb install -r app/build/outputs/apk/debug/app-debug.apk` (the same APK is fine; the install path changes). Wait 10 s. `adb shell 'ps -A | grep [s]idespeed_helper'` should show nothing, and the log should end with a `self-exit: APK disappeared` (or `changed`) line.
+
+### C7. Is it gone after a reboot?
+
+Start the helper again (C1), confirm with **11**. Reboot (`adb reboot` or unplug). After it boots, press **11**: expected `helper request 'ping' failed: ...` (connection refused). Confirm with `adb shell 'ps -A | grep [s]idespeed_helper'` (empty).
+
+### C8. Capture
+
+```
+adb shell cat /data/local/tmp/sidespeed_helper.log > <device>-helper.log
+adb logcat -d -s SideSpeedSpike > <device>-spike-helper.log
+```
+
+---
+
 ## What to send back
 
 1. Filled-in `docs/spike/M0-results.md` (yes/no and short notes for each device).
-2. For each device: `<device>-dexopt.txt`, `<device>-pkg.txt`, `<device>-spike.log`.
+2. For each device: `<device>-dexopt.txt`, `<device>-pkg.txt`, `<device>-spike.log`, and from Part C `<device>-helper.log` and `<device>-spike-helper.log`.
 3. The file `dexopt.txt` the app wrote on the box is optional (it is at `/data/data/io.github.devjardins.sidespeed/files/dexopt.txt` via `adb shell run-as io.github.devjardins.sidespeed cat files/dexopt.txt`); the PC copy above is enough.
 4. A photo or text of any error that appeared on screen that is not in the log.
 5. Exact model and software versions (Settings, About) for both boxes.

@@ -45,7 +45,11 @@ import io.github.devjardins.sidespeed.adb.AdbTarget
 import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.ui.theme.SideSpeedTheme
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
@@ -146,6 +150,9 @@ class SpikeActivity : ComponentActivity() {
                 Btn("7. pm grant self WRITE_SECURE_SETTINGS") { action("pm grant") { grantSelf() } }
                 Btn("8. Toggle ADB off -> on") { action("toggle") { toggle() } }
                 Btn("9. Send tcpip:5555") { action("tcpip") { tcpip() } }
+                Btn("10. Start helper via own ADB") { action("start helper") { startHelper() } }
+                Btn("11. Ping helper") { action("ping helper") { helperRequest("ping") } }
+                Btn("12. Compile $NUVIO via helper") { action("compile via helper") { compileViaHelper() } }
             }
             val state = rememberLazyListState()
             LaunchedEffect(logCounter) {
@@ -315,6 +322,52 @@ class SpikeActivity : ComponentActivity() {
         val elapsed = SystemClock.elapsedRealtime() - t0
         if (ok == true) log("RECONNECTED after $elapsed ms (including 2 s off period)")
         else log("RECONNECT FAILED within 20 s (elapsed $elapsed ms)")
+    }
+
+    // ---- M0b helper ----
+
+    private suspend fun startHelper() {
+        val apk = applicationInfo.sourceDir
+        // The path is interpolated into a shell command: only allow the characters /data/app paths use.
+        if (!Regex("^/[A-Za-z0-9/._~=+-]+\\.apk$").matches(apk)) {
+            log("start helper: refusing unexpected APK path '$apk'")
+            return
+        }
+        log("APK = $apk")
+        runShell(helperLaunchCommand(apk))
+        log("launch command returned; pinging in 1.5 s")
+        delay(1500)
+        helperRequest("ping")
+    }
+
+    /** Uses setsid when the device has it, plus nohup; detached from the ADB shell, stdio to /dev/null. */
+    private fun helperLaunchCommand(apk: String): String =
+        "if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi; " +
+            "CLASSPATH='$apk' \$S nohup app_process /system/bin --nice-name=sidespeed_helper " +
+            "${HelperSpikeMain::class.java.name} --apk='$apk' </dev/null >/dev/null 2>&1 &"
+
+    /** Sends one request to the helper's abstract socket, logging each line. Returns the exit code or null. */
+    private suspend fun helperRequest(req: String): Int? {
+        log("helper> $req")
+        var exit: Int? = null
+        try {
+            channelFlow {
+                val code = HelperSpikeMain.request(req) { trySendBlocking("helper< $it") }
+                send("helper exit=${code ?: "none (stream ended without __END__)"}")
+                exit = code
+            }.flowOn(Dispatchers.IO).collect { log(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            log("helper request '$req' failed: ${t::class.java.name}: ${t.message} (helper not running, or SELinux denied the connect: check logcat for avc)")
+        }
+        return exit
+    }
+
+    private suspend fun compileViaHelper() {
+        val t0 = SystemClock.elapsedRealtime()
+        val exit = helperRequest("compile $NUVIO")
+        log("compile via helper: exit=$exit duration=${SystemClock.elapsedRealtime() - t0} ms")
     }
 
     private fun setAdbSettings(v: Int) {
