@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ fun PairingCodeGrid(
     focusFirst: Boolean = false,
 ) {
     val first = remember { FocusRequester() }
+    LaunchedEffect(focusFirst) { if (focusFirst) runCatching { first.requestFocus() } }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("$label: ${value.ifEmpty { "-" }}", style = MaterialTheme.typography.titleMedium)
         val rows = listOf(listOf("1", "2", "3"), listOf("4", "5", "6"), listOf("7", "8", "9"), listOf("Del", "0", "Clr"))

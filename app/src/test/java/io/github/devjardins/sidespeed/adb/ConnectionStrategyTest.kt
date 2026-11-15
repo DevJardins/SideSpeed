@@ -104,6 +104,20 @@ class ConnectionStrategyTest {
         assertEquals(listOf(ConnectionStrategy.KILL_COMMAND, HelperLaunch.command()), adb.commands)
     }
 
+    @Test fun stalledLaunchStreamTimesOut() = runTest(timeout = 20.seconds) {
+        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.command() }
+        val r = strategy(adb) { null }.ensureReady()
+        assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
+        assertEquals(ConnectionStrategy.SHELL_TIMEOUT_MS, testScheduler.currentTime)
+    }
+
+    @Test fun stalledKillTimesOutOnRestart() = runTest(timeout = 20.seconds) {
+        val adb = FakeAdbBackend().apply { hangShellFor += ConnectionStrategy.KILL_COMMAND }
+        val r = strategy(adb) { HelperPing(1, "/old") }.restartHelper()
+        assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
+        assertEquals(listOf(ConnectionStrategy.KILL_COMMAND), adb.commands)
+    }
+
     @Test fun pcCommandsQuoteLaunchInSingleQuotes() {
         val launch = HelperLaunch.command()
         assertFalse(launch.contains("'"))

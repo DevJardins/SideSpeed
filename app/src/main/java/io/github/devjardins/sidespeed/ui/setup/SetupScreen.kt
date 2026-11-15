@@ -51,7 +51,7 @@ fun SetupScreen(vm: SetupViewModel, onReady: () -> Unit) {
             SetupUiState.Loading, SetupUiState.Checking, SetupUiState.Ready -> Text("Checking the helper...")
             SetupUiState.NeedsWarningAck -> {
                 Text(LAN_WARNING)
-                MainButton("I understand", vm::acknowledgeWarning)
+                MainButton("I understand", onClick = vm::acknowledgeWarning)
             }
             is SetupUiState.Result -> ResultContent(vm, s)
         }
@@ -59,9 +59,9 @@ fun SetupScreen(vm: SetupViewModel, onReady: () -> Unit) {
 }
 
 @Composable
-private fun MainButton(label: String, onClick: () -> Unit) {
+private fun MainButton(label: String, autoFocus: Boolean = true, onClick: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(Unit) { if (autoFocus) runCatching { focus.requestFocus() } }
     Button(onClick = onClick, modifier = Modifier.focusRequester(focus)) { Text(label) }
 }
 
@@ -71,14 +71,14 @@ private fun ResultContent(vm: SetupViewModel, s: SetupUiState.Result) {
     when (val r = s.readiness) {
         Readiness.WaitingForAllowPrompt -> {
             Text(ALLOW_PROMPT_TEXT)
-            MainButton("Check again", vm::checkAgain)
+            MainButton("Check again", onClick = vm::checkAgain)
         }
         is Readiness.NeedsHelperStart, Readiness.HelperNeedsRestart -> {
             val stale = r == Readiness.HelperNeedsRestart
             if (r is Readiness.NeedsHelperStart) Text(r.reason)
             if (stale) Text("The helper is running but out of date (SideSpeed was updated). Restart it.")
             StartHelperContent(vm, s, stale, context)
-            MainButton("Check again", vm::checkAgain)
+            MainButton("Check again", autoFocus = vm.isFireOs, onClick = vm::checkAgain)
         }
         else -> Unit
     }
@@ -99,7 +99,7 @@ private fun StartHelperContent(vm: SetupViewModel, s: SetupUiState.Result, stale
         var code by remember { mutableStateOf("") }
         var port by remember { mutableStateOf("") }
         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-            PairingCodeGrid("Pairing code", code, 6, { code = it })
+            PairingCodeGrid("Pairing code", code, 6, { code = it }, focusFirst = true)
             PairingCodeGrid("Pairing port", port, 5, { port = it })
         }
         Button(onClick = { vm.pair(code, port) }, enabled = !s.pairing) { Text("Pair") }

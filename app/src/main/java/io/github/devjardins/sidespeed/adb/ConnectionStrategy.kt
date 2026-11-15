@@ -70,8 +70,13 @@ class ConnectionStrategy(
         if (!connected) return Readiness.NeedsHelperStart("ADB not reachable")
 
         try {
-            if (killFirst) adb.shell(KILL_COMMAND).collect { }
-            adb.shell(HelperLaunch.command()).collect { }
+            if (killFirst) {
+                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(KILL_COMMAND).collect { } }
+                delay(KILL_SETTLE_MS)
+            }
+            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command()).collect { } }
+        } catch (e: TimeoutCancellationException) {
+            return Readiness.NeedsHelperStart("Helper did not start")
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -89,6 +94,8 @@ class ConnectionStrategy(
 
     companion object {
         const val KILL_COMMAND = "kill \$(pidof sidespeed_helper)"
+        const val SHELL_TIMEOUT_MS = 10_000L
+        const val KILL_SETTLE_MS = 500L
         const val POLL_INTERVAL_MS = 500L
         const val POLL_TOTAL_MS = 5_000L
     }

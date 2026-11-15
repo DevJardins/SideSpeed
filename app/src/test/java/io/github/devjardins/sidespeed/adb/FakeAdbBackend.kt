@@ -32,6 +32,9 @@ class FakeAdbBackend : AdbBackend {
     /** When true, [connect] suspends forever (for timeout tests). */
     var hangConnect = false
 
+    /** Commands whose [shell] flow suspends forever after recording (for timeout tests). */
+    val hangShellFor = mutableSetOf<String>()
+
     /** Result returned by [pair]. */
     var pairResult: Result<Unit> = Result.success(Unit)
 
@@ -65,10 +68,20 @@ class FakeAdbBackend : AdbBackend {
         return Result.success(Unit)
     }
 
-    override suspend fun pair(host: String, port: Int, code: String): Result<Unit> = pairResult
+    /** Per-host [pair] results, checked before [pairResult]. */
+    val pairResultFor = mutableMapOf<String, Result<Unit>>()
+
+    /** Hosts passed to [pair], in order. */
+    val pairHosts = mutableListOf<String>()
+
+    override suspend fun pair(host: String, port: Int, code: String): Result<Unit> {
+        pairHosts += host
+        return pairResultFor[host] ?: pairResult
+    }
 
     override fun shell(command: String): Flow<ShellEvent> = flow {
         commands += command
+        if (command in hangShellFor) awaitCancellation()
         val script = scripts[command]
         if (script == null) {
             emit(ShellEvent.Exit(127))
