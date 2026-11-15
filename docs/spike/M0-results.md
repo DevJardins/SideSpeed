@@ -60,7 +60,7 @@ Device: onn 4K Pro Streaming Device (jarvis2), Android 14 (SDK 34), build URO3.2
 | `/proc/net/tcp*` readable by shell, with uid column | Yes, on both boxes. So caller check option (a) is viable. |
 | Compile com.nuvio.tv via helper | Success, **51 s**. Filter went `speed-profile` (bg-dexopt) → `speed` (cmdline). |
 | Port 5555 after reboot | **Gone** (connection refused for 3 min after boot). |
-| Wireless Debugging after reboot | Not determined from the Mac: the Onn is on 192.168.4.x and the Mac on 192.168.5.x, so mDNS can't see it. Owner to check on the TV. |
+| Wireless Debugging after reboot | **Off** (owner checked on the TV). After a reboot the user must turn it back on by hand. |
 | Pairing from the TV alone | Not tested (the UI can't be driven remotely; 5555 was open). |
 
 Captured samples: `app/src/test/resources/dumpsys/{onn4kpro-dexopt-before,onn4kpro-dexopt,onn4kpro-pkg,firetv-cube3-dexopt,firetv-cube3-pkg}.txt`.
