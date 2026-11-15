@@ -1,0 +1,799 @@
+
+Dexopt state:
+  [com.droidlogic.tvinput]
+    path: /system/app/DroidLogicTvInput/DroidLogicTvInput.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.nuvioreshaped.tv]
+    path: /data/app/com.nuvioreshaped.tv-Xm1YOaNGxK_WPTiQoi-OGw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.cts.priv.ctsshim]
+  [com.amazon.firetv.androidskillconnectioncapability]
+    path: /system/priv-app/com.amazon.firetv.androidskillconnectioncapability/com.amazon.firetv.androidskillconnectioncapability.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.alexamediaplayer.runtime.ftv]
+    path: /data/app/com.amazon.alexamediaplayer.runtime.ftv-DgmvSYYkkqAff5ZX-lVdgg==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.android.internal.display.cutout.emulation.corner]
+  [com.amazon.tv.resolutioncycler]
+    path: /system/app/FireTvResolutionCycler/FireTvResolutionCycler.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.internal.display.cutout.emulation.double]
+  [com.amazon.recess]
+    path: /system/priv-app/FireRecessProxy/FireRecessProxy.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.platform.fdrw]
+    path: /system/app/fdrw/fdrw.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.spiderpork]
+    path: /data/app/com.amazon.spiderpork-gyhAs5BOi1aySsMT7AvWwA==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.neo.minerva]
+    path: /system/priv-app/com.amazon.neo.minerva-arm/com.amazon.neo.minerva-arm.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dummy.settings]
+    path: /system/app/DummySettings/DummySettings.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.turnstile]
+    path: /system/priv-app/com.amazon.tv.turnstile/com.amazon.tv.turnstile.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ssmsys]
+    path: /system/priv-app/com.amazon.ssmsys/com.amazon.ssmsys.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.calendar]
+    path: /system/priv-app/CalendarProvider/CalendarProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tigris]
+    path: /system/priv-app/com.amazon.tigris/com.amazon.tigris.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.acr]
+    path: /system/priv-app/com.amazon.tv.acr-stub/com.amazon.tv.acr-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.ime]
+    path: /system/priv-app/com.amazon.tv.ime/com.amazon.tv.ime.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.whisperplay.contracts]
+    path: /system/priv-app/WhisperlinkSdk/WhisperlinkSdk.apk
+      arm: [status=verify] [reason=boot]
+  [com.android.providers.media]
+    path: /system/priv-app/MediaProvider/MediaProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.consents]
+    path: /system/priv-app/com.amazon.tv.consents/com.amazon.tv.consents.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.rdmapplication]
+    path: /system/priv-app/RdmApplication/RdmApplication.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [io.gh.reisxd.tizentube.cobalt]
+    path: /data/app/io.gh.reisxd.tizentube.cobalt-mLmibgM2VojLzIpP0pcUCg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.venezia]
+    path: /system/priv-app/com.amazon.venezia/com.amazon.venezia.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dcp.contracts.library]
+    path: /system/priv-app/DeviceSoftwareOTAContracts/DeviceSoftwareOTAContracts.apk
+      arm: [status=verify] [reason=boot]
+      used by other apps: [com.amazon.device.software.ota.override, com.android.systemui, com.amazon.device.software.ota]
+  [com.amazon.ftv.xpicker]
+    path: /system/priv-app/com.amazon.ftv.xpicker/com.amazon.ftv.xpicker.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [org.smarttube.beta]
+    path: /data/app/org.smarttube.beta-L_4bpZz7hQQT0Ex3L_ItBA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.wallpapercropper]
+    path: /system/priv-app/WallpaperCropper/WallpaperCropper.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.hybridadidservice]
+    path: /system/priv-app/HybridAdInfoService/HybridAdInfoService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.livedeviceservice]
+    path: /system/priv-app/com.amazon.livedeviceservice/com.amazon.livedeviceservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.vizzini]
+    path: /system/priv-app/com.amazon.vizzini/com.amazon.vizzini.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.devicecontrolsettings]
+    path: /system/priv-app/com.amazon.tv.devicecontrolsettings/com.amazon.tv.devicecontrolsettings.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.connectivitycontroller]
+    path: /system/priv-app/ConnectivityControllerService/ConnectivityControllerService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.bueller.photos]
+    path: /data/app/com.amazon.bueller.photos-7U6ESgtjguYqZVuwClSGfA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.ivona.orchestrator]
+    path: /system/priv-app/IvonaTtsOrchestrator/IvonaTtsOrchestrator.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.sync]
+    path: /system/priv-app/com.amazon.device.sync/com.amazon.device.sync.apk
+      arm: [status=verify] [reason=boot]
+  [amazon.fireos]
+    path: /system/framework/fireos-res/fireos-res.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.legal.notices.overlay.localisation.common]
+  [com.amazon.device.logmanager]
+    path: /system/priv-app/com.amazon.device.logmanager/com.amazon.device.logmanager.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.documentsui]
+    path: /system/priv-app/DocumentsUI/DocumentsUI.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.appaccesskeyprovider]
+    path: /system/priv-app/com.amazon.appaccesskeyprovider/com.amazon.appaccesskeyprovider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.sysappsinternal.resources]
+  [com.android.externalstorage]
+    path: /system/priv-app/ExternalStorageProvider/ExternalStorageProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.shoptv.firetv.client]
+    path: /data/app/com.amazon.shoptv.firetv.client-VFqDtuB-fGiU4xZj8t7wvQ==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dpcclient]
+    path: /system/priv-app/com.amazon.dpcclient/com.amazon.dpcclient.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.htmlviewer]
+    path: /system/app/HTMLViewer/HTMLViewer.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ceviche]
+    path: /system/priv-app/com.amazon.ceviche/com.amazon.ceviche.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.companiondevicemanager]
+    path: /system/app/CompanionDeviceManager/CompanionDeviceManager.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.alta.h2clientservice]
+    path: /system/priv-app/com.amazon.h2clientservice/com.amazon.h2clientservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.downloads]
+    path: /system/priv-app/FireOSDownloadProvider/FireOSDownloadProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.firetv.youtube]
+    path: /data/app/com.amazon.firetv.youtube-YG4VjkQxFO2yBddwlkgz9Q==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.tv.parentalcontrols]
+    path: /system/priv-app/com.amazon.tv.parentalcontrols/com.amazon.tv.parentalcontrols.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.tv]
+    path: /system/priv-app/TvProvider/TvProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ftv.screensaver]
+    path: /system/priv-app/com.amazon.ftv.screensaver/com.amazon.ftv.screensaver.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.mattercohost]
+    path: /system/priv-app/com.amazon.tv.mattercohost/com.amazon.tv.mattercohost.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.android.systemui]
+  [com.amazon.device_remote_config_sync_service]
+    path: /system/priv-app/DRCSService-arm/DRCSService-arm.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.neo.minerva.logcat]
+    path: /system/priv-app/com.amazon.neo.minerva.logcat-arm/com.amazon.neo.minerva.logcat-arm.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.ooberesource]
+  [com.amazon.tv.settings.v2.overlay.localisation.common]
+  [com.amazon.dp.logger]
+    path: /system/priv-app/com.amazon.dp.logger/com.amazon.dp.logger.apk
+      arm: [status=verify] [reason=boot]
+      used by other apps: [com.amazon.dialservice]
+  [com.amazon.ods.kindleconnect]
+    path: /data/app/com.amazon.ods.kindleconnect-liQU1JLycgH6QZGoOUHbjw==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.spotify.tv.android]
+    path: /data/app/com.spotify.tv.android-nFOhQbOBM_V1LOLe9_i-cg==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.android.defcontainer]
+    path: /system/priv-app/DefaultContainerService/DefaultContainerService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.alexa.datastore.app]
+    path: /data/app/com.amazon.alexa.datastore.app-CaQwR_ixVXFv8X7NnS-ZUA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.downloads.ui]
+    path: /system/priv-app/FireOSDownloadProviderUi/FireOSDownloadProviderUi.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.pacprocessor]
+    path: /system/app/PacProcessor/PacProcessor.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.simappdialog]
+    path: /system/app/SimAppDialog/SimAppDialog.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.intentsupport]
+    path: /system/app/TvUnsupportedIntent/TvUnsupportedIntent.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.sharingservice.android.client.proxy]
+    path: /system/priv-app/com.amazon.sharingservice.android.client.proxy.release/com.amazon.sharingservice.android.client.proxy.release.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.android.marketplace]
+    path: /system/priv-app/marketplace_service_receiver/marketplace_service_receiver.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.internal.display.cutout.emulation.tall]
+  [com.amazon.android.devicemodelinfo.resources]
+  [com.android.certinstaller]
+    path: /system/app/CertInstaller/CertInstaller.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.whisperjoin.middleware.v2.np]
+    path: /system/priv-app/com.amazon.whisperjoin.middleware.v2.np/com.amazon.whisperjoin.middleware.v2.np.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.connectivity.ca]
+    path: /system/priv-app/ConnectivityCA/ConnectivityCA.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [android]
+  [com.amazon.prism.android.service]
+    path: /system/priv-app/com.amazon.prism.android.service/com.amazon.prism.android.service.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.spotify.mediabrowserservice]
+    path: /system/priv-app/com.amazon.spotify.mediabrowserservice-stub/com.amazon.spotify.mediabrowserservice-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tifobserver]
+    path: /system/priv-app/TIFObserverService/TIFObserverService.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.android.systemui]
+  [com.amazon.dialservice]
+    path: /system/priv-app/com.amazon.dialservice/com.amazon.dialservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.avsyncslider]
+    path: /system/priv-app/com.amazon.avsyncslider/com.amazon.avsyncslider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.client.metrics.api]
+    path: /system/priv-app/MetricsApi/MetricsApi.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [org.smarttube.beta, com.amazon.shoptv.firetv.client, tv.twitch.android.viewer, com.amazon.imdb.tv.android.app, com.amazon.avod, com.amazon.device.software.ota.override, com.adguard.android, com.esaba.downloader, com.amazon.identity.auth.device.authorization, com.amazon.firebat, com.amazon.device.software.ota, com.android.systemui, com.amazon.bueller.photos, tv.pluto.android, com.cbs.ott, com.tubitv.ott]
+  [com.nuvio.tv]
+    path: /data/app/com.nuvio.tv-mg_FVtIcrDa9hCw3-lnhhw==/base.apk
+      arm: [status=speed] [reason=unknown]
+  [com.amazon.storage.manager]
+    path: /system/priv-app/com.amazon.storage.manager/com.amazon.storage.manager.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [tv.uscreen.hammerelite]
+    path: /data/app/tv.uscreen.hammerelite-43mh1_OQU7lT_VbpJhYnAw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.aca]
+    path: /system/priv-app/com.amazon.aca/com.amazon.aca.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ale]
+    path: /system/priv-app/com.amazon.ale/com.amazon.ale.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.cpl]
+    path: /system/priv-app/CaptivePortalLauncher/CaptivePortalLauncher.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dcp]
+    path: /system/priv-app/FireOsMiddlewareDebugApp/FireOsMiddlewareDebugApp.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.imp]
+    path: /system/priv-app/com.amazon.imp/com.amazon.imp.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ssm]
+    path: /system/priv-app/SystemStatusMonitor/SystemStatusMonitor.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.neodelegate]
+    path: /system/app/com.amazon.neo.delegateservice/com.amazon.neo.delegateservice.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.android.systemui]
+  [com.amazon.tv.easyupgrade]
+    path: /system/priv-app/com.amazon.tv.easyupgrade/com.amazon.tv.easyupgrade.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.sync.service]
+    path: /system/priv-app/sync-service-fireos-tv-release/sync-service-fireos-tv-release.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.comms.knightmessaging]
+    path: /system/priv-app/com.amazon.comms.knightmessaging/com.amazon.comms.knightmessaging.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.fireinputdevices]
+    path: /system/priv-app/com.amazon.fireinputdevices/com.amazon.fireinputdevices.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.nfc]
+    path: /system/app/NfcNci/NfcNci.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.settings.v2]
+    path: /system/priv-app/com.amazon.tv.settings.v2/com.amazon.tv.settings.v2.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.backupconfirm]
+    path: /system/priv-app/BackupRestoreConfirmation/BackupRestoreConfirmation.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.csm.htmlruntime]
+    path: /system/priv-app/com.amazon.csm.htmlruntime/com.amazon.csm.htmlruntime.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.csapp]
+    path: /system/priv-app/com.amazon.tv.csapp/com.amazon.tv.csapp.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.diode]
+    path: /system/priv-app/com.amazon.diode/com.amazon.diode.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [org.localsend.localsend_app]
+    path: /data/app/org.localsend.localsend_app-0wv4VIMNqoNNH9HJdVF6pQ==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.logan]
+    path: /system/priv-app/Logan/Logan.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.perfc]
+    path: /system/priv-app/com.amazon.perfc/com.amazon.perfc.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tahoe]
+    path: /data/app/com.amazon.tahoe-aFdNjycQWi2RObZz0sJ6Hw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tcomm]
+    path: /system/priv-app/com.amazon.tcomm/com.amazon.tcomm.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ftvads.deeplinking]
+    path: /system/priv-app/com.amazon.ftvads.deeplinking/com.amazon.ftvads.deeplinking.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.legalresources]
+  [com.amazon.comms.starktachyon]
+    path: /system/priv-app/com.amazon.comms.starktachyon/com.amazon.comms.starktachyon.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.statementservice]
+    path: /system/priv-app/StatementService/StatementService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.rtcsessioncontroller]
+    path: /system/priv-app/com.amazon.rtcsessioncontroller/com.amazon.rtcsessioncontroller.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.alexadirectivebrokerservice]
+    path: /system/priv-app/alexadirectivebrokerservice/alexadirectivebrokerservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.naatyam]
+    path: /system/priv-app/com.amazon.naatyam/com.amazon.naatyam.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.settings.intelligence]
+    path: /system/priv-app/SettingsIntelligence/SettingsIntelligence.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.stillwatching.activity]
+    path: /system/app/AreYouStillWatchingDialog/AreYouStillWatchingDialog.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.a4b.mcc]
+    path: /system/priv-app/com.amazon.a4b.mcc/com.amazon.a4b.mcc.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.systemui.theme.dark]
+  [com.amazon.sneakpeek]
+    path: /system/priv-app/com.amazon.sneakpeek/com.amazon.sneakpeek.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.avrcpclient]
+    path: /system/priv-app/com.amazon.tv.avrcpclient/com.amazon.tv.avrcpclient.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.storm.lightning.tutorial]
+    path: /system/priv-app/com.amazon.storm.lightning.tutorial/com.amazon.storm.lightning.tutorial.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.fireos.rescuepartycloud]
+    path: /system/priv-app/FireOSRescueParty.cloudservice/FireOSRescueParty.cloudservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.identity.auth.device.authorization]
+    path: /system/priv-app/com.amazon.identity.auth.device.authorization/com.amazon.identity.auth.device.authorization.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.wirelessmetrics.service]
+    path: /system/app/AmazonWirelessMetricsService/AmazonWirelessMetricsService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.settings]
+    path: /system/priv-app/SettingsProvider/SettingsProvider.apk
+      arm: [status=speed] [reason=prebuilt]
+  [com.amazon.kindleautomatictimezone]
+    path: /system/priv-app/AutomaticTimeZone.appservice/AutomaticTimeZone.appservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.sharedstoragebackup]
+    path: /system/priv-app/SharedStorageBackup/SharedStorageBackup.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.uxcontrollerservice]
+    path: /system/priv-app/UXControllerService/UXControllerService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.printspooler]
+    path: /system/app/PrintSpooler/PrintSpooler.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.fireos.arcus.proxy]
+    path: /system/priv-app/ArcusListener/ArcusListener.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.fw.metrics]
+    path: /system/app/FireTvMetrics/FireTvMetrics.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.dreams.basic]
+    path: /system/app/BasicDreams/BasicDreams.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.smarthomemapviewapp]
+    path: /system/priv-app/com.amazon.smarthomemapviewapp/com.amazon.smarthomemapviewapp.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.whasettings]
+    path: /system/priv-app/com.amazon.whasettings/com.amazon.whasettings.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.se]
+    path: /system/app/SecureElement/SecureElement.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.firehomestarter]
+    path: /system/priv-app/com.amazon.firehomestarter/com.amazon.firehomestarter.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.securitysyncclient]
+    path: /system/priv-app/com.amazon.securitysyncclient/com.amazon.securitysyncclient.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.bips]
+    path: /system/app/BuiltInPrintService/BuiltInPrintService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.routing]
+    path: /system/priv-app/com.amazon.tv.routing/com.amazon.tv.routing.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.messaging]
+    path: /system/priv-app/DeviceMessagingAndroid/DeviceMessagingAndroid.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.tv.ffsprovisioneeclient]
+    path: /system/priv-app/com.amazon.tv.ffsprovisioneeclient/com.amazon.tv.ffsprovisioneeclient.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.bluetoothkeymaplib]
+    path: /system/priv-app/BluetoothKeyMapLib/BluetoothKeyMapLib.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ftv.profilepicker]
+    path: /system/priv-app/com.amazon.ftv.profilepicker/com.amazon.ftv.profilepicker.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.metrics]
+    path: /system/app/AmazonDeviceMetrics/AmazonDeviceMetrics.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.messaging.sdk.internal.library]
+    path: /system/priv-app/DeviceMessagingAndroidInternalSDK/DeviceMessagingAndroidInternalSDK.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.amazon.device.software.ota.override, com.android.systemui]
+  [com.amazon.firetv.troubleshooting]
+    path: /system/priv-app/com.amazon.firetv.troubleshooting-stub/com.amazon.firetv.troubleshooting-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.devicecontrol]
+    path: /system/priv-app/com.amazon.tv.devicecontrol/com.amazon.tv.devicecontrol.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.systemnotices]
+    path: /system/app/AmazonSystemNoticesService/AmazonSystemNoticesService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.ottssocompanionapp]
+    path: /system/priv-app/com.amazon.tv.ottssocompanionapp/com.amazon.tv.ottssocompanionapp.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.tv.parentalcontrols.overlay.localisation.common]
+  [android.ext.shared]
+    path: /system/app/ExtShared/ExtShared.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.onetimeinitializer]
+    path: /system/priv-app/OneTimeInitializer/OneTimeInitializer.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.alexanotifications]
+    path: /system/priv-app/com.amazon.tv.alexanotifications/com.amazon.tv.alexanotifications.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.keychain]
+    path: /system/app/KeyChain/KeyChain.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [io.github.devjardins.sidespeed]
+    path: /data/app/io.github.devjardins.sidespeed-KKNr3bpdfq57OvSBpX4yow==/base.apk
+      arm: [status=run-from-apk] [reason=unknown]
+  [android.ext.services]
+    path: /system/priv-app/ExtServices/ExtServices.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dummy.contacts]
+    path: /system/app/DummyContacts/DummyContacts.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.accessoryconfigservice]
+    path: /system/priv-app/AmazonAccessoryConfigService/AmazonAccessoryConfigService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.packageinstaller]
+    path: /system/priv-app/PackageInstaller/PackageInstaller.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.blepa]
+    path: /system/priv-app/com.amazon.device.blepa/com.amazon.device.blepa.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.svox.pico]
+    path: /system/app/PicoTts/PicoTts.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tcomm.client]
+    path: /system/priv-app/com.amazon.communication/com.amazon.communication.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.tv.website_launcher]
+    path: /system/priv-app/com.amazon.tv.website_launcher/com.amazon.tv.website_launcher.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.forcedotaupdater.v2]
+    path: /system/priv-app/com.amazon.tv.forcedotaupdater.v2/com.amazon.tv.forcedotaupdater.v2.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.settings.sdk.internal.library]
+    path: /system/priv-app/RemoteSettingsInternalSDK/RemoteSettingsInternalSDK.apk
+      arm: [status=verify] [reason=boot]
+      used by other apps: [com.amazon.device.software.ota.override, com.amazon.device.software.ota]
+  [com.android.proxyhandler]
+    path: /system/priv-app/ProxyHandler/ProxyHandler.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.localgallery]
+    path: /system/priv-app/com.amazon.tv.localgallery/com.amazon.tv.localgallery.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.autopairservice]
+    path: /system/priv-app/AutoPairService/AutoPairService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ftvcalibrationservice]
+    path: /system/app/aht_ftv_service/aht_ftv_service.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.minitv.android.app]
+    path: /system/priv-app/com.amazon.minitv.android.app-stub/com.amazon.minitv.android.app-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [amazon.jackson19]
+    path: /system/priv-app/amazon.jackson-19/amazon.jackson-19.apk
+      arm: [status=speed] [reason=prebuilt]
+      used by other apps: [com.android.systemui]
+  [com.android.managedprovisioning]
+    path: /system/priv-app/ManagedProvisioning/ManagedProvisioning.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.details]
+    path: /system/priv-app/com.amazon.device.details/com.amazon.device.details.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tmm.tutorial]
+    path: /system/priv-app/com.amazon.tmm.tutorial/com.amazon.tmm.tutorial.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.wha.mediabrowserservice]
+    path: /system/priv-app/com.amazon.wha.mediabrowserservice-stub/com.amazon.wha.mediabrowserservice-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.software.ota]
+    path: /system/priv-app/DeviceSoftwareOTA/DeviceSoftwareOTA.apk
+      arm: [status=verify] [reason=boot]
+      used by other apps: [com.amazon.device.software.ota.override]
+  [com.amazon.d3]
+    path: /system/priv-app/com.amazon.d3/com.amazon.d3.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.developer.dataservice]
+    path: /system/priv-app/com.amazon.tv.developer.dataservice/com.amazon.tv.developer.dataservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.wifilocker]
+    path: /system/priv-app/CredentialLockerAndroid-tablet-release/CredentialLockerAndroid-tablet-release.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.avls.experience]
+    path: /data/app/com.amazon.avls.experience-rbxdvpLbPV1cFExA5e8kTQ==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.audiohome]
+    path: /data/app/com.amazon.audiohome-gXZDiJ_lojuy9jLCHqPlOg==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.dummy.calendar]
+    path: /system/app/DummyCalendar/DummyCalendar.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dcp.contracts.framework.library]
+    path: /system/priv-app/DeviceClientPlatformContractsFramework/DeviceClientPlatformContractsFramework.apk
+      arm: [status=verify] [reason=boot]
+      used by other apps: [com.amazon.device.software.ota.override, com.android.systemui, com.amazon.device.software.ota]
+  [io.github.wingedpanther.openshelf]
+    path: /data/app/io.github.wingedpanther.openshelf-_1rV_1uwYdIX2vcyTR6U5Q==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.whisperlink.core.android]
+    path: /system/priv-app/WhisperplayCore/WhisperplayCore.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.quicksettings.ui]
+    path: /system/priv-app/com.amazon.tv.quicksettings.ui/com.amazon.tv.quicksettings.ui.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.messaging.sdk.library]
+    path: /system/priv-app/DeviceMessagingAndroidSDK/DeviceMessagingAndroidSDK.apk
+      arm: [status=speed] [reason=bg-dexopt]
+  [com.fireos.usagestats.proxy]
+    path: /system/priv-app/AmazonUsageStatsListener/AmazonUsageStatsListener.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [amazon.speech.davs.davcservice]
+    path: /system/priv-app/amazon.speech.davs.davcservice/amazon.speech.davs.davcservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.dummy.gallery]
+    path: /system/app/DummyGallery/DummyGallery.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.notificationcenter]
+    path: /system/priv-app/com.amazon.tv.notificationcenter/com.amazon.tv.notificationcenter.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.support]
+    path: /system/priv-app/com.amazon.tv.aiv.support/com.amazon.tv.aiv.support.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.ahelite]
+    path: /system/priv-app/com.amazon.ahelite/com.amazon.ahelite.apk
+      arm: [status=speed] [reason=bg-dexopt]
+  [com.amazon.tv.alexaalerts]
+    path: /system/priv-app/com.amazon.tv.alexaalerts/com.amazon.tv.alexaalerts.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.oobe]
+    path: /system/priv-app/com.amazon.tv.oobe/com.amazon.tv.oobe.apk
+      arm: [status=speed] [reason=prebuilt]
+  [com.amazon.aiondec]
+    path: /data/app/com.amazon.aiondec-L9mUE5qO4Fy96p9WojqGWQ==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amznfuse.operatorredirection]
+    path: /system/priv-app/com.amznfuse.operatorredirection/com.amznfuse.operatorredirection.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.neopactservice]
+    path: /system/priv-app/com.amazon.neopactservice/com.amazon.neopactservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.sync.provider.ipc]
+    path: /system/priv-app/sync-provider_ipc-tv-release/sync-provider_ipc-tv-release.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.legal.notices]
+    path: /system/priv-app/com.amazon.tv.legal.notices/com.amazon.tv.legal.notices.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.settings]
+    path: /system/priv-app/CredentialStorage/CredentialStorage.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.settings.core]
+    path: /system/priv-app/com.amazon.tv.settings.core/com.amazon.tv.settings.core.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.minerva.client.api]
+    path: /system/priv-app/MinervaApi/MinervaApi.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.amazon.device.software.ota.override, com.android.systemui, com.amazon.device.software.ota]
+  [com.amazon.firebat]
+    path: /data/app/com.amazon.firebat-7crM2TJRifmiaOIP3GcY4w==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.dummy.alarmclock]
+    path: /system/app/DummyAlarmClock/DummyAlarmClock.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [android.amazon.perm]
+    path: /system/framework/android.amazon.perm/android.amazon.perm.apk
+      arm: [status=run-from-apk] [reason=unknown]
+  [com.android.cts.ctsshim]
+  [com.amazon.tv.keypolicymanager]
+    path: /system/app/KeyPolicyManagerUI/KeyPolicyManagerUI.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.esaba.downloader]
+    path: /data/app/com.esaba.downloader-JCqFe3kfmnkHKUVPM_oLmA==/base.apk
+      arm: [status=speed-profile] [reason=install]
+      known secondary dex files:
+        /data/user/0/com.esaba.downloader/files/classes2.dex
+          class loader context: PCL[/data/user/0/com.esaba.downloader/files/classes.dex];PCL[/data/app/com.esaba.downloader-JCqFe3kfmnkHKUVPM_oLmA==/base.apk]
+        /data/user/0/com.esaba.downloader/files/audience_network.dex
+          class loader context: PCL[];PCL[/data/app/com.esaba.downloader-Y3S-a38ff9cNHMDub-x1Ow==/base.apk]
+        /data/user/0/com.esaba.downloader/files/classes.dex
+          class loader context: PCL[];PCL[/data/app/com.esaba.downloader-JCqFe3kfmnkHKUVPM_oLmA==/base.apk]
+  [com.amazon.kso.blackbird]
+    path: /system/priv-app/com.amazon.kso.blackbird/com.amazon.kso.blackbird.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.providers.contentsupport]
+    path: /system/priv-app/com.amazon.providers.contentsupport/com.amazon.providers.contentsupport.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.firetvledservice]
+    path: /system/priv-app/ftvledservice/ftvledservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.vpndialogs]
+    path: /system/priv-app/VpnDialogs/VpnDialogs.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.awvflingreceiver]
+    path: /system/priv-app/FireTVDefaultMediaReceiver/FireTVDefaultMediaReceiver.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.hearingaid]
+    path: /system/priv-app/HearingAidUI/HearingAidUI.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.crashmanager]
+    path: /system/priv-app/CrashManager/CrashManager.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.application.compatibility.enforcer]
+    path: /system/priv-app/FireApplicationCompatibilityEnforcer/FireApplicationCompatibilityEnforcer.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.whisperplay.service.install]
+    path: /system/priv-app/WhisperplayInstall/WhisperplayInstall.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.ivona.tts.oem]
+    path: /system/priv-app/IvonaTTS/IvonaTTS.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.shell]
+    path: /system/priv-app/Shell/Shell.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.wallpaperbackup]
+    path: /system/app/WallpaperBackup/WallpaperBackup.apk
+      arm: [status=speed] [reason=prebuilt]
+  [com.amazon.tv.launcher]
+    path: /data/app/com.amazon.tv.launcher-r6qbcIZQsaSh1LtA6Ax6hw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.uxnotification]
+    path: /system/priv-app/UXNotificationService/UXNotificationService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.userdictionary]
+    path: /system/priv-app/UserDictionaryProvider/UserDictionaryProvider.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.android.providers.contacts]
+  [com.amazon.cast.sink]
+    path: /system/priv-app/DisplayMirroring/DisplayMirroring.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.inputpreference.service]
+    path: /system/priv-app/com.amazon.tv.inputpreference/com.amazon.tv.inputpreference.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.shoptv.client]
+    path: /data/app/com.amazon.shoptv.client-SAMZTDj9ljpw_JzU-9aKOQ==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.software.ota.override]
+    path: /system/priv-app/DeviceSoftwareOTAIdleOverride/DeviceSoftwareOTAIdleOverride.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.amazon.device.software.ota]
+  [com.android.location.fused]
+    path: /system/priv-app/FusedLocation/FusedLocation.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.nuvio.tv.test]
+    path: /data/app/com.nuvio.tv.test-y4xfMqxhZiLx11NT5P-jTA==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.android.systemui]
+    path: /system/priv-app/FireTVSystemUI/FireTVSystemUI.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.franktvinput]
+    path: /system/priv-app/com.amazon.franktvinput/com.amazon.franktvinput.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.bluetoothmidiservice]
+    path: /system/app/BluetoothMidiService/BluetoothMidiService.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.assetsync.service]
+    path: /system/priv-app/com.amazon.assetsync.service/com.amazon.assetsync.service.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.adep]
+    path: /system/priv-app/com.amazon.adep/com.amazon.adep.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.aria]
+    path: /system/priv-app/com.amazon.aria/com.amazon.aria.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.whad]
+    path: /system/app/whad_app/whad_app.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tcomm.jackson]
+    path: /system/priv-app/com.amazon.tcomm.jackson/com.amazon.tcomm.jackson.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.fireos.sdk.ftve.addp]
+    path: /system/priv-app/com.fireos.sdk.ftve.addp/com.fireos.sdk.ftve.addp.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.communication.discovery]
+    path: /system/priv-app/com.amazon.communication.discovery/com.amazon.communication.discovery.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.alexa.externalmediaplayer.fireos]
+    path: /system/priv-app/com.amazon.alexa.externalmediaplayer.fireos/com.amazon.alexa.externalmediaplayer.fireos.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.traceur]
+    path: /system/app/TraceurLite/TraceurLite.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.releasenotes]
+    path: /system/priv-app/com.amazon.tv.releasenotes/com.amazon.tv.releasenotes.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.privacypassservice]
+    path: /system/priv-app/com.amazon.privacypassservice/com.amazon.privacypassservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.cbs.ott]
+    path: /data/app/com.cbs.ott-nYfhTR8FHUQnOV2Lytx6jw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.gamehub]
+    path: /data/app/com.amazon.gamehub-5E_PB60Px5SoDHKxU43rDA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.settings]
+    path: /system/priv-app/RemoteSettingsAndroid/RemoteSettingsAndroid.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.cloud9]
+    path: /data/app/com.amazon.cloud9-wH8UW9QSMO13KG70z393gw==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.tv.livetv]
+    path: /system/priv-app/com.amazon.tv.livetv/com.amazon.tv.livetv.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.sync.sdk.internal]
+    path: /system/priv-app/com.amazon.device.sync.sdk.internal/com.amazon.device.sync.sdk.internal.apk
+      arm: [status=verify] [reason=boot]
+  [com.amazon.connectivitydiag]
+    path: /system/priv-app/ConnectivityDiag/ConnectivityDiag.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.matter]
+    path: /system/priv-app/com.amazon.tv.matter/com.amazon.tv.matter.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.bluetooth]
+    path: /system/app/Bluetooth/Bluetooth.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.lowstoragemanager]
+    path: /system/priv-app/com.amazon.device.lowstoragemanager/com.amazon.device.lowstoragemanager.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.android.providers.contacts]
+    path: /system/priv-app/ContactsProvider/ContactsProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.perfcollection]
+    path: /system/priv-app/com.amazon.perfcollection/com.amazon.perfcollection.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.providers.tv]
+    path: /system/priv-app/com.amazon.providers.tv/com.amazon.providers.tv.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.webview.chromium]
+    path: /system/app/AmazonWebView/AmazonWebView.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [org.smarttube.beta, com.amazon.shoptv.firetv.client, tv.twitch.android.viewer, com.amazon.avod, com.adguard.android, com.esaba.downloader, tv.pluto.android, com.amazon.firebat]
+  [com.amazon.bueller.music]
+    path: /data/app/com.amazon.bueller.music-hM1GeeCllmOAJgvnKp39IA==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.hedwig]
+    path: /data/app/com.amazon.hedwig-c1CNk9miFUwReo48weog5g==/base.apk
+      arm: [status=speed-profile] [reason=install]
+  [com.amazon.fireos.cirruscloud]
+    path: /system/priv-app/cirrus.cloudservice/cirrus.cloudservice.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.vizzini.ftvcds]
+    path: /system/priv-app/com.amazon.vizzini.ftvcds-stub/com.amazon.vizzini.ftvcds-stub.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.tv.quicksettings.ui.gazelle.overlay]
+  [com.amazon.dummy.music]
+    path: /system/app/DummyMusic/DummyMusic.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.device.bluetoothpa]
+    path: /system/priv-app/com.amazon.device.bluetoothpa/com.amazon.device.bluetoothpa.apk
+      arm: [status=speed-profile] [reason=bg-dexopt]
+  [com.amazon.media.recommendations]
+    path: /system/priv-app/FireTvNotificationService/FireTvNotificationService.apk
+      arm: [status=speed] [reason=bg-dexopt]
+      used by other apps: [com.android.systemui]
+  [com.amazon.application.compatibility.enforcer.sdk.library]
+    path: /system/priv-app/FireApplicationCompatibilityEnforcerSDK/FireApplicationCompatibilityEnforcerSDK.apk
+      arm: [status=speed] [reason=bg-dexopt]

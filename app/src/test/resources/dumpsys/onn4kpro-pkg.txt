@@ -1,0 +1,238 @@
+Activity Resolver Table:
+  Schemes:
+      stremio:
+        7028bc8 com.nuvio.tv/.MainActivity filter 8dbb86
+          Action: "android.intent.action.VIEW"
+          Category: "android.intent.category.DEFAULT"
+          Category: "android.intent.category.BROWSABLE"
+          Scheme: "stremio"
+      nuvio:
+        7028bc8 com.nuvio.tv/.MainActivity filter 75ca461
+          Action: "android.intent.action.VIEW"
+          Category: "android.intent.category.DEFAULT"
+          Category: "android.intent.category.BROWSABLE"
+          Scheme: "nuvio"
+
+  Non-Data Actions:
+      android.intent.action.MAIN:
+        b1fdc47 com.nuvio.tv/.launcher.AppIconDefault filter 7989c74
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+        15e259d com.nuvio.tv/.launcher.AppIconArcticBlue filter 8fa0a12
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+        d73f5e3 com.nuvio.tv/.launcher.AppIconEmerald filter fdd0be0
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+        9fc7e99 com.nuvio.tv/.launcher.AppIconRoseGold filter 26ab55e
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+        f660d3f com.nuvio.tv/.launcher.AppIconCopper filter 437060c
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+        88d6b55 com.nuvio.tv/.launcher.AppIconGraphite filter 3a8c96a
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+          Category: "android.intent.category.LEANBACK_LAUNCHER"
+
+Receiver Resolver Table:
+  Non-Data Actions:
+      androidx.profileinstaller.action.SAVE_PROFILE:
+        a0667d1 com.nuvio.tv/androidx.profileinstaller.ProfileInstallReceiver filter 2d60aa4
+          Action: "androidx.profileinstaller.action.SAVE_PROFILE"
+      android.media.tv.action.INITIALIZE_PROGRAMS:
+        e383e5b com.nuvio.tv/.core.sync.androidtv.TvChannelBootReceiver filter 65476f8
+          Action: "android.media.tv.action.INITIALIZE_PROGRAMS"
+          Action: "android.intent.action.BOOT_COMPLETED"
+      androidx.profileinstaller.action.INSTALL_PROFILE:
+        a0667d1 com.nuvio.tv/androidx.profileinstaller.ProfileInstallReceiver filter 5021236
+          Action: "androidx.profileinstaller.action.INSTALL_PROFILE"
+      androidx.profileinstaller.action.SKIP_FILE:
+        a0667d1 com.nuvio.tv/androidx.profileinstaller.ProfileInstallReceiver filter f326537
+          Action: "androidx.profileinstaller.action.SKIP_FILE"
+      androidx.profileinstaller.action.BENCHMARK_OPERATION:
+        a0667d1 com.nuvio.tv/androidx.profileinstaller.ProfileInstallReceiver filter b38b00d
+          Action: "androidx.profileinstaller.action.BENCHMARK_OPERATION"
+      android.intent.action.BOOT_COMPLETED:
+        e383e5b com.nuvio.tv/.core.sync.androidtv.TvChannelBootReceiver filter 65476f8
+          Action: "android.media.tv.action.INITIALIZE_PROGRAMS"
+          Action: "android.intent.action.BOOT_COMPLETED"
+
+Domain verification status:
+
+Permissions:
+  Permission [com.nuvio.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION] (b5a78d3):
+    sourcePackage=com.nuvio.tv
+    uid=10120 gids=[] type=0 prot=signature
+    perm=PermissionInfo{c87ec10 com.nuvio.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION}
+    flags=0x0
+
+Registered ContentProviders:
+  com.nuvio.tv/io.sentry.android.core.SentryInitProvider:
+    Provider{42c9309 com.nuvio.tv/io.sentry.android.core.SentryInitProvider}
+  com.nuvio.tv/androidx.core.content.FileProvider:
+    Provider{dbd890e com.nuvio.tv/androidx.core.content.FileProvider}
+  com.nuvio.tv/io.sentry.ndk.SentryNdkPreloadProvider:
+    Provider{849cf2f com.nuvio.tv/io.sentry.ndk.SentryNdkPreloadProvider}
+  com.nuvio.tv/androidx.startup.InitializationProvider:
+    Provider{1e7b93c com.nuvio.tv/androidx.startup.InitializationProvider}
+  com.nuvio.tv/io.sentry.android.core.SentryPerformanceProvider:
+    Provider{a8256c5 com.nuvio.tv/io.sentry.android.core.SentryPerformanceProvider}
+
+ContentProvider Authorities:
+  [com.nuvio.tv.fileprovider]:
+    Provider{dbd890e com.nuvio.tv/androidx.core.content.FileProvider}
+      applicationInfo=ApplicationInfo{14d281a com.nuvio.tv}
+  [com.nuvio.tv.androidx-startup]:
+    Provider{1e7b93c com.nuvio.tv/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{e2e2f4b com.nuvio.tv}
+  [com.nuvio.tv.SentryInitProvider]:
+    Provider{42c9309 com.nuvio.tv/io.sentry.android.core.SentryInitProvider}
+      applicationInfo=ApplicationInfo{b152d28 com.nuvio.tv}
+  [com.nuvio.tv.SentryNdkPreloadProvider]:
+    Provider{849cf2f com.nuvio.tv/io.sentry.ndk.SentryNdkPreloadProvider}
+      applicationInfo=ApplicationInfo{b69a41 com.nuvio.tv}
+  [com.nuvio.tv.SentryPerformanceProvider]:
+    Provider{a8256c5 com.nuvio.tv/io.sentry.android.core.SentryPerformanceProvider}
+      applicationInfo=ApplicationInfo{5abe6 com.nuvio.tv}
+
+Key Set Manager:
+  [com.nuvio.tv]
+      Signing KeySets: 61
+
+Packages:
+  Package [com.nuvio.tv] (6ae7527):
+    appId=10120
+    pkg=Package{323f3d4 com.nuvio.tv}
+    codePath=/data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==
+    resourcePath=/data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==
+    legacyNativeLibraryDir=/data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==/lib
+    extractNativeLibs=true
+    primaryCpuAbi=armeabi-v7a
+    secondaryCpuAbi=null
+    cpuAbiOverride=null
+    versionCode=1072 minSdk=24 targetSdk=36
+    minExtensionVersions=[]
+    versionName=1.1.0-beta.9
+    usesNonSdkApi=false
+    splits=[base]
+    apkSigningVersion=2
+    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA LARGE_HEAP ]
+    privateFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    forceQueryable=false
+    queriesIntents=[Intent { act=android.speech.RecognitionService }]
+    dataDir=/data/user/0/com.nuvio.tv
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    usesOptionalLibraries:
+      androidx.window.extensions
+      androidx.window.sidecar
+    timeStamp=2026-10-31 20:35:50
+    lastUpdateTime=2026-10-31 20:35:54
+    installerPackageName=com.nuvio.tv
+    installerPackageUid=10120
+    initiatingPackageName=com.nuvio.tv
+    originatingPackageName=null
+    packageSource=0
+    appMetadataFilePath=null
+    signatures=PackageSignatures{491997d version:2, signatures:[f8e3ffb4], past signatures:[]}
+    installPermissionsFixed=true
+    pkgFlags=[ HAS_CODE ALLOW_CLEAR_USER_DATA LARGE_HEAP ]
+    privatePkgFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    apexModuleName=null
+    declared permissions:
+      com.nuvio.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: prot=signature
+    requested permissions:
+      android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION
+      android.permission.INTERNET
+      com.android.providers.tv.permission.READ_EPG_DATA
+      com.android.providers.tv.permission.WRITE_EPG_DATA
+      android.permission.ACCESS_NETWORK_STATE
+      android.permission.REQUEST_INSTALL_PACKAGES
+      android.permission.ACCESS_WIFI_STATE
+      android.permission.RECORD_AUDIO
+      android.permission.RECEIVE_BOOT_COMPLETED
+      android.permission.FOREGROUND_SERVICE
+      android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+      com.nuvio.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+    install permissions:
+      android.permission.FOREGROUND_SERVICE: granted=true
+      com.nuvio.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: granted=true
+      android.permission.RECEIVE_BOOT_COMPLETED: granted=true
+      com.android.providers.tv.permission.READ_EPG_DATA: granted=true
+      android.permission.INTERNET: granted=true
+      android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION: granted=true
+      com.android.providers.tv.permission.WRITE_EPG_DATA: granted=true
+      android.permission.ACCESS_NETWORK_STATE: granted=true
+      android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK: granted=true
+      android.permission.ACCESS_WIFI_STATE: granted=true
+      android.permission.REQUEST_INSTALL_PACKAGES: granted=false
+    User 0: ceDataInode=64042 installed=true hidden=false suspended=false distractionFlags=0 stopped=false notLaunched=false enabled=0 instant=false virtual=false
+      installReason=4
+      firstInstallTime=2026-10-18 22:40:58
+      uninstallReason=0
+      overlay paths:
+        /data/resource-cache/com.android.systemui-neutral-2V7A.frro
+        /data/resource-cache/com.android.systemui-accent-vLzO.frro
+        /data/resource-cache/com.android.systemui-dynamic-19iy.frro
+      lastDisabledCaller: com.nuvio.tv
+      gids=[3003]
+      runtime permissions:
+        android.permission.RECORD_AUDIO: granted=false, flags=[ USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+      disabledComponents:
+        com.nuvio.tv.launcher.AppIconEmerald
+        com.nuvio.tv.launcher.AppIconGraphite
+        com.nuvio.tv.launcher.AppIconArcticBlue
+        com.nuvio.tv.launcher.AppIconDefault
+        com.nuvio.tv.launcher.AppIconCopper
+      enabledComponents:
+        com.nuvio.tv.launcher.AppIconRoseGold
+    User 10: ceDataInode=0 installed=false hidden=false suspended=false distractionFlags=0 stopped=true notLaunched=true enabled=0 instant=false virtual=false
+      installReason=0
+      firstInstallTime=1969-12-31 19:00:00
+      uninstallReason=0
+      gids=[3003]
+      runtime permissions:
+        android.permission.RECORD_AUDIO: granted=false
+
+Queries:
+  system apps queryable: false
+  queries via forceQueryable:
+  queries via package name:
+  queries via component:
+    com.android.settings.intelligence:
+      com.nuvio.tv
+    com.google.android.play.games:
+      com.nuvio.tv
+    org.smarttube.beta:
+      com.nuvio.tv
+    com.spocky.projengmenu:
+      com.nuvio.tv
+  queryable via interaction:
+    User 0:
+      [com.android.tv.settings,com.droidlogic.tv.settings,com.onn.updatenotification,android,com.android.providers.settings,com.netflix.tokenmanager,com.android.wallpaperbackup,com.android.dynsystem,com.droidlogic.android.tv.connecteddevices,com.gretzky.hwinfo,com.onn.bluetoothconnect,com.android.localtransport,com.android.tv.feedbackconsent,com.gretzky.GlobalKey,com.droidlogic,com.android.keychain,com.droidlogic.mictoggle,com.android.location.fused,com.android.inputdevices]:
+        com.nuvio.tv
+      com.android.providers.tv:
+        com.nuvio.tv
+      [com.google.android.gsf,com.google.android.gms]:
+        com.nuvio.tv
+      com.google.android.inputmethod.latin:
+        com.nuvio.tv
+      com.nuvio.tv:
+        [com.android.tv.settings,com.droidlogic.tv.settings,com.onn.updatenotification,android,com.android.providers.settings,com.netflix.tokenmanager,com.android.wallpaperbackup,com.android.dynsystem,com.droidlogic.android.tv.connecteddevices,com.gretzky.hwinfo,com.onn.bluetoothconnect,com.android.localtransport,com.android.tv.feedbackconsent,com.gretzky.GlobalKey,com.droidlogic,com.android.keychain,com.droidlogic.mictoggle,com.android.location.fused,com.android.inputdevices]
+    User 10:
+  queryable via uses-library:
+
+Dexopt state:
+  [com.nuvio.tv]
+    path: /data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==/base.apk
+      arm: [status=speed] [reason=cmdline] [primary-abi]
+        [location is /data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==/oat/arm/base.odex]
+
+Compiler stats:
+  [com.nuvio.tv]
+     base.apk - 50015

@@ -46,3 +46,23 @@ Device: AFTGAZL, Fire OS 7.7.1.7 (Android 9, SDK 28).
 | Helper survives ADB debugging switched off | **No.** Killed immediately (no heartbeat after the switch), so ADB was never restored; owner re-enabled it by hand. Feature dropped in design revision 3. |
 | Helper exits when SideSpeed is updated | Yes, "self-exit: APK disappeared" ~15 s after `adb install -r`. |
 | Helper gone after reboot | Not run (expected; low value). |
+
+## Onn 4K Pro — results recorded by the controller (2026-11-15)
+
+Device: onn 4K Pro Streaming Device (jarvis2), Android 14 (SDK 34), build URO3.260203.035.A1. SELinux enforcing. At test time: `adb_enabled=0`, `adb_wifi_enabled=1`, `service.adb.tcp.port=5555` (opened from the owner's PC).
+
+| Question | Result |
+|---|---|
+| On-box classic ADB from the app (spike button 1) while 5555 is open | **Works** ("connect classic: OK in 6390 ms"). No Amazon-style block on Google TV. |
+| Helper start from shell (setsid + nohup) | Works. uid=2000, parent pid 1. |
+| App → helper over abstract Unix socket | **Denied** (same as Fire TV: client "Permission denied"). |
+| App uid → shell-uid listener over loopback TCP | Works. |
+| `/proc/net/tcp*` readable by shell, with uid column | Yes, on both boxes. So caller check option (a) is viable. |
+| Compile com.nuvio.tv via helper | Success, **51 s**. Filter went `speed-profile` (bg-dexopt) → `speed` (cmdline). |
+| Port 5555 after reboot | **Gone** (connection refused for 3 min after boot). |
+| Wireless Debugging after reboot | Not determined from the Mac: the Onn is on 192.168.4.x and the Mac on 192.168.5.x, so mDNS can't see it. Owner to check on the TV. |
+| Pairing from the TV alone | Not tested (the UI can't be driven remotely; 5555 was open). |
+
+Captured samples: `app/src/test/resources/dumpsys/{onn4kpro-dexopt-before,onn4kpro-dexopt,onn4kpro-pkg,firetv-cube3-dexopt,firetv-cube3-pkg}.txt`.
+
+Fire TV format note: `arm: [status=speed] [reason=unknown]` lines under `path:`, with `used by other apps:` lines in some blocks.
