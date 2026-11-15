@@ -18,7 +18,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 
-/** D-pad number grid for entering a code (digits only). The "5" key takes initial focus when asked. */
+/** D-pad number grid for entering a code (digits only). The "1" key takes initial focus when asked. */
 @Composable
 fun PairingCodeGrid(
     label: String,

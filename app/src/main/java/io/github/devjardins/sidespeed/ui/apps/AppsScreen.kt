@@ -22,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
@@ -49,12 +51,18 @@ fun AppsScreen(
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
+    // Give the D-pad a starting point: the active tab takes focus when the screen opens.
+    val tabFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { tabFocus.requestFocus() } }
 
     Column(Modifier.fillMaxSize().padding(48.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Pick an app to compile", style = MaterialTheme.typography.displaySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Tab.entries.forEach { t ->
-                Button(onClick = { tab = t }) { Text(if (t == tab) "[ ${t.label} ]" else t.label) }
+                Button(
+                    onClick = { tab = t },
+                    modifier = if (t == tab) Modifier.focusRequester(tabFocus) else Modifier,
+                ) { Text(if (t == tab) "[ ${t.label} ]" else t.label) }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

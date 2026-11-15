@@ -74,8 +74,12 @@ class FakeAdbBackend : AdbBackend {
     /** Hosts passed to [pair], in order. */
     val pairHosts = mutableListOf<String>()
 
+    /** When true, [pair] suspends forever after recording the host (for timeout tests). */
+    var hangPair = false
+
     override suspend fun pair(host: String, port: Int, code: String): Result<Unit> {
         pairHosts += host
+        if (hangPair) awaitCancellation()
         return pairResultFor[host] ?: pairResult
     }
 

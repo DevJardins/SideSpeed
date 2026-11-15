@@ -7,9 +7,14 @@ data class AppEntry(
     val label: String,
     val installer: String?,
     val lastUpdateTime: Long,
+    /** Preinstalled (FLAG_SYSTEM or FLAG_UPDATED_SYSTEM_APP); such apps often report a null installer. */
+    val isSystem: Boolean = false,
 ) {
-    /** True unless installed by a known store; an unknown (null) installer counts as sideloaded. */
-    val isSideloaded: Boolean get() = installer !in STORE_INSTALLERS
+    /**
+     * True for non-system apps not installed by a known store; an unknown (null) installer counts as sideloaded.
+     * System apps never count, since preinstalled Amazon/OEM apps have a null installer too.
+     */
+    val isSideloaded: Boolean get() = !isSystem && installer !in STORE_INSTALLERS
 }
 
 /** Sideloaded apps first, then by label (case-insensitive). */

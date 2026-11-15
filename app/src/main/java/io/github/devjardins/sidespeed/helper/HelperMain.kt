@@ -208,7 +208,7 @@ object HelperMain {
             if (!tmp.renameTo(target)) throw IOException("rename to ${target.path} failed")
             log("startup: wrote port $port to ${target.path}")
         } catch (t: Throwable) {
-            log("startup: cannot write port file (${t::class.java.simpleName}: ${t.message}); app must scan the range")
+            log("startup: cannot write port file (${t::class.java.simpleName}: ${t.message}); the app cannot find the helper")
         }
     }
 

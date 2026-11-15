@@ -39,8 +39,8 @@ class CompileViewModel(
     private val _state = MutableStateFlow(CompileUiState())
     val state: StateFlow<CompileUiState> = _state.asStateFlow()
 
-    /** Clears the previous run's output for a new package; ignored while a compile is running. */
-    fun reset(pkg: String) {
+    /** Clears the previous run's output (called when a package is opened); ignored while a compile is running. */
+    fun reset() {
         if (_state.value.running) return
         _state.value = CompileUiState()
     }

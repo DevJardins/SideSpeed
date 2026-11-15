@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.adb.DeviceKind
+import io.github.devjardins.sidespeed.adb.PcStartCommands
 import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.pcStartCommands
 import io.github.devjardins.sidespeed.helper.HelperLaunch
@@ -33,6 +35,13 @@ const val LAN_WARNING =
     "ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; " +
         "SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed's " +
         "helper until you start it again."
+
+const val HELPER_STOPPED_TEXT =
+    "SideSpeed's helper isn't running. It stops when the TV restarts or SideSpeed is updated."
+
+const val WIRELESS_DEBUGGING_OFF_TEXT = "Turn Wireless debugging back on, then press Check again."
+
+const val WINDOWS_NOTE = "On Windows use PowerShell or Terminal, not Command Prompt."
 
 const val ALLOW_PROMPT_TEXT = "Check the TV for an 'Allow debugging' prompt and choose Always allow."
 
@@ -75,10 +84,12 @@ private fun ResultContent(vm: SetupViewModel, s: SetupUiState.Result) {
         }
         is Readiness.NeedsHelperStart, Readiness.HelperNeedsRestart -> {
             val stale = r == Readiness.HelperNeedsRestart
-            if (r is Readiness.NeedsHelperStart) Text(r.reason)
+            if (r is Readiness.NeedsHelperStart) {
+                Text(HELPER_STOPPED_TEXT)
+                Text("Details: ${r.reason}", style = MaterialTheme.typography.bodySmall)
+            }
             if (stale) Text("The helper is running but out of date (SideSpeed was updated). Restart it.")
             StartHelperContent(vm, s, stale, context)
-            MainButton("Check again", autoFocus = vm.isFireOs, onClick = vm::checkAgain)
         }
         else -> Unit
     }
@@ -86,27 +97,56 @@ private fun ResultContent(vm: SetupViewModel, s: SetupUiState.Result) {
 
 @Composable
 private fun StartHelperContent(vm: SetupViewModel, s: SetupUiState.Result, stale: Boolean, context: Context) {
-    val cmds = pcStartCommands(vm.wifiIp(), HelperLaunch.command(), killFirst = stale)
+    val cmds = pcStartCommands(DeviceKind.of(vm.isFireOs), vm.wifiIp(), HelperLaunch.command(), killFirst = stale)
     if (vm.isFireOs) {
         Text("1. Turn on ADB debugging in Developer options.")
         Button(onClick = { openDevSettings(context) }) { Text("Open developer settings") }
         Text("2. From a PC on the same network, run:")
-        cmds.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        PcCommands(cmds)
         Text("Phone app coming later.")
+        MainButton("Check again", onClick = vm::checkAgain)
     } else {
-        Text("1. Turn on Wireless debugging in Developer options, then choose Pair device with pairing code.")
-        Button(onClick = { openDevSettings(context) }) { Text("Open developer settings") }
-        var code by remember { mutableStateOf("") }
-        var port by remember { mutableStateOf("") }
-        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-            PairingCodeGrid("Pairing code", code, 6, { code = it }, focusFirst = true)
-            PairingCodeGrid("Pairing port", port, 5, { port = it })
+        val paired by vm.pairedTls.collectAsState(initial = false)
+        var showPairing by remember { mutableStateOf(false) }
+        if (paired && !showPairing) {
+            Text(WIRELESS_DEBUGGING_OFF_TEXT)
+            MainButton("Check again", onClick = vm::checkAgain)
+            Button(onClick = { openDevSettings(context) }) { Text("Open developer settings") }
+            Button(onClick = { showPairing = true }) { Text("Pair again") }
+        } else {
+            PairingContent(vm, s, context)
+            MainButton("Check again", autoFocus = false, onClick = vm::checkAgain)
         }
-        Button(onClick = { vm.pair(code, port) }, enabled = !s.pairing) { Text("Pair") }
-        s.pairMessage?.let { Text(it) }
-        Text("Or from a PC on the same network, run:")
-        cmds.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        Text("Or from a PC on the same network, using the addresses shown under Wireless debugging:")
+        PcCommands(cmds)
     }
+}
+
+@Composable
+private fun PairingContent(vm: SetupViewModel, s: SetupUiState.Result, context: Context) {
+    Text("1. Turn on Wireless debugging in Developer options, then choose Pair device with pairing code.")
+    Button(onClick = { openDevSettings(context) }) { Text("Open developer settings") }
+    var code by remember { mutableStateOf("") }
+    var port by remember { mutableStateOf("") }
+    Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+        PairingCodeGrid("Pairing code", code, 6, { code = it }, focusFirst = true)
+        PairingCodeGrid("Pairing port", port, 5, { port = it })
+    }
+    Button(onClick = { vm.pair(code, port) }, enabled = !s.pairing) { Text("Pair") }
+    s.pairMessage?.let { Text(it) }
+}
+
+@Composable
+private fun PcCommands(cmds: PcStartCommands) {
+    val style = MaterialTheme.typography.bodyMedium
+    cmds.connect.forEach { Text(it, style = style) }
+    if (cmds.connect.any { it.startsWith("adb pair") }) {
+        Text("(enter the pairing code when asked)", style = MaterialTheme.typography.bodySmall)
+    }
+    cmds.run.forEach { Text(it, style = style) }
+    Text(WINDOWS_NOTE, style = MaterialTheme.typography.bodySmall)
+    Text("Or type adb shell, then paste:", style = MaterialTheme.typography.bodySmall)
+    cmds.shellPaste.forEach { Text(it, style = style) }
 }
 
 private fun openDevSettings(context: Context) {

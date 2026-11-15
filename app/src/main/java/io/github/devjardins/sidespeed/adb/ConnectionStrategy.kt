@@ -20,14 +20,35 @@ fun interface HelperProbe {
     suspend fun ping(): HelperPing?
 }
 
-/** Commands to run from a PC. The launch command has `$(...)` and `|`, so it is wrapped in single quotes. */
-fun pcStartCommands(wifiIp: String?, launch: String, killFirst: Boolean): List<String> {
-    require(!launch.contains('\'')) { "launch command must not contain single quotes" }
-    return buildList {
-        add("adb connect ${wifiIp ?: "<tv-ip>"}:5555")
-        if (killFirst) add("adb shell '${ConnectionStrategy.KILL_COMMAND}'")
-        add("adb shell '$launch'")
+enum class DeviceKind {
+    FIRE_OS, GOOGLE_TV;
+
+    companion object {
+        fun of(isFireOs: Boolean): DeviceKind = if (isFireOs) FIRE_OS else GOOGLE_TV
     }
+}
+
+/**
+ * Commands for starting the helper from a PC.
+ * [connect]: how to reach the TV (classic ADB on 5555 for Fire OS; Wireless-debugging pair + connect for
+ * Google TV, whose port 5555 is closed). [run]: one `adb shell '<cmd>'` per command; the launch command has
+ * `$(...)` and `|`, so it is single-quoted, which Windows Command Prompt does not honour. [shellPaste]: the
+ * raw commands, for typing `adb shell` and pasting them, which works from any terminal.
+ */
+data class PcStartCommands(val connect: List<String>, val run: List<String>, val shellPaste: List<String>)
+
+fun pcStartCommands(kind: DeviceKind, wifiIp: String?, launch: String, killFirst: Boolean): PcStartCommands {
+    require(!launch.contains('\'')) { "launch command must not contain single quotes" }
+    val ip = wifiIp ?: "<tv-ip>"
+    val connect = when (kind) {
+        DeviceKind.FIRE_OS -> listOf("adb connect $ip:5555")
+        DeviceKind.GOOGLE_TV -> listOf("adb pair $ip:<pairing port>", "adb connect $ip:<port>")
+    }
+    val raw = buildList {
+        if (killFirst) add(ConnectionStrategy.KILL_COMMAND)
+        add(launch)
+    }
+    return PcStartCommands(connect, raw.map { "adb shell '$it'" }, raw)
 }
 
 class ConnectionStrategy(

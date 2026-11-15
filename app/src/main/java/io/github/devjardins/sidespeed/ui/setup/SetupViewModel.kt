@@ -9,11 +9,14 @@ import io.github.devjardins.sidespeed.data.Prefs
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 sealed interface SetupUiState {
     data object Loading : SetupUiState
@@ -46,6 +49,9 @@ class SetupViewModel(
     private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Loading)
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
     private var job: Job? = null
+
+    /** Whether pairing over Wireless debugging has succeeded before (Google TV). */
+    val pairedTls: Flow<Boolean> = prefs.pairedTls
 
     fun wifiIp(): String? = wifiIp.invoke()
 
@@ -91,8 +97,16 @@ class SetupViewModel(
         job?.cancel()
         job = viewModelScope.launch(dispatcher) {
             _state.value = current.copy(pairing = true, pairMessage = "Pairing...")
-            var r = adb.pair("127.0.0.1", p, code)
-            if (r.isFailure) wifiIp()?.let { r = adb.pair(it, p, code) }
+            val r = try {
+                withTimeout(PAIR_TIMEOUT_MS) {
+                    var r = adb.pair("127.0.0.1", p, code)
+                    if (r.isFailure) wifiIp()?.let { r = adb.pair(it, p, code) }
+                    r
+                }
+            } catch (_: TimeoutCancellationException) {
+                _state.value = current.copy(pairMessage = "Pairing timed out")
+                return@launch
+            }
             if (r.isSuccess) {
                 prefs.setPairedTls(true)
                 check()
@@ -102,5 +116,9 @@ class SetupViewModel(
                 )
             }
         }
+    }
+
+    companion object {
+        const val PAIR_TIMEOUT_MS = 30_000L
     }
 }

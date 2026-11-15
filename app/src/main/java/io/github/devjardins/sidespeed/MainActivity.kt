@@ -54,7 +54,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SideSpeedTheme {
-                var ready by rememberSaveable { mutableStateOf(false) }
+                // Not saveable: after process death HelperClient has no verified port, so always re-check
+                // through Setup (a fast ping when the helper is alive).
+                var ready by remember { mutableStateOf(false) }
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var selectedMode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
                 var selected by remember { mutableStateOf<AppEntry?>(null) }

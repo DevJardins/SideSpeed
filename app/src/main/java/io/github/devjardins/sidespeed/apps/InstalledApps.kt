@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.apps
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -34,7 +35,18 @@ class InstalledApps(context: Context) : AppSource {
     }
 
     private fun entry(pkg: String, label: String?, info: PackageInfo) =
-        AppEntry(pkg, label?.takeIf { it.isNotBlank() } ?: pkg, installerOf(pkg), info.lastUpdateTime)
+        AppEntry(
+            pkg,
+            label?.takeIf { it.isNotBlank() } ?: pkg,
+            installerOf(pkg),
+            info.lastUpdateTime,
+            isSystem = isSystem(info),
+        )
+
+    private fun isSystem(info: PackageInfo): Boolean {
+        val flags = info.applicationInfo?.flags ?: return false
+        return (flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0
+    }
 
     private fun queryLaunchable(category: String): List<ResolveInfo> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(category)

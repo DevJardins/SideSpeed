@@ -150,6 +150,18 @@ class SetupViewModelTest {
         assertTrue(!prefs.tls.value)
     }
 
+    @Test fun hangingPairTimesOut() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { hangPair = true }
+        val prefs = FakePrefs(true)
+        val v = resultVm(adb, prefs)
+        v.pair("123456", "37000"); dispatcher.scheduler.advanceUntilIdle()
+        val s = v.state.value as SetupUiState.Result
+        assertEquals("Pairing timed out", s.pairMessage)
+        assertEquals(false, s.pairing)
+        assertTrue(!prefs.tls.value)
+        assertEquals(SetupViewModel.PAIR_TIMEOUT_MS, dispatcher.scheduler.currentTime)
+    }
+
     @Test fun checkAgainLeavesReadyImmediately() = runTest(timeout = 10.seconds) {
         val v = vm(FakeReadier(Readiness.HelperReady))
         v.start(); dispatcher.scheduler.advanceUntilIdle()

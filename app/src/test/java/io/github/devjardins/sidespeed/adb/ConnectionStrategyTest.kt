@@ -121,14 +121,39 @@ class ConnectionStrategyTest {
         assertEquals(listOf(ConnectionStrategy.KILL_COMMAND), adb.commands)
     }
 
-    @Test fun pcCommandsQuoteLaunchInSingleQuotes() {
+    @Test fun fireOsPcCommandsUseClassicAdb() {
         val launch = HelperLaunch.command()
         assertFalse(launch.contains("'"))
-        val cmds = pcStartCommands("192.168.1.20", launch, killFirst = false)
-        assertEquals(listOf("adb connect 192.168.1.20:5555", "adb shell '$launch'"), cmds)
-        val k = pcStartCommands(null, launch, killFirst = true)
-        assertEquals("adb connect <tv-ip>:5555", k[0])
-        assertEquals("adb shell '${ConnectionStrategy.KILL_COMMAND}'", k[1])
-        assertEquals("adb shell '$launch'", k[2])
+        val c = pcStartCommands(DeviceKind.FIRE_OS, "192.168.1.20", launch, killFirst = false)
+        assertEquals(listOf("adb connect 192.168.1.20:5555"), c.connect)
+        assertEquals(listOf("adb shell '$launch'"), c.run)
+        assertEquals(listOf(launch), c.shellPaste)
+    }
+
+    @Test fun killFirstPrecedesLaunch() {
+        val launch = HelperLaunch.command()
+        val c = pcStartCommands(DeviceKind.FIRE_OS, null, launch, killFirst = true)
+        assertEquals(listOf("adb connect <tv-ip>:5555"), c.connect)
+        assertEquals(listOf("adb shell '${ConnectionStrategy.KILL_COMMAND}'", "adb shell '$launch'"), c.run)
+        assertEquals(listOf(ConnectionStrategy.KILL_COMMAND, launch), c.shellPaste)
+    }
+
+    @Test fun googleTvPcCommandsUseWirelessDebuggingPorts() {
+        val launch = HelperLaunch.command()
+        val c = pcStartCommands(DeviceKind.GOOGLE_TV, "192.168.1.30", launch, killFirst = false)
+        assertEquals(
+            listOf("adb pair 192.168.1.30:<pairing port>", "adb connect 192.168.1.30:<port>"),
+            c.connect,
+        )
+        assertTrue(c.connect.none { it.contains(":5555") })
+        assertEquals(listOf("adb shell '$launch'"), c.run)
+        assertEquals(listOf(launch), c.shellPaste)
+        val noIp = pcStartCommands(DeviceKind.GOOGLE_TV, null, launch, killFirst = false)
+        assertEquals("adb pair <tv-ip>:<pairing port>", noIp.connect[0])
+    }
+
+    @Test fun deviceKindFromFlag() {
+        assertEquals(DeviceKind.FIRE_OS, DeviceKind.of(isFireOs = true))
+        assertEquals(DeviceKind.GOOGLE_TV, DeviceKind.of(isFireOs = false))
     }
 }

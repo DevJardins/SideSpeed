@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.ui.compile.CompileUiState
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
+import io.github.devjardins.sidespeed.ui.compile.resultBanner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -102,14 +103,14 @@ class CompileViewModelTest {
         val v = vm(fake())
         v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
         assertTrue(v.state.value.log.isNotEmpty())
-        v.reset("com.other.app")
+        v.reset()
         assertEquals(CompileUiState(), v.state.value)
     }
 
     @Test fun resetIgnoredWhileRunning() = runTest(timeout = 10.seconds) {
         val v = vm(fake())
         v.start(pkg, CompileMode.SPEED)
-        v.reset("com.other.app")
+        v.reset()
         assertTrue(v.state.value.running)
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(true, v.state.value.result?.success)
@@ -132,5 +133,18 @@ class CompileViewModelTest {
         v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
         assertEquals(2000, v.state.value.log.size)
         assertEquals("Success", v.state.value.log.last())
+    }
+}
+
+class ResultBannerTest {
+    @Test fun sameMessageIsNotRepeated() {
+        assertEquals("Success", resultBanner(true, "Success"))
+        assertEquals("Failure", resultBanner(false, "Failure"))
+        assertEquals("Success", resultBanner(true, ""))
+    }
+
+    @Test fun differentMessageIsAppended() {
+        assertEquals("Failure: Connection lost", resultBanner(false, "Connection lost"))
+        assertEquals("Success: done", resultBanner(true, "done"))
     }
 }

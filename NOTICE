@@ -22,7 +22,7 @@ sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
   Derived from OpenJDK sun.security. GPL-2.0 (version 2 only) with the Oracle "Classpath"
   exception. The Classpath exception is what permits linking it from this GPLv3 app.
 
-AndroidX (Jetpack Compose, TV Material, Navigation, DataStore, Core, Activity),
+AndroidX (Jetpack Compose, TV Material, DataStore, Core, Activity),
 Kotlin and kotlinx.coroutines
   Copyright (c) The Android Open Source Project and JetBrains. Apache License 2.0.
 

@@ -46,6 +46,12 @@ fun badgeLabel(b: StatusBadge): String = when (b) {
     StatusBadge.UNKNOWN -> "Unknown"
 }
 
+/** "Success" / "Failure", plus the message only when it adds something (avoids "Success: Success"). */
+fun resultBanner(success: Boolean, message: String): String {
+    val label = if (success) "Success" else "Failure"
+    return if (message.isBlank() || message == label) label else "$label: $message"
+}
+
 fun formatElapsed(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
 
 @Composable
@@ -64,7 +70,7 @@ fun CompileScreen(
     val startFocus = remember { FocusRequester() }
     var logFocused by remember { mutableStateOf(false) }
 
-    LaunchedEffect(app.packageName) { vm.reset(app.packageName); runCatching { startFocus.requestFocus() } }
+    LaunchedEffect(app.packageName) { vm.reset(); runCatching { startFocus.requestFocus() } }
     LaunchedEffect(state.running) {
         if (state.running) {
             while (true) {
@@ -100,7 +106,7 @@ fun CompileScreen(
         state.result?.let { r ->
             val ok = r.success
             Text(
-                (if (ok) "Success" else "Failure") + ": " + r.message,
+                resultBanner(r.success, r.message),
                 style = MaterialTheme.typography.displaySmall,
                 color = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
