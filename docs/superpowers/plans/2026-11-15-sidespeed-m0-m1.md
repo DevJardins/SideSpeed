@@ -232,6 +232,52 @@ docs/spike/M0-runbook.md, docs/spike/M0-results.md
 
   Tasks 5–7 don't depend on the results and may proceed while waiting. Task 8 must not start until the hand-off is done.
 
+### Task 4b: M0b helper spike (throwaway, added by design revision 2)
+
+Design ref: "Built-in helper" section and milestone M0b. Everything lives in `app/src/debug/` and `docs/spike/`. Task 10 deletes it with the rest of the spike.
+
+**Files:**
+- Create: `app/src/debug/java/io/github/devjardins/sidespeed/spike/HelperSpikeMain.kt` (an `object` with `@JvmStatic fun main(args: Array<String>)`)
+- Modify: `SpikeActivity.kt` (add buttons 10–12 below), `docs/spike/M0-runbook.md` (add a "Part C: helper" section), `docs/spike/M0-results.md` (add M0b rows)
+
+**What `HelperSpikeMain` does when started with** `CLASSPATH=<apk> app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.spike.HelperSpikeMain`:
+1. **Startup.** Log its uid, pid and APK path to stdout and to `/data/local/tmp/sidespeed_helper.log` (append, one timestamped line per event).
+2. **Socket.** Listen on abstract socket `sidespeed_helper` (`android.net.LocalServerSocket`). For each connection:
+   - Read the peer uid with `LocalSocket.peerCredentials`.
+   - Accept only SideSpeed's uid (looked up at start via `pm list packages -U io.github.devjardins.sidespeed` or the equivalent) or uid 2000 (spike only, so the controller can test from `adb shell`). Refuse others: log the refusal and close.
+   - Requests, one text line each:
+     - `ping` → `pong uid=<helperUid> pid=<pid> apk=<path>`
+     - `id` → the output of `id`
+     - `compile <pkg>` → streams `pm compile -m speed -f <pkg>` output, validating `<pkg>` with the same regex as Task 6
+     - `adboff <seconds>` → writes `settings put global adb_enabled 0`, sleeps `<seconds>` (max 120), then writes 1 again, logging each step
+   - Every response ends with a line `__END__:<exit>`.
+3. **Heartbeat.** Append a heartbeat line to the log every 5 s.
+4. **Self-exit.** Exit if its APK file disappears or changes (check every 5 s).
+5. **Detaching.** It must keep running after the launching `adb shell` exits. Launch it with `nohup ... &`, `setsid`, or both, whichever works; record which in the report.
+
+**SpikeActivity additions:**
+- **10 "Start helper via own ADB":** over the existing `AdbBackend` shell (needs button 1 or 3 connected first), runs the launch command with the APK path from `applicationInfo.sourceDir`, backgrounded.
+- **11 "Ping helper":** connects to `@sidespeed_helper` with `LocalSocket` and logs the reply.
+- **12 "Compile com.nuvio.tv via helper"**, logging the duration.
+
+**Runbook Part C** (for the owner's Onn, and for the controller on the Fire TV):
+1. Start the helper.
+   - Fire TV: from a PC, run `adb shell 'CLASSPATH=$(pm path io.github.devjardins.sidespeed | cut -d: -f2) nohup app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.spike.HelperSpikeMain >/dev/null 2>&1 &'`. Use the exact working form you find, and put it in the runbook.
+   - Onn: press 10.
+2. Press 11: does it answer, and with uid=2000?
+3. Press 12: does it compile?
+4. Close the PC's adb session (`adb kill-server`), wait 30 s, and press 11. Is it still alive?
+5. ADB-off test. From `adb shell`, send `adboff 60` to the helper; `toybox nc` can't reach abstract sockets, so add a tiny client mode `HelperSpikeMain --client "<request>"` launched with the same app_process command. Then:
+   - Press 11 while ADB is off. Does it answer?
+   - After the helper re-enables ADB, check the heartbeat log for gaps.
+6. Update test: `adb install -r` the same APK. Does the helper exit?
+7. Reboot test: after a reboot, the helper should be gone. Confirm with 11.
+
+- [ ] **Step 1:** Implement `HelperSpikeMain`, buttons 10–12 and the runbook Part C. Make sure the helper's `main` can run outside an Activity context: no Application, no `Context`, plain JVM plus the Android framework classes that are usable from `app_process`.
+- [ ] **Step 2:** Run `./gradlew :app:assembleDebug :app:testDebugUnitTest`. Expected: BUILD SUCCESSFUL.
+- [ ] **Step 3:** Commit with message `Add M0b helper spike`.
+- [ ] **Step 4 (controller):** Run Part C on the Fire TV Cube, which is reachable from the Mac over adb at 192.168.5.140:5555. Record the results in `M0-results.md`.
+
 ### Task 5: Dexopt status parser
 
 **Files:**
