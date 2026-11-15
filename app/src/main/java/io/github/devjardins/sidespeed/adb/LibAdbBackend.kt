@@ -7,11 +7,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runInterruptible
 import java.io.File
 import java.io.IOException
 import java.security.PrivateKey
 import java.security.cert.Certificate
+import java.util.concurrent.TimeUnit
 
 class LibAdbBackend(private val context: Context, identityDir: File) : AdbBackend {
     private val manager = object : AbsAdbConnectionManager() {
@@ -22,12 +26,15 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
         override fun getPrivateKey(): PrivateKey = identity.first
         override fun getCertificate(): Certificate = identity.second
         override fun getDeviceName(): String = "SideSpeed"
-    }.apply { setApi(Build.VERSION.SDK_INT) }
+    }.apply {
+        setApi(Build.VERSION.SDK_INT)
+        setTimeout(ADB_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+    }
 
     override val isConnected: Boolean get() = manager.isConnected
 
-    override suspend fun connect(target: AdbTarget): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+    override suspend fun connect(target: AdbTarget): Result<Unit> = runCatchingCancellable {
+        runInterruptible(Dispatchers.IO) {
             val ok = when (target) {
                 is AdbTarget.Classic -> manager.connect(target.host, target.port)
                 AdbTarget.WirelessTls -> manager.connectTls(context, TLS_TIMEOUT_MS)
@@ -37,22 +44,25 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
     }
 
     override suspend fun pair(host: String, port: Int, code: String): Result<Unit> =
-        withContext(Dispatchers.IO) {
-            runCatching {
+        runCatchingCancellable {
+            runInterruptible(Dispatchers.IO) {
                 if (!manager.pair(host, port, code)) throw IOException("ADB pairing failed")
             }
         }
 
     override fun shell(command: String): Flow<ShellEvent> = flow {
         val stream = try {
-            manager.openStream("shell:" + ShellExit.wrap(command))
-        } catch (e: IOException) {
-            throw AdbConnectionLost(e)
+            runInterruptible { manager.openStream("shell:" + ShellExit.wrap(command)) }
+        } catch (e: Throwable) {
+            throw e.asConnectionLost()
         }
-        stream.use {
+        // Unblock a pending read when the collector is cancelled.
+        val job = currentCoroutineContext().job
+        val handle = job.invokeOnCompletion { runCatching { stream.close() } }
+        try {
             var exited = false
             try {
-                it.openInputStream().bufferedReader().useLines { lines ->
+                stream.openInputStream().bufferedReader().useLines { lines ->
                     for (raw in lines) {
                         val (text, code) = ShellExit.split(raw)
                         if (text != null) emit(ShellEvent.Line(text))
@@ -64,14 +74,19 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
                     }
                 }
             } catch (e: IOException) {
+                currentCoroutineContext().ensureActive()
                 if (!exited) throw AdbConnectionLost(e)
             }
+            currentCoroutineContext().ensureActive()
             if (!exited) throw AdbConnectionLost(null)
+        } finally {
+            handle.dispose()
+            runCatching { stream.close() }
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun openService(service: String): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
+    override suspend fun openService(service: String): Result<String> = runCatchingCancellable {
+        runInterruptible(Dispatchers.IO) {
             manager.openStream(service).use { it.openInputStream().bufferedReader().readText() }
         }
     }
@@ -82,5 +97,6 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
 
     private companion object {
         const val TLS_TIMEOUT_MS = 10_000L
+        const val ADB_TIMEOUT_SECONDS = 30L
     }
 }
