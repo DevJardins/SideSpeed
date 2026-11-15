@@ -1,7 +1,7 @@
 # SideSpeed — Design
 
 Date: 2026-11-15
-Status: approved by owner 2026-11-15
+Status: approved by owner 2026-11-15; revision 2 (built-in helper + phone companion) approved 2026-11-15
 Source spec: [`SPEC.md`](../../../SPEC.md) (repo root). This document builds on it and wins where they differ.
 
 ## Intent and the why
@@ -27,14 +27,14 @@ SideSpeed is a sideloadable Android TV / Fire TV app that runs that compile on t
 - Root-based compiling. A root backend might come later, but not now.
 - Phone or tablet UI. It may run there, but there's no layout work for it.
 - Distributing through the Play Store. Distribution is by sideload only: GitHub Releases APK.
-- Shizuku in v1. The ADB layer sits behind an interface so it can be added later (see Approaches).
+- Depending on the separate Shizuku app. SideSpeed adapts Shizuku's starter technique into its own built-in helper instead (see "Built-in helper").
 - Compiling anything other than user-chosen packages. No "compile everything" button.
 
 ## Anti-goals (it fails even if it technically works)
 
 - **It silently leaves ADB exposed without telling the user.** The LAN-exposure warning must appear in setup and stay visible in Settings.
 - **It breaks or slows the target app.** Errors from `pm compile` must be shown verbatim, never swallowed. It never runs destructive package commands: only `compile`, `dumpsys`, and read-only queries. The one exception is reopening the 5555 port; see Connection.
-- **Setup can't be done from the couch.** Any step that requires a PC is a failure for the main flows. Typing a pairing code and port with a remote is acceptable.
+- **Setup can't be done from the couch.** Any step that requires a PC is a failure for the main flows where the device allows it. Typing a pairing code and port with a remote is acceptable. Exception, forced by Amazon: on current Fire OS a PC or the phone companion is needed once per boot to start the helper.
 - **The ADB key is lost and the user has to re-approve the "Allow USB debugging" prompt repeatedly.**
 
 ## Constraints
@@ -45,7 +45,7 @@ SideSpeed is a sideloadable Android TV / Fire TV app that runs that compile on t
 - `QUERY_ALL_PACKAGES` and `INTERNET` permissions are required. That's fine for a sideloaded app.
 - The release APK is signed with a keystore that is never committed. Signing config is read from `keystore.properties` or environment variables, both already in `.gitignore`.
 - Test devices the owner has on hand:
-  - **Fire TV Cube Gen 3:** Fire OS, classic 5555 path.
+  - **Fire TV Cube Gen 3:** Fire OS 7.7.1.7 (Android 9). M0 showed on-box ADB is blocked here; uses the helper started from a PC or phone.
   - **Onn 4K Pro (2026):** Google TV on Android 14, most likely the Wireless Debugging path.
 
   Anything else is built from documentation and should be labelled "should work" in the README.
@@ -62,6 +62,15 @@ Three ways to give the app ADB access were considered:
 | C | Shizuku only. | Least code for us. But it's an extra app to install, its UI is built for phones, and it has to be restarted after every reboot, which breaks background auto-recompile. Kept as a possible second backend later. |
 
 **The owner picked A.**
+
+**Revision 2 (2026-11-15, after the Fire TV M0 test).** On the Fire TV Cube (Fire OS 7.7.1.7), adbd answers connections from the Mac but sends nothing to connections that start on the box itself, on both `127.0.0.1` and its own LAN IP. This is Amazon's deliberate block on local ADB, present since Fire OS 7.6.6.9 / 8.1.0.3 (CVE-2024-27350). Approach A alone therefore can't work on current Fire TVs. Google is also discussing a similar loopback block for Android.
+
+Options considered for this:
+- **Our own built-in helper, adapting Shizuku's starter technique (chosen by the owner).** One app; a one-line start after each reboot on Fire TV.
+- Depending on the separate Shizuku app. Less code for us, but a second app with a phone-style UI.
+- Dropping Fire TV from the on-box flow. Fails the "any Android TV box" goal.
+
+A stays: SideSpeed still uses its own ADB connection where the device allows it (Google TV / Wireless Debugging), and uses it to start the helper itself.
 
 **Candidate libraries.** Picking one is the builder's job, using the criteria below. The two leads:
 - [libadb-android](https://github.com/MuntashirAkon/libadb-android), used by App Manager. It supports classic, pairing and TLS. Its license is in a COPYING file; verify it's GPL-compatible.
@@ -94,6 +103,47 @@ If neither works, fall back to dadb for classic plus a ported pairing implementa
   3. Otherwise report "not set up" and send the user to Setup.
 - **Make it last after reboot (Wireless Debugging devices):** after a successful TLS connection, the app may offer an opt-in setting that sends the `tcpip:5555` service. That reopens classic 5555 until the next reboot, so background jobs can connect without mDNS. It's off by default, and its label says it widens exposure in the same way as the classic path. Test whether this works and helps on the Onn 4K Pro before shipping it.
 - **Known risk:** on some Android versions Wireless Debugging turns itself off after a reboot or a network change. When it's off, auto-recompile can't run. In that case the app notes it ("Couldn't reach ADB — reopen Wireless Debugging") in the status screen and in a notification. It does not fail silently. The "Survive reboots" option below exists to fix this.
+
+### Built-in helper (shell-uid process, revision 2)
+
+**What it is.** A small Java/Kotlin entry point inside SideSpeed's own APK, launched with `app_process` from an ADB shell so it runs as the shell user (uid 2000). As that user it runs `pm compile`, `cmd package compile` and `dumpsys` directly. SideSpeed talks to it locally, with no ADB connection needed while it runs. It is adapted from Shizuku's starter technique (Apache-2.0). Credit Shizuku in a `NOTICE` file, and never use the Shizuku name, its app id `moe.shizuku.privileged.api` or its icons, which its license forbids.
+
+**Launch.** A start script is written by SideSpeed to a location the shell user can read (for example `/sdcard/Android/data/io.github.devjardins.sidespeed/files/start.sh`, or the exact command shown on screen). It runs:
+`CLASSPATH=<SideSpeed APK path> app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.helper.HelperMain &`
+Backgrounded and detached (`setsid`/`nohup` or equivalent) so it survives the ADB shell exiting. Because the APK path changes when SideSpeed is updated, the helper exits when its APK is replaced, and SideSpeed shows "Restart the helper".
+
+**Who starts it:**
+- **Google TV / Wireless Debugging devices:** SideSpeed itself, over its own ADB connection (Approach A), right after connecting. No PC.
+- **Fire TV and any device where on-box ADB is blocked:** a PC (`adb shell sh <path>/start.sh`, shown on screen) or the phone companion (milestone M4), once per boot.
+
+**Talking to it.** The helper listens on a Linux abstract local socket (for example `@sidespeed_helper`). On every connection it checks the caller's uid with `SO_PEERCRED` (`LocalSocket.getPeerCredentials()`) and accepts only SideSpeed's uid, looked up from PackageManager at helper start. Hidden-API Binder delivery, as Shizuku does it, is not needed; the builder may choose Binder instead if there's a strong reason, and must note it.
+
+**What it accepts.** A fixed set of requests, not arbitrary shell:
+- compile `<package>` `<mode>`, with the package validated by the same package-name rule as the app;
+- `dumpsys package dexopt` / `dumpsys package <package>`;
+- read and write `adb_enabled` / `adb_wifi_enabled`;
+- `ping` and `version`, so SideSpeed can see the helper is alive and matches its APK.
+
+Output streams back line by line with the exit code.
+
+**Backend.** The helper is a second implementation of the command layer, beside `LibAdbBackend`. CompileRunner and StatusChecker keep working through the same interface. The connection strategy becomes:
+1. Helper alive → use it.
+2. Else Approach A (classic, then TLS); if connected, start the helper through it, then use the helper.
+3. Else show the "Start SideSpeed's helper" screen: PC command or phone companion.
+
+**Lifetime and ADB-off.** The helper ends at reboot and leaves nothing installed. Whether it keeps running after ADB debugging is switched off is unverified; test it on the Fire TV Cube (M0b). If it survives, "ADB only while working" on Fire TV becomes "turn ADB off once the helper is running". If it doesn't, ADB stays on there and the LAN warning stays.
+
+**Security.** The helper is the one shell-uid component. It must refuse other uids, accept only the fixed request set, never pass input to a shell unvalidated, and log refusals. A reviewer with security focus checks it before it ships.
+
+### Phone companion app (milestone M4, owner-approved, later stage)
+
+A separate small Android phone app, in this repo as a second module, sharing the ADB code. Its only job is starting SideSpeed's helper on the TV for users who don't want to use a PC.
+- **Setup, once:** finds the TV on the local network and connects over ADB. Phones count as outside devices, so Amazon's block doesn't apply. The TV asks "Allow debugging from this phone?" once.
+- **After a TV reboot:** a background check, about every 15 minutes (WorkManager's minimum), sees that the helper isn't running. Two modes, chosen by the user: silent restart (default, the builder's pick) or a notification with a one-tap "Re-enable SideSpeed" button.
+- No servers, accounts or cloud push; everything stays on the home network.
+- Android only (iOS can't do this). A desktop app is out of scope; the README gives the PC command.
+- **Trade-offs to state in the app:** on Fire TV with the phone route, ADB debugging must stay on so the phone can reach the TV, which conflicts with "ADB only while working". The phone holds a key the TV trusts.
+- Designed in detail in its own plan after M1–M3 work on both boxes.
 
 ### Advanced route: one-time PC/phone help (owner-approved fallback)
 
@@ -211,7 +261,7 @@ These follow SPEC.md. Notes on how each is done:
 
 ## Milestones
 
-0. **M0 — spike on the Onn 4K Pro (throwaway, before any setup UI):**
+0. **M0 — spike on the Onn 4K Pro (throwaway, before any setup UI).** Fire TV result already in (revision 2): on-box ADB is blocked. Remaining on the Onn:
    - Can pairing be done from the TV alone?
    - Is 5555 reachable?
    - Does a key trusted via "Always allow" work over TLS?
@@ -220,7 +270,8 @@ These follow SPEC.md. Notes on how each is done:
    - Capture `dumpsys package dexopt` samples from both boxes.
 
    The results decide the default setup route for Google TV. Report them to the owner before M1's setup UI.
-1. **M1 — first milestone (from SPEC.md, extended to both paths):**
+   **M0b — helper spike (throwaway):** start a minimal `app_process` helper from the PC on the Fire TV Cube and from SideSpeed's own ADB on the Onn, run `pm compile` and `id` through it, and check whether it survives the ADB shell exiting, ADB debugging being switched off, and SideSpeed being updated.
+1. **M1 — first milestone (from SPEC.md, extended to both paths and the helper):**
    - Project scaffold.
    - `AdbBackend` with classic and Wireless Debugging pairing/TLS.
    - Minimal setup flow.
@@ -228,6 +279,7 @@ These follow SPEC.md. Notes on how each is done:
    - Verified on both test devices.
 2. **M2:** tracked apps, auto-recompile (launch and WorkManager), Popular presets, full Settings and diagnostics.
 3. **M3:** polish. Banner/icon, README with a device table, the opt-in 5555 reopen if testing shows it helps, CI.
+4. **M4:** phone companion app (see its section).
 
 ## Decided by the owner
 
@@ -236,6 +288,8 @@ These follow SPEC.md. Notes on how each is done:
 - If pairing from the TV alone doesn't work, the fallback is a one-time PC/phone step (option a), offered as an "Advanced setup" route.
 - Wants a one-time advanced option that lets SideSpeed reopen access by itself after reboots. This is designed as the "Survive reboots" grant above.
 - The owner will test builds on both boxes and send back output.
+- Revision 2: a built-in helper adapted from Shizuku's starter (not the Shizuku app) runs compiles as the shell user, started by SideSpeed itself where on-box ADB works and by a PC or the phone companion where it doesn't (Fire TV).
+- Revision 2: a phone companion app that restarts the helper after TV reboots, as a later stage (M4). Desktop app out of scope.
 - ADB is switched off between jobs and on only while SideSpeed is working, on by default. This replaces the idea of tying in Obtainium: its "update available" signal comes before the install, and SideSpeed can detect installs itself.
 - Everything in SPEC.md: features, UI stack, minSdk 24, sideload-only signed APK, caveats.
 
@@ -252,6 +306,10 @@ These follow SPEC.md. Notes on how each is done:
 - "ADB only while working" and "Survive reboots" share one self-granted `WRITE_SECURE_SETTINGS` grant.
 - After a failed re-enable, "ADB only while working" turns itself off on that device.
 - "Keep ADB on" has an optional time limit.
+- Helper transport is an abstract local socket with an `SO_PEERCRED` uid check, not Shizuku's hidden-API Binder hand-off.
+- The helper accepts a fixed request set, not arbitrary shell.
+- The helper exits when SideSpeed's APK is updated, and SideSpeed prompts to restart it.
+- Phone companion default is silent restart; notification-and-tap is the alternative mode.
 - Status-parser unit tests use captured `dumpsys` samples.
 
 ## Left to the builder
