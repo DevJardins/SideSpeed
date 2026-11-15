@@ -8,6 +8,7 @@ import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.ui.compile.CompileUiState
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -95,5 +96,41 @@ class CompileViewModelTest {
         v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
         assertEquals("Connection lost", v.state.value.result?.message)
         assertNotNull(v.state.value.result)
+    }
+
+    @Test fun resetClearsPreviousRun() = runTest(timeout = 10.seconds) {
+        val v = vm(fake())
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(v.state.value.log.isNotEmpty())
+        v.reset("com.other.app")
+        assertEquals(CompileUiState(), v.state.value)
+    }
+
+    @Test fun resetIgnoredWhileRunning() = runTest(timeout = 10.seconds) {
+        val v = vm(fake())
+        v.start(pkg, CompileMode.SPEED)
+        v.reset("com.other.app")
+        assertTrue(v.state.value.running)
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, v.state.value.result?.success)
+    }
+
+    @Test fun prefsFailureDoesNotLeaveRunning() = runTest(timeout = 10.seconds) {
+        val prefs = object : Prefs by FakePrefs() {
+            override suspend fun setLastCompile(pkg: String, value: LastCompile) { throw RuntimeException("disk") }
+        }
+        val v = CompileViewModel(CompileRunner(fake()), StatusChecker(fake()), prefs, dispatcher) { 1L }
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(v.state.value.running)
+        assertEquals(true, v.state.value.result?.success)
+    }
+
+    @Test fun logIsCapped() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        adb.on(cmd) { (List(3000) { "l$it" } + "Success") to 0 }
+        val v = vm(adb)
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(2000, v.state.value.log.size)
+        assertEquals("Success", v.state.value.log.last())
     }
 }

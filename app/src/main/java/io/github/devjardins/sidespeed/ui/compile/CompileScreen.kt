@@ -35,6 +35,8 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.delay
 
+const val RUNNING_NOTE = "A compile is running — please wait until it finishes."
+
 const val COMPILE_NOTE = "This can take several minutes for large apps (about 3 min on a Fire TV Cube)"
 
 fun badgeLabel(b: StatusBadge): String = when (b) {
@@ -55,18 +57,18 @@ fun CompileScreen(
 ) {
     val state by vm.state.collectAsState()
     val pkg = remember(app) { PackageName.parse(app.packageName) }
-    var started by remember { mutableStateOf(false) }
-    var elapsed by remember { mutableLongStateOf(0L) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val started = state.running || state.result != null
+    val elapsed = ((now - state.startedAtMs) / 1000).coerceAtLeast(0)
     val listState = rememberLazyListState()
     val startFocus = remember { FocusRequester() }
     var logFocused by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { runCatching { startFocus.requestFocus() } }
+    LaunchedEffect(app.packageName) { vm.reset(app.packageName); runCatching { startFocus.requestFocus() } }
     LaunchedEffect(state.running) {
         if (state.running) {
-            val t0 = System.nanoTime()
             while (true) {
-                elapsed = (System.nanoTime() - t0) / 1_000_000_000
+                now = System.currentTimeMillis()
                 delay(500)
             }
         }
@@ -82,7 +84,7 @@ fun CompileScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
                 onClick = {
-                    if (pkg != null) { started = true; vm.start(pkg, mode) }
+                    if (pkg != null) { vm.start(pkg, mode) }
                 },
                 enabled = !state.running && pkg != null,
                 modifier = Modifier.focusRequester(startFocus),
@@ -92,6 +94,7 @@ fun CompileScreen(
             }
         }
         if (state.running) {
+            Text(RUNNING_NOTE)
             Text("Compiling... ${formatElapsed(elapsed)}", style = MaterialTheme.typography.titleLarge)
         }
         state.result?.let { r ->

@@ -149,4 +149,12 @@ class SetupViewModelTest {
         assertEquals(listOf("127.0.0.1"), adb.pairHosts)
         assertTrue(!prefs.tls.value)
     }
+
+    @Test fun checkAgainLeavesReadyImmediately() = runTest(timeout = 10.seconds) {
+        val v = vm(FakeReadier(Readiness.HelperReady))
+        v.start(); dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(SetupUiState.Ready, v.state.value)
+        v.checkAgain()
+        assertEquals(SetupUiState.Checking, v.state.value)
+    }
 }

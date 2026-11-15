@@ -70,6 +70,7 @@ class SetupViewModel(
 
     fun checkAgain() {
         job?.cancel()
+        _state.value = SetupUiState.Checking
         job = viewModelScope.launch(dispatcher) { check() }
     }
 
