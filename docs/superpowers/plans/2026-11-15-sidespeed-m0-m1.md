@@ -398,119 +398,202 @@ Design ref: "Built-in helper" section and milestone M0b. Everything lives in `ap
 - [ ] **Step 4: Run the tests.** Expected: PASS.
 - [ ] **Step 5: Commit** with message `Add installed-app listing with sideload-first sort`.
 
-### Task 8: Connection strategy, prefs and setup screen
+## Revised Tasks after M0/M0b (design revisions 2 and 3)
 
-Start only after the Task 4 hand-off. If the M0 results changed which route a device needs, adjust the step order below to match before writing code, and note it in the commit.
+The original Tasks 8–10 are replaced by Tasks 5b, 8, 8b, 9, 10 and 11 below. Device facts they rely on are in `docs/spike/M0-results.md`:
+- On-box ADB is blocked on Fire OS but works on the Onn.
+- The abstract Unix socket is SELinux-denied for apps on both boxes, while loopback TCP works and the shell can read `/proc/net/tcp*` with a uid column.
+- Compiles take 51 s on the Onn and 3 min 09 s on the Fire TV.
+- Port 5555 and Wireless Debugging are both gone after an Onn reboot.
+- The helper dies when ADB is switched off, and exits when SideSpeed is updated.
+
+No task switches ADB or Wireless Debugging off or on (design revision 3).
+
+### Task 5b: Status parser — device samples and hardening
+
+**Files:** Modify `status/DexoptParser.kt`, `app/src/test/.../status/DexoptParserTest.kt`. The samples already exist in `app/src/test/resources/dumpsys/`.
+
+- [ ] **Step 1: Failing tests.**
+  - `parse(firetv-cube3-dexopt.txt, "com.nuvio.tv").filter == "speed"`
+  - `parse(onn4kpro-dexopt.txt, "com.nuvio.tv").filter == "speed"`
+  - `parse(onn4kpro-dexopt-before.txt, "com.nuvio.tv").filter == "speed-profile"`
+  - `parse(firetv-cube3-pkg.txt, "com.nuvio.tv").filter == "speed"` and `parse(onn4kpro-pkg.txt, "com.nuvio.tv").filter == "speed"`, the fallback format. If a pkg file has no dexopt block, assert `null` instead, and say so in the report.
+  - **Hardening:** a block where one ABI line has `status=kOatNeedsRecompilation` with no `compilation_filter` and a sibling ABI line has `speed` gives `null` (badge `UNKNOWN`). Any line in the block that mentions `status=` or `compilation_filter` but yields no filter makes the whole result `null`.
+  - A CRLF version of the Onn sample parses the same.
+- [ ] **Step 2:** Run `./gradlew :app:testDebugUnitTest --tests '*Dexopt*'`. Expected: the new cases FAIL, or pass where they already hold.
+- [ ] **Step 3:** Implement the hardening rule.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit with message `Verify status parser against device samples and harden it`.
+
+### Task 8: Production helper (shell-uid process)
+
+Design ref: "Built-in helper" and "Talking to it (revision 3)". This is the most security-sensitive code in the app, so review it with the most capable model and a security focus.
+
+**Files:**
+- Create: `app/src/main/java/io/github/devjardins/sidespeed/helper/HelperMain.kt` (`object HelperMain { @JvmStatic fun main(args: Array<String>) }`)
+- Create (pure, unit-tested): `helper/HelperProtocol.kt`, `helper/ProcNetTcp.kt`, `helper/CommandAllowlist.kt`
+- Tests: `app/src/test/.../helper/HelperProtocolTest.kt`, `ProcNetTcpTest.kt`, `CommandAllowlistTest.kt`
+
+**Interfaces (produced):**
+```kotlin
+const val HELPER_PORT_FIRST = 47_310; const val HELPER_PORT_LAST = 47_319   // loopback only
+const val HELPER_PROTOCOL_VERSION = 1
+object HelperProtocol {
+    // Request: one line "<verb> <arg?>", max 512 chars. Response: lines, then "__END__:<exit>".
+    const val END = "__END__:"
+    fun parseEnd(line: String): Int?          // exit code if line starts with END, else null
+}
+object ProcNetTcp {
+    /** Returns the uid owning the socket whose local endpoint is 127.0.0.1:[localPort] (or ::ffff:127.0.0.1), from /proc/net/tcp + tcp6 text. */
+    fun ownerUid(tcp: String, tcp6: String, localPort: Int): Int?
+}
+object CommandAllowlist {
+    /** Maps a requested command line to a fixed argv, or null if not allowed. */
+    fun toArgv(command: String): List<String>?
+}
+```
+- **Allowed commands**, exact forms; `<pkg>` must pass `PackageName.parse`, and `<mode>` is `speed` or `speed-profile`. Everything else returns `null`.
+  - `pm compile -m <mode> -f <pkg>`
+  - `cmd package compile -m <mode> -f <pkg>`
+  - `dumpsys package dexopt`
+  - `dumpsys package <pkg>`
+  - `ping`, which the helper answers itself as `pong v=<HELPER_PROTOCOL_VERSION> uid=<uid> apk=<path>`.
+- **HelperMain behaviour:**
+  - Bind a `ServerSocket` on `127.0.0.1`, trying the first free port in the range. Write the chosen port to `/data/local/tmp/sidespeed_helper.port`, which the app reads.
+  - For each connection, read `/proc/net/tcp` and `/proc/net/tcp6` and find the uid that owns the client's socket. The client's local port is the server-side remote port. Accept only SideSpeed's uid, looked up at start the same way as the spike. Refuse otherwise and log it.
+  - The caller check happens before any request byte is read.
+  - Run allowed argv with `ProcessBuilder` (stderr merged) and stream the lines back, then send `__END__:<exit>`.
+  - One request per connection, each on its own thread. A compile can take minutes, so there's no read timeout after the request line, and a 10 s timeout before it.
+  - Exit when the APK path or its size/mtime changes (checked every 5 s), the same as the spike.
+  - Log to `/data/local/tmp/sidespeed_helper.log` with a size cap: rotate at 256 KB.
+  - Never write settings, and never run `sh -c`.
+- **Launch command** (also used by Task 9 and shown on screen):
+  `P=$(pm path io.github.devjardins.sidespeed | cut -d: -f2); CLASSPATH=$P setsid nohup app_process /system/bin --nice-name=sidespeed_helper io.github.devjardins.sidespeed.helper.HelperMain --apk=$P </dev/null >/dev/null 2>&1 &`
+  Expose it as `object HelperLaunch { fun command(): String }` in `helper/HelperLaunch.kt`.
+- **Release builds:** add `proguard-rules.pro` keep rules for `HelperMain.main`.
+
+- [ ] **Step 1: Failing tests.**
+  - `CommandAllowlistTest`:
+    - Each allowed form gives the exact argv.
+    - These return `null`: `pm compile -m speed -f com.foo;reboot`, `pm uninstall com.foo`, `dumpsys package com.foo bar`, `pm compile -m everything -f com.foo`, `""`, and `sh -c id`.
+  - `ProcNetTcpTest`, with real-format lines (copy one line from a device `/proc/net/tcp` into the test):
+    - An IPv4 entry `0100007F:B8AE` with uid `10255` gives `ownerUid(..., 0xB8AE) == 10255`.
+    - The same entry in tcp6 as `0000000000000000FFFF00000100007F:B8AE` gives `10255`.
+    - A missing port gives `null`.
+    - Malformed lines are skipped without throwing.
+  - `HelperProtocolTest`: `parseEnd("__END__:0") == 0`, `parseEnd("__END__:x") == null`, `parseEnd("Success") == null`.
+- [ ] **Step 2:** Run `./gradlew :app:testDebugUnitTest --tests '*helper*'`. Expected: FAIL.
+- [ ] **Step 3:** Implement the pure objects, then `HelperMain` and `HelperLaunch`.
+- [ ] **Step 4:** Run `./gradlew :app:assembleDebug :app:testDebugUnitTest`. Expected: PASS.
+- [ ] **Step 5:** Commit with message `Add shell-uid helper with loopback TCP and caller check`.
+- [ ] **Step 6 (controller): device check on both boxes.** Start the helper with the launch command.
+  - From the shell, the helper must refuse uid 2000 and log the refusal.
+  - From `run-as io.github.devjardins.sidespeed`, connect with `toybox nc 127.0.0.1 <port>` and send `ping`. Expect `pong`.
+
+### Task 8b: App-side helper client and command routing
+
+**Files:**
+- Create: `adb/CommandRunner.kt`, `helper/HelperClient.kt`
+- Modify: `adb/AdbBackend.kt` (extends `CommandRunner`), `compile/CompileRunner.kt` and `status/StatusChecker.kt` (take a `CommandRunner` instead of an `AdbBackend`), plus their tests (`FakeAdbBackend` already satisfies `CommandRunner`)
+- Test: `app/src/test/.../helper/HelperClientTest.kt`
+
+**Interfaces:**
+```kotlin
+interface CommandRunner { fun shell(command: String): Flow<ShellEvent> }   // AdbBackend : CommandRunner
+class HelperClient(portFile: File = File("/data/local/tmp/sidespeed_helper.port"),
+                   connect: (Int) -> Socket = { Socket("127.0.0.1", it) }) : CommandRunner {
+    suspend fun ping(): HelperPing?              // null if not running / refused / version mismatch
+    override fun shell(command: String): Flow<ShellEvent>  // Lines then Exit; AdbConnectionLost if the socket dies before __END__
+}
+data class HelperPing(val version: Int, val apkPath: String)
+```
+- Reads run on `Dispatchers.IO`. Cancelling closes the socket, using the same pattern as `LibAdbBackend.shell`.
+- A version mismatch, or an `apkPath` that differs from `context.applicationInfo.sourceDir`, counts as "helper needs restart". The caller passes the expected path.
+
+- [ ] **Step 1: Failing tests** with an in-process fake server: a `ServerSocket` on an ephemeral port, with the `connect` lambda injected.
+  - `shell("dumpsys package dexopt")` gives `Line`s and then `Exit(0)`.
+  - The server closing before `__END__` throws `AdbConnectionLost`.
+  - `ping()` parses `pong v=1 uid=2000 apk=/x` into `HelperPing(1, "/x")`.
+  - A missing port file makes `ping()` return `null`.
+- [ ] **Step 2:** Run `./gradlew :app:testDebugUnitTest --tests '*HelperClient*' --tests '*CompileRunner*' --tests '*StatusChecker*'`. Expected: FAIL.
+- [ ] **Step 3:** Implement the code, and switch the `CompileRunner` and `StatusChecker` constructor types.
+- [ ] **Step 4:** Run all unit tests. Expected: PASS.
+- [ ] **Step 5:** Commit with message `Add helper client and route compiles through CommandRunner`.
+
+### Task 9: Connection strategy, prefs and setup screen (replaces the old Task 8)
 
 **Files:**
 - Create: `adb/ConnectionStrategy.kt`, `data/Prefs.kt`, `ui/setup/SetupScreen.kt`, `ui/setup/SetupViewModel.kt`, `ui/setup/PairingCodeGrid.kt`
-- Modify: `AppContainer.kt` (add `prefs`, `connection`), `MainActivity.kt` (nav: Setup is the start destination until connected, then Apps)
+- Modify: `AppContainer.kt`, `MainActivity.kt` (Setup is the start destination until the helper is ready, then Apps)
 - Test: `app/src/test/.../adb/ConnectionStrategyTest.kt`
 
 **Interfaces:**
-- Consumes: `AdbBackend`, `AdbTarget` (Task 3).
-- Produces:
-  ```kotlin
-  sealed interface ConnectResult {
-      data class Connected(val target: AdbTarget) : ConnectResult
-      data object NotSetUp : ConnectResult                    // nothing answered
-      data class TimedOut(val target: AdbTarget) : ConnectResult // likely waiting on "Allow debugging"
-  }
-  class ConnectionStrategy(adb: AdbBackend, prefs: Prefs, timeoutMs: Long = 30_000) {
-      suspend fun connect(): ConnectResult
-  }
-  class Prefs(context: Context) {
-      val lanWarningAcked: Flow<Boolean>; suspend fun setLanWarningAcked(v: Boolean)
-      val pairedTls: Flow<Boolean>;       suspend fun setPairedTls(v: Boolean)
-  }
-  @Composable fun PairingCodeGrid(digits: Int, onDone: (String) -> Unit)
-  ```
-  - **Connection order:** `Classic()` first. If that fails fast (refused) and `pairedTls` is true, try `WirelessTls`. Otherwise return `NotSetUp`.
-  - **Timeout:** each attempt is wrapped in `withTimeout(timeoutMs)`. Hitting the timeout returns `TimedOut`, not `NotSetUp`. The UI then says: "Check the TV for an 'Allow debugging' prompt and choose Always allow."
+```kotlin
+sealed interface Readiness {
+    data object HelperReady : Readiness                       // use HelperClient
+    data object HelperNeedsRestart : Readiness                // running but stale (APK updated)
+    data class NeedsHelperStart(val reason: String) : Readiness // show the start screen
+    data object WaitingForAllowPrompt : Readiness             // own-ADB connect timed out
+}
+interface Prefs { val lanWarningAcked: Flow<Boolean>; suspend fun setLanWarningAcked(v: Boolean)
+                  val pairedTls: Flow<Boolean>; suspend fun setPairedTls(v: Boolean) }
+class DataStorePrefs(context: Context) : Prefs
+class ConnectionStrategy(helper: HelperProbe, adb: AdbBackend, prefs: Prefs, expectedApk: String,
+                         isFireOs: Boolean, timeoutMs: Long = 30_000) {
+    suspend fun ensureReady(): Readiness
+}
+fun interface HelperProbe { suspend fun ping(): HelperPing? }   // HelperClient::ping
+```
+**Order in `ensureReady`:**
+1. Ping the helper. If it's alive and matches the version and APK, return `HelperReady`. If it's alive but stale, return `HelperNeedsRestart`.
+2. If `isFireOs`, return `NeedsHelperStart("Fire OS blocks on-box ADB")`. Never try own-ADB on Fire OS.
+3. Otherwise try `Classic()`, then `WirelessTls` if `pairedTls`, each under `withTimeout(timeoutMs)`. A timeout returns `WaitingForAllowPrompt`.
+4. If connected, run `HelperLaunch.command()` through `adb.shell`, then poll `ping()` for up to 5 s. If it's ready, return `HelperReady`. Otherwise return `NeedsHelperStart("Helper did not start")`.
+5. If nothing connected, return `NeedsHelperStart("ADB not reachable")`.
 
-- [ ] **Step 1: Write the failing tests** for `ConnectionStrategyTest`, using `FakeAdbBackend` and a fake or in-memory Prefs. Make `Prefs` an interface with a DataStore implementation so the tests can fake it.
-  - Classic succeeds: `Connected(Classic())`.
-  - Classic fails and `pairedTls = false`: `NotSetUp`, and TLS is never attempted.
-  - Classic fails and `pairedTls = true`, TLS succeeds: `Connected(WirelessTls)`.
-  - Classic never returns: with `timeoutMs = 1_000`, under `runTest` virtual time, the result is `TimedOut(Classic())`.
-- [ ] **Step 2: Run** `./gradlew :app:testDebugUnitTest --tests '*ConnectionStrategy*'`. Expected: FAIL.
-- [ ] **Step 3: Implement** `Prefs` (DataStore) and `ConnectionStrategy`.
-- [ ] **Step 4: Run the tests.** Expected: PASS.
-- [ ] **Step 5: Build the setup screen.** Steps in order:
-  1. **LAN warning.** "ADB debugging must stay enabled. Anyone on your network could request access; SideSpeed only uses it to compile apps." The user must press "I understand" (stored in `lanWarningAcked`) before any connect is attempted.
-  2. **Device detection.** Fire OS is detected via `Build.MANUFACTURER == "Amazon"` or the `amazon.hardware.fire_tv` feature. The screen also shows the Android version, then tries `ConnectionStrategy.connect()`.
-  3. **Route-specific instructions:**
-     - Classic: turn on ADB / Network debugging.
-     - Wireless Debugging (API 30+): open "Pair device with pairing code", then enter the code and port with `PairingCodeGrid`, then call `pair`, set `pairedTls = true`, and connect.
-     - Each route has a button that opens `Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS`.
-  4. **"Advanced setup (needs a PC or phone once)" panel.** It shows the device's Wi-Fi IP and the exact commands: `adb connect <ip>:5555` (or `adb pair` / `adb connect` for Wireless Debugging), then `adb tcpip 5555`. Then a "Try again" button.
-  5. **Results.** `TimedOut` shows the "Allow debugging" hint. `Connected` navigates to Apps.
+- [ ] **Step 1: Failing tests** with fakes:
+  - A live, matching helper gives `HelperReady`, and `adb` is never called.
+  - A stale helper gives `HelperNeedsRestart`.
+  - Fire OS with no helper gives `NeedsHelperStart`, and `adb.connectAttempts` is empty.
+  - Not Fire OS: `Classic` succeeds, the launch command is sent (recorded in `commands`), and the next ping succeeds, giving `HelperReady`.
+  - `Classic` hangs: with `timeoutMs = 1_000` in virtual time, the result is `WaitingForAllowPrompt`.
+  - Nothing connects: `NeedsHelperStart`.
+- [ ] **Step 2:** Run `./gradlew :app:testDebugUnitTest --tests '*ConnectionStrategy*'`. Expected: FAIL.
+- [ ] **Step 3:** Implement the code.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5: Setup screen** (D-pad only, with focus starting on the main action):
+  1. **Warning, acknowledged once:** "ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed's helper until you start it again."
+  2. Run `ensureReady()` and show the result.
+  3. **Start-helper screen** (for `NeedsHelperStart` and `HelperNeedsRestart`):
+     - **Fire OS:** turn on ADB debugging (with a button that opens developer settings), then from a PC run `adb connect <wifi-ip>:5555` and the launch command wrapped in `adb shell '...'`. Show the exact text. Add a "Phone app coming later" note.
+     - **Google TV:** turn on Wireless debugging, then pair with `PairingCodeGrid` (code and port, then `adb.pair` on `127.0.0.1`, falling back to the Wi-Fi IP, then `setPairedTls(true)`). The PC command is the alternative.
+     - A "Check again" button re-runs `ensureReady()`.
+  4. `WaitingForAllowPrompt` shows: "Check the TV for an 'Allow debugging' prompt and choose Always allow."
+- [ ] **Step 6:** Run `./gradlew :app:assembleDebug :app:testDebugUnitTest`. Expected: PASS.
+- [ ] **Step 7:** Commit with message `Add readiness strategy and guided setup`.
 
-  Every control must be reachable by D-pad, with the focus starting on the main action.
-- [ ] **Step 6: Build and run on a device.**
-  Run: `./gradlew :app:installDebug` on whichever box is connected.
-  Expected: the warning, then connect, then navigation to the (still placeholder) Apps route on the Fire TV Cube.
-- [ ] **Step 7: Commit** with message `Add connection strategy and guided setup screen`.
+### Task 10: Apps and compile screens (replaces the old Task 9)
 
-### Task 9: Apps and compile screens (end of the first milestone)
+The old Task 9 text applies unchanged, with these differences:
+- `CompileRunner` and `StatusChecker` are built on the `HelperClient`.
+- `AppSource` is introduced here, and `InstalledApps` implements it.
+- `InstalledApps.list()` runs on `Dispatchers.IO`.
+- **Compile screen:** before starting, show "This can take several minutes for large apps (about 3 min on a Fire TV Cube)", and show an elapsed-time counter while running.
+- **Connection lost:** if `Finished.message == "Connection lost"`, offer "Check helper", which goes back to Setup.
 
-**Files:**
-- Create: `ui/apps/AppsScreen.kt`, `ui/apps/AppsViewModel.kt`, `ui/compile/CompileScreen.kt`, `ui/compile/CompileViewModel.kt`
-- Modify: `data/Prefs.kt` (add `lastCompile(pkg): Flow<LastCompile?>` and `setLastCompile(pkg, LastCompile)`, where `data class LastCompile(val epochMs: Long, val mode: CompileMode)`), `AppContainer.kt`, `MainActivity.kt`
-- Test: `app/src/test/.../ui/CompileViewModelTest.kt`, `app/src/test/.../ui/AppsViewModelTest.kt`
+Tests: the old Task 9 tests, using `FakeAdbBackend` as the `CommandRunner`, plus `AppsViewModelTest` checking that `list()` is not called on the main dispatcher (inject a test dispatcher).
 
-**Interfaces:**
-- Consumes: `CompileRunner`, `PackageName`, `CompileMode`, `CompileEvent` (Task 6); `StatusChecker`, `DexoptParser.badge`, `StatusBadge` (Task 5); `InstalledApps`, `sortForPicker` (Task 7); `Prefs` (Task 8).
-- Produces:
-  - `CompileViewModel.state: StateFlow<CompileUiState>`, where `data class CompileUiState(val log: List<String>, val running: Boolean, val result: CompileEvent.Finished?, val badge: StatusBadge?)`.
-  - `AppsViewModel.manualEntry(raw: String): ManualResult`, where `ManualResult` is `Valid(AppEntry)`, `NotInstalled`, or `Invalid`.
+Commit with message `Add app picker and compile screens`.
 
-**Behaviour:**
-- **Apps screen** has three tabs: Sideloaded / All / Manual.
-  - Each row shows the label, the package and, if present, `LastCompile` as "Compiled (speed) · <date>". The live badge is shown on the Compile screen. A per-app status list for tracked apps is M2.
-  - Manual entry uses an on-screen text field, which a D-pad can reach (the system keyboard is fine for package names). It shows "Not a valid package name" or "Not installed" inline.
-  - There's a mode selector, `speed` (default) or `speed-profile`. Selecting an app opens the Compile screen.
-- **Compile screen:**
-  - A large live log pane, auto-scrolled. Lines are shown verbatim, including the `Attempt` command lines prefixed with `$ `.
-  - When the run finishes, a large Success or Failure banner with the `message`.
-  - On success, it saves `LastCompile` and runs `StatusChecker.check`, then shows the badge.
-  - A "Compile again" button.
-  - Only one compile runs at a time: the start button is disabled while `running`.
+### Task 11: Release build, spike removal, NOTICE and device verification (replaces the old Task 10)
 
-- [ ] **Step 1: Write the failing tests.**
-  - `CompileViewModelTest`, with `FakeAdbBackend` on success:
-    - The final state has `result.success == true` and `log` contains `"$ pm compile -m speed -f com.nuvio.tv"` and `"Success"`.
-    - `LastCompile` was saved.
-    - The badge is `SPEED_OK` when the fake dumpsys returns `status=speed`.
-    - Starting a second run while `running` is ignored: the fake records one compile command.
-  - `AppsViewModelTest`:
-    - `manualEntry("com.foo; reboot") == Invalid`.
-    - `manualEntry("com.not.here") == NotInstalled`, using a fake app source.
-    - `manualEntry(" com.nuvio.tv ")` is `Valid` after the input is trimmed.
-- [ ] **Step 2: Run** `./gradlew :app:testDebugUnitTest --tests '*ViewModel*'`. Expected: FAIL.
-- [ ] **Step 3: Implement** the two view models and two screens. To make them testable, the view models take an `InstalledApps`-shaped interface (`AppSource`).
-- [ ] **Step 4: Run all unit tests:** `./gradlew :app:testDebugUnitTest`. Expected: PASS.
-- [ ] **Step 5: Commit** with message `Add app picker and compile screens`.
-
-### Task 10: Release build, spike removal and device verification
-
-**Files:**
-- Modify: `app/build.gradle.kts` (release `signingConfig` read from `keystore.properties` or the env vars `SIDESPEED_KEYSTORE`, `SIDESPEED_KEYSTORE_PASSWORD`, `SIDESPEED_KEY_ALIAS`, `SIDESPEED_KEY_PASSWORD`; unsigned if none are present; R8 on, with keep rules for libadb, Conscrypt and BouncyCastle)
-- Delete: `app/src/debug/.../spike/SpikeActivity.kt` and its manifest entry. Keep `docs/spike/`.
-- Create: `keystore.properties.example` (key names only, no values)
-
-- [ ] **Step 1: Configure release signing and R8.**
-  Run: `./gradlew :app:assembleRelease`
-  Expected: an unsigned `app-release-unsigned.apk` when no keystore exists, with no R8 errors.
-- [ ] **Step 2: Build a signed release.** Ask the owner to create a keystore (`keytool -genkeypair ...`; the plan never handles its passwords), or use one they already have. Then build.
-  Expected: a signed `app-release.apk`, and `apksigner verify` passes.
-- [ ] **Step 3: Remove the spike activity.** Run `./gradlew :app:assembleDebug :app:testDebugUnitTest`. Expected: PASS.
-- [ ] **Step 4: HAND-OFF: device verification.** The owner installs the release APK on both boxes and checks each of these:
-  - SideSpeed shows up on the home screen with its banner.
-  - Setup works end to end with the D-pad only.
-  - Compiling `com.nuvio.tv` shows a live log and Success.
-  - The badge reads "speed ✓".
-  - `adb shell dumpsys package com.nuvio.tv` from a PC agrees.
-
-  Record the results in `docs/spike/M0-results.md`, under a new "M1 verification" section.
-- [ ] **Step 5: Commit** with message `Add release signing, remove spike, record M1 verification`.
+The old Task 10 text applies unchanged, with these additions:
+- Delete `HelperSpikeMain.kt` along with the spike activity.
+- Add `NOTICE`, crediting Shizuku (Apache-2.0, © RikkaW) for the starter technique, plus libadb-android, Conscrypt and BouncyCastle. Don't use Shizuku's name or icons in the app UI.
+- R8 keep rules for `io.github.devjardins.sidespeed.helper.HelperMain`. Confirm the release APK's helper starts with `app_process`.
+- README: a "Requirements" section stating that ADB or Wireless debugging must stay on, that restarting the TV or turning ADB off stops the helper, and giving the PC command for Fire TV.
+- **Device verification:**
+  - **Fire TV:** start the helper from the PC.
+  - **Onn:** pair or connect in-app, and the helper auto-starts.
+  - **Both:** compile Nuvio, see "speed ✓", and `dumpsys` agrees.
+  - **After an update:** the helper reports "needs restart".
