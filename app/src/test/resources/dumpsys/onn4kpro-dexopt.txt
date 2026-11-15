@@ -1,0 +1,589 @@
+Dexopt state:
+  [android]
+  [android.autoinstalls.config.soc.amlogic]
+    path: /product/app/PlayAutoInstallStub/PlayAutoInstallStub.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@app@PlayAutoInstallStub@PlayAutoInstallStub.apk@classes.vdex]
+  [android.energymode.overlay]
+  [com.amazon.amazonvideo.livingroom]
+    path: /data/app/~~ncSq87zxP6SL-1XjcZUSTw==/com.amazon.amazonvideo.livingroom-bBhbW_1BLHJkW5kXUIDA_A==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~ncSq87zxP6SL-1XjcZUSTw==/com.amazon.amazonvideo.livingroom-bBhbW_1BLHJkW5kXUIDA_A==/oat/arm/base.odex]
+  [com.amlogic.tv.overlay.matchcontent]
+  [com.android.adservices.api]
+    path: /apex/com.android.adservices/priv-app/AdServicesApk@URO3.260203.035.A1/AdServicesApk.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.adservices@priv-app@AdServicesApk@URO3.260203.035.A1@AdServicesApk.apk@classes.dex]
+  [com.android.backupconfirm]
+    path: /system/priv-app/BackupRestoreConfirmation/BackupRestoreConfirmation.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/BackupRestoreConfirmation/oat/arm/BackupRestoreConfirmation.odex]
+  [com.android.bluetooth]
+    path: /apex/com.android.btservices/app/Bluetooth@URO3.260203.035.A1/Bluetooth.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.btservices@app@Bluetooth@URO3.260203.035.A1@Bluetooth.apk@classes.dex]
+  [com.android.cameraextensions]
+    path: /system/app/CameraExtensionsProxy/CameraExtensionsProxy.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /system/app/CameraExtensionsProxy/oat/arm/CameraExtensionsProxy.vdex]
+  [com.android.captiveportallogin]
+    path: /system/app/CaptivePortalLogin/CaptivePortalLogin.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/CaptivePortalLogin/oat/arm/CaptivePortalLogin.odex]
+  [com.android.certinstaller]
+    path: /system/app/CertInstaller/CertInstaller.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/CertInstaller/oat/arm/CertInstaller.odex]
+  [com.android.companiondevicemanager]
+    path: /system/app/CompanionDeviceManager/CompanionDeviceManager.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/CompanionDeviceManager/oat/arm/CompanionDeviceManager.odex]
+  [com.android.connectivity.resources]
+  [com.android.cts.ctsshim]
+  [com.android.cts.priv.ctsshim]
+  [com.android.devicelockcontroller]
+    path: /apex/com.android.devicelock/priv-app/DeviceLockController@URO3.260203.035.A1/DeviceLockController.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.devicelock@priv-app@DeviceLockController@URO3.260203.035.A1@DeviceLockController.apk@classes.dex]
+  [com.android.dreams.basic]
+    path: /system/app/BasicDreams/BasicDreams.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/BasicDreams/oat/arm/BasicDreams.odex]
+  [com.android.dynsystem]
+    path: /system/priv-app/DynamicSystemInstallationService/DynamicSystemInstallationService.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/DynamicSystemInstallationService/oat/arm/DynamicSystemInstallationService.odex]
+  [com.android.externalstorage]
+    path: /system/priv-app/ExternalStorageProvider/ExternalStorageProvider.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/ExternalStorageProvider/oat/arm/ExternalStorageProvider.odex]
+  [com.android.federatedcompute.services]
+    path: /apex/com.android.ondevicepersonalization/app/FederatedCompute@URO3.260203.035.A1/FederatedCompute.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.ondevicepersonalization@app@FederatedCompute@URO3.260203.035.A1@FederatedCompute.apk@classes.dex]
+  [com.android.health.connect.backuprestore]
+    path: /apex/com.android.healthfitness/app/HealthConnectBackupRestore@URO3.260203.035.A1/HealthConnectBackupRestore.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.healthfitness@app@HealthConnectBackupRestore@URO3.260203.035.A1@HealthConnectBackupRestore.apk@classes.dex]
+  [com.android.healthconnect.controller]
+    path: /apex/com.android.healthfitness/priv-app/HealthConnectController@URO3.260203.035.A1/HealthConnectController.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.healthfitness@priv-app@HealthConnectController@URO3.260203.035.A1@HealthConnectController.apk@classes.dex]
+  [com.android.hotspot2.osulogin]
+    path: /apex/com.android.wifi/app/OsuLogin@URO3.260203.035.A1/OsuLogin.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.wifi@app@OsuLogin@URO3.260203.035.A1@OsuLogin.apk@classes.dex]
+  [com.android.htmlviewer]
+    path: /system/app/HTMLViewer/HTMLViewer.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/HTMLViewer/oat/arm/HTMLViewer.odex]
+  [com.android.inputdevices]
+    path: /system/priv-app/InputDevices/InputDevices.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/InputDevices/oat/arm/InputDevices.odex]
+  [com.android.intentresolver]
+    path: /system/priv-app/IntentResolver/IntentResolver.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/IntentResolver/oat/arm/IntentResolver.odex]
+  [com.android.keychain]
+    path: /system/app/KeyChain/KeyChain.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/KeyChain/oat/arm/KeyChain.odex]
+  [com.android.localtransport]
+    path: /system/priv-app/LocalTransport/LocalTransport.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/LocalTransport/oat/arm/LocalTransport.odex]
+  [com.android.location.fused]
+    path: /system/priv-app/FusedLocation/FusedLocation.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/FusedLocation/oat/arm/FusedLocation.odex]
+  [com.android.managedprovisioning]
+    path: /system/priv-app/ManagedProvisioning/ManagedProvisioning.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /system/priv-app/ManagedProvisioning/oat/arm/ManagedProvisioning.vdex]
+  [com.android.mtp]
+    path: /system/priv-app/MtpService/MtpService.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@MtpService@MtpService.apk@classes.dex]
+      used by other apps: [com.android.providers.downloads (isa=arm)]
+  [com.android.networkstack]
+    path: /system/priv-app/NetworkStackVendor/NetworkStackVendor.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@NetworkStackVendor@NetworkStackVendor.apk@classes.dex]
+  [com.android.networkstack.tethering]
+    path: /apex/com.android.tethering/priv-app/TetheringNext@360842260/TetheringNext.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.tethering@priv-app@TetheringNext@360842260@TetheringNext.apk@classes.dex]
+      used by other apps: [com.android.networkstack (isa=arm)]
+  [com.android.networkstack.tethering.droidlogic]
+  [com.android.ondevicepersonalization.services]
+    path: /apex/com.android.ondevicepersonalization/app/OnDevicePersonalization@URO3.260203.035.A1/OnDevicePersonalization.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.ondevicepersonalization@app@OnDevicePersonalization@URO3.260203.035.A1@OnDevicePersonalization.apk@classes.dex]
+  [com.android.pacprocessor]
+    path: /system/app/PacProcessor/PacProcessor.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/PacProcessor/oat/arm/PacProcessor.odex]
+  [com.android.printspooler]
+    path: /system/app/PrintSpooler/PrintSpooler.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/PrintSpooler/oat/arm/PrintSpooler.odex]
+  [com.android.providers.calendar]
+    path: /system/priv-app/CalendarProvider/CalendarProvider.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/CalendarProvider/oat/arm/CalendarProvider.odex]
+  [com.android.providers.contacts]
+    path: /system/priv-app/ContactsProvider/ContactsProvider.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@ContactsProvider@ContactsProvider.apk@classes.dex]
+      used by other apps: [com.android.providers.userdictionary (isa=arm)]
+  [com.android.providers.downloads]
+    path: /system/priv-app/DownloadProvider/DownloadProvider.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/DownloadProvider/oat/arm/DownloadProvider.odex]
+  [com.android.providers.media]
+    path: /system/priv-app/MediaProviderLegacy/MediaProviderLegacy.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@MediaProviderLegacy@MediaProviderLegacy.apk@classes.dex]
+      used by other apps: [com.android.providers.downloads (isa=arm)]
+  [com.android.providers.media.module]
+    path: /apex/com.android.mediaprovider/priv-app/MediaProvider@URO3.260203.035.A1/MediaProvider.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.mediaprovider@priv-app@MediaProvider@URO3.260203.035.A1@MediaProvider.apk@classes.dex]
+  [com.android.providers.settings]
+    path: /system/priv-app/SettingsProvider/SettingsProvider.apk
+      arm: [status=speed] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/SettingsProvider/oat/arm/SettingsProvider.odex]
+  [com.android.providers.tv]
+    path: /system/priv-app/TvProvider/TvProvider.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/TvProvider/oat/arm/TvProvider.odex]
+  [com.android.providers.userdictionary]
+    path: /system/priv-app/UserDictionaryProvider/UserDictionaryProvider.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@UserDictionaryProvider@UserDictionaryProvider.apk@classes.dex]
+      used by other apps: [com.android.providers.contacts (isa=arm)]
+  [com.android.proxyhandler]
+    path: /system/priv-app/ProxyHandler/ProxyHandler.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/ProxyHandler/oat/arm/ProxyHandler.odex]
+  [com.android.rkpdapp]
+    path: /apex/com.android.rkpd/priv-app/rkpdapp@URO3.260203.035.A1/rkpdapp.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.rkpd@priv-app@rkpdapp@URO3.260203.035.A1@rkpdapp.apk@classes.dex]
+  [com.android.sdksandbox]
+    path: /apex/com.android.adservices/app/SdkSandbox@URO3.260203.035.A1/SdkSandbox.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.adservices@app@SdkSandbox@URO3.260203.035.A1@SdkSandbox.apk@classes.dex]
+  [com.android.se]
+    path: /system/app/SecureElement/SecureElement.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/app/SecureElement/oat/arm/SecureElement.odex]
+  [com.android.settings.intelligence]
+    path: /product/priv-app/SettingsIntelligence/SettingsIntelligence.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /product/priv-app/SettingsIntelligence/oat/arm/SettingsIntelligence.vdex]
+  [com.android.sharedstoragebackup]
+    path: /system/priv-app/SharedStorageBackup/SharedStorageBackup.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/SharedStorageBackup/oat/arm/SharedStorageBackup.odex]
+  [com.android.shell]
+    path: /system/priv-app/Shell/Shell.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/Shell/oat/arm/Shell.odex]
+  [com.android.soundpicker]
+    path: /system/priv-app/SoundPicker/SoundPicker.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/SoundPicker/oat/arm/SoundPicker.odex]
+  [com.android.statementservice]
+    path: /system/priv-app/StatementService/StatementService.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/StatementService/oat/arm/StatementService.odex]
+  [com.android.systemui]
+    path: /system_ext/priv-app/TvSystemUI/TvSystemUI.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@TvSystemUI@TvSystemUI.apk@classes.dex]
+  [com.android.systemui.gretzky.overlay]
+  [com.android.tv.feedbackconsent]
+    path: /system_ext/priv-app/TvFeedbackConsent/TvFeedbackConsent.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system_ext/priv-app/TvFeedbackConsent/oat/arm/TvFeedbackConsent.odex]
+  [com.android.tv.frameworkpackagestubs]
+    path: /system_ext/app/TvFrameworkPackageStubs/TvFrameworkPackageStubs.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system_ext/app/TvFrameworkPackageStubs/oat/arm/TvFrameworkPackageStubs.odex]
+  [com.android.tv.overlay.framework]
+  [com.android.tv.overlay.lps.disabled]
+  [com.android.tv.overlay.networkstack]
+  [com.android.tv.overlay.settingsprovider]
+  [com.android.tv.settings]
+    path: /system_ext/priv-app/TvSettingsTwoPanel/TvSettingsTwoPanel.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@TvSettingsTwoPanel@TvSettingsTwoPanel.apk@classes.dex]
+  [com.android.tv.settings.gms.resoverlay]
+  [com.android.tv.settings.google.resoverlay]
+  [com.android.tv.settings.googletvconnecteddevicesoverlay]
+  [com.android.tv.settings.jarvis2]
+  [com.android.tv.settings.overlay]
+  [com.android.tv.settings.vendor.resoverlay]
+  [com.android.uwb.resources]
+  [com.android.vending]
+    path: /data/app/~~92TpQwpBUbYwX7Bi_HWa2g==/com.android.vending-Lxox-tXpnOkTSngZe_7wVg==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~92TpQwpBUbYwX7Bi_HWa2g==/com.android.vending-Lxox-tXpnOkTSngZe_7wVg==/oat/arm/base.odex]
+    known secondary dex files:
+      /data/user/0/com.android.vending/app_dg_cache/276FB66A452F81FC3A363938F4EAC85682964AF7/the.apk
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.android.vending/app_dg_cache/276FB66A452F81FC3A363938F4EAC85682964AF7/the.apk' with context 'PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+      /data/user/0/com.android.vending/app_dg_cache/54F0059ECDBC6330A98B6AA149D329EBB32AA354/the.apk (removed)
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.android.vending/app_dg_cache/54F0059ECDBC6330A98B6AA149D329EBB32AA354/the.apk' with context 'PCL[];PCL[/data/app/~~pO95iqyo_6mS2n94pY9kcA==/com.android.vending-AZBmPy9C5IoU3AB66y5vPA==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~pO95iqyo_6mS2n94pY9kcA==/com.android.vending-AZBmPy9C5IoU3AB66y5vPA==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+      /data/user/0/com.android.vending/app_dg_cache/ED3A1232F88E3F7183EC693FAFA248413CF1255D/the.apk (removed)
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.android.vending/app_dg_cache/ED3A1232F88E3F7183EC693FAFA248413CF1255D/the.apk' with context 'PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+      /data/user/0/com.android.vending/app_dg_cache/F94EA24A7FDB529D50DFA87E29D29871418B377F/the.apk (removed)
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.android.vending/app_dg_cache/F94EA24A7FDB529D50DFA87E29D29871418B377F/the.apk' with context 'PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~QDUOwcZZw-PHstISB4NA7w==/com.android.vending-ll2EPUhfgMoN9QNNuLFv6Q==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+  [com.android.virtualmachine.res]
+  [com.android.vpndialogs]
+    path: /system/priv-app/VpnDialogs/VpnDialogs.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system/priv-app/VpnDialogs/oat/arm/VpnDialogs.odex]
+  [com.android.wallpaperbackup]
+    path: /system/app/WallpaperBackup/WallpaperBackup.apk
+      arm: [status=speed] [reason=prebuilt] [primary-abi]
+        [location is /system/app/WallpaperBackup/oat/arm/WallpaperBackup.odex]
+  [com.android.wifi.dialog]
+    path: /apex/com.android.wifi/app/WifiDialog@URO3.260203.035.A1/WifiDialog.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.wifi@app@WifiDialog@URO3.260203.035.A1@WifiDialog.apk@classes.dex]
+  [com.android.wifi.resources]
+  [com.cbs.ott]
+    path: /data/app/~~gZW3EOTjXdJsgOh8G01_Yg==/com.cbs.ott-ywXxGd7C5gNMq1Bi1FC-hA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~gZW3EOTjXdJsgOh8G01_Yg==/com.cbs.ott-ywXxGd7C5gNMq1Bi1FC-hA==/oat/arm/base.odex]
+    known secondary dex files:
+      /data/user/0/com.cbs.ott/app_pccache/2/2DB43C9CB08363E4A8A26696FD44B08863683955/pcam.jar
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.cbs.ott/app_pccache/2/2DB43C9CB08363E4A8A26696FD44B08863683955/pcam.jar' with context 'PCL[];PCL[/data/app/~~g4MDGDykiW7r0DVJi-PhCw==/com.cbs.ott-wO28U5SwZt8H2RVeBUiDUw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~g4MDGDykiW7r0DVJi-PhCw==/com.cbs.ott-wO28U5SwZt8H2RVeBUiDUw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+      /data/user/0/com.cbs.ott/app_pccache/2/7FA8770170D243071CAD15B2EC9733DF9E1FD4E5/pcam.jar
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.cbs.ott/app_pccache/2/7FA8770170D243071CAD15B2EC9733DF9E1FD4E5/pcam.jar' with context 'PCL[];PCL[/data/app/~~g4MDGDykiW7r0DVJi-PhCw==/com.cbs.ott-wO28U5SwZt8H2RVeBUiDUw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~g4MDGDykiW7r0DVJi-PhCw==/com.cbs.ott-wO28U5SwZt8H2RVeBUiDUw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]}
+  [com.dlg.framework.overlay]
+  [com.droidlogic]
+    path: /system_ext/priv-app/droidlogic-res/droidlogic-res.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@droidlogic-res@droidlogic-res.apk@classes.dex]
+  [com.droidlogic.android.tv.connecteddevices]
+    path: /system_ext/app/GoogleTvConnectedDevices/GoogleTvConnectedDevices.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@app@GoogleTvConnectedDevices@GoogleTvConnectedDevices.apk@classes.dex]
+  [com.droidlogic.googletv.settings.resoverlay]
+  [com.droidlogic.launcher.provider]
+    path: /system_ext/priv-app/OnnLauncherCustomization/OnnLauncherCustomization.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system_ext/priv-app/OnnLauncherCustomization/oat/arm/OnnLauncherCustomization.odex]
+  [com.droidlogic.launcher.provider.overlay]
+  [com.droidlogic.mictoggle]
+    path: /system_ext/priv-app/MicToggleProvider_jarvis2/MicToggleProvider_jarvis2.apk
+      arm: [status=verify] [reason=prebuilt] [primary-abi]
+        [location is /system_ext/priv-app/MicToggleProvider_jarvis2/oat/arm/MicToggleProvider_jarvis2.odex]
+  [com.droidlogic.overlay]
+  [com.droidlogic.systemui.overlay]
+  [com.droidlogic.tv.axel.overly]
+  [com.droidlogic.tv.googletvremotepairer.overlay]
+  [com.droidlogic.tv.settings]
+    path: /system_ext/priv-app/DroidTvSettingsTwoPanel/DroidTvSettingsTwoPanel.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@DroidTvSettingsTwoPanel@DroidTvSettingsTwoPanel.apk@classes.dex]
+  [com.droidlogic.tvprovider.overlay]
+  [com.droidlogic.wifitetheringoverlay]
+  [com.esaba.downloader]
+    path: /data/app/~~IFB-MSgM9Tb0rhEhpy-jqQ==/com.esaba.downloader-moi-Dn_5FXT-t6p4zKavYg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~IFB-MSgM9Tb0rhEhpy-jqQ==/com.esaba.downloader-moi-Dn_5FXT-t6p4zKavYg==/oat/arm/base.odex]
+    known secondary dex files:
+      /data/user/0/com.esaba.downloader/app_pccache/2/7FA8770170D243071CAD15B2EC9733DF9E1FD4E5/pcam.jar
+        arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user/0/com.esaba.downloader/app_pccache/2/7FA8770170D243071CAD15B2EC9733DF9E1FD4E5/oat/arm/pcam.odex]
+        class loader context: PCL[];PCL[/data/app/~~IFB-MSgM9Tb0rhEhpy-jqQ==/com.esaba.downloader-moi-Dn_5FXT-t6p4zKavYg==/base.apk]
+      /data/user/0/com.esaba.downloader/app_pccache/2/A0B1CD330E14ADBA57CBF73D031373F2F7B6964A/pcam.jar
+        arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user/0/com.esaba.downloader/app_pccache/2/A0B1CD330E14ADBA57CBF73D031373F2F7B6964A/oat/arm/pcam.odex]
+        class loader context: PCL[];PCL[/data/app/~~IFB-MSgM9Tb0rhEhpy-jqQ==/com.esaba.downloader-moi-Dn_5FXT-t6p4zKavYg==/base.apk]
+  [com.google.android.apps.mediashell]
+    path: /product/priv-app/AndroidMediaShell/AndroidMediaShell.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@priv-app@AndroidMediaShell@AndroidMediaShell.apk@classes.dex]
+  [com.google.android.apps.tv.dreamx]
+    path: /data/app/~~ly459rgFrXQ2pk47py2xTQ==/com.google.android.apps.tv.dreamx-WExqaU82jGAt-IH_cDgAKg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~ly459rgFrXQ2pk47py2xTQ==/com.google.android.apps.tv.dreamx-WExqaU82jGAt-IH_cDgAKg==/oat/arm/base.odex]
+  [com.google.android.apps.tv.launcherx]
+    path: /data/app/~~KQuZXmUDrm1eSS2aOwN5QA==/com.google.android.apps.tv.launcherx-7SOufqucPjewKpA7j8UfLw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~KQuZXmUDrm1eSS2aOwN5QA==/com.google.android.apps.tv.launcherx-7SOufqucPjewKpA7j8UfLw==/oat/arm/base.odex]
+    known secondary dex files:
+      /data/user/0/com.google.android.apps.tv.launcherx/app_pccache/2/5DB27FF05886E5C325566ABE4F6C8C09DC427BD3/pcam.jar
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.google.android.apps.tv.launcherx/app_pccache/2/5DB27FF05886E5C325566ABE4F6C8C09DC427BD3/pcam.jar' with context 'PCL[];PCL[/data/app/~~riA3vQGDk1nfaOX_UGgr9g==/com.google.android.apps.tv.launcherx-voCG2wCOksgFf6qCXtvrnQ==/base.apk]{PCL[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~riA3vQGDk1nfaOX_UGgr9g==/com.google.android.apps.tv.launcherx-voCG2wCOksgFf6qCXtvrnQ==/base.apk]{PCL[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]}
+      /data/user/0/com.google.android.apps.tv.launcherx/app_pccache/2/60756ECE11F6B0B77A6E9B4EB1ACA9154B769BB8/pcam.jar
+        arm: [status=error] [reason=error] [primary-abi]
+          [location is Failed to create OatFileAssistant: Failed to load class loader context files for '/data/user/0/com.google.android.apps.tv.launcherx/app_pccache/2/60756ECE11F6B0B77A6E9B4EB1ACA9154B769BB8/pcam.jar' with context 'PCL[];PCL[/data/app/~~riA3vQGDk1nfaOX_UGgr9g==/com.google.android.apps.tv.launcherx-voCG2wCOksgFf6qCXtvrnQ==/base.apk]{PCL[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]}']
+        class loader context: PCL[];PCL[/data/app/~~riA3vQGDk1nfaOX_UGgr9g==/com.google.android.apps.tv.launcherx-voCG2wCOksgFf6qCXtvrnQ==/base.apk]{PCL[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]}
+      /data/user/0/com.google.android.apps.tv.launcherx/cache/1787936389793.jar (removed)
+        arm: [status=unknown] [reason=unknown] [primary-abi]
+          [location is error]
+        class loader context: PCL[];PCL[/data/app/~~KQuZXmUDrm1eSS2aOwN5QA==/com.google.android.apps.tv.launcherx-7SOufqucPjewKpA7j8UfLw==/base.apk]{PCL[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]}
+  [com.google.android.ext.services]
+    path: /apex/com.android.extservices/priv-app/GoogleExtServices@361153320/GoogleExtServices.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.extservices@priv-app@GoogleExtServices@361153320@GoogleExtServices.apk@classes.vdex]
+  [com.google.android.ext.shared]
+    path: /system/app/GoogleExtShared/GoogleExtShared.apk
+      arm: [status=speed] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@GoogleExtShared@GoogleExtShared.apk@classes.dex]
+  [com.google.android.feedback]
+    path: /system_ext/priv-app/GoogleFeedback/GoogleFeedback.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@GoogleFeedback@GoogleFeedback.apk@classes.vdex]
+  [com.google.android.gms]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/base.odex]
+      used by other apps: [com.amazon.amazonvideo.livingroom (isa=arm), com.cbs.ott (isa=arm), com.esaba.downloader (isa=arm), com.google.android.apps.tv.dreamx (isa=arm), com.google.android.katniss (isa=arm), com.google.android.syncadapters.calendar (isa=arm), com.google.android.tts (isa=arm), com.google.android.youtube.tv (isa=arm)]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_AdsDynamite_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_AdsDynamite_installtime.odex]
+      used by other apps: [com.amazon.amazonvideo.livingroom (isa=arm), com.esaba.downloader (isa=arm)]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_CronetDynamite_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_CronetDynamite_installtime.odex]
+      used by other apps: [com.google.android.apps.tv.dreamx (isa=arm), com.google.android.apps.tv.launcherx (isa=arm), com.google.android.inputmethod.latin (isa=arm), com.google.android.syncadapters.calendar (isa=arm), com.google.android.youtube.tv (isa=arm)]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_DynamiteLoader_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_DynamiteLoader_installtime.odex]
+      used by other apps: [com.amazon.amazonvideo.livingroom (isa=arm), com.android.vending (isa=arm), com.esaba.downloader (isa=arm), com.google.android.apps.tv.dreamx (isa=arm), com.google.android.apps.tv.launcherx (isa=arm), com.google.android.inputmethod.latin (isa=arm), com.google.android.katniss (isa=arm), com.google.android.syncadapters.calendar (isa=arm), com.google.android.tungsten.setupwraith (isa=arm), com.google.android.tv.remote.service (isa=arm), com.google.android.youtube.tv (isa=arm), com.spocky.projengmenu (isa=arm), com.spotify.tv.android (isa=arm)]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_DynamiteModulesA_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_DynamiteModulesA_installtime.odex]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_DynamiteModulesC_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_DynamiteModulesC_installtime.odex]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_GoogleCertificates_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_GoogleCertificates_installtime.odex]
+      used by other apps: [com.android.vending (isa=arm), com.google.android.apps.tv.dreamx (isa=arm), com.google.android.apps.tv.launcherx (isa=arm), com.google.android.inputmethod.latin (isa=arm), com.google.android.tv.remote.service (isa=arm)]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_MapsDynamite_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_MapsDynamite_installtime.odex]
+    path: /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/split_MeasurementDynamite_installtime.apk
+      arm: [status=speed] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/oat/arm/split_MeasurementDynamite_installtime.odex]
+      used by other apps: [com.amazon.amazonvideo.livingroom (isa=arm), com.android.vending (isa=arm), com.esaba.downloader (isa=arm), com.google.android.katniss (isa=arm), com.spocky.projengmenu (isa=arm), com.spotify.tv.android (isa=arm)]
+    known secondary dex files:
+      /data/user/0/com.google.android.gms/app_dg_cache/276FB66A452F81FC3A363938F4EAC85682964AF7/the.apk (public)
+        arm: [status=verify] [reason=vdex] [primary-abi]
+          [location is /data/user/0/com.google.android.gms/app_dg_cache/276FB66A452F81FC3A363938F4EAC85682964AF7/oat/arm/the.vdex]
+        class loader context: PCL[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user/0/com.google.android.gms/app_dg_cache/54F0059ECDBC6330A98B6AA149D329EBB32AA354/the.apk (removed)
+        arm: [status=unknown] [reason=unknown] [primary-abi]
+          [location is error]
+        class loader context: PCL[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user/0/com.google.android.gms/app_dg_cache/ED3A1232F88E3F7183EC693FAFA248413CF1255D/the.apk (public)
+        arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user/0/com.google.android.gms/app_dg_cache/ED3A1232F88E3F7183EC693FAFA248413CF1255D/oat/arm/the.odex]
+        class loader context: PCL[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user/0/com.google.android.gms/app_dg_cache/F94EA24A7FDB529D50DFA87E29D29871418B377F/the.apk (removed)
+        arm: [status=unknown] [reason=unknown] [primary-abi]
+          [location is error]
+        class loader context: PCL[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user_de/0/com.google.android.gms/app_chimera/m/00000034/dl-Threadnetwork.optional_262962180000.apk (public)
+        arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user_de/0/com.google.android.gms/app_chimera/m/00000034/oat/arm/dl-Threadnetwork.optional_262962180000.odex]
+        class loader context: DLC[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user_de/0/com.google.android.gms/app_chimera/m/00000035/dl-Games.optional_262962180000.apk (public)
+        arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user_de/0/com.google.android.gms/app_chimera/m/00000035/oat/arm/dl-Games.optional_262962180000.odex]
+        class loader context: DLC[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user_de/0/com.google.android.gms/app_chimera/m/00000036/dl-Home.optional_262962180300.apk (public)
+        arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user_de/0/com.google.android.gms/app_chimera/m/00000036/oat/arm/dl-Home.optional_262962180300.odex]
+        class loader context: DLC[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+      /data/user_de/0/com.google.android.gms/app_chimera/m/00000037/dl-Fastpair.optional_262962100000.apk (public)
+        arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+          [location is /data/user_de/0/com.google.android.gms/app_chimera/m/00000037/oat/arm/dl-Fastpair.optional_262962100000.odex]
+        class loader context: DLC[];PCL[/data/app/~~Wi03r8fJPWAl7iX4_uN-mw==/com.google.android.gms-NRWZui6unjovcZzO_RGJpw==/base.apk]{PCL[/system/framework/org.apache.http.legacy.jar]#PCL[/system/framework/com.android.location.provider.jar]}
+  [com.google.android.gsf]
+    path: /system_ext/priv-app/GoogleServicesFramework/GoogleServicesFramework.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@GoogleServicesFramework@GoogleServicesFramework.apk@classes.vdex]
+  [com.google.android.inputmethod.latin]
+    path: /data/app/~~kKem6fcAuABAvhkf82tjSw==/com.google.android.inputmethod.latin-Jc5cj8f7EgHW3rBu9fWUgg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~kKem6fcAuABAvhkf82tjSw==/com.google.android.inputmethod.latin-Jc5cj8f7EgHW3rBu9fWUgg==/oat/arm/base.odex]
+  [com.google.android.katniss]
+    path: /data/app/~~cqvmS17mWkY71DVQAnj47w==/com.google.android.katniss-Eai-a3pYOvvQUN1q8fSwWg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~cqvmS17mWkY71DVQAnj47w==/com.google.android.katniss-Eai-a3pYOvvQUN1q8fSwWg==/oat/arm/base.odex]
+  [com.google.android.marvin.talkback]
+    path: /product/priv-app/talkback/talkback.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@priv-app@talkback@talkback.apk@classes.vdex]
+  [com.google.android.modulemetadata]
+  [com.google.android.networkstack.tethering.google]
+  [com.google.android.overlay.googlewebview]
+  [com.google.android.overlay.gtvsconfigx]
+  [com.google.android.overlay.gtvssettingsprovider]
+  [com.google.android.overlay.modules.ext.services]
+  [com.google.android.overlay.modules.modulemetadata.forframework]
+  [com.google.android.overlay.modules.permissioncontroller]
+  [com.google.android.overlay.modules.permissioncontroller.forframework]
+  [com.google.android.packageinstaller]
+    path: /system/priv-app/GooglePackageInstaller_tv/GooglePackageInstaller_tv.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@priv-app@GooglePackageInstaller_tv@GooglePackageInstaller_tv.apk@classes.vdex]
+  [com.google.android.partnersetup]
+    path: /system_ext/priv-app/GooglePartnerSetup/GooglePartnerSetup.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@priv-app@GooglePartnerSetup@GooglePartnerSetup.apk@classes.vdex]
+  [com.google.android.permissioncontroller]
+    path: /apex/com.android.permission/priv-app/GooglePermissionController@361420000/GooglePermissionController.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/apex@com.android.permission@priv-app@GooglePermissionController@361420000@GooglePermissionController.apk@classes.dex]
+  [com.google.android.play.games]
+    path: /data/app/~~Qk_AUgLb6bckRpoTpGW84g==/com.google.android.play.games-gmjIgdutkByJEixMkiFKIw==/base.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is primary.vdex mapped directly in memory from /data/app/~~Qk_AUgLb6bckRpoTpGW84g==/com.google.android.play.games-gmjIgdutkByJEixMkiFKIw==/base.dm]
+  [com.google.android.safetycenter.resources]
+    path: /apex/com.android.permission/priv-app/GoogleSafetyCenterResources@361420000/GoogleSafetyCenterResources.apk
+      arm: [status=unknown] [reason=unknown] [primary-abi]
+        [location is none]
+  [com.google.android.syncadapters.calendar]
+    path: /product/app/GoogleCalendarSyncAdapter/GoogleCalendarSyncAdapter.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@app@GoogleCalendarSyncAdapter@GoogleCalendarSyncAdapter.apk@classes.dex]
+  [com.google.android.trichromelibrary_749903430]
+  [com.google.android.tts]
+    path: /data/app/~~u-y0JCZrCpnnOuw2pGNFWg==/com.google.android.tts-dOfFsdOTCS_DSoQKgjsAbg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~u-y0JCZrCpnnOuw2pGNFWg==/com.google.android.tts-dOfFsdOTCS_DSoQKgjsAbg==/oat/arm/base.odex]
+  [com.google.android.tungsten.setupwraith]
+    path: /data/app/~~81CnfJ05AxJXXTGJ3xYWBA==/com.google.android.tungsten.setupwraith-LdgwIJSokNN0Q5yCFfrQiQ==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~81CnfJ05AxJXXTGJ3xYWBA==/com.google.android.tungsten.setupwraith-LdgwIJSokNN0Q5yCFfrQiQ==/oat/arm/base.odex]
+  [com.google.android.tv.axel]
+    path: /product/priv-app/AtvAxel/AtvAxel.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@priv-app@AtvAxel@AtvAxel.apk@classes.dex]
+  [com.google.android.tv.dfuservice]
+    path: /data/app/~~1j0_o7ukO4CVyebabcRk3g==/com.google.android.tv.dfuservice-6o9JvsbCcSpzaBgmQsVv8g==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~1j0_o7ukO4CVyebabcRk3g==/com.google.android.tv.dfuservice-6o9JvsbCcSpzaBgmQsVv8g==/oat/arm/base.odex]
+  [com.google.android.tv.overlay.wifi.resources]
+  [com.google.android.tv.remote.service]
+    path: /data/app/~~H7kN0KG_FDm9X25Z4v3tYQ==/com.google.android.tv.remote.service-3gpFlfp-7w5s2xdS0qnGsA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~H7kN0KG_FDm9X25Z4v3tYQ==/com.google.android.tv.remote.service-3gpFlfp-7w5s2xdS0qnGsA==/oat/arm/base.odex]
+  [com.google.android.tv.settings.energymodes.resoverlay]
+  [com.google.android.webview]
+    path: /data/app/~~HSKfxPsbr-TZ-IoiDC-EaA==/com.google.android.webview-839Sq4b2tOWKleRwvNC6hw==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~HSKfxPsbr-TZ-IoiDC-EaA==/com.google.android.webview-839Sq4b2tOWKleRwvNC6hw==/oat/arm/base.odex]
+      used by other apps: [com.cbs.ott (isa=arm), com.google.android.gms (isa=arm), org.smarttube.beta (isa=arm)]
+  [com.google.android.youtube.tv]
+    path: /data/app/~~cHXcDKHYff-S-_looaAQ5A==/com.google.android.youtube.tv-6rPfq_IvCdqOoCPzavKshg==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~cHXcDKHYff-S-_looaAQ5A==/com.google.android.youtube.tv-6rPfq_IvCdqOoCPzavKshg==/oat/arm/base.odex]
+  [com.google.android.youtube.tvmusic]
+    path: /product/app/YouTubeMusicTVPrebuilt/YouTubeMusicTVPrebuilt.apk
+      arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/product@app@YouTubeMusicTVPrebuilt@YouTubeMusicTVPrebuilt.apk@classes.dex]
+  [com.gretzky.GlobalKey]
+    path: /system/app/GlobalReceiver/GlobalReceiver.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@GlobalReceiver@GlobalReceiver.apk@classes.vdex]
+  [com.gretzky.hwinfo]
+    path: /system/app/HardwareInfo/HardwareInfo.apk
+      arm: [status=verify] [reason=boot-after-ota] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@HardwareInfo@HardwareInfo.apk@classes.dex]
+  [com.hulu.livingroomplus]
+    path: /data/app/~~IESMGXOGmTj5bP0jFemEIA==/com.hulu.livingroomplus-65uKU0vYkvSDfbiZrnZ70A==/base.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is primary.vdex mapped directly in memory from /data/app/~~IESMGXOGmTj5bP0jFemEIA==/com.hulu.livingroomplus-65uKU0vYkvSDfbiZrnZ70A==/base.dm]
+  [com.kick.mobile]
+    path: /data/app/~~ViAzZ9G5aLd_r-cUnYGOAA==/com.kick.mobile-IDLGPEl2YtUaDIWyGQCZRw==/base.apk
+      arm: [status=speed-profile] [reason=install-dm] [primary-abi]
+        [location is /data/app/~~ViAzZ9G5aLd_r-cUnYGOAA==/com.kick.mobile-IDLGPEl2YtUaDIWyGQCZRw==/oat/arm/base.odex]
+  [com.netflix.ninja]
+    path: /data/app/~~2H_FlnrDAkJQww2_UP1C8g==/com.netflix.ninja-eheM_a9BUIIUXcn7TNGDXw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~2H_FlnrDAkJQww2_UP1C8g==/com.netflix.ninja-eheM_a9BUIIUXcn7TNGDXw==/oat/arm/base.odex]
+  [com.netflix.tokenmanager]
+    path: /system_ext/app/NfxTokenManager/NfxTokenManager.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system_ext@app@NfxTokenManager@NfxTokenManager.apk@classes.vdex]
+  [com.nordvpn.android]
+    path: /data/app/~~OTToaPNMpV09jIOibbC7GA==/com.nordvpn.android-bC1As89oPc04Al865rZrpg==/base.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is primary.vdex mapped directly in memory from /data/app/~~OTToaPNMpV09jIOibbC7GA==/com.nordvpn.android-bC1As89oPc04Al865rZrpg==/base.dm]
+  [com.nuvio.tv]
+    path: /data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==/base.apk
+      arm: [status=speed] [reason=cmdline] [primary-abi]
+        [location is /data/app/~~0_YHdAuio8OHsC9L2sLJtA==/com.nuvio.tv-u5HL8AWlJC75LBdGF2VmkQ==/oat/arm/base.odex]
+  [com.onn.bluetoothconnect]
+    path: /system/app/BtRemoteSetupWizard/BtRemoteSetupWizard.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@BtRemoteSetupWizard@BtRemoteSetupWizard.apk@classes.dex]
+  [com.onn.btpairoverlay]
+  [com.onn.tv.setup.customization]
+    path: /system/app/OnnTvSetup/OnnTvSetup.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@OnnTvSetup@OnnTvSetup.apk@classes.vdex]
+  [com.onn.updatenotification]
+    path: /system/app/UpdateNotification/UpdateNotification.apk
+      arm: [status=verify] [reason=vdex] [primary-abi]
+        [location is /data/dalvik-cache/arm/system@app@UpdateNotification@UpdateNotification.apk@classes.vdex]
+  [com.ref.threadmodeoverlay]
+  [com.sdapp.connecteddevicesoverlay]
+  [com.spocky.projengmenu]
+    path: /data/app/~~3g-e92IlOUvMlHVzbyRI9w==/com.spocky.projengmenu-pm3RhBCXxRd1UnExwBcvhg==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~3g-e92IlOUvMlHVzbyRI9w==/com.spocky.projengmenu-pm3RhBCXxRd1UnExwBcvhg==/oat/arm/base.odex]
+  [com.spotify.tv.android]
+    path: /data/app/~~Ccf9uiA7ksTllUzJSwSdrQ==/com.spotify.tv.android-tSTVJstzjE_hAaU3gNTO5Q==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~Ccf9uiA7ksTllUzJSwSdrQ==/com.spotify.tv.android-tSTVJstzjE_hAaU3gNTO5Q==/oat/arm/base.odex]
+  [io.gh.reisxd.tizentube.cobalt]
+    path: /data/app/~~d63GSRhCMZF_hZsLKFZyZQ==/io.gh.reisxd.tizentube.cobalt-Nj2eHTGTlDdQrylypEx1Fw==/base.apk
+      arm: [status=verify] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~d63GSRhCMZF_hZsLKFZyZQ==/io.gh.reisxd.tizentube.cobalt-Nj2eHTGTlDdQrylypEx1Fw==/oat/arm/base.odex]
+  [io.github.devjardins.sidespeed]
+    path: /data/app/~~LqyCWLl1VuCnPLiHelYiQg==/io.github.devjardins.sidespeed-Kq2BBLf57oHDySUq8xwNJQ==/base.apk
+      arm: [status=run-from-apk] [reason=unknown] [primary-abi]
+        [location is error]
+  [org.smarttube.beta]
+    path: /data/app/~~Ra7FlNHfayPSWCTOaUiNdw==/org.smarttube.beta-phjnLLLXixxjbGQZwfyhuQ==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~Ra7FlNHfayPSWCTOaUiNdw==/org.smarttube.beta-phjnLLLXixxjbGQZwfyhuQ==/oat/arm/base.odex]
+  [tv.cleanyour.curtain]
+    path: /data/app/~~YGnCBRCEZRA-XQHbyuAHjQ==/tv.cleanyour.curtain-NdAzuHPMxDpCUQRF-u8Tmg==/base.apk
+      arm: [status=verify] [reason=install] [primary-abi]
+        [location is /data/app/~~YGnCBRCEZRA-XQHbyuAHjQ==/tv.cleanyour.curtain-NdAzuHPMxDpCUQRF-u8Tmg==/oat/arm/base.odex]
+  [tv.twitch.android.app]
+    path: /data/app/~~oz1VbiSujvma4Z2CUR9_qQ==/tv.twitch.android.app-smakN_JkjNU_HW33ftqmQw==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~oz1VbiSujvma4Z2CUR9_qQ==/tv.twitch.android.app-smakN_JkjNU_HW33ftqmQw==/oat/arm/base.odex]
+  [tv.uscreen.hammerelite]
+    path: /data/app/~~IxiNXyuztu3kV05hDFf0og==/tv.uscreen.hammerelite-WIT4FXOgZwZKQuSBlgUDcA==/base.apk
+      arm: [status=speed-profile] [reason=bg-dexopt] [primary-abi]
+        [location is /data/app/~~IxiNXyuztu3kV05hDFf0og==/tv.uscreen.hammerelite-WIT4FXOgZwZKQuSBlgUDcA==/oat/arm/base.odex]
+  
+  Current GC: CollectorTypeCC

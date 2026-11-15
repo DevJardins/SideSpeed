@@ -1,0 +1,37 @@
+SideSpeed
+Licensed under the GNU General Public License v3.0 (see LICENSE).
+
+This product includes or builds on the following third-party work:
+
+Shizuku (https://github.com/RikkaApps/Shizuku)
+  Copyright (c) RikkaW. Apache License 2.0.
+  SideSpeed's technique for starting a helper process as the shell user with
+  app_process is based on Shizuku's starter approach.
+
+libadb-android (https://github.com/MuntashirAkon/libadb-android)
+  Copyright (c) Muntashir Al-Islam. Dual-licensed (SPDX: GPL-3.0-or-later or Apache-2.0);
+  SideSpeed uses it under GPL-3.0-or-later.
+
+Conscrypt (https://github.com/google/conscrypt)
+  Copyright (c) The Android Open Source Project and Google. Apache License 2.0.
+
+Bouncy Castle (https://www.bouncycastle.org/)
+  Copyright (c) The Legion of the Bouncy Castle Inc. MIT-style license.
+
+sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
+  Derived from OpenJDK sun.security. GPL-2.0 (version 2 only) with the Oracle "Classpath"
+  exception. The Classpath exception is what permits linking it from this GPLv3 app.
+
+AndroidX (Jetpack Compose, TV Material, DataStore, Core, Activity),
+Kotlin and kotlinx.coroutines
+  Copyright (c) The Android Open Source Project and JetBrains. Apache License 2.0.
+
+HiddenApiBypass (https://github.com/LSPosed/AndroidHiddenApiBypass)
+  Copyright (c) LSPosed. Apache License 2.0.
+
+
+Android robot
+  The SideSpeed logo is based on the Android robot, which is reproduced or
+  modified from work created and shared by Google and used according to
+  terms described in the Creative Commons 3.0 Attribution License.
+  https://developer.android.com/distribute/marketing-tools/brand-guidelines

@@ -1,0 +1,13 @@
+Dexopt state:
+  [com.nuvio.tv.beta]
+    path: /data/app/com.nuvio.tv.beta-AbCd==/base.apk
+      arm64: [status=verify] [reason=install]
+
+  [com.nuvio.tv]
+    path: /data/app/com.nuvio.tv-XyZ==/base.apk
+      arm64: [status=speed-profile] [reason=bg-dexopt]
+
+  [com.example.other]
+    path: /data/app/com.example.other-QrS==/base.apk
+      arm64: [status=quicken] [reason=install]
+
