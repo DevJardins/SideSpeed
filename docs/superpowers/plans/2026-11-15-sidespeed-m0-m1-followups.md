@@ -64,6 +64,7 @@ Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 - Flaky test (PRIORITY, seen 3 times now): HelperClientTest.serverClosingBeforeEndThrows fails under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
 
 ## Revision 4 (setup flow + calm theme) follow-ups
+- ✓ First-run Always-allow flow verified on the onn by the owner after revoking all authorizations (2026-11-15).
 - Confirm on the onn with Wireless debugging off that a closed 5555 surfaces as ConnectException, so the "pair with a code" hint appears after 3 refusals.
 - The TLS (code-pairing) connect path is still unverified on a device, because port 5555 was open whenever pairing was tested.
 - Minor: `refusals` can be bumped by an in-flight attempt just after `start()` resets it (at most one early hint). The status parse is O(packages × lines). Unused ImageBitmap import in AppsScreen.

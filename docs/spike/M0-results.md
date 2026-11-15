@@ -93,3 +93,12 @@ SideSpeed showed the app list, which is reached only after a successful nonce-ve
 - Code pairing itself worked: SideSpeed appeared under Paired devices.
 - The TLS connect path is **unverified**.
 - No PC is needed on the onn, even after a reboot: turn Wireless debugging on, open SideSpeed, choose **Always allow**. This is the default flow from design Revision 4; pairing with a code is the fallback for TVs that do not open 5555.
+
+## First-run "Always allow" flow, onn 4K Pro (Revision 4 build, owner, 2026-11-15)
+
+✓ Starting from a clean slate:
+- Developer options → Revoke USB debugging authorizations;
+- restart;
+- Wireless debugging on.
+
+The owner then opened SideSpeed, accepted the "Allow debugging?" prompt with Always allow, and SideSpeed moved on by itself to the app list ("Helper running"). No pairing code and no PC were used. This is the intended default Google TV flow. The revoke also removed the Mac's ADB access, so there's no controller-side log for this run.
