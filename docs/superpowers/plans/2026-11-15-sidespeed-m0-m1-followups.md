@@ -61,4 +61,10 @@ Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 - FINDING (minor): Apps screen has no initial D-pad focus (first key press establishes focus).
 - Device verify Fire TV: compile Success, badge 'speed ✓', dumpsys agrees. FINDING (minor): banner shows 'Success: Success' (message duplicates label).
 
-- Flaky test: HelperClientTest.serverClosingBeforeEndThrows failed once under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
+- Flaky test (PRIORITY, seen 3 times now): HelperClientTest.serverClosingBeforeEndThrows fails under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
+
+## Revision 4 (setup flow + calm theme) follow-ups
+- Confirm on the onn with Wireless debugging off that a closed 5555 surfaces as ConnectException, so the "pair with a code" hint appears after 3 refusals.
+- The TLS (code-pairing) connect path is still unverified on a device, because port 5555 was open whenever pairing was tested.
+- Minor: `refusals` can be bumped by an in-flight attempt just after `start()` resets it (at most one early hint). The status parse is O(packages × lines). Unused ImageBitmap import in AppsScreen.
+- Minor: pressing Pair disables the button while it has focus. Move focus deliberately to the pairing status line.
