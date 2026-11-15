@@ -61,7 +61,7 @@ Recorded from the build ledger when the M0+M1 branch finished (2026-11-15).
 - FINDING (minor): Apps screen has no initial D-pad focus (first key press establishes focus).
 - Device verify Fire TV: compile Success, badge 'speed ✓', dumpsys agrees. FINDING (minor): banner shows 'Success: Success' (message duplicates label).
 
-- Flaky test (PRIORITY, seen 3 times now): HelperClientTest.serverClosingBeforeEndThrows fails under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
+- ~~Flaky test HelperClientTest.serverClosingBeforeEndThrows~~ Fixed 2026-11-15. It was a real bug: with flowOn, a connection drop cancelled the collector, and the last line read before the drop was discarded (prompt cancellation), about 3% of the time. Both shell implementations now route the loss through `adb/ShellFlow.kt`, and a 150-iteration regression test guards it. Original note: fails under load (`expected [Line(partial)] but was []`), then passed 3/3 reruns. Harden the fake server's write/close ordering.
 
 ## Revision 4 (setup flow + calm theme) follow-ups
 - ✓ First-run Always-allow flow verified on the onn by the owner after revoking all authorizations (2026-11-15).

@@ -6,8 +6,6 @@ import io.github.muntashirakon.adb.AbsAdbConnectionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
@@ -52,7 +50,7 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
         }
 
     @OptIn(InternalCoroutinesApi::class)
-    override fun shell(command: String): Flow<ShellEvent> = flow {
+    override fun shell(command: String): Flow<ShellEvent> = shellFlow {
         val stream = try {
             runInterruptible { manager.openStream("shell:" + ShellExit.wrap(command)) }
         } catch (e: Throwable) {
@@ -88,7 +86,7 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
             handle.dispose()
             runCatching { stream.close() }
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
     override suspend fun openService(service: String): Result<String> = runCatchingCancellable {
         runInterruptible(Dispatchers.IO) {

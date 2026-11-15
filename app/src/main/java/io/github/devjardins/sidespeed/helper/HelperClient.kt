@@ -4,6 +4,7 @@ import android.util.Log
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.ShellEvent
+import io.github.devjardins.sidespeed.adb.shellFlow
 import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -11,8 +12,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.sync.Mutex
@@ -122,11 +121,11 @@ class HelperClient(
     }
 
     /** Runs [command] on the verified helper: Lines, then Exit. Throws [AdbConnectionLost] if unverified or cut off. */
-    override fun shell(command: String): Flow<ShellEvent> = flow {
+    override fun shell(command: String): Flow<ShellEvent> = shellFlow {
         val port = verifiedPort ?: throw AdbConnectionLost("helper not verified")
         val exit = exchange(port, command, readTimeoutMs = 0) { emit(ShellEvent.Line(it)) }
         emit(ShellEvent.Exit(exit))
-    }.flowOn(Dispatchers.IO)
+    }
 
     /** Port from [portFile], if it holds a port of the helper's range. */
     private fun readPort(): Int? {

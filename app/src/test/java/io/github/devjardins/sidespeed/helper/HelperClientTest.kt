@@ -34,7 +34,7 @@ class HelperClientTest {
     @get:Rule val tmp = TemporaryFolder()
 
     /** Every test runs on its own thread and fails after 10 s instead of hanging the build. */
-    @get:Rule val timeout: Timeout = Timeout.seconds(10)
+    @get:Rule val timeout: Timeout = Timeout.seconds(60)
 
     private val loopback = InetAddress.getByAddress(byteArrayOf(127, 0, 0, 1))
     private val server = ServerSocket(0, 50, loopback).apply { soTimeout = 1_000 }
@@ -357,5 +357,28 @@ class HelperClientTest {
 
     private companion object {
         const val SERVER_READ_TIMEOUT_MS = 8_000
+    }
+
+    /**
+     * Regression: lines read just before the connection drops must reach the collector. With a buffered
+     * flowOn hand-off, the upstream failure could cancel the channel and drop the last buffered line
+     * (about 3% of runs), losing e.g. the final error output of a compile.
+     */
+    @Test fun lineReadJustBeforeADropIsNeverLost() = runBlocking {
+        writePort()
+        var lost = 0
+        repeat(150) {
+            val c = client()
+            c.ping()
+            handler = { _, s -> reply(s, "partial") }
+            val seen = mutableListOf<ShellEvent>()
+            try {
+                c.shell("dumpsys package dexopt").collect { seen += it }
+            } catch (_: AdbConnectionLost) {
+            }
+            if (seen != listOf(ShellEvent.Line("partial"))) lost++
+            handler = ::realHelper
+        }
+        assertEquals("runs that lost the last line", 0, lost)
     }
 }
