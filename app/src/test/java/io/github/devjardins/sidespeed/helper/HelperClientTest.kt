@@ -97,11 +97,13 @@ class HelperClientTest {
     private fun client(
         connect: (Int) -> Socket = { p -> connectPorts += p; Socket(loopback, server.localPort) },
         retryDelaysMs: List<Long> = listOf(1, 1),
+        immediateCloseWindowMs: Long = 300,
     ) = HelperClient(
         portFile = portFile,
         connect = connect,
         ackFile = ackFile,
         retryDelaysMs = retryDelaysMs,
+        immediateCloseWindowMs = immediateCloseWindowMs,
         log = { logs += it },
     )
 
@@ -283,6 +285,52 @@ class HelperClientTest {
 
     @Test fun defaultBackoffIs100Then300() {
         assertEquals(listOf(100L, 300L), HelperClient.DEFAULT_RETRY_DELAYS_MS)
+        assertEquals(500L, HelperClient.DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS)
+    }
+
+    /** A compile the helper accepted and then died on (no output yet) must never be resent. */
+    @Test fun closeAfterTheWindowIsNotRetried() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        handler = { _, _ -> Thread.sleep(800) } // hold well past the 300 ms window, then close with no reply
+        try {
+            c.shell("pm compile -m speed -f com.nuvio.tv").toList()
+            fail("expected AdbConnectionLost")
+        } catch (_: AdbConnectionLost) {
+        }
+        Thread.sleep(500) // a (wrong) retry after 1 ms backoff would have arrived by now
+        assertEquals(listOf("pm compile -m speed -f com.nuvio.tv"), requests.drop(1))
+    }
+
+    @Test fun resetAfterTheWindowIsNotRetried() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        handler = { _, s -> Thread.sleep(800); s.setSoLinger(true, 0) } // RST on close
+        try {
+            c.shell("pm compile -m speed -f com.nuvio.tv").toList()
+            fail("expected AdbConnectionLost")
+        } catch (_: AdbConnectionLost) {
+        }
+        Thread.sleep(500)
+        assertEquals(1, requests.drop(1).size)
+    }
+
+    @Test fun resetImmediatelyIsRetried() = runBlocking {
+        writePort()
+        val seen = AtomicInteger()
+        handler = { req, s -> if (seen.incrementAndGet() > 1) realHelper(req, s) else s.setSoLinger(true, 0) }
+        assertEquals(HelperPing(1, "/x"), client().ping())
+        assertEquals(2, requests.size)
+    }
+
+    @Test fun lateCloseOfAPingIsNotRetriedEither() = runBlocking {
+        writePort()
+        handler = { _, _ -> Thread.sleep(800) }
+        assertNull(client().ping())
+        Thread.sleep(500)
+        assertEquals(1, requests.size)
     }
 
     @Test fun cancellingTheCollectorClosesTheSocket() = runBlocking {

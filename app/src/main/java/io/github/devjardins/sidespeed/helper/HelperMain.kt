@@ -164,7 +164,11 @@ object HelperMain {
         } finally {
             if (!done) {
                 p.destroy()
-                try { p.waitFor() } catch (_: InterruptedException) {}
+                try {
+                    p.waitFor()
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
             }
         }
     }

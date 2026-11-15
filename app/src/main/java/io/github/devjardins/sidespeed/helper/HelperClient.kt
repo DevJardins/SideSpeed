@@ -51,15 +51,19 @@ data class HelperPing(val version: Int, val apkPath: String) {
  * to [ackFile], which apps cannot write. [shell] only talks to the port verified by the last successful [ping].
  * Residual risk: if the helper dies between [ping] and [shell], another app could take the port in between.
  *
- * Connections refused or closed with no reply are retried after each of [retryDelaysMs] (the helper caps
- * concurrent connections, and another app could briefly fill them). Reads run on [Dispatchers.IO];
- * cancelling the collector closes the socket.
+ * Retries (after each of [retryDelaysMs]) only cover immediate refusals: a refused connect, or a connection
+ * closed or reset with no reply within [immediateCloseWindowMs] of connecting. That is how the helper turns
+ * away connections over its cap (another app could briefly fill them) and failed caller checks, before reading
+ * the request. A later close is never retried: `pm compile` prints nothing until it finishes, so a close minutes
+ * in means the helper accepted the request and died, and resending it could re-run the compile (and would
+ * widen the stale-port window). Reads run on [Dispatchers.IO]; cancelling the collector closes the socket.
  */
 class HelperClient(
     private val portFile: File = File(HelperProtocol.PORT_FILE),
     private val connect: (Int) -> Socket = { Socket("127.0.0.1", it) },
     private val ackFile: File = File(HelperProtocol.ACK_FILE),
     private val retryDelaysMs: List<Long> = DEFAULT_RETRY_DELAYS_MS,
+    private val immediateCloseWindowMs: Long = DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS,
     private val log: (String) -> Unit = { Log.w(TAG, it) },
 ) : CommandRunner {
     private val random = SecureRandom()
@@ -74,40 +78,47 @@ class HelperClient(
      */
     suspend fun ping(): HelperPing? = withContext(Dispatchers.IO) {
         pingLock.withLock {
-            verifiedPort = null
-            val port = readPort() ?: return@withLock null
-            val nonce = newNonce()
-            val lines = mutableListOf<String>()
-            val exit = try {
-                exchange(port, "${CommandAllowlist.PING} $nonce", PING_READ_TIMEOUT_MS) { lines += it }
-            } catch (e: AdbConnectionLost) {
-                log("ping on port $port failed: ${e.message}")
-                return@withLock null
-            }
-            if (exit != 0) {
-                log("ping on port $port refused: exit=$exit ${lines.take(3)}")
-                return@withLock null
-            }
-            val pong = lines.firstNotNullOfOrNull { HelperPing.parse(it) } ?: run {
-                log("ping on port $port: no pong in ${lines.take(3)}")
-                return@withLock null
-            }
-            val ack = try {
-                ackFile.readText().trim()
-            } catch (_: IOException) {
-                null
-            }
-            if (ack != nonce) {
-                log("ping on port $port: ack file does not hold our nonce; not trusting this server (stale port?)")
-                return@withLock null
-            }
-            if (pong.version != HELPER_PROTOCOL_VERSION) {
-                log("helper protocol v=${pong.version}, expected v=$HELPER_PROTOCOL_VERSION")
-                return@withLock null
-            }
+            val (port, pong) = verify() ?: (null to null)
             verifiedPort = port
             pong
         }
+    }
+
+    /** One verification round: the port and its pong, or null. Never touches [verifiedPort] itself. */
+    private suspend fun verify(): Pair<Int, HelperPing>? {
+        val port = readPort() ?: return null
+        val nonce = newNonce()
+        val lines = mutableListOf<String>()
+        val exit = try {
+            exchange(port, "${CommandAllowlist.PING} $nonce", PING_READ_TIMEOUT_MS, clearOnFailure = false) {
+                lines += it
+            }
+        } catch (e: AdbConnectionLost) {
+            log("ping on port $port failed: ${e.message}")
+            return null
+        }
+        if (exit != 0) {
+            log("ping on port $port refused: exit=$exit ${lines.take(3)}")
+            return null
+        }
+        val pong = lines.firstNotNullOfOrNull { HelperPing.parse(it) } ?: run {
+            log("ping on port $port: no pong in ${lines.take(3)}")
+            return null
+        }
+        val ack = try {
+            ackFile.readText().trim()
+        } catch (_: IOException) {
+            null
+        }
+        if (ack != nonce) {
+            log("ping on port $port: ack file does not hold our nonce; not trusting this server (stale port?)")
+            return null
+        }
+        if (pong.version != HELPER_PROTOCOL_VERSION) {
+            log("helper protocol v=${pong.version}, expected v=$HELPER_PROTOCOL_VERSION")
+            return null
+        }
+        return port to pong
     }
 
     /** Runs [command] on the verified helper: Lines, then Exit. Throws [AdbConnectionLost] if unverified or cut off. */
@@ -139,12 +150,13 @@ class HelperClient(
         port: Int,
         request: String,
         readTimeoutMs: Int,
+        clearOnFailure: Boolean = true,
         onLine: suspend (String) -> Unit,
     ): Int {
         val c = try {
             open(port, request, readTimeoutMs)
         } catch (e: AdbConnectionLost) {
-            if (verifiedPort == port) verifiedPort = null
+            if (clearOnFailure && verifiedPort == port) verifiedPort = null
             throw e
         }
         try {
@@ -178,19 +190,21 @@ class HelperClient(
         }
     }
 
-    /** Connects and reads the first response line, retrying refused or immediately closed connections. */
+    /** An immediate refusal, safe to retry: the helper never acted on the request. */
+    private class Refused(message: String, cause: Throwable? = null) : IOException(message, cause)
+
+    /** Connects and reads the first response line, retrying only immediate refusals (see the class doc). */
     private suspend fun open(port: Int, request: String, readTimeoutMs: Int): Connection {
         var attempt = 0
         while (true) {
             val failure: IOException = try {
-                openOnce(port, request, readTimeoutMs)?.let { return it }
-                IOException("helper closed the connection without replying")
+                return openOnce(port, request, readTimeoutMs)
             } catch (e: IOException) {
                 e
             }
             currentCoroutineContext().ensureActive()
-            if (failure is SocketTimeoutException || attempt >= retryDelaysMs.size) {
-                throw AdbConnectionLost("cannot reach helper on port $port: ${failure.message}", failure)
+            if (failure !is Refused || attempt >= retryDelaysMs.size) {
+                throw AdbConnectionLost("helper on port $port: ${failure.message}", failure)
             }
             log("helper port $port: ${failure.message}; retrying")
             delay(retryDelaysMs[attempt++])
@@ -198,7 +212,8 @@ class HelperClient(
     }
 
     /**
-     * One attempt. Null if the server closed without sending a line.
+     * One attempt. Throws [Refused] for a refused connect or a close/reset with no reply within
+     * [immediateCloseWindowMs]; any other failure is a plain IOException (not retried).
      *
      * Cancelling the caller closes the socket, which is the only way to unblock a thread stuck in a socket read.
      * The handler must run when the job starts *cancelling*: a plain invokeOnCompletion only fires once the job
@@ -206,32 +221,45 @@ class HelperClient(
      * wait forever.
      */
     @OptIn(InternalCoroutinesApi::class)
-    private suspend fun openOnce(port: Int, request: String, readTimeoutMs: Int): Connection? {
-        val socket = runInterruptible { connect(port) }
+    private suspend fun openOnce(port: Int, request: String, readTimeoutMs: Int): Connection {
+        val socket = try {
+            runInterruptible { connect(port) }
+        } catch (e: IOException) {
+            throw Refused("connect failed: ${e.message}", e)
+        }
+        val connectedAt = System.nanoTime()
+        fun elapsedMs() = (System.nanoTime() - connectedAt) / 1_000_000
         val onCancel = currentCoroutineContext().job
             .invokeOnCompletion(onCancelling = true, invokeImmediately = true) { closeQuietly(socket) }
-        try {
+        val first = try {
             socket.soTimeout = readTimeoutMs
             val out = socket.getOutputStream()
             out.write((request + "\n").toByteArray(Charsets.US_ASCII))
             out.flush()
             val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
-            val first = reader.readLine()
-            if (first != null) {
-                return Connection(socket, reader, first, onCancel)
-            }
+            reader.readLine()?.let { return Connection(socket, reader, it, onCancel) }
+            null
         } catch (e: Throwable) {
             onCancel.dispose()
             closeQuietly(socket)
+            val ms = elapsedMs()
+            if (e is IOException && e !is SocketTimeoutException && ms < immediateCloseWindowMs) {
+                throw Refused("connection reset after $ms ms with no reply: ${e.message}", e)
+            }
             throw e
         }
         onCancel.dispose()
         closeQuietly(socket)
-        return null
+        val ms = elapsedMs()
+        if (first == null && ms < immediateCloseWindowMs) throw Refused("closed after $ms ms with no reply")
+        throw IOException("helper closed the connection after $ms ms without replying")
     }
 
     companion object {
         val DEFAULT_RETRY_DELAYS_MS: List<Long> = listOf(100L, 300L)
+
+        /** A close this soon after connecting is the helper refusing the connection, not a failed command. */
+        const val DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS = 500L
         private const val TAG = "SideSpeedHelper"
         private const val PING_READ_TIMEOUT_MS = 5_000
         private const val NONCE_LENGTH = 32
