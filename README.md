@@ -14,14 +14,14 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
 - Enabling it exposes ADB on your local network. Only use it on a network you trust; the app asks you to acknowledge this first.
 - Restarting the TV, or turning ADB off, stops the helper and you must start it again. The onn turns Wireless debugging off after a reboot.
-- `speed` compilation adds roughly 30-60 MB of storage per app.
+- `speed` compilation adds tens of MB of storage per app (approximately; see the design spec).
 - A compile can take several minutes.
 
 ## Tested devices
 | Device | Status |
 |---|---|
-| Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Tested |
-| onn 4K Pro, Android 14 | Tested |
+| Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Helper started from PC, compile verified |
+| onn 4K Pro, Android 14 | On-box ADB and helper verified; in-app pairing not yet verified |
 | Other Android TV, Google TV and Fire TV devices | Should work |
 
 ## Building

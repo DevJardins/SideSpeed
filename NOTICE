@@ -9,7 +9,8 @@ Shizuku (https://github.com/RikkaApps/Shizuku)
   app_process is based on Shizuku's starter approach.
 
 libadb-android (https://github.com/MuntashirAkon/libadb-android)
-  Copyright (c) Muntashir Al-Islam. Used under its GPL-3.0-or-later option.
+  Copyright (c) Muntashir Al-Islam. Dual-licensed (SPDX: GPL-3.0-or-later or Apache-2.0);
+  SideSpeed uses it under GPL-3.0-or-later.
 
 Conscrypt (https://github.com/google/conscrypt)
   Copyright (c) The Android Open Source Project and Google. Apache License 2.0.
@@ -18,7 +19,8 @@ Bouncy Castle (https://www.bouncycastle.org/)
   Copyright (c) The Legion of the Bouncy Castle Inc. MIT-style license.
 
 sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
-  Derived from OpenJDK sun.security. GPL-2.0 with Classpath Exception.
+  Derived from OpenJDK sun.security. GPL-2.0 (version 2 only) with the Oracle "Classpath"
+  exception. The Classpath exception is what permits linking it from this GPLv3 app.
 
 AndroidX (Jetpack Compose, TV Material, Navigation, DataStore, Core, Activity),
 Kotlin and kotlinx.coroutines
