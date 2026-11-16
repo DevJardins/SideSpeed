@@ -433,7 +433,8 @@ class CompanionViewModel(
         val (serial, model, maker) = identity
         // The network may have changed during the connect: don't record a TV for a network we've left.
         val stillHere = if (binding != null) {
-            overlayGate?.bindingFor(ip, store.trustedOverlays())?.overlay?.id == binding.overlay.id
+            overlayGate?.bindingFor(ip, store.trustedOverlays())
+                ?.let { it.overlay.id == binding.overlay.id && it.peer.id == binding.peer.id } == true
         } else {
             currentTrusted()?.id == scopeId
         }

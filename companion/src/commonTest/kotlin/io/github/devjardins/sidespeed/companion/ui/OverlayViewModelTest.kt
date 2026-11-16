@@ -202,6 +202,19 @@ class OverlayViewModelTest {
         assertEquals("10.1.1.20", saved.address)
     }
 
+    @Test fun anAddressThatChangedPeerDuringTheConnectIsNotSaved() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(fp = hotel, lan = false)
+        var routes = 0
+        r.egress = {
+            // The first route check is the binding before the connect; the address then moves to another node.
+            if (++routes == 1) r.snapshot = snap(peer("nOTHER", "100.101.1.1"))
+            EgressRoute("utun4", listOf(ip("100.100.1.1")))
+        }
+        r.vm.addTvByAddress("100.101.1.1")
+        assertTrue(r.store.tvs().isEmpty())
+        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+    }
+
     @Test fun removingAnOverlayRemovesItsTvsAndKeepsOthers() = runTest(UnconfinedTestDispatcher()) {
         val r = rig()
         r.store.saveTv(SavedTv("o", "O", "100.101.1.1", "S-O", trusted.id, overlayPeerId = "nCUBE"))
