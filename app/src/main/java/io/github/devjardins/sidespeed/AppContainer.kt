@@ -16,6 +16,12 @@ import io.github.devjardins.sidespeed.apps.InstalledApps
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
+import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import java.net.Inet4Address
 
 class AppContainer(context: Context) {
@@ -37,6 +43,21 @@ class AppContainer(context: Context) {
     /** Only use after Setup reports the helper ready. */
     val compileRunner: CompileRunner by lazy { CompileRunner(helper) }
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }
+
+    val maintenanceStore: MaintenanceStore by lazy { DataStoreMaintenanceStore(appContext) }
+
+    /** Keeps maintained apps compiled; created on first use, which starts its scanning. */
+    val maintenance: MaintenanceEngine by lazy {
+        MaintenanceEngine(
+            source = installedApps,
+            store = maintenanceStore,
+            prefs = prefs,
+            runCompile = { pkg, mode -> compileRunner.run(pkg, mode) },
+            helperUp = { helper.ping() != null },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            ownPackage = appContext.packageName,
+        )
+    }
 
     val isFireOs: Boolean = Build.MANUFACTURER.equals("Amazon", ignoreCase = true) ||
         appContext.packageManager.hasSystemFeature("amazon.hardware.fire_tv")

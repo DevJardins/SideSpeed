@@ -14,6 +14,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
+import androidx.lifecycle.lifecycleScope
+import io.github.devjardins.sidespeed.maintenance.MaintenanceService
+import io.github.devjardins.sidespeed.maintenance.isArmed
+import kotlinx.coroutines.launch
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
@@ -52,6 +56,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            if (isArmed((application as SideSpeedApp).container.maintenanceStore)) MaintenanceService.start(applicationContext)
+        }
         setContent {
             val icons = (application as SideSpeedApp).container.appIcons
             SideSpeedTheme {

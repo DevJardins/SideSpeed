@@ -23,3 +23,14 @@ class FakeMaintenanceStoreTest {
         assertEquals(setOf("c.d"), s.maintained.first())
     }
 }
+
+class ArmedTest {
+    @Test fun notArmedByDefault() = runTest { assertFalse(isArmed(FakeMaintenanceStore())) }
+
+    @Test fun armedByTickedAppOrSwitch() = runTest {
+        val ticked = FakeMaintenanceStore().apply { setMaintained("a.b", true) }
+        val switched = FakeMaintenanceStore().apply { setOptimizeSideloaded(true) }
+        assertTrue(isArmed(ticked))
+        assertTrue(isArmed(switched))
+    }
+}

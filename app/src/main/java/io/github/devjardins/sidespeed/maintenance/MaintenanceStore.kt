@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 interface MaintenanceStore {
@@ -44,3 +45,7 @@ class DataStoreMaintenanceStore(context: Context) : MaintenanceStore {
         store.edit { it[historyKey] = encodeHistory(appendHistory(decodeHistory(it[historyKey] ?: ""), record)) }
     }
 }
+
+/** True when anything is maintained: a ticked app or the sideloaded switch. The service runs only then. */
+suspend fun isArmed(store: MaintenanceStore): Boolean =
+    store.maintained.first().isNotEmpty() || store.optimizeSideloaded.first()
