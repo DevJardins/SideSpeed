@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -16,6 +19,9 @@ fun HomeScreen(
     onAdd: () -> Unit,
     onSettings: () -> Unit,
 ) {
+    val now by produceState(System.currentTimeMillis()) {
+        while (true) { delay(15_000); value = System.currentTimeMillis() }
+    }
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val name = state.trustedNetworkName
         val banner = if (name != null) "Trusted Network: $name ✓" else "Not on a Trusted Network"
@@ -30,7 +36,7 @@ fun HomeScreen(
                 Column(Modifier.fillMaxWidth().background(Ss.surface, RoundedCornerShape(14.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     SsText(tv.name, Ss.heading)
                     SsText(tv.statusLabel)
-                    tv.checkedLabel?.let { SsText(it, Ss.caption) }
+                    tv.checkedAtEpochMs?.let { SsText(Copy.checkedAgo(now - it), Ss.caption) }
                     tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
                     SsButton("Restart now", { onRestart(tv.id) })
                 }

@@ -28,6 +28,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 object Copy {
+    /** Shown under a TV; the screen re-evaluates it on a timer so it never freezes. */
+    fun checkedAgo(diffMs: Long): String = "Checked ${(diffMs / 60_000).coerceAtLeast(0)} min ago"
+
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
     const val NOT_FIRE_TV_NOTE =
         "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts."
@@ -54,7 +57,7 @@ data class TvCardState(
     val name: String,
     val address: String,
     val statusLabel: String,
-    val checkedLabel: String?,
+    val checkedAtEpochMs: Long?,
     val note: String?,
 )
 
@@ -226,7 +229,6 @@ class CompanionViewModel(
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
         val trusted = TrustMatcher.currentTrusted(fp, networks)
-        val now = clock()
         val tvs = store.tvs()
         val saved = tvs.map { it.address }.toSet()
         val cards = tvs.map { tv ->
@@ -235,7 +237,7 @@ class CompanionViewModel(
                 name = tv.name,
                 address = tv.address,
                 statusLabel = Copy.statusLabel(tv.status),
-                checkedLabel = tv.lastCheckedEpochMs?.let { checkedAgo(now - it) },
+                checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = if (tv.isFireTv) null else Copy.NOT_FIRE_TV_NOTE,
             )
         }
@@ -253,11 +255,6 @@ class CompanionViewModel(
                 found = if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
             )
         }
-    }
-
-    private fun checkedAgo(diffMs: Long): String {
-        val min = (diffMs / 60_000).coerceAtLeast(0)
-        return "Checked $min min ago"
     }
 
     private fun isIpv4(s: String): Boolean {
