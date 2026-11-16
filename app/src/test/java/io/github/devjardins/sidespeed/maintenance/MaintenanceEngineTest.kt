@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,8 @@ private class FakePrefs : Prefs {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
+    val badges = mutableMapOf<String, StatusBadge>()
+    var badgesFail = false
     val source = FakeSource()
     val store: FakeMaintenanceStore = if (failingHistory) object : FakeMaintenanceStore() {
         override suspend fun addHistory(record: JobRecord) { error("disk full") }
@@ -67,6 +70,7 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
         source, store, prefs,
         runCompile = { pkg, mode -> calls += pkg.value to mode; script(pkg.value) },
         helperUp = { up },
+        badges = { pkgs -> if (badgesFail) error("dumpsys failed") else badges.filterKeys { it in pkgs } },
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
         clock = { now },
@@ -103,15 +107,69 @@ class MaintenanceEngineTest {
         assertTrue(h.calls.isEmpty())
     }
 
-    @Test fun unmaintainedAppsAreIgnoredAndSwitchAddsOnlySideloaded() = runTest {
+    @Test fun unmaintainedAppsAreIgnoredAndSwitchAddsEveryNonSystemApp() = runTest {
         val h = Harness(this)
         h.source.put("side.app", installer = null)
         h.source.put("store.app", installer = "com.android.vending")
+        h.source.apps["sys.app"] = AppEntry("sys.app", "SYS", null, 100, isSystem = true)
         runCurrent()
         assertTrue(h.calls.isEmpty())
         h.store.setOptimizeSideloaded(true)
         runCurrent()
-        assertEquals(listOf("side.app"), h.calls.map { it.first })
+        assertEquals(listOf("side.app", "store.app"), h.calls.map { it.first })
+    }
+
+    @Test fun freshAppStillInSpeedProfileIsUpgradedToSpeed() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 100)
+        h.prefs.saved["a.a"] = LastCompile(500, CompileMode.SPEED)
+        h.badges["a.a"] = StatusBadge.SPEED_PROFILE
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
+    }
+
+    @Test fun neverCompiledAppsInSpeedProfileAreUpgradedToSpeedNotKeptAsIs() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 100)
+        h.badges["a.a"] = StatusBadge.SPEED_PROFILE
+        h.store.setOptimizeSideloaded(true)
+        runCurrent()
+        assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
+    }
+
+    @Test fun appChosenInSpeedProfileIsNotForcedToSpeed() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 100)
+        h.prefs.saved["a.a"] = LastCompile(500, CompileMode.SPEED_PROFILE)
+        h.badges["a.a"] = StatusBadge.SPEED_PROFILE
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertTrue(h.calls.isEmpty())
+    }
+
+    @Test fun appAlreadyAtSpeedIsLeftAloneAndStatusFailureFallsBackToTime() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 100)
+        h.source.put("b.b", updated = 100)
+        h.prefs.saved["a.a"] = LastCompile(500, CompileMode.SPEED)
+        h.prefs.saved["b.b"] = LastCompile(500, CompileMode.SPEED)
+        h.badges["a.a"] = StatusBadge.SPEED_OK
+        h.store.setMaintained("a.a", true)
+        h.store.setMaintained("b.b", true)
+        h.badgesFail = true
+        runCurrent()
+        assertTrue(h.calls.isEmpty())
+    }
+
+    @Test fun anAppThatStaysBelowSpeedAfterCompilingIsNotRecompiledInALoop() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 100)
+        h.badges["a.a"] = StatusBadge.SPEED_PROFILE
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        h.engine.scan(); runCurrent()
+        assertEquals(1, h.calls.size)
     }
 
     @Test fun duplicateScansEnqueueOnce() = runTest {

@@ -35,7 +35,7 @@ Limits: IPv6-only networks are never trusted. Find TVs scans /24 subnets only; a
 
 ## Keeping apps optimized
 
-An app update throws away its compiled code. Tick **Keep this app optimized** on an app's compile screen and SideSpeed recompiles it, one app at a time, after every update. **Apps > Auto-optimize** has one switch, "Also optimize apps not from a store", and a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back. This needs the helper to be running; the companion keeps it alive.
+An app update throws away its compiled code. Tick **Keep this app optimized** on an app's compile screen and SideSpeed recompiles it, one app at a time, after every update. **Apps > Auto-optimize** has one switch, "Optimize all my apps", which covers every app you installed (store or sideloaded, not preinstalled ones) and upgrades anything still in speed-profile or a lower filter to speed, and a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back. This needs the helper to be running; the companion keeps it alive.
 
 ## Requirements and caveats
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.

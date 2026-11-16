@@ -5,7 +5,7 @@
 
 ## Goals
 - The user picks apps; SideSpeed keeps them compiled in the mode they chose, after every update.
-- One setting, "Also optimize apps not from a store", adds every non-store app automatically.
+- One setting, "Optimize all my apps", adds every non-preinstalled app (store or sideloaded) automatically.
 - Works unattended on the TV, with no phone or PC involved once the helper is running.
 - Never leaves the user guessing: queued, running, done and failed work is visible.
 
@@ -27,15 +27,15 @@
 3. Both. Two writers could compile the same app at once; rejected.
 
 ## Design
-**Maintained set.** An app is maintained if the user ticked it (`maintained` flag per package, kept in DataStore), or if the setting "Also optimize apps not from a store" is on and `AppEntry.isSideloaded` is true. Unticking an app removes it unless the setting still covers it. The first manual compile of an app offers "Keep this app optimized", which ticks it.
+**Maintained set.** An app is maintained if the user ticked it (`maintained` flag per package, kept in DataStore), or if the setting "Optimize all my apps" is on and the app is not preinstalled (`!AppEntry.isSystem`). Owner decision 2026-11-16: store apps ship in speed-profile, and speed is better, so they are covered too. Unticking an app removes it unless the setting still covers it. The first manual compile of an app offers "Keep this app optimized", which ticks it.
 
-**Staleness.** A maintained app is stale when it has no `LastCompile`, or its `lastUpdateTime` is newer than `LastCompile.epochMs`. Apps that are not installed any more are dropped from the set.
+**Staleness.** A maintained app is stale when it has no `LastCompile`, or its `lastUpdateTime` is newer than `LastCompile.epochMs`, or its current compiler filter (one `dumpsys package dexopt` call per scan) is below its target mode (speed unless the user chose speed-profile). A failed status call falls back to the time rule. Apps that are not installed any more are dropped from the set.
 
 **Triggers.** The service re-checks when: it starts (boot, or app open), a runtime-registered receiver sees package added/replaced, the user changes the maintained set, and every 6 hours as a safety net. Each trigger runs the same "find stale apps, enqueue" step; the step is idempotent.
 
 **Queue.** An in-memory ordered set of package names, one worker coroutine, duplicates ignored. Each job runs `CompileRunner` in the app's stored mode, records `LastCompile` on success, and records the failure reason on failure. Failed apps retry after 30 minutes, at most 3 times, and then wait for the next update or a manual retry. If the helper is unreachable the worker pauses and the queue holds; it resumes when the helper answers a ping. The queue is rebuilt from staleness after a restart, so it needs no storage of its own.
 
-**Settings.** One switch, off by default: "Also optimize apps not from a store". A short line under it names what counts (anything not installed by Google Play or the Amazon Appstore, excluding preinstalled apps).
+**Settings.** One switch, off by default: "Optimize all my apps". A short line under it names what counts (every app you installed, excluding preinstalled apps).
 
 **Visibility.** Apps screen: a row pill "Waiting", "Optimizing…", "Optimized" or "Retry" for maintained apps. A "Maintenance" line at the top of the screen shows queue length and, when the helper is down, "Waiting for the helper". A short history of the last 20 jobs (app, time, result) is kept in DataStore.
 

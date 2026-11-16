@@ -113,12 +113,12 @@ fun AppsScreen(
             }
             if (tab == Tab.HISTORY) {
                 SsButton(
-                    (if (sideloadedOn) "✓ " else "") + "Also optimize apps not from a store",
+                    (if (sideloadedOn) "✓ " else "") + "Optimize all my apps",
                     onClick = { onOptimizeSideloaded(!sideloadedOn) },
                     selected = sideloadedOn,
                 )
                 Text(
-                    "Anything not installed by Google Play or the Amazon Appstore, excluding preinstalled apps.",
+                    "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone.",
                     style = SsType.Caption, color = SsColors.TextSecondary,
                 )
             }

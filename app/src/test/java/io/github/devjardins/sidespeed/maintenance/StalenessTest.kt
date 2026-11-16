@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.maintenance
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.status.StatusBadge
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,5 +35,21 @@ class StalenessTest {
     @Test fun decodeSkipsMalformedLines() {
         val good = encodeHistory(listOf(rec(1)))
         assertEquals(listOf(rec(1)), decodeHistory("garbage\n$good\nx|y|z"))
+    }
+
+    @Test fun speedProfileBelowSpeedTargetNeedsCompile() {
+        assertTrue(needsCompile(app(1), last(2000), StatusBadge.SPEED_PROFILE))
+        assertTrue(needsCompile(app(1), last(2000), StatusBadge.NEEDS_RECOMPILE))
+    }
+    @Test fun speedBadgeAndUnknownBadgeFollowTheTimeRule() {
+        assertFalse(needsCompile(app(1), last(2000), StatusBadge.SPEED_OK))
+        assertFalse(needsCompile(app(1), last(2000), StatusBadge.UNKNOWN))
+        assertFalse(needsCompile(app(1), last(2000), null))
+        assertTrue(needsCompile(app(3000), last(2000), StatusBadge.SPEED_OK))
+    }
+    @Test fun speedProfileTargetOnlyRecompilesWhenBelowSpeedProfile() {
+        val sp = LastCompile(2000, CompileMode.SPEED_PROFILE)
+        assertFalse(needsCompile(app(1), sp, StatusBadge.SPEED_PROFILE))
+        assertTrue(needsCompile(app(1), sp, StatusBadge.NEEDS_RECOMPILE))
     }
 }

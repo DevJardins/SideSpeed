@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -44,6 +46,8 @@ class MaintenanceEngine(
     private val prefs: Prefs,
     private val runCompile: (PackageName, CompileMode) -> Flow<CompileEvent>,
     private val helperUp: suspend () -> Boolean,
+    /** Current compiler badge per package from one status call; may throw, then staleness falls back to time alone. */
+    private val badges: suspend (Collection<String>) -> Map<String, StatusBadge> = { emptyMap() },
     private val scope: CoroutineScope,
     private val ownPackage: String,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -70,7 +74,7 @@ class MaintenanceEngine(
 
     init {
         scope.launch {
-            combine(store.maintained, store.optimizeSideloaded) { _, _ -> }
+            combine(store.maintained.distinctUntilChanged(), store.optimizeSideloaded.distinctUntilChanged()) { _, _ -> }
                 .catch { }
                 .collect { doScan() }
         }
@@ -105,17 +109,24 @@ class MaintenanceEngine(
         val ticked = store.maintained.first()
         val sideloadedOn = store.optimizeSideloaded.first()
         val tickedApps = ticked.mapNotNull { p -> source.find(p) ?: run { store.setMaintained(p, false); null } }
-        val sideloaded = if (sideloadedOn) source.list().filter { it.isSideloaded } else emptyList()
-        val set: List<AppEntry> = (tickedApps + sideloaded).filter { it.packageName != ownPackage }.distinctBy { it.packageName }
+        val covered = if (sideloadedOn) source.list().filter { !it.isSystem } else emptyList()
+        val set: List<AppEntry> = (tickedApps + covered).filter { it.packageName != ownPackage }.distinctBy { it.packageName }
         val names = set.map { it.packageName }.toSet()
         synchronized(lock) {
             maintainedNow = names
             queue.retainAll(names)
             failures.keys.retainAll(names)
         }
+        val badgeByPkg = if (set.isEmpty()) emptyMap() else try {
+            badges(names)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyMap()
+        }
         for (app in set) {
             val last = prefs.lastCompile(app.packageName).first()
-            if (isStale(app, last) && eligible(app)) enqueue(app.packageName)
+            if (needsCompile(app, last, badgeByPkg[app.packageName]) && eligible(app)) enqueue(app.packageName)
         }
         publish()
     }

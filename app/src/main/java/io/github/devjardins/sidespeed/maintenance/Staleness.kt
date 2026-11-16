@@ -1,10 +1,26 @@
 package io.github.devjardins.sidespeed.maintenance
 
 import io.github.devjardins.sidespeed.apps.AppEntry
+import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.status.StatusBadge
 
 /** An app is stale when it was never compiled, or was updated after its last compile started. */
 fun isStale(app: AppEntry, last: LastCompile?): Boolean = last == null || app.lastUpdateTime > last.epochMs
+
+/**
+ * Stale by time, or by compile filter: the app's target is its last-used mode (speed when never compiled),
+ * and a known filter below that target (speed-profile or worse for speed; worse than speed-profile for speed-profile) needs a compile.
+ */
+fun needsCompile(app: AppEntry, last: LastCompile?, badge: StatusBadge?): Boolean {
+    if (isStale(app, last)) return true
+    val target = last?.mode ?: CompileMode.SPEED
+    return when (badge) {
+        StatusBadge.NEEDS_RECOMPILE -> true
+        StatusBadge.SPEED_PROFILE -> target == CompileMode.SPEED
+        else -> false
+    }
+}
 
 data class JobRecord(
     val pkg: String,
