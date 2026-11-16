@@ -90,8 +90,11 @@ class Upkeep(
         data object GateClosed : Refind
     }
 
-    /** [gateClosed]: the network stopped being the Trusted Network part way through this TV. */
-    private data class Checked(val tv: SavedTv, val gateClosed: Boolean = false)
+    /**
+     * [gateClosed]: the network stopped being the Trusted Network part way through this TV.
+     * [attempted]: a connection was tried, so the TV belongs in [UpkeepReport.visited].
+     */
+    private data class Checked(val tv: SavedTv, val gateClosed: Boolean = false, val attempted: Boolean = true)
 
     suspend fun runOnce(trigger: Trigger, onlyTvId: String? = null): UpkeepReport = mutex.withLock {
         val lan = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
@@ -120,7 +123,7 @@ class Upkeep(
                 check(saved, lan, restarted)
             } ?: return@withLock UpkeepReport(true, visited, restarted)
             val stored = store.updateTv(id) { current -> merge(current, saved, checked.tv) }
-            if (stored) visited[id] = checked.tv.status
+            if (stored && checked.attempted) visited[id] = checked.tv.status
             if (checked.gateClosed) return@withLock UpkeepReport(true, visited, restarted)
         }
         UpkeepReport(gated = false, visited = visited, restartedNames = restarted)
@@ -135,13 +138,21 @@ class Upkeep(
     }
 
     /**
-     * One visit to a TV on a trusted overlay, or null when the overlay gate is closed. There is no re-find: the
+     * One visit to a TV on a trusted overlay, or null when the overlay gate is closed. A peer that is gone or
+     * unusable counts as a failed check without a connection. There is no re-find: the
      * peer's node ID already says where the TV is, and a scan would be a sweep of a tailnet. A peer that moved is
      * followed only when the serial matches at its new address.
      */
     private suspend fun checkOverlay(tv: SavedTv, trusted: TrustedOverlay, restarted: MutableList<String>): Checked? {
         val gate = overlayGate ?: return null
-        val address = gate.addressToUse(trusted, tv) ?: return null
+        val address = when (val v = gate.verdict(trusted, tv)) {
+            OverlayVerdict.Closed -> return null
+            OverlayVerdict.PeerUnavailable -> return Checked(
+                apply(tv.copy(skipBackgroundUntilUserAction = false), Attempt.Unreachable, clock(), restarted),
+                attempted = false,
+            )
+            is OverlayVerdict.Open -> v.address
+        }
         val attempt = attempt(address, tv.serial)
         val result = apply(tv.copy(skipBackgroundUntilUserAction = false), attempt, clock(), restarted)
         val verified = attempt is Attempt.Visited && attempt.result != VisitResult.WrongDevice

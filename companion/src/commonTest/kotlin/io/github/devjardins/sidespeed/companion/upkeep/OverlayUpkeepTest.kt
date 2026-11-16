@@ -127,9 +127,37 @@ class OverlayUpkeepTest {
         for (s in listOf(snap(peer("nA", "100.101.1.1", shared = true)), snap(peer("nB", "100.101.1.1")), snap())) {
             val net = Net().also { it.sessions["100.101.1.1"] = running("SER-a") }
             val report = upkeep(store(tv), net, Snapshots(s)).runOnce(Trigger.BACKGROUND)
-            assertTrue(report.gated)
+            assertFalse(report.gated)
             assertTrue(net.opened.isEmpty())
+            assertTrue(report.visited.isEmpty())
         }
+    }
+
+    @Test fun aMissingPeerDoesNotStopTheRunAndCountsAsAFailedCheck() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nGONE"), ovTv("b", "100.101.1.2", "nB"))
+        val net = Net().also { it.sessions["100.101.1.2"] = running("SER-b") }
+        val report = upkeep(st, net, Snapshots(snap(peer("nB", "100.101.1.2")))).runOnce(Trigger.BACKGROUND)
+        assertFalse(report.gated)
+        assertEquals(mapOf("b" to TvStatus.RUNNING), report.visited)
+        assertEquals(listOf("100.101.1.2"), net.opened)
+        assertEquals(1, st.tv("a").offlineCount)
+    }
+
+    @Test fun aMissingPeerBeforeALanTvStillLetsTheLanTvRun() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nGONE"), lanTv("l", "192.168.5.50"))
+        val net = Net().also { it.sessions["192.168.5.50"] = running("SER-l") }
+        val report = upkeep(st, net, Snapshots(snap()), fingerprint = home).runOnce(Trigger.BACKGROUND)
+        assertFalse(report.gated)
+        assertEquals(mapOf("l" to TvStatus.RUNNING), report.visited)
+    }
+
+    @Test fun aPeerWhoseOnlyAddressIsQuad100IsNeverContacted() = runTest {
+        val st = store(ovTv("a", "100.100.100.100", "nA"))
+        val net = Net().also { it.sessions["100.100.100.100"] = running("SER-a") }
+        val report = upkeep(st, net, Snapshots(snap(peer("nA", "100.100.100.100")))).runOnce(Trigger.BACKGROUND)
+        assertTrue(net.opened.isEmpty())
+        assertFalse(report.gated)
+        assertEquals(1, st.tv("a").offlineCount)
     }
 
     @Test fun aRouteOutAPhysicalInterfaceClosesTheGate() = runTest {
@@ -164,8 +192,9 @@ class OverlayUpkeepTest {
         val st = store(ovTv("a", "100.101.1.1", "nA"))
         val net = Net().also { it.sessions["8.8.8.8"] = running("SER-a") }
         val report = upkeep(st, net, Snapshots(snap(peer("nA", "8.8.8.8")))).runOnce(Trigger.BACKGROUND)
-        assertTrue(report.gated)
+        assertFalse(report.gated)
         assertTrue(net.opened.isEmpty())
+        assertEquals(1, st.tv("a").offlineCount)
     }
 
     @Test fun anUnreachableOverlayTvIsNeverRefoundByAScan() = runTest {
@@ -214,7 +243,7 @@ class OverlayUpkeepTest {
         assertTrue(net.opened.isEmpty())
     }
 
-    @Test fun anOverlayTvWithoutAPeerBindingIsSkipped() = runTest {
+    @Test fun anOverlayTvWithoutAPeerBindingIsNeverContacted() = runTest {
         val unbound = SavedTv("a", "TV a", "100.101.1.1", "SER-a", overlay.id)
         val net = Net().also { it.sessions["100.101.1.1"] = running("SER-a") }
         val report = upkeep(store(unbound), net, Snapshots(snap(peer("nA", "100.101.1.1")))).runOnce(Trigger.BACKGROUND)

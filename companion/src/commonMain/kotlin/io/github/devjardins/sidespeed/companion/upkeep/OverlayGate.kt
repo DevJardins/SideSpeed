@@ -24,9 +24,19 @@ fun interface EgressCheck {
 /** What upkeep needs to keep TVs reached over an overlay. Desktop only (decision D1). */
 class OverlayAccess(val source: OverlaySource, val egress: EgressCheck)
 
+/** The overlay gate's answer for one TV. */
+internal sealed interface OverlayVerdict {
+    /** Connect to [address]. */
+    data class Open(val address: String) : OverlayVerdict
+    /** The tailnet is fine but this TV's peer is gone, shared in, unbound or has no usable address: a failed check, no connection. */
+    data object PeerUnavailable : OverlayVerdict
+    /** The tailnet itself does not match or traffic would not leave through it: stop using the overlay. */
+    data object Closed : OverlayVerdict
+}
+
 /**
- * The gate for a TV on a [TrustedOverlay]. [addressToUse] returns the address to connect to, or null when the
- * gate is closed. It is open only when all of these hold, read fresh:
+ * The gate for a TV on a [TrustedOverlay]. [verdict] says whether to connect, and where; conditions 1 and 4 close
+ * the gate, 2 and 3 only fail this TV. It is open only when all of these hold, read fresh:
  *
  * 1. the snapshot still matches the trusted overlay (running, with an interface, same tailnet and node);
  * 2. the TV's bound peer exists and was not shared in from another tailnet;
@@ -36,14 +46,14 @@ class OverlayAccess(val source: OverlaySource, val egress: EgressCheck)
  *    catches Tailscale stopping, a hotel or carrier network using 100.64.0.0/10, and another VPN.
  */
 internal class OverlayGate(private val access: OverlayAccess) {
-    suspend fun addressToUse(trusted: TrustedOverlay, tv: SavedTv): String? {
-        val snapshot = access.source.snapshot() ?: return null
-        if (!OverlayTrustMatcher.matches(snapshot, trusted)) return null
-        val peerId = tv.overlayPeerId ?: return null
-        val peer = snapshot.peers.firstOrNull { it.id == peerId && !it.shared } ?: return null
+    suspend fun verdict(trusted: TrustedOverlay, tv: SavedTv): OverlayVerdict {
+        val snapshot = access.source.snapshot() ?: return OverlayVerdict.Closed
+        if (!OverlayTrustMatcher.matches(snapshot, trusted)) return OverlayVerdict.Closed
+        val peerId = tv.overlayPeerId ?: return OverlayVerdict.PeerUnavailable
+        val peer = snapshot.peers.firstOrNull { it.id == peerId && !it.shared } ?: return OverlayVerdict.PeerUnavailable
         val usable = peer.ips.filter(AddressPolicy::isOverlay)
-        val target = usable.firstOrNull { it.toString() == tv.address } ?: usable.firstOrNull() ?: return null
-        return target.toString().takeIf { leavesThroughTailnet(snapshot, target) }
+        val target = usable.firstOrNull { it.toString() == tv.address } ?: usable.firstOrNull() ?: return OverlayVerdict.PeerUnavailable
+        return if (leavesThroughTailnet(snapshot, target)) OverlayVerdict.Open(target.toString()) else OverlayVerdict.Closed
     }
 
     /** A trusted tailnet peer that owns [address], when the gate would be open for a TV added there; else null. */
