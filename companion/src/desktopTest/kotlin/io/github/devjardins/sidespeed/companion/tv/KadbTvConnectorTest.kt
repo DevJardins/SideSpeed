@@ -80,6 +80,16 @@ class KadbTvConnectorTest {
     }
 
     @Test
+    fun cancellationExceptionFromTheCallItselfIsNotTreatedAsCancellation() = runBlocking {
+        val link = FakeLink(onConnect = { throw CancellationException("Kadb-internal") })
+        assertFailsWith<TvUnreachable> { connector(link).open("10.0.0.5") }
+        val ok = FakeLink(onShell = { throw CancellationException("Kadb-internal") })
+        val session = connector(ok).open("10.0.0.5")
+        assertFailsWith<AdbConnectionLost> { session.run("getprop ro.serialno") }
+        assertTrue(ok.closed)
+    }
+
+    @Test
     fun peerClosingDuringHandshakeIsUnreachable() = runBlocking {
         val link = FakeLink(onConnect = { throw EOFException() })
         assertFailsWith<TvUnreachable> { connector(link).open("10.0.0.5") }
@@ -151,5 +161,14 @@ class KadbTvConnectorTest {
         assertFailsWith<IllegalArgumentException> {
             KadbTvConnector(authTimeoutMs = 1_000, connectTimeoutMs = 1_000, commandTimeoutMs = 1_000) { _, _ -> FakeLink() }
         }
+    }
+
+    @Test
+    fun commandTimeoutMustBeBelowTheSocketReadTimeout() {
+        // The read timeout is authTimeoutMs + 5 s; a longer command timeout could never fire.
+        assertFailsWith<IllegalArgumentException> {
+            KadbTvConnector(authTimeoutMs = 20_000, connectTimeoutMs = 5_000, commandTimeoutMs = 25_000) { _, _ -> FakeLink() }
+        }
+        KadbTvConnector(authTimeoutMs = 20_000, connectTimeoutMs = 5_000, commandTimeoutMs = 20_000) { _, _ -> FakeLink() }
     }
 }

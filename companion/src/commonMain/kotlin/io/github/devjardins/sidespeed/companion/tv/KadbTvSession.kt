@@ -8,9 +8,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.io.IOException
 import java.net.SocketTimeoutException
 
 /**
@@ -35,18 +38,19 @@ class KadbTvConnector internal constructor(
         keyDir: File,
         authTimeoutMs: Long = 20_000,
         connectTimeoutMs: Long = 5_000,
-        commandTimeoutMs: Long = 30_000,
+        commandTimeoutMs: Long = 20_000,
     ) : this(authTimeoutMs, connectTimeoutMs, commandTimeoutMs, { host, port ->
         CompanionKeys.ensureReady(keyDir)
         // Kadb 2.1.4's close() cannot abort a handshake in progress, so a socket read timeout a little past
-        // authTimeoutMs is what ends a handshake abandoned as TvAuthPending. It also bounds each command read.
-        KadbLink(
+        // authTimeoutMs is what ends a handshake abandoned as TvAuthPending (GuardedLink closes one that
+        // completes instead). It also bounds each command read, hence commandTimeoutMs must stay below it.
+        GuardedLink(KadbClient(
             Kadb.create(
                 host, port,
                 connectTimeout = connectTimeoutMs.toInt(),
                 socketTimeout = (authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS).toInt(),
             )
-        )
+        ))
     })
 
     private companion object {
@@ -55,7 +59,9 @@ class KadbTvConnector internal constructor(
 
     init {
         require(connectTimeoutMs in 1 until authTimeoutMs) { "connectTimeoutMs must be > 0 and < authTimeoutMs" }
-        require(commandTimeoutMs > 0) { "commandTimeoutMs must be > 0" }
+        require(commandTimeoutMs in 1 until authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS) {
+            "commandTimeoutMs must be > 0 and below the socket read timeout (authTimeoutMs + $ABANDONED_HANDSHAKE_GRACE_MS)"
+        }
     }
 
     override suspend fun open(address: String, port: Int): TvSession {
@@ -113,9 +119,9 @@ private val blockingCalls = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 /**
  * Runs the blocking [block] on IO. Returns null, after closing [link], if it did not finish within [timeoutMs].
- * If the caller is cancelled, closes [link] and rethrows. Kadb's own connect timeout surfaces as a
- * [TimeoutCancellationException]; it is converted to a [SocketTimeoutException] so it is never mistaken
- * for cancellation.
+ * If the caller is cancelled, closes [link] and rethrows. A CancellationException thrown by [block] itself is not
+ * the caller's cancellation and becomes an [IOException]; in particular Kadb's own connect timeout, a
+ * [TimeoutCancellationException], becomes a [SocketTimeoutException].
  */
 private suspend fun <T> callBlocking(link: AdbLink, timeoutMs: Long, block: () -> T): Box<T>? {
     val call = blockingCalls.async {
@@ -123,13 +129,16 @@ private suspend fun <T> callBlocking(link: AdbLink, timeoutMs: Long, block: () -
             block()
         } catch (e: TimeoutCancellationException) {
             throw SocketTimeoutException("connect timed out").apply { initCause(e) }
+        } catch (e: CancellationException) {
+            throw IOException("ADB call aborted", e)
         }
     }
     val result = try {
         withTimeoutOrNull(timeoutMs) { Box(call.await()) }
     } catch (e: CancellationException) {
         link.close()
-        throw e
+        currentCoroutineContext().ensureActive() // the caller was cancelled: rethrows its CancellationException
+        throw IOException("ADB call aborted", e)
     }
     if (result == null) link.close()
     return result

@@ -2,8 +2,11 @@ package io.github.devjardins.sidespeed.companion.tv
 
 import com.flyfishxu.kadb.cert.KadbCert
 import java.nio.file.Files
+import java.nio.file.attribute.PosixFileAttributeView
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CompanionKeysTest {
@@ -24,6 +27,13 @@ class CompanionKeysTest {
             assertContentEquals(first, file.readBytes())
             assertContentEquals(first, KadbCert.exportPrivateKeyOrNull())
             assertTrue(keyDir.listFiles()!!.none { it.name.endsWith(".tmp") })
+
+            if (Files.getFileAttributeView(file.toPath(), PosixFileAttributeView::class.java) != null) {
+                assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(file.toPath())))
+                assertEquals("rwx------", PosixFilePermissions.toString(Files.getPosixFilePermissions(keyDir.toPath())))
+            } else {
+                println("POSIX permission check skipped: not a POSIX file system")
+            }
         } finally {
             dir.deleteRecursively()
         }
