@@ -199,9 +199,13 @@ fun SsStatusDot(kind: StatusKind, pulsing: Boolean = false) {
         StatusKind.BAD -> Ss.dangerText
         StatusKind.UNKNOWN -> Ss.textSecondary
     }
-    val pulse = rememberInfiniteTransition(label = "dot")
-    val a by pulse.animateFloat(1f, 0.35f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "alpha")
-    Box(Modifier.size(10.dp).alpha(if (pulsing) a else 1f).background(colour, CircleShape))
+    // The infinite transition only exists while pulsing, so idle dots never keep the frame clock running.
+    val alpha = if (pulsing) {
+        val pulse = rememberInfiniteTransition(label = "dot")
+        val a by pulse.animateFloat(1f, 0.35f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "alpha")
+        a
+    } else 1f
+    Box(Modifier.size(10.dp).alpha(alpha).background(colour, CircleShape))
 }
 
 /** A small rotating arc for work in progress. */
