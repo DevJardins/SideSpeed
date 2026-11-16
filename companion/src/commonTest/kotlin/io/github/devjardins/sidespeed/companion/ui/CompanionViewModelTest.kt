@@ -458,6 +458,21 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun aSlash8NetworkSweepsTheSlash16AroundTheOwnAddress() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val fp8 = NetworkFingerprint("10.0.0.1", "10.0.0.0/8", setOf("10.0.0.1"), ownIp = "10.20.3.4")
+        r.store.saveTrustedNetwork(TrustedNetwork("big8", "Big", fp8))
+        r.fp = fp8
+        val lan = FakeLan(allRefused("10.20.0.0/16"))
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertTrue(lan.calls.isNotEmpty())
+        assertTrue(lan.calls.all { it.address.toString().startsWith("10.20.") })
+        assertTrue(lan.calls.none { it.address == ip("10.20.3.4") })
+    }
+
+    @Test
     fun completedScanWithoutAdbSetsDiagnosisAndHelp() = runTest(UnconfinedTestDispatcher()) {
         val vm = discoveryRig(FakeLan(allRefused("192.168.5.0/24")))
         vm.findTvs()

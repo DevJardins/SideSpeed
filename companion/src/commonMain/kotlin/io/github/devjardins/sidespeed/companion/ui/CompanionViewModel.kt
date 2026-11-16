@@ -8,6 +8,7 @@ import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
 import io.github.devjardins.sidespeed.companion.discovery.DiscoverySummary
 import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
 import io.github.devjardins.sidespeed.companion.discovery.diagnose
+import io.github.devjardins.sidespeed.companion.discovery.sweepScope
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
@@ -261,7 +262,7 @@ class CompanionViewModel(
         // The live address, not the saved one: DHCP moves it, and networks saved before ownIp existed have none.
         val own = fingerprints.current()?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
         val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
-        discovery.run(DiscoveryPlan(subnet, own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
+        discovery.run(DiscoveryPlan(sweepScope(subnet, own, gateway), own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {
                 is DiscoveryEvent.Progress ->
                     _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }

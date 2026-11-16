@@ -80,6 +80,71 @@ class DiscoveryTest {
     }
 
     @Test
+    fun everyPrefixFrom16To30OnEveryPrivateRangeProbesExactlyTheUsableHostsExceptOwn() = runTest {
+        val bases = listOf("10.20.0.0", "10.255.255.0", "172.16.0.0", "172.31.240.0", "192.168.0.0", "192.168.250.0")
+        for (base in bases) {
+            for (prefix in 16..30) {
+                val subnet = Cidr.parse("$base/$prefix")!!
+                val hosts = subnet.hosts().toList()
+                val owns = listOf(null, hosts.first(), hosts.last(), hosts[hosts.size / 2], ip("8.8.8.8"))
+                for (own in owns) {
+                    val where = "$subnet own=$own"
+                    val lan = FakeLan(hosts.associateWith { listOf(ProbeResult.Refused) })
+                    val gateway = hosts.first()
+                    val events = sweepDiscovery(lan).run(DiscoveryPlan(subnet, own, gateway)).toList()
+                    val probed = lan.calls.map { it.address }
+                    val expected = hosts.filter { it != own }
+                    val cap = SweepOrder.DEFAULT_LIMIT
+                    // Never a duplicate, never outside the subnet, never network, broadcast or own, always :5555.
+                    assertEquals(probed.size, probed.toSet().size, where)
+                    assertTrue(probed.all { it in subnet && it != subnet.network && it != subnet.broadcast && it != own }, where)
+                    assertTrue(lan.calls.all { it.port == 5555 }, where)
+                    assertEquals(minOf(expected.size, cap), probed.size, where)
+                    if (expected.size <= cap) assertEquals(expected.toSet(), probed.toSet(), where)
+                    val progress = events.filterIsInstance<DiscoveryEvent.Progress>()
+                    assertEquals(DiscoveryEvent.Progress(probed.size, probed.size), progress.last(), where)
+                    val done = events.filterIsInstance<DiscoveryEvent.Done>().single()
+                    assertEquals(expected.size > cap, done.summary.truncated, where)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun aSlash16IsCoveredCompletelyByResumingAndNeverRepeatsAHost() = runTest {
+        val subnet = cidr("10.0.0.0/16")
+        val own = ip("10.0.7.9")
+        val lan = FakeLan(subnet.hosts().associateWith { listOf(ProbeResult.Refused) })
+        val skip = mutableSetOf<Ipv4>()
+        var runs = 0
+        do {
+            val events = sweepDiscovery(lan)
+                .run(DiscoveryPlan(subnet, own, ip("10.0.1.1"), skip = skip.toSet())).toList()
+            skip += events.filterIsInstance<DiscoveryEvent.Probed>().map { it.address }
+            runs++
+            val truncated = events.filterIsInstance<DiscoveryEvent.Done>().single().summary.truncated
+        } while (truncated && runs < 40)
+        val probed = lan.calls.map { it.address }
+        assertEquals(probed.size, probed.toSet().size)
+        assertEquals(subnet.hosts().toSet() - own, probed.toSet())
+        assertEquals(16, runs)
+    }
+
+    @Test
+    fun ownAndGatewaySlash24sAreSweptFirstOnABigSubnet() = runTest {
+        val subnet = cidr("172.16.0.0/16")
+        val lan = FakeLan(subnet.hosts().associateWith { listOf(ProbeResult.Refused) })
+        sweepDiscovery(lan).run(DiscoveryPlan(subnet, ip("172.16.200.9"), ip("172.16.3.1"))).toList()
+        val probed = lan.calls.map { it.address }.toSet()
+        for (third in listOf(200, 3)) {
+            for (host in 1..254) {
+                val a = ip("172.16.$third.$host")
+                if (a != ip("172.16.200.9")) assertTrue(a in probed, a.toString())
+            }
+        }
+    }
+
+    @Test
     fun secondPassUses1500msOnlyOnSilentHosts() = runTest {
         val slow = ip("192.168.1.1")
         val live = ip("192.168.1.2")
