@@ -31,6 +31,7 @@ object Copy {
     /** Shown under a TV; the screen re-evaluates it on a timer so it never freezes. */
     fun checkedAgo(diffMs: Long): String = "Checked ${(diffMs / 60_000).coerceAtLeast(0)} min ago"
 
+    const val NO_TVS_FOUND = "No TVs found"
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
     const val NOT_FIRE_TV_NOTE =
         "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts."
@@ -81,6 +82,10 @@ data class CompanionUiState(
     val addErrors: Map<String, String> = emptyMap(),
     /** The address of the TV just added; the Add screen returns Home on it (see [CompanionViewModel.acknowledgeAdded]). */
     val addedAddress: String? = null,
+    /** A Find TVs scan is running: the button shows a spinner and ignores presses. */
+    val scanning: Boolean = false,
+    /** The last scan finished with no new TVs. */
+    val noneFound: Boolean = false,
 )
 
 class CompanionViewModel(
@@ -168,16 +173,26 @@ class CompanionViewModel(
     }
 
     fun findTvs() {
+        var accepted = false
+        _state.update {
+            accepted = !it.scanning
+            if (accepted) it.copy(scanning = true, noneFound = false) else it
+        }
+        if (!accepted) return
         locked {
-            val trusted = currentTrusted() ?: return@locked refresh(error = Copy.NOT_TRUSTED_ERROR)
-            _state.update { it.copy(busy = true, error = null) }
             try {
-                val saved = store.tvs().map { it.address }.toSet()
-                val hosts = scanner.scan(trusted.fingerprint.subnet, TvConnector.DEFAULT_PORT).filter { it !in saved }
-                refresh()
-                _state.update { it.copy(found = hosts) }
+                val trusted = currentTrusted() ?: return@locked refresh(error = Copy.NOT_TRUSTED_ERROR)
+                _state.update { it.copy(busy = true, error = null) }
+                try {
+                    val saved = store.tvs().map { it.address }.toSet()
+                    val hosts = scanner.scan(trusted.fingerprint.subnet, TvConnector.DEFAULT_PORT).filter { it !in saved }
+                    refresh()
+                    _state.update { it.copy(found = hosts, noneFound = hosts.isEmpty()) }
+                } finally {
+                    _state.update { it.copy(busy = false) }
+                }
             } finally {
-                _state.update { it.copy(busy = false) }
+                _state.update { it.copy(scanning = false) }
             }
         }
     }

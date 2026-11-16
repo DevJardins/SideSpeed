@@ -60,6 +60,8 @@ fun SsButton(
     selected: Boolean = false,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    /** Shown in place of [label] when given (e.g. a spinner); [label] is then only the fallback text. */
+    content: (@Composable () -> Unit)? = null,
 ) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
@@ -95,7 +97,7 @@ fun SsButton(
             .padding(PaddingValues(horizontal = 18.dp, vertical = 12.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        SsText(label, Ss.body.copy(color = if (primary) Ss.accent else Ss.textPrimary))
+        if (content != null) content() else SsText(label, Ss.body.copy(color = if (primary) Ss.accent else Ss.textPrimary))
     }
 }
 

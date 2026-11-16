@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.companion.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,8 +25,15 @@ fun AddTvScreen(state: CompanionUiState, onFind: () -> Unit, onAddAddress: (Stri
         if (state.addErrors.isEmpty()) state.error?.let { SsText(it, Ss.body.copy(color = Ss.dangerText)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SsButton("Add", { onAddAddress(address) }, primary = true)
-            SsButton("Find TVs", onFind)
+            SsButton(
+                "Find TVs",
+                { if (!state.scanning) onFind() },
+                enabled = !state.scanning,
+                modifier = Modifier.defaultMinSize(minWidth = 110.dp),
+                content = if (state.scanning) ({ SsSpinner() }) else null,
+            )
         }
+        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
         state.found.forEach { host ->
             val adding = host in state.adding
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -220,4 +220,47 @@ class CompanionViewModelTest {
         assertTrue(r.vm.state.value.addErrors.isEmpty())
         assertEquals(1, r.store.tvs().size)
     }
+
+    private class GateScanner(private val result: List<String>) : Scanner {
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        var calls = 0
+        override suspend fun scan(subnet: String, port: Int): List<String> { calls++; gate.await(); return result }
+    }
+
+    private fun TestScope.scanRig(scanner: Scanner): CompanionViewModel {
+        val r = rig(trusted = true)
+        return CompanionViewModel(r.store, r.source, r.upkeep, r.connector, scanner, this, { 1_000_000L }, { "tv-1" })
+    }
+
+    @Test
+    fun scanningIsTrueWhileScanRunsAndRepeatPressesAreIgnored() = runTest(UnconfinedTestDispatcher()) {
+        val scanner = GateScanner(listOf("192.168.5.30"))
+        val vm = scanRig(scanner)
+        vm.findTvs()
+        assertTrue(vm.state.value.scanning)
+        vm.findTvs()
+        scanner.gate.complete(Unit)
+        assertEquals(1, scanner.calls)
+        assertEquals(false, vm.state.value.scanning)
+        assertEquals(listOf("192.168.5.30"), vm.state.value.found)
+        assertEquals(false, vm.state.value.noneFound)
+    }
+
+    @Test
+    fun emptyScanSetsNoneFoundAndNextScanClearsIt() = runTest(UnconfinedTestDispatcher()) {
+        val scanner = GateScanner(emptyList())
+        val vm = scanRig(scanner)
+        scanner.gate.complete(Unit)
+        vm.findTvs()
+        assertEquals(false, vm.state.value.scanning)
+        assertTrue(vm.state.value.noneFound)
+    }
+
+    @Test
+    fun untrustedNetworkDoesNotLeaveScanningSet() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = false)
+        r.vm.findTvs()
+        assertEquals(false, r.vm.state.value.scanning)
+        assertEquals(false, r.vm.state.value.noneFound)
+    }
 }
