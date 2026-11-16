@@ -13,6 +13,7 @@ hiddenapibypass = "6.1"
 junit = "4.13.2"
 coroutines = "1.11.0"
 kadb = "2.1.4"
+workmanager = "2.11.0"
 composeMultiplatform = "1.12.2"
 
 [libraries]
@@ -31,6 +32,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
 kadb = { module = "com.flyfishxu:kadb", version.ref = "kadb" }
 jb-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 jb-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
