@@ -258,7 +258,8 @@ class CompanionViewModel(
         val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val saved = store.tvs().map { it.address }.toSet()
-        val own = trusted.fingerprint.ownIp?.let(Ipv4::parse)
+        // The live address, not the saved one: DHCP moves it, and networks saved before ownIp existed have none.
+        val own = fingerprints.current()?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
         val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
         discovery.run(DiscoveryPlan(subnet, own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {

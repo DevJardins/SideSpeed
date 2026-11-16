@@ -444,6 +444,20 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun scanSkipsTheLiveOwnAddressEvenWhenTheSavedNetworkHasNone() = runTest(UnconfinedTestDispatcher()) {
+        // The Trusted Network was saved without ownIp (older save, or DHCP moved us since): use the live one.
+        val r = rig(trusted = true)
+        r.fp = home.copy(ownIp = "192.168.5.7")
+        val lan = FakeLan(allRefused("192.168.5.0/24"))
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertEquals(253, lan.calls.map { it.address }.toSet().size)
+        assertTrue(lan.calls.none { it.address == ip("192.168.5.7") })
+        assertEquals("Scanned 253 of 253", vm.state.value.scanProgress)
+    }
+
+    @Test
     fun completedScanWithoutAdbSetsDiagnosisAndHelp() = runTest(UnconfinedTestDispatcher()) {
         val vm = discoveryRig(FakeLan(allRefused("192.168.5.0/24")))
         vm.findTvs()
