@@ -68,6 +68,7 @@ fun main() {
     application {
         val tray = rememberTrayState()
         val icon = remember { BitmapPainter(useResource("tray.png", ::loadImageBitmap)) }
+        val windowIcon = remember { BitmapPainter(useResource("icons/app.png", ::loadImageBitmap)) }
         var windowVisible by remember { mutableStateOf(true) }
         var paused by remember { mutableStateOf(false) }
         val state by vm.state.collectAsState()
@@ -141,7 +142,7 @@ fun main() {
             onCloseRequest = { windowVisible = false },
             visible = windowVisible,
             title = "SideSpeed Companion",
-            icon = icon,
+            icon = windowIcon,
             state = rememberWindowState(size = DpSize(420.dp, 640.dp)),
             resizable = true,
         ) {

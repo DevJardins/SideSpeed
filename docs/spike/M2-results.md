@@ -15,3 +15,6 @@ Date: 2026-11-15. Fire TV Cube Gen 3 (AFTGAZL) at 192.168.5.140.
 Notes:
 - An "Allow debugging" prompt from `mdez@unknown` appeared on an onn streamer while testing. The companion only contacted 192.168.5.140, so the source is unidentified and probably another ADB client.
 - The Mac window and tray were driven through accessibility; the tray click was done by the owner.
+
+## UI polish (2026-11-15)
+Press/hover/focus feedback, screen transitions, status dots, restart spinner, empty state, and app icons (mac/win/linux). Full suite green. Owner to eyeball the phone APK (`docs/spike/companion-android-debug.apk`) and the Dock icon.

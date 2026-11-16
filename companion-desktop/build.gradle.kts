@@ -43,13 +43,16 @@ compose.desktop {
             macOS {
                 bundleID = "io.github.devjardins.sidespeed.companion"
                 dockName = "SideSpeed Companion"
+                iconFile.set(project.file("src/main/resources/icons/app.icns"))
             }
             windows {
                 menuGroup = "SideSpeed"
+                iconFile.set(project.file("src/main/resources/icons/app.ico"))
                 upgradeUuid = "6f7a3d3e-4c1b-4a55-9d0e-2b6c9f1a7d42"
             }
             linux {
                 packageName = "sidespeed-companion"
+                iconFile.set(project.file("src/main/resources/icons/app.png"))
             }
         }
     }
