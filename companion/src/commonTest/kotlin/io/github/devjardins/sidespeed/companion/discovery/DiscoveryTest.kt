@@ -71,6 +71,15 @@ class DiscoveryTest {
     }
 
     @Test
+    fun progressNeverExceedsTheHostCountWhenEveryHostIsReprobed() = runTest {
+        // Every host is silent, so all of them get a second pass: that must not inflate the count.
+        val events = sweepDiscovery(FakeLan()).run(plan("192.168.1.0/24")).toList()
+        val progress = events.filterIsInstance<DiscoveryEvent.Progress>()
+        assertTrue(progress.all { it.total == 254 && it.scanned in 1..254 })
+        assertEquals(DiscoveryEvent.Progress(254, 254), progress.last())
+    }
+
+    @Test
     fun secondPassUses1500msOnlyOnSilentHosts() = runTest {
         val slow = ip("192.168.1.1")
         val live = ip("192.168.1.2")

@@ -45,7 +45,7 @@ object SweepSource : HostSource {
 
 /** What a run reports as it goes; the flow completing is the end of the run. */
 sealed interface DiscoveryEvent {
-    /** Another probe finished: [scanned] of [total] probes so far. */
+    /** [scanned] of [total] hosts have had their first probe; the second pass over silent hosts is not counted. */
     data class Progress(val scanned: Int, val total: Int) : DiscoveryEvent
 
     /** An ADB-speaking host: a TV candidate for the Add screen. */
@@ -93,7 +93,7 @@ class Discovery(
 
     private suspend fun SendChannel<DiscoveryEvent>.sweep(plan: DiscoveryPlan, targets: List<Ipv4>, truncated: Boolean) {
         var scanned = 0
-        var total = targets.size
+        val total = targets.size
         val results = pass(plan, targets, plan.firstPassTimeoutMs) { host, result ->
             scanned++
             send(DiscoveryEvent.Progress(scanned, total))
@@ -103,11 +103,8 @@ class Discovery(
         val silent = targets.filter { results[it]?.hostIsLive == false }
         if (silent.isNotEmpty()) {
             currentCoroutineContext().ensureActive()
-            total += silent.size
             pass(plan, silent, plan.secondPassTimeoutMs) { host, result ->
                 results[host] = result
-                scanned++
-                send(DiscoveryEvent.Progress(scanned, total))
                 if (result.isAdb) send(DiscoveryEvent.Found(host, result))
                 send(DiscoveryEvent.Probed(host))
             }

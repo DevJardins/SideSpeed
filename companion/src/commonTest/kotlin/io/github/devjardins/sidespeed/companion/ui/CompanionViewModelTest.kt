@@ -340,7 +340,8 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(setOf("192.168.5.10", "192.168.5.11", "192.168.5.12"), vm.state.value.found.toSet())
         assertEquals(false, vm.state.value.scanning)
-        assertEquals("Scanned 255 of 255", vm.state.value.scanProgress)
+        // The silent host's second pass is not counted again: a /24 has 254 hosts.
+        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress)
     }
 
     @Test
