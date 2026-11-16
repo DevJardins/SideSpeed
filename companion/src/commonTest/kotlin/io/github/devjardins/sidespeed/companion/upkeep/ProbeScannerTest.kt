@@ -1,8 +1,12 @@
 package io.github.devjardins.sidespeed.companion.upkeep
 
+import io.github.devjardins.sidespeed.companion.discovery.AdbProbe
 import io.github.devjardins.sidespeed.companion.discovery.FakeLan
 import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
+import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,6 +14,7 @@ import kotlin.test.assertTrue
 
 class ProbeScannerTest {
     private fun ip(s: String) = Ipv4.parse(s)!!
+    private fun cidr(s: String) = Cidr.parse(s)!!
 
     @Test fun returnsOnlyClassicAdbHosts() = runTest {
         val lan = FakeLan(
@@ -47,5 +52,20 @@ class ProbeScannerTest {
         ProbeScanner(lan).scan("192.168.5.0/24", 5555, "10.0.0.1")
         assertTrue(lan.calls.isNotEmpty())
         assertTrue(lan.calls.all { it.address.toString().startsWith("192.168.5.") })
+    }
+
+    @Test fun hostsEmitsAnAdbHostBeforeTheSweepEnds() = runTest {
+        val near = ip("192.168.5.9")
+        val calls = mutableListOf<Ipv4>()
+        val probe = AdbProbe { address, _, _ ->
+            calls += address
+            if (address == near) ProbeResult.AdbOpen else {
+                delay(60_000)
+                ProbeResult.Timeout
+            }
+        }
+        val first = ProbeScanner(probe).hosts("192.168.5.0/24", 5555, "192.168.5.9").first()
+        assertEquals("192.168.5.9", first)
+        assertTrue(calls.size < cidr("192.168.5.0/24").hosts().count(), "sweep stopped early, saw ${calls.size} calls")
     }
 }

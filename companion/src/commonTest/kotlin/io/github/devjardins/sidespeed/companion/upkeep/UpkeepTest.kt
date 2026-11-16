@@ -13,6 +13,10 @@ import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvSession
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -184,6 +188,58 @@ class UpkeepTest {
         assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited)
         // Opened .50 (failed), .77 for the serial, .77 again for the visit.
         assertEquals(listOf("192.168.5.50", "192.168.5.50", "192.168.5.50", "192.168.5.77", "192.168.5.77"), net.opened)
+    }
+
+    /** Emits the given hosts one at a time, stalling after each; records how many got out. */
+    private class FlowScanner(val hosts: List<String>) : Scanner {
+        var emitted = 0
+        override suspend fun scan(subnet: String, port: Int, near: String?): List<String> = emptyList()
+        override fun hosts(subnet: String, port: Int, near: String?): Flow<String> = flow {
+            for (h in hosts) {
+                emitted++
+                emit(h)
+                delay(60_000)
+            }
+        }
+    }
+
+    @Test fun refindStopsAtTheFirstSerialMatch() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.77"] = runningTv("SER-a") }
+        val scanner = FlowScanner(listOf("192.168.5.77", "192.168.5.78", "192.168.5.79"))
+        val u = Upkeep(store, FingerprintSource { home }, net.connector, HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), scanner) { now }
+        val report = u.runOnce(Trigger.BACKGROUND)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited)
+        assertEquals(listOf("192.168.5.50", "192.168.5.77", "192.168.5.77"), net.opened)
+        assertEquals(1, scanner.emitted, "sweep cancelled before the second host")
+    }
+
+    /** Emits nothing and suspends until the collection is cancelled. */
+    private class HangingScanner : Scanner {
+        var cancelled = false
+        override suspend fun scan(subnet: String, port: Int, near: String?): List<String> = emptyList()
+        override fun hosts(subnet: String, port: Int, near: String?): Flow<String> = flow {
+            try {
+                awaitCancellation()
+            } finally {
+                cancelled = true
+            }
+        }
+    }
+
+    @Test fun refindStopsWhenTheGateClosesMidSweep() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(homeNet))
+        val net = FakeNet()
+        val scanner = HangingScanner()
+        // Three reads happen before the sweep starts (runOnce scope, LAN branch gate, check gate);
+        // the watcher's first recheck 10 s in is the first to see the network change.
+        val u = Upkeep(store, ScriptedSource(home, home, home, cafe), net.connector, HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), scanner) { now }
+        val report = u.runOnce(Trigger.BACKGROUND)
+        assertTrue(report.gated)
+        assertTrue(scanner.cancelled, "sweep flow was cancelled")
+        assertEquals(listOf("192.168.5.50"), net.opened, "no connection made")
+        assertEquals("192.168.5.50", store.tv("a").address)
     }
 
     @Test fun refindRunsAtMostOncePerHour() = runTest {

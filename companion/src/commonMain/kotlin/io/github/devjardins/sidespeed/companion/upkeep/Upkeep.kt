@@ -21,6 +21,11 @@ import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.VisitResult
 import io.github.devjardins.sidespeed.companion.tv.open
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -209,31 +214,70 @@ class Upkeep(
         return gap < 0 || gap >= REFIND_INTERVAL_MS
     }
 
-    /** Scans the Trusted Network's subnet for the TV's serial, checking the gate before every connection. */
+    /**
+     * Streams the Trusted Network's subnet for the TV's serial, connecting as hosts answer instead of
+     * waiting for the whole sweep. The first serial match ends the run; leaving the Trusted Network
+     * mid-sweep stops it. The gate is checked before every connection and rechecked while waiting.
+     */
     private suspend fun refind(tv: SavedTv, trusted: TrustedNetwork, now: Long): Refind {
         val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return Refind.NotFound
         // Like Find TVs, a re-find only ever sweeps private (RFC 1918) space, whatever the saved fingerprint says.
         val scope = sweepScope(subnet, Ipv4.parse(tv.address), Ipv4.parse(trusted.fingerprint.gatewayIp))
         if (!AddressPolicy.sweepable(scope)) return Refind.NotFound
-        val hosts = scanner.scan(scope.toString(), TvConnector.DEFAULT_PORT, near = tv.address)
-            .filter { h -> Ipv4.parse(h)?.let { it in scope && it != scope.network && it != scope.broadcast } == true }
-            .distinct()
-        for (host in hosts) {
-            val skip = store.promptedHosts().any { it.trustedNetworkId == trusted.id && it.address == host && it.isFresh(now) }
-            if (skip) continue
-            if (!gateOpen(trusted)) return Refind.GateClosed
-            val serial = try {
-                connector.open(host).use { it.run(TvCommands.SERIAL) }
-            } catch (e: TvUnreachable) {
-                continue
-            } catch (e: TvAuthPending) {
-                rememberPrompted(trusted.id, host, now)
-                continue
-            } catch (e: AdbConnectionLost) {
-                continue
+        val seen = mutableSetOf<String>()
+        var found: String? = null
+        var gateClosed = false
+        try {
+            coroutineScope {
+                // The sweep can run a minute; leaving the network stops it instead of connecting from it.
+                // Cancel the sweep scope itself: cancelling only the watcher would leave the sweep hanging.
+                val sweep = this
+                val gateWatcher = launch {
+                    while (true) {
+                        delay(REFIND_GATE_RECHECK_MS)
+                        if (!gateOpen(trusted)) {
+                            gateClosed = true
+                            sweep.cancel(CancellationException("no longer on the trusted network"))
+                        }
+                    }
+                }
+                try {
+                    scanner.hosts(scope.toString(), TvConnector.DEFAULT_PORT, near = tv.address).collect { host ->
+                        val ip = Ipv4.parse(host)
+                        if (ip == null || ip !in scope || ip == scope.network || ip == scope.broadcast) return@collect
+                        if (!seen.add(host)) return@collect
+                        val skip = store.promptedHosts().any { it.trustedNetworkId == trusted.id && it.address == host && it.isFresh(now) }
+                        if (skip) return@collect
+                        if (!gateOpen(trusted)) {
+                            gateClosed = true
+                            sweep.cancel(CancellationException("no longer on the trusted network"))
+                            return@collect
+                        }
+                        val serial = try {
+                            connector.open(host).use { it.run(TvCommands.SERIAL) }
+                        } catch (e: TvUnreachable) {
+                            return@collect
+                        } catch (e: TvAuthPending) {
+                            rememberPrompted(trusted.id, host, now)
+                            return@collect
+                        } catch (e: AdbConnectionLost) {
+                            return@collect
+                        }
+                        if (serial.isNotEmpty() && serial == tv.serial) {
+                            found = host
+                            sweep.cancel(CancellationException("serial matched; sweep no longer needed"))
+                        }
+                    }
+                } finally {
+                    gateWatcher.cancel()
+                }
             }
-            if (serial.isNotEmpty() && serial == tv.serial) return Refind.Found(host)
+        } catch (e: CancellationException) {
+            if (found == null && !gateClosed) throw e
         }
+        if (gateClosed) return Refind.GateClosed
+        val match = found
+        if (match != null) return Refind.Found(match)
         return Refind.NotFound
     }
 
@@ -288,5 +332,7 @@ class Upkeep(
     private companion object {
         const val OFFLINE_AFTER = 3
         const val REFIND_INTERVAL_MS = 60 * 60 * 1000L
+        /** How often a running re-find sweep rechecks that the network is still the Trusted Network. */
+        const val REFIND_GATE_RECHECK_MS = 10_000L
     }
 }

@@ -7,6 +7,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -16,6 +18,13 @@ import java.net.Socket
 interface Scanner {
     /** ADB hosts in [subnet] answering on [port]; [near], a host in [subnet], is scanned around first. */
     suspend fun scan(subnet: String, port: Int = 5555, near: String? = null): List<String>
+
+    /**
+     * The same hosts as [scan], streamed as they answer so a caller can stop the sweep early.
+     * Cancelling the collection stops the sweep.
+     */
+    fun hosts(subnet: String, port: Int = 5555, near: String? = null): Flow<String> =
+        flow { scan(subnet, port, near).forEach { emit(it) } }
 }
 
 /**
