@@ -66,7 +66,11 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
             when (target) {
                 Screen.LOADING -> Unit
                 Screen.FIRST_RUN ->
-                    FirstRunScreen(state.currentNetwork, { vm.trustCurrentNetwork("Trusted Network 1") }, { dismissedFirstRun = true })
+                    FirstRunScreen(
+                        state.currentNetwork, state.tailnet,
+                        { vm.trustCurrentNetwork("Trusted Network 1") }, { vm.trustCurrentOverlay("Tailnet 1") },
+                        { dismissedFirstRun = true },
+                    )
                 Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS }, vm::removeTv)
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
@@ -75,7 +79,9 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
-                    vm::renameTrustedNetwork, vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
+                    vm::renameTrustedNetwork, vm::removeTrustedNetwork,
+                    { vm.trustCurrentOverlay("Tailnet ${state.trustedOverlays.size + 1}") }, vm::removeTrustedOverlay,
+                    { page = Page.ABOUT }, { page = Page.HOME },
                 )
                 Screen.ABOUT -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Header("About and licences", onBack = { page = Page.SETTINGS })

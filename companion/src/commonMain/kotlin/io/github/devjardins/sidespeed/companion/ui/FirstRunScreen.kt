@@ -12,7 +12,13 @@ import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 
 @Composable
-fun FirstRunScreen(network: NetworkFingerprint?, onTrust: () -> Unit, onNotNow: () -> Unit) {
+fun FirstRunScreen(
+    network: NetworkFingerprint?,
+    tailnet: TailnetState?,
+    onTrust: () -> Unit,
+    onTrustTailnet: () -> Unit,
+    onNotNow: () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().padding(28.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterVertically),
@@ -21,8 +27,10 @@ fun FirstRunScreen(network: NetworkFingerprint?, onTrust: () -> Unit, onNotNow: 
         SsText("Choose your Trusted Network", Ss.title)
         SsText("SideSpeed Companion only works on networks you choose. It never connects or scans anywhere else.")
         if (network != null) SsCard { SsText("Router ${network.gatewayIp} · ${network.subnet}", Ss.caption) }
+        if (tailnet != null && tailnet.ready) SsCard { SsText("Tailscale network ${tailnet.name}. Anyone who administers it could reach a TV added through it.", Ss.caption) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (network != null) SsButton("Trust this network", onTrust, primary = true)
+            if (tailnet != null && tailnet.ready) SsButton("Trust this tailnet", onTrustTailnet, primary = network == null)
             SsButton("Not now", onNotNow)
         }
     }
