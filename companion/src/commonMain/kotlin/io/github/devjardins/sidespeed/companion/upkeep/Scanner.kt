@@ -19,31 +19,49 @@ interface Scanner {
 }
 
 /**
- * Plain TCP connect scan of a /22 to /24 (at most 1022 hosts; many home routers hand out /22). Any other
- * prefix, or a malformed subnet, returns empty: the companion never sweeps more than an ordinary home subnet.
+ * Plain TCP connect scan of a /16 to /30, probing at most [MAX_PROBES] hosts in ascending address order
+ * (a /16 holds 65,534 hosts, so only its first 4096 are probed). Any other prefix, or a malformed subnet,
+ * returns empty.
  */
 class TcpScanner(
     private val connectTimeoutMs: Int = 300,
     private val parallelism: Int = 64,
 ) : Scanner {
+    companion object {
+        /** The most addresses one scan ever probes: the low end of a /16. */
+        const val MAX_PROBES = 4096
+
+        /**
+         * Usable host addresses of [subnet] in ascending order, at most [maxProbes]; empty when the prefix is
+         * outside /16../30 or the subnet is malformed.
+         */
+        fun probeTargets(subnet: String, maxProbes: Int = MAX_PROBES): List<String> {
+            val normalized = Subnets.normalize(subnet) ?: return emptyList()
+            val (network, prefixText) = normalized.split('/')
+            val prefix = prefixText.toInt()
+            if (prefix !in 16..30) return emptyList()
+            val start = network.split('.').fold(0L) { acc, o -> (acc shl 8) or o.toLong() }
+            val size = 1L shl (32 - prefix)
+            return (1 until size - 1).take(maxProbes).map { v ->
+                val a = start + v
+                "${(a shr 24) and 255}.${(a shr 16) and 255}.${(a shr 8) and 255}.${a and 255}"
+            }
+        }
+    }
+
     init {
         require(connectTimeoutMs > 0 && parallelism > 0) { "invalid scanner settings" }
     }
 
     override suspend fun scan(subnet: String, port: Int): List<String> {
-        val normalized = Subnets.normalize(subnet) ?: return emptyList()
-        val (network, prefixText) = normalized.split('/')
-        val prefix = prefixText.toInt()
-        if (prefix !in 22..24 || port !in 1..65535) return emptyList()
-        val start = network.split('.').fold(0L) { acc, o -> (acc shl 8) or o.toLong() }
-        val size = 1L shl (32 - prefix)
+        if (port !in 1..65535) return emptyList()
+        val targets = probeTargets(subnet)
+        if (targets.isEmpty()) return emptyList()
         val gate = Semaphore(parallelism)
         return withContext(Dispatchers.IO) {
             coroutineScope {
-                (1 until size - 1).map { offset ->
+                targets.map { address ->
                     async {
-                        val v = start + offset
-                        val address = "${(v shr 24) and 255}.${(v shr 16) and 255}.${(v shr 8) and 255}.${v and 255}"
                         gate.withPermit { if (answers(address, port)) address else null }
                     }
                 }.awaitAll().filterNotNull()
