@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.companion.tv
 
+import io.github.devjardins.sidespeed.helper.HelperLaunch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,6 +88,7 @@ class HelperKeeperTest {
         val s = base("123", mapOf(TvCommands.cmdline(123) to "app_process\u0000--x"))
         val t = Appearing(s, "124", after = 1)
         assertEquals(VisitResult.Restarted, HelperKeeper().visit(t, "SER1"))
+        assertOnlyFixed(s)
     }
 
     @Test fun twoPidsOneStale() = runTest {
@@ -117,6 +119,46 @@ class HelperKeeperTest {
         val s = base("123", mapOf(TvCommands.cmdline(123) to cmdline(apk)))
         s.outputs[TvCommands.PKG_PATH] = "package:/data/app/x/split_config.apk\npackage:$apk"
         assertEquals(VisitResult.Running, HelperKeeper().visit(s, "SER1"))
+        assertOnlyFixed(s)
+    }
+
+    @Test fun blankSerialsAreWrongDevice() = runTest {
+        val s = base("").also { it.outputs[TvCommands.SERIAL] = "" }
+        assertEquals(VisitResult.WrongDevice, HelperKeeper().visit(s, ""))
+        assertEquals(listOf(TvCommands.SERIAL), s.sent)
+        val s2 = base("").also { it.outputs[TvCommands.SERIAL] = "" }
+        assertEquals(VisitResult.WrongDevice, HelperKeeper().visit(s2, "SER1"))
+        assertEquals(listOf(TvCommands.SERIAL), s2.sent)
+        val s3 = base("")
+        assertEquals(VisitResult.WrongDevice, HelperKeeper().visit(s3, ""))
+        assertEquals(listOf(TvCommands.SERIAL), s3.sent)
+    }
+
+    @Test fun commandLiteralsArePinned() {
+        assertEquals("getprop ro.serialno", TvCommands.SERIAL)
+        assertEquals("pm path io.github.devjardins.sidespeed", TvCommands.PKG_PATH)
+        assertEquals("pidof sidespeed_helper", TvCommands.PIDOF)
+        assertEquals("kill \$(pidof sidespeed_helper)", TvCommands.KILL)
+        assertEquals("cat /proc/123/cmdline", TvCommands.cmdline(123))
+        assertEquals(HelperLaunch.command(), TvCommands.LAUNCH)
+        assertEquals("getprop ro.product.manufacturer", TvCommands.MANUFACTURER)
+        assertEquals("getprop ro.product.model", TvCommands.MODEL)
+        assertEquals("getprop ro.build.version.name", TvCommands.OS_VERSION)
+    }
+
+    @Test fun maliciousPidofOutputIsNeverUsed() = runTest {
+        for (bad in listOf("123;reboot", "+5", "-1", "\u0661\u0662\u0663", "123 99999999999")) {
+            val s = base(bad)
+            val t = Appearing(s, "5", after = 1)
+            assertEquals(VisitResult.Started, HelperKeeper().visit(t, "SER1"), bad)
+            assertTrue(s.sent.none { allowed.matches(it) }, bad)
+            assertOnlyFixed(s)
+        }
+    }
+
+    @Test fun invalidPollSettingsRejected() {
+        assertFailsWith<IllegalArgumentException> { HelperKeeper(pollIntervalMs = 0) }
+        assertFailsWith<IllegalArgumentException> { HelperKeeper(pollTimeoutMs = -1) }
     }
 
     @Test fun launchThatNeverAppearsFails() = runTest {

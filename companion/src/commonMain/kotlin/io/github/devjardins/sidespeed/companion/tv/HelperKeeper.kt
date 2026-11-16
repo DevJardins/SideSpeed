@@ -23,8 +23,14 @@ class HelperKeeper(
     private val pollIntervalMs: Long = 500,
     private val pollTimeoutMs: Long = 5_000,
 ) {
+    init {
+        require(pollIntervalMs > 0 && pollTimeoutMs >= 0) { "invalid poll settings" }
+    }
+
     suspend fun visit(session: TvSession, expectedSerial: String): VisitResult {
-        if (session.run(TvCommands.SERIAL) != expectedSerial) return VisitResult.WrongDevice
+        // A blank serial on either side means the device is not confirmed: send nothing else.
+        val serial = session.run(TvCommands.SERIAL)
+        if (serial.isEmpty() || expectedSerial.isEmpty() || serial != expectedSerial) return VisitResult.WrongDevice
 
         val apk = apkPath(session.run(TvCommands.PKG_PATH)) ?: return VisitResult.NotInstalled
 
@@ -43,7 +49,7 @@ class HelperKeeper(
 
         var waited = 0L
         while (true) {
-            if (session.run(TvCommands.PIDOF).isNotEmpty()) {
+            if (parsePids(session.run(TvCommands.PIDOF)).isNotEmpty()) {
                 return if (stale) VisitResult.Restarted else VisitResult.Started
             }
             if (waited >= pollTimeoutMs) break
@@ -63,7 +69,8 @@ class HelperKeeper(
     private fun parsePids(output: String): List<Int> {
         val tokens = output.split(Regex("\\s+")).filter { it.isNotEmpty() }
         if (tokens.isEmpty() || tokens.any { t -> t.any { it !in '0'..'9' } }) return emptyList()
-        return tokens.mapNotNull { it.toIntOrNull() }.filter { it > 0 }
+        val pids = tokens.map { it.toIntOrNull() ?: return emptyList() }
+        return if (pids.all { it > 0 }) pids else emptyList()
     }
 
     private fun helperApk(cmdline: String): String? =
