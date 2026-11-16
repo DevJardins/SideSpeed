@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                CompileViewModel(c.compileRunner, c.statusChecker, c.prefs) as T
+                CompileViewModel(c.compileRunner, c.statusChecker, c.prefs, store = c.maintenanceStore) as T
         })[CompileViewModel::class.java]
     }
 
@@ -77,6 +77,13 @@ class MainActivity : ComponentActivity() {
                         icon = icons,
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         history = (application as SideSpeedApp).container.maintenanceStore.history,
+                        optimizeSideloaded = (application as SideSpeedApp).container.maintenanceStore.optimizeSideloaded,
+                        onOptimizeSideloaded = { on ->
+                            lifecycleScope.launch {
+                                (application as SideSpeedApp).container.maintenanceStore.setOptimizeSideloaded(on)
+                                if (on) MaintenanceService.start(applicationContext)
+                            }
+                        },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                     )
                     else -> {
@@ -87,6 +94,7 @@ class MainActivity : ComponentActivity() {
                             compileVm, app, selectedMode,
                             icon = icons,
                             onBack = back,
+                            onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
                         )
                     }

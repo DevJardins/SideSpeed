@@ -149,6 +149,68 @@ class CompileViewModelTest {
         assertEquals(2000, v.state.value.log.size)
         assertEquals("Success", v.state.value.log.last())
     }
+
+    private fun vmWithStore(adb: FakeAdbBackend, store: io.github.devjardins.sidespeed.maintenance.MaintenanceStore?) =
+        CompileViewModel(CompileRunner(adb), StatusChecker(adb), FakePrefs(), dispatcher, store) { 1234L }
+
+    @Test fun successOffersKeepOptimizedWhenNotMaintained() = runTest(timeout = 10.seconds) {
+        val v = vmWithStore(fake(), io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore())
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(v.state.value.offerKeepOptimized)
+    }
+
+    @Test fun noOfferWhenAlreadyMaintained() = runTest(timeout = 10.seconds) {
+        val store = io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore().apply { setMaintained("com.nuvio.tv", true) }
+        val v = vmWithStore(fake(), store)
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(v.state.value.offerKeepOptimized)
+    }
+
+    @Test fun failureNeverOffers() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { on(cmd) { listOf("Failure: nope") to 1 } }
+        val v = vmWithStore(adb, io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore())
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(v.state.value.offerKeepOptimized)
+    }
+
+    @Test fun keepOptimizedTicksPackageAndClearsOffer() = runTest(timeout = 10.seconds) {
+        val store = io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore()
+        val v = vmWithStore(fake(), store)
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        v.keepOptimized(pkg); dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(setOf("com.nuvio.tv"), store.maintainedFlow.value)
+        assertFalse(v.state.value.offerKeepOptimized)
+    }
+
+    @Test fun keepOptimizedWithoutStoreIsNoOp() = runTest(timeout = 10.seconds) {
+        val v = vmWithStore(fake(), null)
+        v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(v.state.value.offerKeepOptimized)
+        v.keepOptimized(pkg); dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(v.state.value.offerKeepOptimized)
+    }
+
+    @Test fun loadKeptReflectsStore() = runTest(timeout = 10.seconds) {
+        val store = io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore().apply { setMaintained("com.nuvio.tv", true) }
+        val v = vmWithStore(fake(), store)
+        v.loadKept(pkg); dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(v.state.value.kept)
+    }
+
+    @Test fun stopKeepingUntickesPackage() = runTest(timeout = 10.seconds) {
+        val store = io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore().apply { setMaintained("com.nuvio.tv", true) }
+        val v = vmWithStore(fake(), store)
+        v.loadKept(pkg); dispatcher.scheduler.advanceUntilIdle()
+        v.stopKeeping(pkg); dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(store.maintainedFlow.value.isEmpty())
+        assertFalse(v.state.value.kept)
+    }
+
+    @Test fun keepOptimizedSetsKept() = runTest(timeout = 10.seconds) {
+        val v = vmWithStore(fake(), io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore())
+        v.keepOptimized(pkg); dispatcher.scheduler.advanceUntilIdle()
+        assertTrue(v.state.value.kept)
+    }
 }
 
 class ResultBannerTest {
@@ -162,6 +224,7 @@ class ResultBannerTest {
         assertEquals("Failure: Connection lost", resultBanner(false, "Connection lost"))
         assertEquals("Success: done", resultBanner(true, "done"))
     }
+
 }
 
 class ResultTextTest {

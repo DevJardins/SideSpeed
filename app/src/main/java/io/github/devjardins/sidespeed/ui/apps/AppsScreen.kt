@@ -59,7 +59,7 @@ import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
 
-private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package"), HISTORY("History") }
+private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package"), HISTORY("Auto-optimize") }
 
 @Composable
 fun AppsScreen(
@@ -68,10 +68,13 @@ fun AppsScreen(
     icon: IconSource,
     maintenance: StateFlow<MaintenanceState>,
     history: Flow<List<JobRecord>>,
+    optimizeSideloaded: Flow<Boolean>,
+    onOptimizeSideloaded: (Boolean) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
+    val sideloadedOn by optimizeSideloaded.collectAsState(initial = false)
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
@@ -107,6 +110,17 @@ fun AppsScreen(
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     ) { Text(if (m == mode) "✓ ${m.arg}" else m.arg, style = SsType.Caption) }
                 }
+            }
+            if (tab == Tab.HISTORY) {
+                SsButton(
+                    (if (sideloadedOn) "✓ " else "") + "Also optimize apps not from a store",
+                    onClick = { onOptimizeSideloaded(!sideloadedOn) },
+                    selected = sideloadedOn,
+                )
+                Text(
+                    "Anything not installed by Google Play or the Amazon Appstore, excluding preinstalled apps.",
+                    style = SsType.Caption, color = SsColors.TextSecondary,
+                )
             }
             when (tab) {
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }
