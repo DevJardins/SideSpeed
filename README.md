@@ -33,6 +33,10 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 
 Limits: IPv6-only networks are never trusted. Find TVs scans /24 subnets only; adding by address works on any IPv4 subnet.
 
+## Keeping apps optimized
+
+An app update throws away its compiled code. Tick **Keep this app optimized** on an app's compile screen and SideSpeed recompiles it, one app at a time, after every update. **Apps > Auto-optimize** has one switch, "Also optimize apps not from a store", and a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back. This needs the helper to be running; the companion keeps it alive.
+
 ## Requirements and caveats
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
 - Enabling it exposes ADB on your local network. Only use it on a network you trust; the app asks you to acknowledge this first.

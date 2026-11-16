@@ -39,7 +39,7 @@
 
 **Visibility.** Apps screen: a row pill "Waiting", "Optimizing…", "Optimized" or "Retry" for maintained apps. A "Maintenance" line at the top of the screen shows queue length and, when the helper is down, "Waiting for the helper". A short history of the last 20 jobs (app, time, result) is kept in DataStore.
 
-**Notifications.** The foreground service shows one quiet persistent notification while work is queued or running, and nothing otherwise.
+**Notifications.** Android requires a visible notification for any foreground service, so while anything is maintained the service shows one minimum-importance notification ("Keeping N apps optimized", "Optimizing apps (N left)" or "Waiting for the helper"), and nothing, with the service stopped, when nothing is maintained.
 
 ## What is left to the builder
 Service type and manifest declarations, battery-optimization prompts if the boxes need them, exact retry numbers, and layout of the new Apps-screen elements, following the existing calm theme and D-pad focus rules.
