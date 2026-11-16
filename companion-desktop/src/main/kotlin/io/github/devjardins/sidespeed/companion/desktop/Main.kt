@@ -34,7 +34,7 @@ import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
-import io.github.devjardins.sidespeed.companion.upkeep.overlayJoined
+import io.github.devjardins.sidespeed.companion.upkeep.JoinPoll
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
@@ -136,21 +136,18 @@ fun main() {
         // Every 30 s: joining a Trusted Network or a trusted tailnet triggers a check. Nothing is read while
         // paused or before either exists, so the poll spawns no processes then.
         LaunchedEffect(Unit) {
-            var last = fingerprints.current()
-            var lastOverlayId: String? = null
+            suspend fun currentOverlayId(): String? {
+                val overlays = store.trustedOverlays()
+                return if (overlays.isEmpty()) null else OverlayTrustMatcher.currentTrusted(overlay.source.snapshot(), overlays)?.id
+            }
+            // Seeded with the state at startup: an already-trusted tailnet is not a join on the first tick.
+            val poll = JoinPoll(fingerprints.current(), currentOverlayId())
             while (true) {
                 delay(30_000)
                 if (paused || state.firstRun) continue
-                val now = fingerprints.current()
-                var joined = false
-                if (now != last) {
-                    last = now
-                    joined = TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null
+                val joined = poll.tick(fingerprints.current(), currentOverlayId()) { fp ->
+                    TrustMatcher.currentTrusted(fp, store.trustedNetworks()) != null
                 }
-                val overlays = store.trustedOverlays()
-                val overlayId = if (overlays.isEmpty()) null else OverlayTrustMatcher.currentTrusted(overlay.source.snapshot(), overlays)?.id
-                if (overlayJoined(lastOverlayId, overlayId)) joined = true
-                lastOverlayId = overlayId
                 // One run per tick at most, whichever scope was joined.
                 if (joined) runAndNotify(Trigger.NETWORK_JOINED)
             }

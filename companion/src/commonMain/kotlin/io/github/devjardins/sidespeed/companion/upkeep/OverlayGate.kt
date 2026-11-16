@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.upkeep
 
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.OverlayPeer
 import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
@@ -26,6 +27,31 @@ class OverlayAccess(val source: OverlaySource, val egress: EgressCheck)
 
 /** True when the trusted overlay that matches now ([currentId]) is new since the last poll ([previousId]). */
 fun overlayJoined(previousId: String?, currentId: String?): Boolean = currentId != null && currentId != previousId
+
+/**
+ * The network poll's memory: the fingerprint and trusted overlay id from the previous tick. Seeded with
+ * the state at startup so an already-trusted tailnet is not reported as a join on the first tick.
+ */
+class JoinPoll(private var lastFingerprint: NetworkFingerprint?, private var lastOverlayId: String?) {
+    /**
+     * Whether this tick joined a trusted scope, remembering the new state either way: a changed fingerprint
+     * whose network [isTrustedLan], or a newly matching trusted overlay id.
+     */
+    suspend fun tick(
+        fingerprint: NetworkFingerprint?,
+        overlayId: String?,
+        isTrustedLan: suspend (NetworkFingerprint?) -> Boolean,
+    ): Boolean {
+        var joined = false
+        if (fingerprint != lastFingerprint) {
+            lastFingerprint = fingerprint
+            if (isTrustedLan(fingerprint)) joined = true
+        }
+        if (overlayJoined(lastOverlayId, overlayId)) joined = true
+        lastOverlayId = overlayId
+        return joined
+    }
+}
 
 /** The overlay gate's answer for one TV. */
 internal sealed interface OverlayVerdict {
