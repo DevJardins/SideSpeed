@@ -28,6 +28,11 @@ import io.github.devjardins.sidespeed.companion.store.TvStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
+/** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
+fun trustBanner(state: CompanionUiState): String? =
+    state.trustedNetworkName?.let { "Trusted Network: $it ✓" }
+        ?: state.tailnet?.takeIf { it.trusted }?.let { "Trusted tailnet: ${it.name} ✓" }
+
 @Composable
 fun HomeScreen(
     state: CompanionUiState,
@@ -60,8 +65,8 @@ fun HomeScreen(
             SsText("SideSpeed", Ss.title, Modifier.weight(1f))
             SsIconButton(onSettings, "Settings") { SsGlyph(Glyph.SETTINGS) }
         }
-        val name = state.trustedNetworkName
-        val trusted = name != null
+        val banner = trustBanner(state)
+        val trusted = banner != null
         Row(
             Modifier.fillMaxWidth().background(if (trusted) Ss.okBg else Ss.warnBg, RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -69,7 +74,7 @@ fun HomeScreen(
         ) {
             SsStatusDot(if (trusted) StatusKind.GOOD else StatusKind.WAITING)
             SsText(
-                if (trusted) "Trusted Network: $name ✓" else "Not on a Trusted Network",
+                banner ?: "Not on a Trusted Network",
                 Ss.body.copy(color = if (trusted) Ss.okText else Ss.warnText),
             )
         }

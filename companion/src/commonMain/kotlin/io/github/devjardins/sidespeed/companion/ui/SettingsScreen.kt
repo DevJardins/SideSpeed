@@ -78,6 +78,7 @@ fun SettingsScreen(
                 }
             }
             val t = state.tailnet
+            if (t == null && state.trustedOverlays.isNotEmpty()) SsText("Tailscale is not connected.", Ss.caption)
             if (t != null && !t.trusted) {
                 if (t.ready) SsButton("Trust this tailnet (${t.name})", onTrustTailnet, modifier = Modifier.padding(top = 4.dp))
                 else SsText("Tailscale is not connected.", Ss.caption)
