@@ -75,7 +75,7 @@ fun AppsScreen(
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
-    val optimizeMode by autoOptimizeMode.collectAsState(initial = AutoOptimizeMode.SELECTED)
+    val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
@@ -113,18 +113,21 @@ fun AppsScreen(
                 }
             }
             if (tab == Tab.HISTORY) {
-                Text("Keep these apps optimized automatically", style = SsType.Caption, color = SsColors.TextSecondary)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AutoOptimizeMode.entries.reversed().forEach { m ->
-                        val option = autoOptimizeOption(m)
-                        SsButton(
-                            (if (m == optimizeMode) "✓ " else "") + option.title,
-                            onClick = { onAutoOptimizeMode(m) },
-                            selected = m == optimizeMode,
-                        )
+                val current = optimizeMode
+                if (current != null) {
+                    Text("Keep these apps optimized automatically", style = SsType.Caption, color = SsColors.TextSecondary)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AutoOptimizeMode.entries.reversed().forEach { m ->
+                            val option = autoOptimizeOption(m)
+                            SsButton(
+                                (if (m == current) "✓ " else "") + option.title,
+                                onClick = { onAutoOptimizeMode(m) },
+                                selected = m == current,
+                            )
+                        }
                     }
+                    Text(autoOptimizeOption(current).description, style = SsType.Caption, color = SsColors.TextSecondary)
                 }
-                Text(autoOptimizeOption(optimizeMode).description, style = SsType.Caption, color = SsColors.TextSecondary)
             }
             when (tab) {
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }

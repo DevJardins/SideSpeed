@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.ui.apps.maintenanceLine
 import io.github.devjardins.sidespeed.ui.apps.maintenancePill
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MaintenanceUiTest {
@@ -34,12 +35,15 @@ class MaintenanceUiTest {
         assertEquals("All apps", autoOptimizeOption(AutoOptimizeMode.ALL).title)
         assertEquals("Sideloaded only", autoOptimizeOption(AutoOptimizeMode.SIDELOADED).title)
         assertEquals("Selected apps", autoOptimizeOption(AutoOptimizeMode.SELECTED).title)
-        AutoOptimizeMode.entries.forEach { assert(autoOptimizeOption(it).description.length in 20..200) }
+        AutoOptimizeMode.entries.forEach { assertTrue(autoOptimizeOption(it).description.length in 20..200) }
     }
 
     @Test fun selectedCopyTellsWhereToPickApps() =
-        assert("Keep this app optimized" in autoOptimizeOption(AutoOptimizeMode.SELECTED).description)
+        assertTrue("Keep this app optimized" in autoOptimizeOption(AutoOptimizeMode.SELECTED).description)
 
     @Test fun sideloadedCopyAdmitsPickedAppsAreIncluded() =
-        assert("pick" in autoOptimizeOption(AutoOptimizeMode.SIDELOADED).description)
+        assertTrue("pick" in autoOptimizeOption(AutoOptimizeMode.SIDELOADED).description)
+
+    @Test fun allCopySaysPickedPreinstalledAppsAreIncluded() =
+        assertTrue("unless you pick them" in autoOptimizeOption(AutoOptimizeMode.ALL).description)
 }

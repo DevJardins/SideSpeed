@@ -115,7 +115,7 @@ class AutoOptimizeOption(val title: String, val description: String)
 fun autoOptimizeOption(mode: AutoOptimizeMode): AutoOptimizeOption = when (mode) {
     AutoOptimizeMode.ALL -> AutoOptimizeOption(
         "All apps",
-        "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone.",
+        "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.",
     )
     AutoOptimizeMode.SIDELOADED -> AutoOptimizeOption(
         "Sideloaded only",
