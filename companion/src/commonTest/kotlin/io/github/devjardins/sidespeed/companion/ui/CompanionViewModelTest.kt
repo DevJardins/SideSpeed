@@ -187,4 +187,37 @@ class CompanionViewModelTest {
         r.vm.renameTrustedNetwork("nope", "X")
         assertEquals("Living room", r.store.trustedNetworks().single().name)
     }
+
+    @Test
+    fun successfulAddRecordsTheAddressAndClearsPending() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        assertEquals("192.168.5.20", r.vm.state.value.addedAddress)
+        assertTrue(r.vm.state.value.adding.isEmpty())
+        assertTrue(r.vm.state.value.addErrors.isEmpty())
+    }
+
+    @Test
+    fun pressingAnAlreadyAddedAddressAgainDoesNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        val opens = r.fake.opened.size
+        r.vm.addTvByAddress("192.168.5.20")
+        assertEquals(opens, r.fake.opened.size)
+        assertEquals(1, r.store.tvs().size)
+        assertEquals("192.168.5.20", r.vm.state.value.addedAddress)
+    }
+
+    @Test
+    fun failedAddShowsAnErrorForThatAddressAndCanBeRetried() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
+        r.vm.addTvByAddress("192.168.5.20")
+        assertEquals(Copy.UNREACHABLE, r.vm.state.value.addErrors["192.168.5.20"])
+        assertTrue(r.vm.state.value.adding.isEmpty())
+        assertNull(r.vm.state.value.addedAddress)
+        r.fake.failOnOpen = false
+        r.vm.addTvByAddress("192.168.5.20")
+        assertTrue(r.vm.state.value.addErrors.isEmpty())
+        assertEquals(1, r.store.tvs().size)
+    }
 }

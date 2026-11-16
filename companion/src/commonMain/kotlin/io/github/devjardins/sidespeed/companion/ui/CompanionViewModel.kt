@@ -75,6 +75,12 @@ data class CompanionUiState(
     val error: String? = null,
     /** Addresses of TVs found by "Find TVs" that aren't saved yet. */
     val found: List<String> = emptyList(),
+    /** Addresses whose add is in progress: their rows show "Adding…" and ignore presses. */
+    val adding: Set<String> = emptyList<String>().toSet(),
+    /** Per-address add failures, shown on the row that was pressed. */
+    val addErrors: Map<String, String> = emptyMap(),
+    /** The address of the TV just added; the Add screen returns Home on it (see [CompanionViewModel.acknowledgeAdded]). */
+    val addedAddress: String? = null,
 )
 
 class CompanionViewModel(
@@ -131,8 +137,34 @@ class CompanionViewModel(
         }
     }
 
+    /**
+     * Adds the TV at [address]. A press while that address is being added, or right after it was added, does
+     * nothing. Success sets [CompanionUiState.addedAddress]; failure sets [CompanionUiState.addErrors] for it.
+     */
     fun addTvByAddress(address: String) {
-        locked { addTv(address.trim()) }
+        val a = address.trim()
+        var accepted = false
+        _state.update {
+            accepted = a !in it.adding && it.addedAddress != a
+            if (accepted) it.copy(adding = it.adding + a, addErrors = it.addErrors - a) else it
+        }
+        if (!accepted) return
+        locked {
+            try {
+                addTv(a)
+                val failure = _state.value.error
+                _state.update {
+                    if (failure != null) it.copy(addErrors = it.addErrors + (a to failure)) else it.copy(addedAddress = a)
+                }
+            } finally {
+                _state.update { it.copy(adding = it.adding - a) }
+            }
+        }
+    }
+
+    /** The Add screen has shown the result of [CompanionUiState.addedAddress]. */
+    fun acknowledgeAdded() {
+        _state.update { it.copy(addedAddress = null) }
     }
 
     fun findTvs() {

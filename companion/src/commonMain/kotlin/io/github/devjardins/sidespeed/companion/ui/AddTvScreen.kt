@@ -21,11 +21,22 @@ fun AddTvScreen(state: CompanionUiState, onFind: () -> Unit, onAddAddress: (Stri
         Header("Add a TV", onBack = onBack)
         SsText(Copy.ALLOW_STEP, Ss.caption)
         SsTextField(address, { address = it }, "192.168.1.50")
-        state.error?.let { SsText(it, Ss.body.copy(color = Ss.dangerText)) }
+        if (state.addErrors.isEmpty()) state.error?.let { SsText(it, Ss.body.copy(color = Ss.dangerText)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SsButton("Add", { onAddAddress(address) }, primary = true)
             SsButton("Find TVs", onFind)
         }
-        state.found.forEach { host -> SsButton(host, { onAddAddress(host) }, modifier = Modifier.fillMaxWidth()) }
+        state.found.forEach { host ->
+            val adding = host in state.adding
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SsButton(
+                    if (adding) "$host  Adding…" else host,
+                    { if (!adding) onAddAddress(host) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !adding,
+                )
+                state.addErrors[host]?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,13 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
     var dismissedFirstRun by remember { mutableStateOf(false) }
+    // A TV was added from the Add screen: go Home, where its card is the confirmation.
+    LaunchedEffect(state.addedAddress) {
+        if (state.addedAddress != null) {
+            if (page == Page.ADD) page = Page.HOME
+            vm.acknowledgeAdded()
+        }
+    }
     val screen = when {
         !state.loaded -> Screen.LOADING
         state.firstRun && !dismissedFirstRun -> Screen.FIRST_RUN
