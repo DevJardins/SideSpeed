@@ -27,6 +27,7 @@ import kotlin.time.Duration.Companion.hours
 fun notificationText(state: MaintenanceState): String = when {
     state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
     state.queueLength > 0 -> "Optimizing apps (${state.queueLength} left)"
+    state.maintained.size == 1 -> "Keeping 1 app optimized"
     else -> "Keeping ${state.maintained.size} apps optimized"
 }
 
@@ -83,9 +84,9 @@ class MaintenanceService : Service() {
         }
 
         scope.launch {
-            combine(engine.state, container.maintenanceStore.maintained, container.maintenanceStore.optimizeSideloaded) { s, t, o ->
-                Triple(s, t.isNotEmpty() || o, Unit)
-            }.collect { (state, armed, _) ->
+            combine(engine.state, container.maintenanceStore.maintained, container.maintenanceStore.mode) { s, t, m ->
+                s to isArmed(m, t)
+            }.collect { (state, armed) ->
                 if (!armed) {
                     stopSelf()
                 } else {

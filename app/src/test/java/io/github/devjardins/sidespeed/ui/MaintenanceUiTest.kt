@@ -1,9 +1,11 @@
 package io.github.devjardins.sidespeed.ui
 
+import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.JobPhase
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.ui.apps.Pill
 import io.github.devjardins.sidespeed.ui.apps.PillTone
+import io.github.devjardins.sidespeed.ui.apps.autoOptimizeOption
 import io.github.devjardins.sidespeed.ui.apps.maintenanceLine
 import io.github.devjardins.sidespeed.ui.apps.maintenancePill
 import org.junit.Assert.assertEquals
@@ -27,4 +29,17 @@ class MaintenanceUiTest {
     )
     @Test fun lineUpToDate() = assertEquals("Maintenance: up to date", maintenanceLine(st()))
     @Test fun lineHiddenWhenIdle() = assertNull(maintenanceLine(MaintenanceState()))
+
+    @Test fun everyModeHasATitleAndPlainCopy() {
+        assertEquals("All apps", autoOptimizeOption(AutoOptimizeMode.ALL).title)
+        assertEquals("Sideloaded only", autoOptimizeOption(AutoOptimizeMode.SIDELOADED).title)
+        assertEquals("Selected apps", autoOptimizeOption(AutoOptimizeMode.SELECTED).title)
+        AutoOptimizeMode.entries.forEach { assert(autoOptimizeOption(it).description.length in 20..200) }
+    }
+
+    @Test fun selectedCopyTellsWhereToPickApps() =
+        assert("Keep this app optimized" in autoOptimizeOption(AutoOptimizeMode.SELECTED).description)
+
+    @Test fun sideloadedCopyAdmitsPickedAppsAreIncluded() =
+        assert("pick" in autoOptimizeOption(AutoOptimizeMode.SIDELOADED).description)
 }

@@ -45,6 +45,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.JobRecord
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.ui.theme.SsButton
@@ -68,13 +69,13 @@ fun AppsScreen(
     icon: IconSource,
     maintenance: StateFlow<MaintenanceState>,
     history: Flow<List<JobRecord>>,
-    optimizeSideloaded: Flow<Boolean>,
-    onOptimizeSideloaded: (Boolean) -> Unit,
+    autoOptimizeMode: Flow<AutoOptimizeMode>,
+    onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
-    val sideloadedOn by optimizeSideloaded.collectAsState(initial = false)
+    val optimizeMode by autoOptimizeMode.collectAsState(initial = AutoOptimizeMode.SELECTED)
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
@@ -112,15 +113,18 @@ fun AppsScreen(
                 }
             }
             if (tab == Tab.HISTORY) {
-                SsButton(
-                    (if (sideloadedOn) "✓ " else "") + "Optimize all my apps",
-                    onClick = { onOptimizeSideloaded(!sideloadedOn) },
-                    selected = sideloadedOn,
-                )
-                Text(
-                    "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone.",
-                    style = SsType.Caption, color = SsColors.TextSecondary,
-                )
+                Text("Keep these apps optimized automatically", style = SsType.Caption, color = SsColors.TextSecondary)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AutoOptimizeMode.entries.reversed().forEach { m ->
+                        val option = autoOptimizeOption(m)
+                        SsButton(
+                            (if (m == optimizeMode) "✓ " else "") + option.title,
+                            onClick = { onAutoOptimizeMode(m) },
+                            selected = m == optimizeMode,
+                        )
+                    }
+                }
+                Text(autoOptimizeOption(optimizeMode).description, style = SsType.Caption, color = SsColors.TextSecondary)
             }
             when (tab) {
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }

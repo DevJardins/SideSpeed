@@ -114,7 +114,7 @@ class MaintenanceEngineTest {
         h.source.apps["sys.app"] = AppEntry("sys.app", "SYS", null, 100, isSystem = true)
         runCurrent()
         assertTrue(h.calls.isEmpty())
-        h.store.setOptimizeSideloaded(true)
+        h.store.setMode(AutoOptimizeMode.ALL)
         runCurrent()
         assertEquals(listOf("side.app", "store.app"), h.calls.map { it.first })
     }
@@ -133,7 +133,7 @@ class MaintenanceEngineTest {
         val h = Harness(this)
         h.source.put("a.a", updated = 100)
         h.badges["a.a"] = StatusBadge.SPEED_PROFILE
-        h.store.setOptimizeSideloaded(true)
+        h.store.setMode(AutoOptimizeMode.ALL)
         runCurrent()
         assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
     }
@@ -201,7 +201,7 @@ class MaintenanceEngineTest {
         val h = Harness(this)
         h.source.put("own.pkg")
         h.store.setMaintained("own.pkg", true)
-        h.store.setOptimizeSideloaded(true)
+        h.store.setMode(AutoOptimizeMode.ALL)
         runCurrent()
         assertTrue(h.calls.isEmpty())
     }
@@ -330,16 +330,92 @@ class MaintenanceEngineTest {
         val gate = CompletableDeferred<Unit>()
         h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
         h.source.put("a.a"); h.source.put("b.b")
-        h.store.setOptimizeSideloaded(true)
+        h.store.setMode(AutoOptimizeMode.ALL)
         runCurrent()
         assertEquals(setOf(JobPhase.RUNNING, JobPhase.WAITING), h.phases.values.toSet())
-        h.store.setOptimizeSideloaded(false)
+        h.store.setMode(AutoOptimizeMode.SELECTED)
         runCurrent()
         assertEquals(setOf(JobPhase.RUNNING), h.phases.values.toSet())
         gate.complete(Unit)
         runCurrent()
         assertEquals(1, h.calls.size)
         assertTrue(h.phases.isEmpty())
+    }
+
+    private fun Harness.populate() {
+        source.put("side.app", installer = null)
+        source.put("store.app", installer = "com.android.vending")
+        source.put("ticked.store", installer = "com.android.vending")
+        source.apps["sys.app"] = AppEntry("sys.app", "SYS", null, 100, isSystem = true)
+    }
+
+    @Test fun selectedModeCompilesOnlyTickedApps() = runTest {
+        val h = Harness(this)
+        h.populate()
+        h.store.setMaintained("ticked.store", true)
+        runCurrent()
+        assertEquals(listOf("ticked.store"), h.calls.map { it.first })
+        assertEquals(setOf("ticked.store"), h.engine.state.value.maintained)
+    }
+
+    @Test fun sideloadedModeCoversSideloadedAppsAndTickedOnes() = runTest {
+        val h = Harness(this)
+        h.populate()
+        h.store.setMaintained("ticked.store", true)
+        h.store.setMode(AutoOptimizeMode.SIDELOADED)
+        runCurrent()
+        assertEquals(setOf("side.app", "ticked.store"), h.calls.map { it.first }.toSet())
+        assertEquals(setOf("side.app", "ticked.store"), h.engine.state.value.maintained)
+    }
+
+    @Test fun allModeCoversEveryNonSystemAppAndCountMatches() = runTest {
+        val h = Harness(this)
+        h.populate()
+        h.store.setMode(AutoOptimizeMode.ALL)
+        runCurrent()
+        assertEquals(setOf("side.app", "store.app", "ticked.store"), h.calls.map { it.first }.toSet())
+        assertEquals(3, h.engine.state.value.maintained.size)
+    }
+
+    @Test fun allModeStillCoversATickedPreinstalledApp() = runTest {
+        val h = Harness(this)
+        h.populate()
+        h.store.setMaintained("sys.app", true)
+        h.store.setMode(AutoOptimizeMode.ALL)
+        runCurrent()
+        assertTrue("sys.app" in h.engine.state.value.maintained)
+    }
+
+    @Test fun switchingModesKeepsTickedAppsInTheSetAndTheyOnlyWidenCoverage() = runTest {
+        val h = Harness(this)
+        h.populate()
+        h.store.setMaintained("ticked.store", true)
+        h.store.setMode(AutoOptimizeMode.ALL)
+        runCurrent()
+        h.store.setMode(AutoOptimizeMode.SIDELOADED)
+        runCurrent()
+        h.store.setMode(AutoOptimizeMode.SELECTED)
+        runCurrent()
+        assertEquals(setOf("ticked.store"), h.store.maintainedFlow.value)
+        assertEquals(setOf("ticked.store"), h.engine.state.value.maintained)
+    }
+
+    @Test fun narrowingModeDropsWaitingAppsThatNoLongerQualify() = runTest {
+        val h = Harness(this)
+        val gate = CompletableDeferred<Unit>()
+        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
+        h.source.put("b.b", installer = null)
+        h.source.put("a.a", installer = "com.android.vending")
+        h.source.put("c.c", installer = null)
+        h.store.setMode(AutoOptimizeMode.ALL)
+        runCurrent()
+        assertEquals(3, h.engine.state.value.queueLength)
+        h.store.setMode(AutoOptimizeMode.SIDELOADED)
+        runCurrent()
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(listOf("b.b", "c.c"), h.calls.map { it.first })
+        assertEquals(setOf("b.b", "c.c"), h.engine.state.value.maintained)
     }
 
     @Test fun storeFailureDuringAJobDoesNotCrashTheEngine() = runTest {

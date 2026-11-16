@@ -74,7 +74,7 @@ class MaintenanceEngine(
 
     init {
         scope.launch {
-            combine(store.maintained.distinctUntilChanged(), store.optimizeSideloaded.distinctUntilChanged()) { _, _ -> }
+            combine(store.maintained.distinctUntilChanged(), store.mode.distinctUntilChanged()) { _, _ -> }
                 .catch { }
                 .collect { doScan() }
         }
@@ -107,9 +107,13 @@ class MaintenanceEngine(
 
     private suspend fun scanOnce() {
         val ticked = store.maintained.first()
-        val sideloadedOn = store.optimizeSideloaded.first()
+        val mode = store.mode.first()
         val tickedApps = ticked.mapNotNull { p -> source.find(p) ?: run { store.setMaintained(p, false); null } }
-        val covered = if (sideloadedOn) source.list().filter { !it.isSystem } else emptyList()
+        val covered = when (mode) {
+            AutoOptimizeMode.SELECTED -> emptyList()
+            AutoOptimizeMode.SIDELOADED -> source.list().filter { it.isSideloaded }
+            AutoOptimizeMode.ALL -> source.list().filter { !it.isSystem }
+        }
         val set: List<AppEntry> = (tickedApps + covered).filter { it.packageName != ownPackage }.distinctBy { it.packageName }
         val names = set.map { it.packageName }.toSet()
         synchronized(lock) {
