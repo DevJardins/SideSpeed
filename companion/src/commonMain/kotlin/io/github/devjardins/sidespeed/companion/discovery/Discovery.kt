@@ -5,12 +5,12 @@ import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -69,26 +69,26 @@ class Discovery(
     private val probe: AdbProbe,
     private val dispatcher: CoroutineDispatcher? = null,
 ) {
-    fun run(plan: DiscoveryPlan): Flow<DiscoveryEvent> = flow {
-        if (plan.port != 5555 || !AddressPolicy.sweepable(plan.subnet)) return@flow
+    fun run(plan: DiscoveryPlan): Flow<DiscoveryEvent> = channelFlow {
+        if (plan.port != 5555 || !AddressPolicy.sweepable(plan.subnet)) return@channelFlow
         val candidates = sources.flatMap { it.hosts(plan) }
             .distinct()
             .filter { it != plan.own && it != plan.subnet.network && it != plan.subnet.broadcast }
             .filter { AddressPolicy.isPrivate(it) }
         val targets = candidates.take(plan.limit)
-        if (targets.isEmpty()) return@flow
+        if (targets.isEmpty()) return@channelFlow
         val truncated = candidates.size > targets.size
         val inDispatcher = dispatcher
         if (inDispatcher != null) withContext(inDispatcher) { sweep(plan, targets, truncated) } else sweep(plan, targets, truncated)
     }
 
-    private suspend fun FlowCollector<DiscoveryEvent>.sweep(plan: DiscoveryPlan, targets: List<Ipv4>, truncated: Boolean) {
+    private suspend fun SendChannel<DiscoveryEvent>.sweep(plan: DiscoveryPlan, targets: List<Ipv4>, truncated: Boolean) {
         var scanned = 0
         var total = targets.size
         val results = pass(plan, targets, plan.firstPassTimeoutMs) { host, result ->
             scanned++
-            emit(DiscoveryEvent.Progress(scanned, total))
-            if (result.isAdb) emit(DiscoveryEvent.Found(host, result))
+            send(DiscoveryEvent.Progress(scanned, total))
+            if (result.isAdb) send(DiscoveryEvent.Found(host, result))
         }.toMutableMap()
         val silent = targets.filter { results[it]?.hostIsLive == false }
         if (silent.isNotEmpty()) {
@@ -97,14 +97,14 @@ class Discovery(
             pass(plan, silent, plan.secondPassTimeoutMs) { host, result ->
                 results[host] = result
                 scanned++
-                emit(DiscoveryEvent.Progress(scanned, total))
-                if (result.isAdb) emit(DiscoveryEvent.Found(host, result))
+                send(DiscoveryEvent.Progress(scanned, total))
+                if (result.isAdb) send(DiscoveryEvent.Found(host, result))
             }
         }
-        emit(DiscoveryEvent.Done(DiscoverySummary(liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb }, truncated = truncated)))
+        send(DiscoveryEvent.Done(DiscoverySummary(liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb }, truncated = truncated)))
     }
 
-    private suspend fun FlowCollector<DiscoveryEvent>.pass(
+    private suspend fun SendChannel<DiscoveryEvent>.pass(
         plan: DiscoveryPlan,
         hosts: List<Ipv4>,
         timeoutMs: Int,

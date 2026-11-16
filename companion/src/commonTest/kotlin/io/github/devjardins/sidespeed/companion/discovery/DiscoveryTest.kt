@@ -2,10 +2,12 @@ package io.github.devjardins.sidespeed.companion.discovery
 
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -133,6 +135,21 @@ class DiscoveryTest {
         val done = events.filterIsInstance<DiscoveryEvent.Done>()
         assertEquals(1, done.size)
         assertEquals(true, done.single().summary.truncated)
+    }
+
+    @Test
+    fun collectsOnARealDispatcherWithoutCrashing(): Unit = runBlocking {
+        val lan = FakeLan(
+            mapOf(
+                ip("192.168.1.1") to listOf(ProbeResult.AdbOpen),
+                ip("192.168.1.2") to listOf(ProbeResult.Refused),
+            ),
+        )
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val io = Dispatchers.IO.limitedParallelism(2)
+        val found = Discovery(listOf(SweepSource), lan, io).run(plan("192.168.1.0/30"))
+            .filterIsInstance<DiscoveryEvent.Found>().toList()
+        assertEquals(listOf(ip("192.168.1.1")), found.map { it.address })
     }
 
     @Test
