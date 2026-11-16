@@ -107,12 +107,13 @@ class CompileViewModel(
         }
     }
 
-    /** Ticks [pkg] so the maintenance engine keeps it compiled; no-op without a store. */
-    fun keepOptimized(pkg: PackageName) {
+    /** Ticks [pkg] so the maintenance engine keeps it compiled, then calls [onStored]; no-op without a store. */
+    fun keepOptimized(pkg: PackageName, onStored: () -> Unit = {}) {
         val s = store ?: return
         viewModelScope.launch(dispatcher) {
             s.setMaintained(pkg.value, true)
             _state.value = _state.value.copy(offerKeepOptimized = false, kept = true)
+            onStored()
         }
     }
 

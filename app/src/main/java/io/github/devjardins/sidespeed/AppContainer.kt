@@ -54,7 +54,7 @@ class AppContainer(context: Context) {
             prefs = prefs,
             runCompile = { pkg, mode -> compileRunner.run(pkg, mode) },
             helperUp = { helper.ping() != null },
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
             ownPackage = appContext.packageName,
         )
     }

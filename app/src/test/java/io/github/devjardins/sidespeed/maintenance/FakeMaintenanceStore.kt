@@ -3,7 +3,7 @@ package io.github.devjardins.sidespeed.maintenance
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class FakeMaintenanceStore : MaintenanceStore {
+open class FakeMaintenanceStore : MaintenanceStore {
     val maintainedFlow = MutableStateFlow<Set<String>>(emptySet())
     val optimizeFlow = MutableStateFlow(false)
     val historyFlow = MutableStateFlow<List<JobRecord>>(emptyList())

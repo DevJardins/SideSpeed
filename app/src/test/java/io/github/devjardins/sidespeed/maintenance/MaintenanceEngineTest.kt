@@ -30,7 +30,8 @@ private class FakeSource : AppSource {
     }
     fun update(pkg: String, updated: Long) { apps[pkg] = apps.getValue(pkg).copy(lastUpdateTime = updated) }
     override fun list() = apps.values.toList()
-    override fun find(pkg: String) = apps[pkg]
+    var failFind = false
+    override fun find(pkg: String): AppEntry? { if (failFind) error("pm died"); return apps[pkg] }
 }
 
 private class FakePrefs : Prefs {
@@ -45,9 +46,11 @@ private class FakePrefs : Prefs {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private class Harness(testScope: TestScope) {
+private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
     val source = FakeSource()
-    val store = FakeMaintenanceStore()
+    val store: FakeMaintenanceStore = if (failingHistory) object : FakeMaintenanceStore() {
+        override suspend fun addHistory(record: JobRecord) { error("disk full") }
+    } else FakeMaintenanceStore()
     val prefs = FakePrefs()
     var up = true
     var now = 1000L
@@ -279,5 +282,28 @@ class MaintenanceEngineTest {
         runCurrent()
         assertEquals(1, h.calls.size)
         assertTrue(h.phases.isEmpty())
+    }
+
+    @Test fun storeFailureDuringAJobDoesNotCrashTheEngine() = runTest {
+        val h = Harness(this, failingHistory = true)
+        h.source.put("a.a", updated = 500)
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        h.source.put("b.b", updated = 500)
+        h.store.setMaintained("b.b", true)
+        runCurrent()
+        assertEquals(listOf("a.a", "b.b"), h.calls.map { it.first })
+    }
+
+    @Test fun sourceFailureDuringAScanDoesNotCrashTheEngine() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 500)
+        h.source.failFind = true
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        h.source.failFind = false
+        h.engine.scan()
+        runCurrent()
+        assertEquals(listOf("a.a"), h.calls.map { it.first })
     }
 }

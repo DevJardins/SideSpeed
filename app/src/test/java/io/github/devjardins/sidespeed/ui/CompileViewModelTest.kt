@@ -182,6 +182,15 @@ class CompileViewModelTest {
         assertFalse(v.state.value.offerKeepOptimized)
     }
 
+    @Test fun keepOptimizedCallsBackOnlyAfterTheTickIsStored() = runTest(timeout = 10.seconds) {
+        val store = io.github.devjardins.sidespeed.maintenance.FakeMaintenanceStore()
+        val v = vmWithStore(fake(), store)
+        var seen: Set<String>? = null
+        v.keepOptimized(pkg) { seen = store.maintainedFlow.value }
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(setOf("com.nuvio.tv"), seen)
+    }
+
     @Test fun keepOptimizedWithoutStoreIsNoOp() = runTest(timeout = 10.seconds) {
         val v = vmWithStore(fake(), null)
         v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()

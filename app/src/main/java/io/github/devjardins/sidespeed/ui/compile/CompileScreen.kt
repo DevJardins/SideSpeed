@@ -145,7 +145,7 @@ fun CompileScreen(
                         modifier = Modifier.focusRequester(startFocus),
                     )
                     if (state.offerKeepOptimized && pkg != null) {
-                        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg); onKeepOptimized() })
+                        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKeepOptimized) })
                     }
                     SsButton(if (showLog) "Hide log" else "Show log", onClick = { showLog = !showLog })
                     if (result.message == "Connection lost") {

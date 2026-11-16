@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -69,7 +70,9 @@ class MaintenanceEngine(
 
     init {
         scope.launch {
-            combine(store.maintained, store.optimizeSideloaded) { _, _ -> }.collect { doScan() }
+            combine(store.maintained, store.optimizeSideloaded) { _, _ -> }
+                .catch { }
+                .collect { doScan() }
         }
         scope.launch { for (ignored in wake) drain() }
     }
@@ -88,7 +91,17 @@ class MaintenanceEngine(
         scan()
     }
 
+    /** Storage or PackageManager errors must never kill the process; the next trigger retries. */
     private suspend fun doScan() = scanLock.withLock {
+        try {
+            scanOnce()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    private suspend fun scanOnce() {
         val ticked = store.maintained.first()
         val sideloadedOn = store.optimizeSideloaded.first()
         val tickedApps = ticked.mapNotNull { p -> source.find(p) ?: run { store.setMaintained(p, false); null } }
@@ -134,6 +147,9 @@ class MaintenanceEngine(
             publish()
             try {
                 runJob(pkg)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
             } finally {
                 synchronized(lock) { running = null }
                 publish()

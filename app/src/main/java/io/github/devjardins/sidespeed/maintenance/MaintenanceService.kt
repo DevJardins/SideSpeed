@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.content.ContextCompat
 import io.github.devjardins.sidespeed.SideSpeedApp
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,11 +31,21 @@ fun notificationText(state: MaintenanceState): String = when {
 }
 
 /**
+ * Foreground type for the service. specialUse (API 34+) has no 6-hour timeout and may start at boot;
+ * dataSync is the nearest fit before that; none before API 29.
+ */
+fun foregroundServiceType(sdk: Int): Int? = when {
+    sdk >= 34 -> ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+    sdk >= 29 -> ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+    else -> null
+}
+
+/**
  * Keeps the process alive and owns the triggers: start, package added/replaced, and a 6-hourly rescan.
  * Set changes are watched by the engine itself. Runs only while [isArmed]; stops itself otherwise.
  */
 class MaintenanceService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
     private var started = false
     private var receiver: BroadcastReceiver? = null
 
@@ -45,7 +56,14 @@ class MaintenanceService : Service() {
         started = true
         val container = (application as SideSpeedApp).container
         val engine = container.maintenance
-        promote(notification(notificationText(engine.state.value)))
+        try {
+            promote(notification(notificationText(engine.state.value)))
+        } catch (_: Exception) {
+            // The platform refused the foreground start (boot or background restrictions): run engine-only.
+            engine.scan()
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -91,11 +109,8 @@ class MaintenanceService : Service() {
     }
 
     private fun promote(n: Notification) {
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-            startForeground(NOTIFICATION_ID, n)
-        }
+        val type = foregroundServiceType(Build.VERSION.SDK_INT)
+        if (type != null) startForeground(NOTIFICATION_ID, n, type) else startForeground(NOTIFICATION_ID, n)
     }
 
     private fun notification(text: String): Notification {
