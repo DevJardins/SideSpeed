@@ -20,13 +20,14 @@ import io.github.devjardins.sidespeed.companion.discovery.helpFor
 @Composable
 fun AddTvScreen(
     state: CompanionUiState,
-    onFind: () -> Unit,
+    onFind: (String) -> Unit,
     onAddAddress: (String) -> Unit,
     onStop: () -> Unit,
     onKeepScanning: () -> Unit,
     onBack: () -> Unit,
 ) {
     var address by remember { mutableStateOf("") }
+    var range by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Header("Add a TV", onBack = onBack)
         SsText(Copy.ALLOW_STEP, Ss.caption)
@@ -36,12 +37,14 @@ fun AddTvScreen(
             SsButton("Add", { onAddAddress(address) }, primary = true)
             SsButton(
                 "Find TVs",
-                { if (!state.scanning) onFind() },
+                { if (!state.scanning) onFind(range) },
                 enabled = !state.scanning,
                 modifier = Modifier.defaultMinSize(minWidth = 110.dp),
                 content = if (state.scanning) ({ SsSpinner() }) else null,
             )
         }
+        SsText("Range to scan (optional)", Ss.caption)
+        SsTextField(range, { range = it }, state.currentNetwork?.subnet ?: "192.168.1.0/24")
         state.scanProgress?.let { SsText(it, Ss.caption) }
         if (state.scanning) {
             SsButton("Stop", onStop)

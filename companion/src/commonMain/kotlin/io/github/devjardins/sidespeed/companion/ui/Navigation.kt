@@ -74,7 +74,7 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS }, vm::removeTv)
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
-                    AddTvScreen(state, vm::findTvs, vm::addTvByAddress, vm::cancelFind, vm::keepScanning) { page = Page.HOME }
+                    AddTvScreen(state, vm::findTvsIn, vm::addTvByAddress, vm::cancelFind, vm::keepScanning) { page = Page.HOME }
                 }
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
