@@ -1,0 +1,45 @@
+name: build
+on:
+  push:
+  pull_request:
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu
+          path: |
+            app/build/outputs/apk/release/*.apk
+            companion-android/build/outputs/apk/release/*.apk
+            companion-desktop/build/compose/binaries/main/deb/*.deb
+            companion-desktop/build/compose/binaries/main/rpm/*.rpm
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :companion-desktop:packageDmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: companion-desktop/build/compose/binaries/main/dmg/*.dmg
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :companion-desktop:packageMsi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: companion-desktop/build/compose/binaries/main/msi/*.msi

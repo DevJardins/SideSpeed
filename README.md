@@ -18,6 +18,21 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 
   If your TV doesn't accept direct connections (SideSpeed tells you after a few tries), choose **Pair with a code instead** and enter the code and port from "Pair device with pairing code" with the D-pad. Starting the helper from a PC also works.
 
+## SideSpeed Companion
+Companion apps for Android phones and for Windows, macOS and Linux. They start the SideSpeed helper on your Fire TV for you, so you don't need a PC and a terminal each time. Fire TV only; Google TV starts its own helper.
+
+**Install** (builds are unsigned for now):
+- **Android:** sideload the companion APK from the releases page.
+- **macOS:** open the `.dmg` and drag the app to Applications. If macOS says it can't verify the developer, right-click the app, choose **Open**, then **Open** again.
+- **Windows:** run the `.msi`. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
+- **Linux:** install the `.deb` or `.rpm`.
+
+**Use:** turn on ADB debugging on the TV, open the companion, trust your home network, add the TV by its IP address (or use Find TVs), and tick **Always allow** when the TV asks.
+
+**Trusted Networks:** you choose which networks the companion may act on. On any other network it does nothing and sends nothing. It needs no location permission; a network is recognised by its gateway, subnet and DNS settings.
+
+Limits: IPv6-only networks are never trusted. Find TVs scans /24 subnets only; adding by address works on any IPv4 subnet.
+
 ## Requirements and caveats
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
 - Enabling it exposes ADB on your local network. Only use it on a network you trust; the app asks you to acknowledge this first.
