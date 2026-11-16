@@ -50,6 +50,27 @@ object Mdns {
     }
 }
 
+/** At most one source's worth of hint addresses: a noisy network still finishes. */
+const val MAX_HINTS = 256
+
+/** mDNS responders on the LAN, via the service-enumeration question. */
+class MdnsSource(private val net: DatagramQuery, private val listenMs: Long = 1500) : HostSource {
+    override suspend fun hosts(plan: DiscoveryPlan): List<Ipv4> =
+        plan.lanOnly(
+            net.query(Ipv4.parse("224.0.0.251")!!, 5353, Mdns.servicesQuery(), listenMs, plan.own)
+                .filter { Mdns.isResponse(it.bytes) }.map { it.from },
+        ).take(MAX_HINTS)
+}
+
+/** SSDP responders on the LAN, via `M-SEARCH`. */
+class SsdpSource(private val net: DatagramQuery, private val listenMs: Long = 1500) : HostSource {
+    override suspend fun hosts(plan: DiscoveryPlan): List<Ipv4> =
+        plan.lanOnly(
+            net.query(Ipv4.parse("239.255.255.250")!!, 1900, Ssdp.mSearch(), listenMs, plan.own)
+                .filter { Ssdp.isResponse(it.bytes) }.map { it.from },
+        ).take(MAX_HINTS)
+}
+
 /** The SSDP search and what counts as a reply to it. */
 object Ssdp {
     /** Standard `M-SEARCH` for everything (`ST: ssdp:all`, `MX: 1`). */

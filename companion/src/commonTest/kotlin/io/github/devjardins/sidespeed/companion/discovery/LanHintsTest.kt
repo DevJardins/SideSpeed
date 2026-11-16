@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.discovery
 
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -62,5 +63,60 @@ class LanHintsTest {
         assertTrue(Ssdp.isResponse("HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=1800\r\n".toByteArray()))
         assertFalse(Ssdp.isResponse("NOTIFY * HTTP/1.1\r\n".toByteArray()))
         assertFalse(Ssdp.isResponse(ByteArray(0)))
+    }
+
+    private class ScriptedQuery(var answers: List<Datagram> = emptyList()) : DatagramQuery {
+        val calls = mutableListOf<Pair<Ipv4, Int>>()
+        override suspend fun query(
+            target: Ipv4,
+            port: Int,
+            payload: ByteArray,
+            listenMs: Long,
+            via: Ipv4?,
+        ): List<Datagram> {
+            calls += target to port
+            return answers
+        }
+    }
+
+    private fun mdnsResponse(from: String): Datagram {
+        val h = ByteArray(12)
+        h[2] = 0x84.toByte()
+        h[7] = 1
+        return Datagram(ip(from), h)
+    }
+
+    private fun mdnsQuery(from: String) = Datagram(ip(from), ByteArray(12))
+
+    @Test fun mdnsSourceAsksTheMdnsGroupAndKeepsResponders() = runTest {
+        val net = ScriptedQuery(listOf(mdnsResponse("192.168.5.140"), mdnsQuery("192.168.5.7")))
+        assertEquals(
+            listOf(ip("192.168.5.140")),
+            MdnsSource(net).hosts(plan("192.168.5.0/24")),
+        )
+        assertEquals(listOf(ip("224.0.0.251") to 5353), net.calls)
+    }
+
+    @Test fun ssdpSourceAsksTheSsdpGroup() = runTest {
+        val net = ScriptedQuery(
+            listOf(Datagram(ip("192.168.5.140"), "HTTP/1.1 200 OK\r\n\r\n".toByteArray(Charsets.US_ASCII))),
+        )
+        assertEquals(
+            listOf(ip("192.168.5.140")),
+            SsdpSource(net).hosts(plan("192.168.5.0/24")),
+        )
+        assertEquals(listOf(ip("239.255.255.250") to 1900), net.calls)
+    }
+
+    @Test fun hintSourcesCapTheirReplies() = runTest {
+        val answers = (1..400).map { n ->
+            mdnsResponse("10.0.${n / 256}.${n % 256}")
+        }
+        assertEquals(256, MdnsSource(ScriptedQuery(answers)).hosts(plan("10.0.0.0/16")).size)
+    }
+
+    @Test fun aFailedQueryGivesNoHints() = runTest {
+        assertTrue(MdnsSource(ScriptedQuery()).hosts(plan("192.168.5.0/24")).isEmpty())
+        assertTrue(SsdpSource(ScriptedQuery()).hosts(plan("192.168.5.0/24")).isEmpty())
     }
 }
