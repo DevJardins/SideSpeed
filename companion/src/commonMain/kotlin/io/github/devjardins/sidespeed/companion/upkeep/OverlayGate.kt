@@ -24,6 +24,9 @@ fun interface EgressCheck {
 /** What upkeep needs to keep TVs reached over an overlay. Desktop only (decision D1). */
 class OverlayAccess(val source: OverlaySource, val egress: EgressCheck)
 
+/** True when the trusted overlay that matches now ([currentId]) is new since the last poll ([previousId]). */
+fun overlayJoined(previousId: String?, currentId: String?): Boolean = currentId != null && currentId != previousId
+
 /** The overlay gate's answer for one TV. */
 internal sealed interface OverlayVerdict {
     /** Connect to [address]. */

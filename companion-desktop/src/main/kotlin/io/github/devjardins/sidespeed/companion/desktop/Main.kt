@@ -27,11 +27,11 @@ import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.DesktopDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
-import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
+import io.github.devjardins.sidespeed.companion.upkeep.overlayJoined
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
@@ -108,25 +108,22 @@ fun main() {
         // paused or before either exists, so the poll spawns no processes then.
         LaunchedEffect(Unit) {
             var last = fingerprints.current()
-            var lastTailnet: OverlaySnapshot? = null
+            var lastOverlayId: String? = null
             while (true) {
                 delay(30_000)
                 if (paused || state.firstRun) continue
                 val now = fingerprints.current()
+                var joined = false
                 if (now != last) {
                     last = now
-                    if (TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null) {
-                        runAndNotify(Trigger.NETWORK_JOINED)
-                        continue
-                    }
+                    joined = TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null
                 }
                 val overlays = store.trustedOverlays()
-                if (overlays.isEmpty()) { lastTailnet = null; continue }
-                val tailnet = overlay.source.snapshot()
-                if (tailnet != lastTailnet) {
-                    lastTailnet = tailnet
-                    if (OverlayTrustMatcher.currentTrusted(tailnet, overlays) != null) runAndNotify(Trigger.NETWORK_JOINED)
-                }
+                val overlayId = if (overlays.isEmpty()) null else OverlayTrustMatcher.currentTrusted(overlay.source.snapshot(), overlays)?.id
+                if (overlayJoined(lastOverlayId, overlayId)) joined = true
+                lastOverlayId = overlayId
+                // One run per tick at most, whichever scope was joined.
+                if (joined) runAndNotify(Trigger.NETWORK_JOINED)
             }
         }
         // A second launch leaves a request file; show the window for it.
