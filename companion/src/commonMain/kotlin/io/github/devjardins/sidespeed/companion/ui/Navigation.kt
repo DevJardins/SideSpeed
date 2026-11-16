@@ -1,13 +1,33 @@
 package io.github.devjardins.sidespeed.companion.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 enum class Page { HOME, ADD, SETTINGS, ABOUT }
+
+/** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
+private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 
 /** Root of the companion UI, shared by the Android and desktop apps. */
 @Composable
@@ -15,26 +35,51 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
     var dismissedFirstRun by remember { mutableStateOf(false) }
-    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(Ss.background)) {
-        when {
-            !state.loaded -> Unit
-            state.firstRun && !dismissedFirstRun ->
-                FirstRunScreen(state.currentNetwork, { vm.trustCurrentNetwork("Trusted Network 1") }, { dismissedFirstRun = true })
-            page == Page.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS })
-            page == Page.ADD -> AddTvScreen(state, vm::findTvs, vm::addTvByAddress) { page = Page.HOME }
-            page == Page.SETTINGS -> SettingsScreen(
-                state, desktop, vm::updateSettings,
-                { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
-                vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
-            )
-            else -> androidx.compose.foundation.layout.Column(
-                Modifier.padding(24.dp),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
-            ) {
-                SsText("About and licences", Ss.title)
-                SsText(aboutText)
-                SsButton("Back", { page = Page.SETTINGS })
+    val screen = when {
+        !state.loaded -> Screen.LOADING
+        state.firstRun && !dismissedFirstRun -> Screen.FIRST_RUN
+        page == Page.HOME -> Screen.HOME
+        page == Page.ADD -> Screen.ADD
+        page == Page.SETTINGS -> Screen.SETTINGS
+        else -> Screen.ABOUT
+    }
+    Box(Modifier.fillMaxSize().background(Ss.background)) {
+        AnimatedContent(
+            targetState = screen,
+            transitionSpec = {
+                val forward = targetState.ordinal > initialState.ordinal
+                val dir = if (forward) 1 else -1
+                (fadeIn(tween(200)) + slideInHorizontally(tween(220)) { dir * it / 14 }) togetherWith
+                    (fadeOut(tween(120)) + slideOutHorizontally(tween(220)) { -dir * it / 14 })
+            },
+            label = "screen",
+        ) { target ->
+            when (target) {
+                Screen.LOADING -> Unit
+                Screen.FIRST_RUN ->
+                    FirstRunScreen(state.currentNetwork, { vm.trustCurrentNetwork("Trusted Network 1") }, { dismissedFirstRun = true })
+                Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS })
+                Screen.ADD -> AddTvScreen(state, vm::findTvs, vm::addTvByAddress) { page = Page.HOME }
+                Screen.SETTINGS -> SettingsScreen(
+                    state, desktop, vm::updateSettings,
+                    { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
+                    vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
+                )
+                Screen.ABOUT -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Header("About and licences", onBack = { page = Page.SETTINGS })
+                    SsCard { SsText(aboutText) }
+                }
             }
         }
+    }
+}
+
+/** Screen header: an optional back chevron, the title, and optional trailing content. */
+@Composable
+fun Header(title: String, onBack: (() -> Unit)? = null, trailing: @Composable () -> Unit = {}) {
+    Row(Modifier.padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (onBack != null) SsIconButton(onBack, "Back") { SsGlyph(Glyph.BACK) }
+        SsText(title, Ss.title, Modifier.weight(1f))
+        trailing()
     }
 }

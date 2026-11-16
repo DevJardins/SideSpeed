@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import io.github.devjardins.sidespeed.theme.SsTokens
 
@@ -34,5 +35,10 @@ object Ss {
 }
 
 @Composable
-fun SsText(text: String, style: TextStyle = Ss.body, modifier: Modifier = Modifier) =
-    BasicText(text, modifier, style)
+fun SsText(
+    text: String,
+    style: TextStyle = Ss.body,
+    modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+) = BasicText(text, modifier, style, maxLines = maxLines, overflow = overflow)
