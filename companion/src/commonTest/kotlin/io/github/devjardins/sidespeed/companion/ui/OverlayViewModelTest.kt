@@ -215,6 +215,28 @@ class OverlayViewModelTest {
         assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
     }
 
+    @Test fun aBareTailscaleAddressSaysWhichNetworkKeepsItAlive() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig()
+        r.vm.addTvByAddress("100.101.1.9")   // no peer has it: saved under "home"
+        assertEquals("Kept alive while on Home", r.vm.state.value.tvs.single().scopeNote)
+    }
+
+    @Test fun peerBoundAndLanTvsCarryNoScopeNote() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig()
+        r.vm.addTvByAddress("100.101.1.1")   // peer-bound
+        assertNull(r.vm.state.value.tvs.single().scopeNote)
+        val lan = rig()
+        lan.vm.addTvByAddress("192.168.5.20")
+        assertNull(lan.vm.state.value.tvs.single().scopeNote)
+    }
+
+    @Test fun aScopeNoteNeedsTheNetworkToExist() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig()
+        r.store.saveTv(SavedTv("x", "TV", "100.101.1.9", "SER-9", trustedNetworkId = "gone"))
+        r.vm.refreshNow()
+        assertNull(r.vm.state.value.tvs.single().scopeNote)
+    }
+
     @Test fun noRouteAnswerMeansNoBinding() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(fp = hotel, lan = false)
         r.egress = { null }

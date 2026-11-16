@@ -104,6 +104,7 @@ fun HomeScreen(
                         SsText(if (restarting) "Restarting…" else tv.statusLabel)
                         tv.checkedAtEpochMs?.let { SsText(Copy.checkedAgo(now - it), Ss.caption) }
                         tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
+                        tv.scopeNote?.let { SsText(it, Ss.caption) }
                         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             SsButton("Restart now", { restartingId = tv.id; onRestart(tv.id) }, enabled = restartingId == null)
                             if (restarting) SsSpinner()

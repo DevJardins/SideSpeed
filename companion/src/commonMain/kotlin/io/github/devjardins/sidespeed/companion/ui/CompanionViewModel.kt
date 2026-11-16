@@ -61,6 +61,8 @@ object Copy {
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
 
+    fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
+
     fun statusLabel(s: TvStatus): String = when (s) {
         TvStatus.RUNNING -> "Helper running"
         TvStatus.NOT_RUNNING -> "Not running"
@@ -81,6 +83,7 @@ data class TvCardState(
     val statusLabel: String,
     val checkedAtEpochMs: Long?,
     val note: String?,
+    val scopeNote: String? = null,
 )
 
 /** What Tailscale reports on this computer: its tailnet, whether it is trusted, and whether it can reach peers. */
@@ -477,6 +480,9 @@ class CompanionViewModel(
                 statusLabel = Copy.statusLabel(tv.status),
                 checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = if (tv.isFireTv) null else Copy.NOT_FIRE_TV_NOTE,
+                scopeNote = if (tv.overlayPeerId == null && Ipv4.parse(tv.address)?.let(AddressPolicy::isOverlay) == true)
+                    networks.firstOrNull { it.id == tv.trustedNetworkId }?.displayName?.let(Copy::keptAliveWhileOn)
+                else null,
             )
         }
         _state.update {
