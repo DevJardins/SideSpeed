@@ -116,14 +116,36 @@ class CompanionViewModelTest {
     }
 
     @Test
-    fun addOutsideTrustedSubnetOrBadAddressConnectsToNothing() = runTest(UnconfinedTestDispatcher()) {
+    fun addPublicOrBadAddressConnectsToNothing() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("8.8.8.8")
-        assertEquals(Copy.OUTSIDE_NETWORK, r.vm.state.value.error)
+        for (publicAddress in listOf("8.8.8.8", "172.32.0.1", "100.64.0.1", "127.0.0.1")) {
+            r.vm.addTvByAddress(publicAddress)
+            assertEquals(Copy.OUTSIDE_NETWORK, r.vm.state.value.error, publicAddress)
+        }
         r.vm.addTvByAddress("not-an-ip")
         assertEquals(Copy.BAD_ADDRESS, r.vm.state.value.error)
         assertTrue(r.fake.opened.isEmpty())
         assertTrue(r.store.tvs().isEmpty())
+    }
+
+    @Test
+    fun anyPrivateAddressCanBeAddedWhileOnATrustedNetwork() = runTest(UnconfinedTestDispatcher()) {
+        // 192.168.9.20 and 10.9.9.9 are private but outside the trusted 192.168.5.0/24 (a /22 or a second subnet).
+        for (address in listOf("192.168.9.20", "10.9.9.9", "172.16.4.4")) {
+            val r = rig(trusted = true)
+            r.vm.addTvByAddress(address)
+            assertEquals(setOf("$address:5555"), r.fake.opened.toSet(), address)
+            assertEquals(address, r.store.tvs().single().address)
+        }
+    }
+
+    @Test
+    fun privateAddressIsStillRefusedOffATrustedNetwork() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        r.vm.addTvByAddress("192.168.5.20")
+        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertTrue(r.fake.opened.isEmpty())
     }
 
     @Test

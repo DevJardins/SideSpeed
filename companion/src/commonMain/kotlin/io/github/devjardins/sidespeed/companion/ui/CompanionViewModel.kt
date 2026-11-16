@@ -1,9 +1,10 @@
 package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
+import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
-import io.github.devjardins.sidespeed.companion.net.Subnets
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
@@ -38,7 +39,7 @@ object Copy {
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
-    const val OUTSIDE_NETWORK = "That address isn't on your Trusted Network"
+    const val OUTSIDE_NETWORK = "That isn't a home network address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
 
     fun statusLabel(s: TvStatus): String = when (s) {
@@ -244,8 +245,8 @@ class CompanionViewModel(
     private suspend fun addTv(address: String) {
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
         val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
-        // Only addresses on the Trusted Network's own subnet are ever contacted.
-        if (!Subnets.containsHost(trusted.fingerprint.subnet, address)) return refresh(error = Copy.OUTSIDE_NETWORK)
+        // While on a Trusted Network any private (RFC 1918) address may be tried; public addresses never are.
+        if (Ipv4.parse(address)?.let { AddressPolicy.isPrivate(it) } != true) return refresh(error = Copy.OUTSIDE_NETWORK)
         _state.update { it.copy(busy = true, error = null) }
         val identity = try {
             connector.open(address).use { session ->
