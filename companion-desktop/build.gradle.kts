@@ -61,6 +61,7 @@ compose.desktop {
 tasks.test {
     providers.gradleProperty("sidespeed.live").orNull?.let {
         systemProperty("sidespeed.live", it)
+        providers.gradleProperty("sidespeed.live.ips").orNull?.let { ips -> systemProperty("sidespeed.live.ips", ips) }
         testLogging { showStandardStreams = true }
         outputs.upToDateWhen { false }
     }

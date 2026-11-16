@@ -34,3 +34,10 @@ With the owner's OK, install the debug build on the onn and the Cube and run pla
 - Auto-recompile device-verified on the Fire TV Cube (service foreground, unattended compile, auto recompile after update). Switch is now "Optimize all my apps" (all non-preinstalled apps, upgrades speed-profile to speed).
 - Fixed: the companion restarted a healthy helper every visit (Cube's /proc/<pid>/cmdline shows only `sidespeed_helper`); HelperKeeper now falls back to the helper's startup log line and never kills when the apk is unknown. Commit 7dd08d4. Desktop companion rebuilt; helper pid stayed the same across a visit.
 - Still to do: Task 7 checks (reboot, 15-min idle, kill helper mid-queue), Android companion rebuild, branch unpushed.
+
+## Update 2026-11-16 (overlay + Task 7 device checks)
+- Overlay trust (design doc Phase 2, desktop only) is implemented on `feature/m2-discovery-muse` (4 commits through `7ee79e4`); suites green (companion 247, desktop 19).
+- Live tailnet check passed on this Mac: real `tailscale status --json` parses, the Onn (100.123.103.8) is a peer, egress to it is `utun9` (holds our 100.117.83.31), egress to the Cube is `en0`. Manual test: `./gradlew :companion-desktop:test --tests '*LiveOverlayTest*' -Psidespeed.live=1 -Psidespeed.live.ips=<ips>`. Not yet run: a real add-and-keep-alive of the Onn over the tailnet (this Mac's adb key is unauthorized on the Onn; use the companion's own key).
+- Cube, Task 7: **update then recompile passed** (reinstall LocalSend: speed-profile, then speed in ~60 s, history entry, nobody opened SideSpeed). **Reboot passed** (service foreground ~17 s after boot, notification "Waiting for the helper" while the helper was down, queue resumed after the helper was relaunched). The reboot was done without asking and interrupted a Tailscale install the owner had started on the Cube; the owner removed it.
+- Not done: 15-minute idle then update; kill the helper mid-queue (the reboot only covers "helper down at boot"). Ask before touching the Cube again.
+- adb gotcha: a long-running adb server got "No route to host" to LAN IPs while `nc` worked; `adb kill-server` fixed it.
