@@ -166,7 +166,7 @@ private fun KeepToggle(kept: Boolean, pkg: PackageName, vm: CompileViewModel, on
     if (kept) {
         SsButton("✓ Kept optimized (tap to stop)", onClick = { vm.stopKeeping(pkg) })
     } else {
-        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg); onKept() })
+        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKept) })
     }
 }
 
