@@ -10,6 +10,18 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4
+      # Signs the release APKs when the secrets exist; forks and PRs without them get unsigned APKs.
+      - name: Decode release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.SIDESPEED_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "SIDESPEED_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "SIDESPEED_KEYSTORE_PASSWORD=${{ secrets.SIDESPEED_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "SIDESPEED_KEY_ALIAS=${{ secrets.SIDESPEED_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "SIDESPEED_KEY_PASSWORD=${{ secrets.SIDESPEED_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
       - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
       - uses: actions/upload-artifact@v4
         with:
