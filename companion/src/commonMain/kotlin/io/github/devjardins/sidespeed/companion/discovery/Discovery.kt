@@ -108,7 +108,8 @@ class Discovery(
             DiscoveryEvent.Done(
                 DiscoverySummary(
                     scanned = targets.toSet(),
-                    liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb },
+                    // TLS answers, but this companion can't use it: it counts as live, not as a find.
+                    liveNonAdb = results.count { (_, r) -> r.hostIsLive && r != ProbeResult.AdbAuthRequired && r != ProbeResult.AdbOpen },
                     truncated = truncated,
                 ),
             ),

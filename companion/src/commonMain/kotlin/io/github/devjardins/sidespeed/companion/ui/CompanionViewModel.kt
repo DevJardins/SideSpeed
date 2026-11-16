@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryEvent
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
 import io.github.devjardins.sidespeed.companion.discovery.DiscoverySummary
+import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
 import io.github.devjardins.sidespeed.companion.discovery.diagnose
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
@@ -42,6 +43,7 @@ object Copy {
     fun checkedAgo(diffMs: Long): String = "Checked ${(diffMs / 60_000).coerceAtLeast(0)} min ago"
 
     const val NO_TVS_FOUND = "No TVs found"
+    const val TLS_UNSUPPORTED = "needs TLS pairing, not supported yet"
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
     const val NOT_FIRE_TV_NOTE =
         "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts."
@@ -86,6 +88,8 @@ data class CompanionUiState(
     val error: String? = null,
     /** Addresses of TVs found by "Find TVs" that aren't saved yet. */
     val found: List<String> = emptyList(),
+    /** Addresses that answer ADB over TLS: listed, but not offered as addable TVs. */
+    val unsupported: List<String> = emptyList(),
     /** Addresses whose add is in progress: their rows show "Adding…" and ignore presses. */
     val adding: Set<String> = emptyList<String>().toSet(),
     /** Per-address add failures, shown on the row that was pressed. */
@@ -220,6 +224,7 @@ class CompanionViewModel(
                 scanning = true,
                 noneFound = false,
                 found = if (clearFound) emptyList() else it.found,
+                unsupported = if (clearFound) emptyList() else it.unsupported,
                 scanProgress = null,
                 scanStopped = false,
                 diagnosis = null,
@@ -262,7 +267,9 @@ class CompanionViewModel(
                 is DiscoveryEvent.Found -> {
                     val host = event.address.toString()
                     _state.update { s ->
-                        if (host in saved || host in s.found) s else s.copy(found = s.found + host)
+                        if (host in saved || host in s.found || host in s.unsupported) s
+                        else if (event.result == ProbeResult.AdbTls) s.copy(unsupported = s.unsupported + host)
+                        else s.copy(found = s.found + host)
                     }
                 }
                 is DiscoveryEvent.Done -> {

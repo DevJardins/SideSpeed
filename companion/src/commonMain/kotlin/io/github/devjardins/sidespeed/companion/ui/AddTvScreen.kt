@@ -62,5 +62,8 @@ fun AddTvScreen(
                 state.addErrors[host]?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
             }
         }
+        state.unsupported.forEach { host ->
+            SsText("$host  ${Copy.TLS_UNSUPPORTED}", Ss.caption)
+        }
     }
 }

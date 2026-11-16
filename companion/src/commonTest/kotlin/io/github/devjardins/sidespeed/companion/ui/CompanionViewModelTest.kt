@@ -469,6 +469,31 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun tlsHostIsListedAsUnsupportedNotAddable() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbTls)
+        script[ip("192.168.5.11")] = listOf(ProbeResult.AdbAuthRequired)
+        val vm = discoveryRig(FakeLan(script))
+        vm.findTvs()
+        runCurrent()
+        assertEquals(listOf("192.168.5.11"), vm.state.value.found)
+        assertEquals(listOf("192.168.5.10"), vm.state.value.unsupported)
+        assertEquals(Diagnosis.FOUND, vm.state.value.diagnosis)
+    }
+
+    @Test
+    fun tlsOnlySweepDiagnosesLiveHostsWithoutAdb() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbTls)
+        val vm = discoveryRig(FakeLan(script))
+        vm.findTvs()
+        runCurrent()
+        assertTrue(vm.state.value.found.isEmpty())
+        assertEquals(listOf("192.168.5.10"), vm.state.value.unsupported)
+        assertEquals(Diagnosis.NO_ADB_ON_LIVE_HOSTS, vm.state.value.diagnosis)
+    }
+
+    @Test
     fun disposeCancelsARunningScan() = runTest(UnconfinedTestDispatcher()) {
         val lan = GateLan(setOf("192.168.5.30"))
         val vm = discoveryRig(lan)
