@@ -114,6 +114,14 @@ class CompanionViewModel(
         }
     }
 
+    /** Sets the user's label for network [id]; a blank label clears it (the identifier is shown instead). */
+    fun renameTrustedNetwork(id: String, label: String) {
+        locked {
+            store.trustedNetworks().firstOrNull { it.id == id }?.let { store.saveTrustedNetwork(it.copy(name = label.trim())) }
+            refresh()
+        }
+    }
+
     /** Removes the network and the TVs saved under it: upkeep would never check them again. */
     fun removeTrustedNetwork(id: String) {
         locked {
@@ -248,7 +256,7 @@ class CompanionViewModel(
                 loaded = true,
                 firstRun = networks.isEmpty(),
                 currentNetwork = fp,
-                trustedNetworkName = trusted?.name,
+                trustedNetworkName = trusted?.displayName,
                 trustedNetworks = networks,
                 tvs = cards,
                 settings = store.settings(),

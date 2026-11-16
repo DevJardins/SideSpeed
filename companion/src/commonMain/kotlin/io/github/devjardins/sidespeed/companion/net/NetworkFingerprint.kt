@@ -14,4 +14,7 @@ data class NetworkFingerprint(
 )
 
 /** A network the user chose to trust. */
-data class TrustedNetwork(val id: String, val name: String, val fingerprint: NetworkFingerprint)
+data class TrustedNetwork(val id: String, val name: String, val fingerprint: NetworkFingerprint) {
+    /** The user's label, or the identifier when no label is set. */
+    val displayName: String get() = name.ifBlank { id }
+}

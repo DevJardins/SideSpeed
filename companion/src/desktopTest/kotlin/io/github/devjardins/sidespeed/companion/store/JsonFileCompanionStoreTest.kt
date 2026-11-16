@@ -55,6 +55,14 @@ class JsonFileCompanionStoreTest {
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".tmp") })
     }
 
+    @Test fun renamedAndClearedLabelsSurviveRestart() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTrustedNetwork(network.copy(name = "Cabin"))
+        s.saveTrustedNetwork(network.copy(id = "net2", name = ""))
+        val r = JsonFileCompanionStore(dir).trustedNetworks()
+        assertEquals(listOf("Cabin", "net2"), r.map { it.displayName })
+    }
+
     @Test fun isFireTvRoundTripsAndDefaultsToTrue() = runBlocking {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv.copy(isFireTv = false))

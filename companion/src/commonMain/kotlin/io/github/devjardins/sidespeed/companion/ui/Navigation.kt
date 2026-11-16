@@ -63,7 +63,7 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
-                    vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
+                    vm::renameTrustedNetwork, vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
                 )
                 Screen.ABOUT -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Header("About and licences", onBack = { page = Page.SETTINGS })

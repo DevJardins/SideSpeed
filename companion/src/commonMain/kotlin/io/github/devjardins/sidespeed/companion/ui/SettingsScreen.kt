@@ -8,6 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -20,6 +28,7 @@ fun SettingsScreen(
     desktop: Boolean,
     onSettings: (CompanionSettings) -> Unit,
     onAddNetwork: () -> Unit,
+    onRenameNetwork: (String, String) -> Unit,
     onRemoveNetwork: (String) -> Unit,
     onAbout: () -> Unit,
     onBack: () -> Unit,
@@ -33,9 +42,25 @@ fun SettingsScreen(
         SsCard {
             SsText("Trusted Networks", Ss.heading)
             state.trustedNetworks.forEach { n ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SsText(n.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    SsButton("Remove", { onRemoveNetwork(n.id) })
+                var editing by remember(n.id) { mutableStateOf(false) }
+                if (editing) {
+                    var label by remember(n.id) { mutableStateOf(n.name) }
+                    val focus = remember { FocusRequester() }
+                    LaunchedEffect(Unit) { focus.requestFocus() }
+                    val save = { onRenameNetwork(n.id, label); editing = false }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SsTextField(label, { label = it }, n.id, Modifier.focusRequester(focus), ImeAction.Done, save)
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SsButton("Save", save, primary = true)
+                            SsButton("Cancel", { editing = false })
+                        }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SsText(n.displayName, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        SsButton("Rename", { editing = true })
+                        SsButton("Remove", { onRemoveNetwork(n.id) })
+                    }
                 }
             }
             if (state.currentNetwork != null) SsButton("Add as Trusted Network", onAddNetwork, modifier = Modifier.padding(top = 4.dp))

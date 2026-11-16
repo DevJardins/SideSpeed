@@ -161,4 +161,30 @@ class CompanionViewModelTest {
         assertTrue(r.store.tvs().isEmpty())
         assertTrue(r.vm.state.value.tvs.isEmpty())
     }
+
+    @Test
+    fun renamingATrustedNetworkSavesTheTrimmedLabelAndRefreshesState() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.renameTrustedNetwork("home", "  Cabin  ")
+        assertEquals("Cabin", r.store.trustedNetworks().single().name)
+        assertEquals("Cabin", r.vm.state.value.trustedNetworkName)
+        assertEquals(home, r.store.trustedNetworks().single().fingerprint)
+    }
+
+    @Test
+    fun blankLabelFallsBackToTheIdentifierForDisplay() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.renameTrustedNetwork("home", "   ")
+        val n = r.store.trustedNetworks().single()
+        assertEquals("", n.name)
+        assertEquals("home", n.displayName)
+        assertEquals("home", r.vm.state.value.trustedNetworkName)
+    }
+
+    @Test
+    fun renamingAnUnknownNetworkChangesNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.renameTrustedNetwork("nope", "X")
+        assertEquals("Living room", r.store.trustedNetworks().single().name)
+    }
 }
