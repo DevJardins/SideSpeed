@@ -36,6 +36,9 @@ kotlin {
 
 dependencies {
     implementation(project(":companion"))
+    implementation(libs.jb.compose.runtime)
+    implementation(libs.jb.compose.foundation)
+    implementation(libs.jb.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.work.runtime)
     testImplementation(libs.junit)

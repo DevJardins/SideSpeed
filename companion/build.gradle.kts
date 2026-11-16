@@ -26,9 +26,9 @@ kotlin {
             api(project(":shared"))
             api(libs.kotlinx.coroutines.core)
             implementation(libs.kadb)
-            api(libs.jb.compose.runtime)
-            api(libs.jb.compose.foundation)
-            api(libs.jb.compose.ui)
+            implementation(libs.jb.compose.runtime)
+            implementation(libs.jb.compose.foundation)
+            implementation(libs.jb.compose.ui)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

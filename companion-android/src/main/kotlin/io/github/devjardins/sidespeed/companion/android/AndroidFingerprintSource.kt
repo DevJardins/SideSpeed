@@ -18,17 +18,25 @@ data class LinkData(
 )
 
 object FingerprintMapping {
-    /** Null when there is no IPv4 default route or no IPv4 address on the link. Gateway MAC is not read on Android. */
+    /**
+     * Null when there is no usable IPv4 default route, or when the gateway isn't inside one of the link's IPv4
+     * subnets (point-to-point links such as mobile data and tethers have none). Gateway MAC isn't read on Android.
+     */
     fun map(data: LinkData?): NetworkFingerprint? {
         data ?: return null
-        val gateway = data.defaultGateways.firstOrNull { it != null && Subnets.normalize("$it/32") != null } ?: return null
         val subnets = data.linkAddresses.mapNotNull { Subnets.normalize(it) }
-        // Prefer the IPv4 address whose subnet holds the gateway.
-        val subnet = subnets.firstOrNull { Subnets.containsHost(it, gateway) } ?: subnets.firstOrNull() ?: return null
-        // Scoped IPv6 link-local entries ("fe80::1%wlan0") change between joins; leave them out.
-        val dns = data.dnsServers.filter { '%' !in it }.toSet()
-        return NetworkFingerprint(gateway, subnet, dns)
+        for (gateway in data.defaultGateways) {
+            if (gateway == null || gateway == "0.0.0.0" || Subnets.normalize("$gateway/32") == null) continue
+            val subnet = subnets.firstOrNull { Subnets.containsHost(it, gateway) } ?: continue
+            // Scoped IPv6 link-local entries ("fe80::1%wlan0") change between joins; leave them out.
+            return NetworkFingerprint(gateway, subnet, data.dnsServers.filter { '%' !in it }.toSet())
+        }
+        return null
     }
+
+    /** "address/prefix" for an IPv4 host address; null for IPv6 or a missing address. */
+    fun ipv4Cidr(hostAddress: String?, prefixLength: Int): String? =
+        hostAddress?.takeIf { '.' in it && ':' !in it }?.let { "$it/$prefixLength" }
 }
 
 class AndroidFingerprintSource(context: Context) : FingerprintSource {
@@ -41,9 +49,7 @@ class AndroidFingerprintSource(context: Context) : FingerprintSource {
             lp ?: return null
             return LinkData(
                 defaultGateways = lp.routes.filter(RouteInfo::isDefaultRoute).map { it.gateway?.hostAddress },
-                linkAddresses = lp.linkAddresses.mapNotNull { la ->
-                    la.address.hostAddress?.takeIf { '.' in it }?.let { "$it/${la.prefixLength}" }
-                },
+                linkAddresses = lp.linkAddresses.mapNotNull { FingerprintMapping.ipv4Cidr(it.address.hostAddress, it.prefixLength) },
                 dnsServers = lp.dnsServers.mapNotNull { it.hostAddress },
             )
         }

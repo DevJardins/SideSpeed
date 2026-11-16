@@ -11,24 +11,27 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.lifecycleScope
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
-import kotlinx.coroutines.Dispatchers
 
 class MainActivity : ComponentActivity() {
     private lateinit var vm: CompanionViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val g = (application as CompanionApplication).graph
-        vm = CompanionViewModel(g.store, g.fingerprints, g.upkeep, g.connector, g.scanner, lifecycleScope)
+        vm = (application as CompanionApplication).graph.viewModel
+        // A recreated Activity (rotation) isn't "opening the app": don't check every TV again.
+        skipNextOpen = savedInstanceState != null
         setContent {
             val state by vm.state.collectAsState()
             val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
             // The notification permission is asked only when the user turns notifications on (Android 13+).
-            LaunchedEffect(state.settings.notifications) {
-                if (state.settings.notifications && Build.VERSION.SDK_INT >= 33) {
+            val previous = remember { arrayOf<Boolean?>(null) }
+            LaunchedEffect(state.settings.notifications, state.loaded) {
+                if (!state.loaded) return@LaunchedEffect
+                val was = previous[0]
+                previous[0] = state.settings.notifications
+                if (shouldAskForNotifications(was, state.settings.notifications) && Build.VERSION.SDK_INT >= 33) {
                     askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
@@ -45,6 +48,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        vm.onOpen()
+        if (skipNextOpen) skipNextOpen = false else vm.onOpen()
+    }
+
+    private var skipNextOpen = false
+
+    companion object {
+        /** Ask only when the user turns notifications on (off to on), never because they are already on. */
+        fun shouldAskForNotifications(was: Boolean?, now: Boolean): Boolean = was == false && now
     }
 }
