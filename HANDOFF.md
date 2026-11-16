@@ -29,3 +29,8 @@ With the owner's OK, install the debug build on the onn and the Cube and run pla
 - Merge/push `feature/m2-companion` (owner said leave as is for now).
 - Android TV support for the companion: owner's idea, parked; the TV app does background work itself.
 - Optional: desktop re-check when the window is reshown (owner chose the timer only).
+
+## Update 2026-11-16
+- Auto-recompile device-verified on the Fire TV Cube (service foreground, unattended compile, auto recompile after update). Switch is now "Optimize all my apps" (all non-preinstalled apps, upgrades speed-profile to speed).
+- Fixed: the companion restarted a healthy helper every visit (Cube's /proc/<pid>/cmdline shows only `sidespeed_helper`); HelperKeeper now falls back to the helper's startup log line and never kills when the apk is unknown. Commit 7dd08d4. Desktop companion rebuilt; helper pid stayed the same across a visit.
+- Still to do: Task 7 checks (reboot, 15-min idle, kill helper mid-queue), Android companion rebuild, branch unpushed.
