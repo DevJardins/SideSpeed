@@ -272,10 +272,8 @@ class CompanionViewModel(
                         else s.copy(found = s.found + host)
                     }
                 }
-                is DiscoveryEvent.Done -> {
-                    lastSummary = event.summary
-                    probedSinceFind = probedSinceFind + event.summary.scanned
-                }
+                is DiscoveryEvent.Probed -> probedSinceFind = probedSinceFind + event.address
+                is DiscoveryEvent.Done -> lastSummary = event.summary
             }
         }
         refresh()

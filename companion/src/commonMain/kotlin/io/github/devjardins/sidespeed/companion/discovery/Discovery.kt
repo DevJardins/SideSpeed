@@ -51,6 +51,12 @@ sealed interface DiscoveryEvent {
     /** An ADB-speaking host: a TV candidate for the Add screen. */
     data class Found(val address: Ipv4, val result: ProbeResult) : DiscoveryEvent
 
+    /**
+     * [address] is fully probed: it answered, or stayed silent through both passes. A stopped run's
+     * collector uses these to resume past them. A host silent after pass 1 only is not reported yet.
+     */
+    data class Probed(val address: Ipv4) : DiscoveryEvent
+
     /** The sweep ran to the end: how much of it answered. Never emitted when cancelled. */
     data class Done(val summary: DiscoverySummary) : DiscoveryEvent
 }
@@ -92,6 +98,7 @@ class Discovery(
             scanned++
             send(DiscoveryEvent.Progress(scanned, total))
             if (result.isAdb) send(DiscoveryEvent.Found(host, result))
+            if (result.hostIsLive) send(DiscoveryEvent.Probed(host))
         }.toMutableMap()
         val silent = targets.filter { results[it]?.hostIsLive == false }
         if (silent.isNotEmpty()) {
@@ -102,6 +109,7 @@ class Discovery(
                 scanned++
                 send(DiscoveryEvent.Progress(scanned, total))
                 if (result.isAdb) send(DiscoveryEvent.Found(host, result))
+                send(DiscoveryEvent.Probed(host))
             }
         }
         send(

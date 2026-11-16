@@ -411,6 +411,26 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun keepScanningAfterStopSkipsHostsAlreadyProbed() = runTest(UnconfinedTestDispatcher()) {
+        val lan = FakeLan(allRefused("192.168.5.0/24"), delayMs = 100)
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        // First wave (128 probes) has answered; the second wave is in flight when Stop is pressed.
+        advanceTimeBy(150)
+        val callsAtStop = lan.calls.size
+        val answered = Discovery.PARALLELISM
+        vm.cancelFind()
+        runCurrent()
+        assertTrue(vm.state.value.scanStopped)
+        vm.keepScanning()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        // The resume probes only the hosts that had not answered, not the whole subnet again.
+        assertEquals(callsAtStop + (callsAtStop - answered), lan.calls.size)
+    }
+
+    @Test
     fun completedScanWithoutAdbSetsDiagnosisAndHelp() = runTest(UnconfinedTestDispatcher()) {
         val vm = discoveryRig(FakeLan(allRefused("192.168.5.0/24")))
         vm.findTvs()
