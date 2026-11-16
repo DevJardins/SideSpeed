@@ -160,6 +160,11 @@ class CompanionViewModel(
         }
     }
 
+    /** Re-reads the store and network into [state], for callers that ran upkeep themselves (the tray timers). */
+    fun refreshNow() {
+        locked { refresh() }
+    }
+
     /** Runs [block] one at a time, so busy and error state can't be clobbered by overlapping actions. */
     private fun locked(block: suspend () -> Unit) {
         scope.launch { work.withLock { block() } }

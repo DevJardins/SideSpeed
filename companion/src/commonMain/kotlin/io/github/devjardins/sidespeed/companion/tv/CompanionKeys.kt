@@ -66,9 +66,9 @@ internal class FilePrivateKeyStore(private val file: File) : KadbPrivateKeyStore
         } else {
             f.setReadable(false, false)
             f.setWritable(false, false)
-            if (!f.setReadable(true, true) || !f.setWritable(true, true)) {
-                throw IOException("Cannot restrict $f to its owner")
-            }
+            // Windows reports false for directories and inherits the per-user app-data ACL anyway: best effort.
+            f.setReadable(true, true)
+            f.setWritable(true, true)
         }
     }
 
