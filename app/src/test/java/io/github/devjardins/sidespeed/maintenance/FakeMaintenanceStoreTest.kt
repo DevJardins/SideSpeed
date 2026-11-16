@@ -11,7 +11,7 @@ class FakeMaintenanceStoreTest {
     @Test fun defaultsAreOffAndEmpty() = runTest {
         val s: MaintenanceStore = FakeMaintenanceStore()
         assertTrue(s.maintained.first().isEmpty())
-        assertFalse(s.optimizeSideloaded.first())
+        assertEquals(AutoOptimizeMode.SELECTED, s.mode.first())
         assertTrue(s.history.first().isEmpty())
     }
 
@@ -25,12 +25,19 @@ class FakeMaintenanceStoreTest {
 }
 
 class ArmedTest {
-    @Test fun notArmedByDefault() = runTest { assertFalse(isArmed(FakeMaintenanceStore())) }
+    @Test fun selectedModeIsArmedOnlyByTickedApps() {
+        assertFalse(isArmed(AutoOptimizeMode.SELECTED, emptySet()))
+        assertTrue(isArmed(AutoOptimizeMode.SELECTED, setOf("a.b")))
+    }
 
-    @Test fun armedByTickedAppOrSwitch() = runTest {
-        val ticked = FakeMaintenanceStore().apply { setMaintained("a.b", true) }
-        val switched = FakeMaintenanceStore().apply { setOptimizeSideloaded(true) }
-        assertTrue(isArmed(ticked))
-        assertTrue(isArmed(switched))
+    @Test fun allAndSideloadedModesAreArmedEvenWithNothingTicked() {
+        assertTrue(isArmed(AutoOptimizeMode.ALL, emptySet()))
+        assertTrue(isArmed(AutoOptimizeMode.SIDELOADED, emptySet()))
+    }
+
+    @Test fun storeOverloadReadsModeAndTicks() = runTest {
+        assertFalse(isArmed(FakeMaintenanceStore()))
+        assertTrue(isArmed(FakeMaintenanceStore().apply { setMaintained("a.b", true) }))
+        assertTrue(isArmed(FakeMaintenanceStore().apply { setMode(AutoOptimizeMode.SIDELOADED) }))
     }
 }

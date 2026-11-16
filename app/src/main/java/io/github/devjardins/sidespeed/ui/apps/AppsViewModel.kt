@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.apps.sortForPicker
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.maintenance.JobPhase
+import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.status.BadgeSource
 import io.github.devjardins.sidespeed.status.StatusBadge
@@ -106,4 +107,22 @@ class AppsViewModel(
 
     /** Restores a selected app after process/config restore (package may no longer be installed). */
     fun manualEntryApp(pkg: String): AppEntry? = (manualEntry(pkg) as? ManualResult.Valid)?.app
+}
+
+class AutoOptimizeOption(val title: String, val description: String)
+
+/** Plain-language label and explanation for each auto-optimize mode. */
+fun autoOptimizeOption(mode: AutoOptimizeMode): AutoOptimizeOption = when (mode) {
+    AutoOptimizeMode.ALL -> AutoOptimizeOption(
+        "All apps",
+        "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone.",
+    )
+    AutoOptimizeMode.SIDELOADED -> AutoOptimizeOption(
+        "Sideloaded only",
+        "Only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.",
+    )
+    AutoOptimizeMode.SELECTED -> AutoOptimizeOption(
+        "Selected apps",
+        "Only the apps you pick. Open an app and choose \u201cKeep this app optimized\u201d to add it.",
+    )
 }

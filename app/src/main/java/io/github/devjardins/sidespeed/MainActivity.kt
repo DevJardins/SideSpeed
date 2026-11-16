@@ -77,11 +77,12 @@ class MainActivity : ComponentActivity() {
                         icon = icons,
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         history = (application as SideSpeedApp).container.maintenanceStore.history,
-                        optimizeSideloaded = (application as SideSpeedApp).container.maintenanceStore.optimizeSideloaded,
-                        onOptimizeSideloaded = { on ->
+                        autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
+                        onAutoOptimizeMode = { chosen ->
                             lifecycleScope.launch {
-                                (application as SideSpeedApp).container.maintenanceStore.setOptimizeSideloaded(on)
-                                if (on) MaintenanceService.start(applicationContext)
+                                val store = (application as SideSpeedApp).container.maintenanceStore
+                                store.setMode(chosen)
+                                if (isArmed(store)) MaintenanceService.start(applicationContext)
                             }
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
