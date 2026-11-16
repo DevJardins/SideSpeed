@@ -1,9 +1,12 @@
 package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryEvent
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
+import io.github.devjardins.sidespeed.companion.discovery.DiscoverySummary
+import io.github.devjardins.sidespeed.companion.discovery.diagnose
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
@@ -97,6 +100,8 @@ data class CompanionUiState(
     val scanProgress: String? = null,
     /** The latest scan was stopped before it finished: the Add screen offers "Keep scanning". */
     val scanStopped: Boolean = false,
+    /** What the latest finished or stopped scan concluded; null before the first one. */
+    val diagnosis: Diagnosis? = null,
 )
 
 class CompanionViewModel(
@@ -113,6 +118,7 @@ class CompanionViewModel(
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
     private val work = Mutex()
     private var findJob: Job? = null
+    private var lastSummary = DiscoverySummary()
 
     init {
         scope.launch { refresh() }
@@ -214,10 +220,12 @@ class CompanionViewModel(
                 found = if (clearFound) emptyList() else it.found,
                 scanProgress = null,
                 scanStopped = false,
+                diagnosis = null,
             )
         }
         if (!accepted) return
         findJob?.cancel()
+        lastSummary = DiscoverySummary()
         findJob = scope.launch {
             var cancelled = false
             try {
@@ -226,7 +234,13 @@ class CompanionViewModel(
                 cancelled = true
                 throw e
             } finally {
-                _state.update { it.copy(scanning = false, scanStopped = cancelled) }
+                _state.update {
+                    it.copy(
+                        scanning = false,
+                        scanStopped = cancelled,
+                        diagnosis = diagnose(lastSummary, found = it.found.isNotEmpty(), complete = !cancelled),
+                    )
+                }
             }
         }
     }
@@ -245,6 +259,7 @@ class CompanionViewModel(
                         if (host in saved || host in s.found) s else s.copy(found = s.found + host)
                     }
                 }
+                is DiscoveryEvent.Done -> lastSummary = event.summary
             }
         }
         refresh()

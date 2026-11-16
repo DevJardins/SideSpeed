@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.discovery.helpFor
 
 @Composable
 fun AddTvScreen(
@@ -46,6 +47,7 @@ fun AddTvScreen(
         } else if (state.scanStopped) {
             SsButton("Keep scanning", onKeepScanning)
         }
+        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
         if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
         state.found.forEach { host ->
             val adding = host in state.adding

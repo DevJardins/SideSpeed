@@ -1,11 +1,13 @@
 package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.companion.discovery.AdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.FakeLan
 import io.github.devjardins.sidespeed.companion.discovery.HostSource
 import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
+import io.github.devjardins.sidespeed.companion.discovery.helpFor
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
@@ -369,6 +371,41 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(setOf("192.168.5.10", "192.168.5.11", "192.168.5.12"), vm.state.value.found.toSet())
         assertEquals(false, vm.state.value.scanning)
+    }
+
+    @Test
+    fun completedScanWithoutAdbSetsDiagnosisAndHelp() = runTest(UnconfinedTestDispatcher()) {
+        val vm = discoveryRig(FakeLan(allRefused("192.168.5.0/24")))
+        vm.findTvs()
+        runCurrent()
+        assertEquals(Diagnosis.NO_ADB_ON_LIVE_HOSTS, vm.state.value.diagnosis)
+        assertTrue(
+            helpFor(vm.state.value.diagnosis!!).endsWith("or type the address shown in SideSpeed on the TV"),
+        )
+    }
+
+    @Test
+    fun cancelledScanSetsPartialDiagnosis() = runTest(UnconfinedTestDispatcher()) {
+        val lan = GateLan(setOf("192.168.5.30"))
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        vm.cancelFind()
+        runCurrent()
+        assertEquals(Diagnosis.PARTIAL, vm.state.value.diagnosis)
+    }
+
+    @Test
+    fun cancelledScanWithFindsSetsFoundDiagnosis() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbAuthRequired)
+        script[ip("192.168.5.12")] = listOf(ProbeResult.Timeout, ProbeResult.AdbOpen)
+        val vm = discoveryRig(FakeLan(script, delayMs = 100))
+        vm.findTvs()
+        advanceTimeBy(150)
+        vm.cancelFind()
+        runCurrent()
+        assertEquals(setOf("192.168.5.10"), vm.state.value.found.toSet())
+        assertEquals(Diagnosis.FOUND, vm.state.value.diagnosis)
     }
 
     @Test

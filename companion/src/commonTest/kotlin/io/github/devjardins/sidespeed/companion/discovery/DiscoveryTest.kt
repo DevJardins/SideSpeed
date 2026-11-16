@@ -111,6 +111,31 @@ class DiscoveryTest {
     }
 
     @Test
+    fun doneReportsLiveNonAdbCount() = runTest {
+        val lan = FakeLan(
+            mapOf(
+                ip("192.168.1.1") to listOf(ProbeResult.AdbAuthRequired),
+                ip("192.168.1.2") to listOf(ProbeResult.Refused),
+            ),
+        )
+        val events = sweepDiscovery(lan).run(plan("192.168.1.0/30")).toList()
+        val done = events.filterIsInstance<DiscoveryEvent.Done>()
+        assertEquals(1, done.size)
+        assertEquals(DiscoverySummary(liveNonAdb = 1, truncated = false), done.single().summary)
+    }
+
+    @Test
+    fun doneReportsTruncationWhenTheLimitCutsTheSweepShort() = runTest {
+        val lan = FakeLan()
+        val events = sweepDiscovery(lan)
+            .run(plan("192.168.1.0/24").copy(limit = 1))
+            .toList()
+        val done = events.filterIsInstance<DiscoveryEvent.Done>()
+        assertEquals(1, done.size)
+        assertEquals(true, done.single().summary.truncated)
+    }
+
+    @Test
     fun cancellationStopsTheSweep() = runTest {
         val lan = FakeLan(delayMs = 1000)
         val events = mutableListOf<DiscoveryEvent>()

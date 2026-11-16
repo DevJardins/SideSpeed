@@ -27,7 +27,10 @@ data class DiscoveryPlan(
     val limit: Int = SweepOrder.DEFAULT_LIMIT,
 )
 
-/** One way of listing hosts to probe; the sweep source is the only one so far. */
+/**
+ * One way of listing hosts to probe; the sweep source is the only one so far. Return the full ordered
+ * list: [Discovery] applies [DiscoveryPlan.limit] itself, so it can report when the cap cuts the sweep short.
+ */
 fun interface HostSource {
     fun hosts(plan: DiscoveryPlan): List<Ipv4>
 }
@@ -35,7 +38,7 @@ fun interface HostSource {
 /** Hosts in sweep order: own /24, gateway /24, then outward (see [SweepOrder]). */
 object SweepSource : HostSource {
     override fun hosts(plan: DiscoveryPlan): List<Ipv4> =
-        SweepOrder.of(plan.subnet, plan.own, plan.gateway, plan.limit)
+        SweepOrder.of(plan.subnet, plan.own, plan.gateway, limit = Int.MAX_VALUE)
 }
 
 /** What a run reports as it goes; the flow completing is the end of the run. */
@@ -45,6 +48,9 @@ sealed interface DiscoveryEvent {
 
     /** An ADB-speaking host: a TV candidate for the Add screen. */
     data class Found(val address: Ipv4, val result: ProbeResult) : DiscoveryEvent
+
+    /** The sweep ran to the end: how much of it answered. Never emitted when cancelled. */
+    data class Done(val summary: DiscoverySummary) : DiscoveryEvent
 }
 
 /**
@@ -65,33 +71,37 @@ class Discovery(
 ) {
     fun run(plan: DiscoveryPlan): Flow<DiscoveryEvent> = flow {
         if (plan.port != 5555 || !AddressPolicy.sweepable(plan.subnet)) return@flow
-        val targets = sources.flatMap { it.hosts(plan) }
+        val candidates = sources.flatMap { it.hosts(plan) }
             .distinct()
             .filter { it != plan.own && it != plan.subnet.network && it != plan.subnet.broadcast }
             .filter { AddressPolicy.isPrivate(it) }
-            .take(plan.limit)
+        val targets = candidates.take(plan.limit)
         if (targets.isEmpty()) return@flow
+        val truncated = candidates.size > targets.size
         val inDispatcher = dispatcher
-        if (inDispatcher != null) withContext(inDispatcher) { sweep(plan, targets) } else sweep(plan, targets)
+        if (inDispatcher != null) withContext(inDispatcher) { sweep(plan, targets, truncated) } else sweep(plan, targets, truncated)
     }
 
-    private suspend fun FlowCollector<DiscoveryEvent>.sweep(plan: DiscoveryPlan, targets: List<Ipv4>) {
+    private suspend fun FlowCollector<DiscoveryEvent>.sweep(plan: DiscoveryPlan, targets: List<Ipv4>, truncated: Boolean) {
         var scanned = 0
         var total = targets.size
-        val first = pass(plan, targets, plan.firstPassTimeoutMs) { host, result ->
+        val results = pass(plan, targets, plan.firstPassTimeoutMs) { host, result ->
             scanned++
             emit(DiscoveryEvent.Progress(scanned, total))
             if (result.isAdb) emit(DiscoveryEvent.Found(host, result))
+        }.toMutableMap()
+        val silent = targets.filter { results[it]?.hostIsLive == false }
+        if (silent.isNotEmpty()) {
+            currentCoroutineContext().ensureActive()
+            total += silent.size
+            pass(plan, silent, plan.secondPassTimeoutMs) { host, result ->
+                results[host] = result
+                scanned++
+                emit(DiscoveryEvent.Progress(scanned, total))
+                if (result.isAdb) emit(DiscoveryEvent.Found(host, result))
+            }
         }
-        val silent = targets.filter { first[it]?.hostIsLive == false }
-        if (silent.isEmpty()) return
-        currentCoroutineContext().ensureActive()
-        total += silent.size
-        pass(plan, silent, plan.secondPassTimeoutMs) { host, result ->
-            scanned++
-            emit(DiscoveryEvent.Progress(scanned, total))
-            if (result.isAdb) emit(DiscoveryEvent.Found(host, result))
-        }
+        emit(DiscoveryEvent.Done(DiscoverySummary(liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb }, truncated = truncated)))
     }
 
     private suspend fun FlowCollector<DiscoveryEvent>.pass(
