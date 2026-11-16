@@ -34,6 +34,7 @@ fun HomeScreen(
     onRestart: (String?) -> Unit,
     onAdd: () -> Unit,
     onSettings: () -> Unit,
+    onRemove: (String) -> Unit = {},
 ) {
     val now by produceState(System.currentTimeMillis()) {
         while (true) { delay(15_000); value = System.currentTimeMillis() }
@@ -41,6 +42,8 @@ fun HomeScreen(
     // The TV whose restart is in flight, and the one that just finished restarting (shown briefly).
     var restartingId by remember { mutableStateOf<String?>(null) }
     var restartedId by remember { mutableStateOf<String?>(null) }
+    // The TV whose Remove is waiting for a second press, so one stray tap never deletes it.
+    var confirmRemoveId by remember { mutableStateOf<String?>(null) }
     val latest by rememberUpdatedState(state)
     LaunchedEffect(restartingId) {
         val id = restartingId ?: return@LaunchedEffect
@@ -100,6 +103,15 @@ fun HomeScreen(
                             SsButton("Restart now", { restartingId = tv.id; onRestart(tv.id) }, enabled = restartingId == null)
                             if (restarting) SsSpinner()
                             if (restartedId == tv.id) SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (confirmRemoveId == tv.id) {
+                                SsText("Remove ${tv.name}?", Ss.caption, Modifier.weight(1f))
+                                SsButton("Remove", { confirmRemoveId = null; onRemove(tv.id) })
+                                SsButton("Cancel", { confirmRemoveId = null })
+                            } else {
+                                SsButton("Remove TV", { confirmRemoveId = tv.id }, enabled = !restarting)
+                            }
                         }
                     }
                 }

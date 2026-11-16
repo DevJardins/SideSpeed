@@ -190,6 +190,18 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun removingOneTvKeepsTheOtherTvsAndTheNetwork() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        r.store.saveTv(r.store.tv("tv-1").copy(id = "tv-2", serial = "OTHER", address = "192.168.5.21"))
+        r.vm.refreshNow()
+        r.vm.removeTv("tv-1")
+        assertEquals(listOf("tv-2"), r.store.tvs().map { it.id })
+        assertEquals(listOf("tv-2"), r.vm.state.value.tvs.map { it.id })
+        assertEquals(1, r.store.trustedNetworks().size)
+    }
+
+    @Test
     fun removingTrustedNetworkRemovesItsTvsAndRetrustKeepsName() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         r.vm.addTvByAddress("192.168.5.20")

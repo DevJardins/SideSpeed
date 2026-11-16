@@ -67,7 +67,7 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.LOADING -> Unit
                 Screen.FIRST_RUN ->
                     FirstRunScreen(state.currentNetwork, { vm.trustCurrentNetwork("Trusted Network 1") }, { dismissedFirstRun = true })
-                Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS })
+                Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS }, vm::removeTv)
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
                     AddTvScreen(state, vm::findTvs, vm::addTvByAddress, vm::cancelFind, vm::keepScanning) { page = Page.HOME }
