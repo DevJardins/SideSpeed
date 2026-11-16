@@ -36,8 +36,12 @@ class HelperKeeper(
 
         val pids = parsePids(session.run(TvCommands.PIDOF))
         val running = pids.isNotEmpty()
-        // Read every pid's cmdline (no short-circuit): any stale helper means a restart.
-        val stale = pids.map { pid -> helperApk(session.run(TvCommands.cmdline(pid))) != apk }.any { it }
+        // Read every pid (no short-circuit): any helper known to run from another install means a restart.
+        // An apk that cannot be determined is never treated as stale: killing a healthy helper cuts compiles short.
+        val stale = pids.map { pid ->
+            val running = runningApk(session, pid)
+            running != null && running != apk
+        }.any { it }
 
         if (running && !stale) return VisitResult.Running
 
@@ -72,6 +76,13 @@ class HelperKeeper(
         val pids = tokens.map { it.toIntOrNull() ?: return emptyList() }
         return if (pids.all { it > 0 }) pids else emptyList()
     }
+
+    private suspend fun runningApk(session: TvSession, pid: Int): String? =
+        helperApk(session.run(TvCommands.cmdline(pid))) ?: startupApk(session.run(TvCommands.startupLine(pid)))
+
+    private fun startupApk(lines: String): String? =
+        lines.lines().lastOrNull { it.contains(" apk=") }
+            ?.substringAfter(" apk=")?.substringBefore(' ')?.takeIf { it.isNotEmpty() }
 
     private fun helperApk(cmdline: String): String? =
         cmdline.split('\u0000').firstOrNull { it.startsWith("--apk=") }?.removePrefix("--apk=")

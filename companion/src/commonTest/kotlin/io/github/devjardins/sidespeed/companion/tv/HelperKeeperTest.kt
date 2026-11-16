@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 class HelperKeeperTest {
     private val apk = "/data/app/x/base.apk"
-    private val allowed = Regex("cat /proc/\\d+/cmdline")
+    private val allowed = Regex("cat /proc/\\d+/cmdline|grep .* /data/local/tmp/sidespeed_helper\\.log")
     private val constants = setOf(
         TvCommands.SERIAL, TvCommands.PKG_PATH, TvCommands.PIDOF, TvCommands.KILL, TvCommands.LAUNCH,
         TvCommands.MANUFACTURER, TvCommands.MODEL, TvCommands.OS_VERSION,
@@ -84,10 +84,36 @@ class HelperKeeperTest {
         assertOnlyFixed(s)
     }
 
-    @Test fun missingApkArgIsStale() = runTest {
-        val s = base("123", mapOf(TvCommands.cmdline(123) to "app_process\u0000--x"))
+    private fun startup(pid: Int, path: String) =
+        "2026-11-16 09:21:54.790 [pid $pid] startup: uid=2000 pid=$pid apk=$path size=1 mtime=2"
+
+    @Test fun bareCmdlineWithMatchingLogLineIsRunning() = runTest {
+        val s = base("123", mapOf(
+            TvCommands.cmdline(123) to "sidespeed_helper",
+            TvCommands.startupLine(123) to startup(123, apk),
+        ))
+        assertEquals(VisitResult.Running, HelperKeeper().visit(s, "SER1"))
+        assertTrue(TvCommands.KILL !in s.sent && TvCommands.LAUNCH !in s.sent)
+        assertOnlyFixed(s)
+    }
+
+    @Test fun bareCmdlineWithOldApkInLogIsRestarted() = runTest {
+        val s = base("123", mapOf(
+            TvCommands.cmdline(123) to "sidespeed_helper",
+            TvCommands.startupLine(123) to startup(123, "/data/app/OLD/base.apk"),
+        ))
         val t = Appearing(s, "124", after = 1)
         assertEquals(VisitResult.Restarted, HelperKeeper().visit(t, "SER1"))
+        assertOnlyFixed(s)
+    }
+
+    @Test fun unknownApkIsNotKilled() = runTest {
+        val s = base("123", mapOf(
+            TvCommands.cmdline(123) to "app_process\u0000--x",
+            TvCommands.startupLine(123) to "",
+        ))
+        assertEquals(VisitResult.Running, HelperKeeper().visit(s, "SER1"))
+        assertTrue(TvCommands.KILL !in s.sent && TvCommands.LAUNCH !in s.sent)
         assertOnlyFixed(s)
     }
 
@@ -139,6 +165,7 @@ class HelperKeeperTest {
         assertEquals("pm path io.github.devjardins.sidespeed", TvCommands.PKG_PATH)
         assertEquals("pidof sidespeed_helper", TvCommands.PIDOF)
         assertEquals("kill \$(pidof sidespeed_helper)", TvCommands.KILL)
+        assertEquals("grep \"\\[pid 123\\] startup: uid\" /data/local/tmp/sidespeed_helper.log", TvCommands.startupLine(123))
         assertEquals("cat /proc/123/cmdline", TvCommands.cmdline(123))
         assertEquals(HelperLaunch.command(), TvCommands.LAUNCH)
         assertEquals("getprop ro.product.manufacturer", TvCommands.MANUFACTURER)
