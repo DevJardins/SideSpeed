@@ -141,11 +141,15 @@ class OverlayViewModelTest {
         assertEquals("home", r.store.tvs().single().trustedNetworkId)
     }
 
-    @Test fun aSharedPeerOrAClosedRouteIsNotBound() = runTest(UnconfinedTestDispatcher()) {
-        val shared = rig(snapshot = snap(peer("nCUBE", "100.101.1.1", shared = true)))
-        shared.vm.addTvByAddress("100.101.1.1")
-        assertEquals("home", shared.store.tvs().single().trustedNetworkId)
+    @Test fun aSharedInPeerIsRefusedEvenAtHome() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(snapshot = snap(peer("nCUBE", "100.101.1.1", shared = true)))
+        r.vm.addTvByAddress("100.101.1.1")
+        assertTrue(r.store.tvs().isEmpty())
+        assertEquals(Copy.SHARED_PEER, r.vm.state.value.error)
+        assertTrue(r.fake.opened.isEmpty())
+    }
 
+    @Test fun aClosedRouteAwayFromHomeIsNotBound() = runTest(UnconfinedTestDispatcher()) {
         val routed = rig(fp = hotel, lan = false)
         routed.egress = { EgressRoute("en0", listOf(ip("10.9.9.20"))) }
         routed.vm.addTvByAddress("100.101.1.1")

@@ -56,6 +56,7 @@ object Copy {
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
     const val NO_OVERLAY = "Tailscale isn't running with a network connection, so there is no tailnet to trust"
+    const val SHARED_PEER = "That device is shared in from another tailnet, so it can't be added"
     const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
@@ -401,6 +402,10 @@ class CompanionViewModel(
         val ip = Ipv4.parse(address)
         // A tailnet peer's address binds the TV to that peer on the trusted tailnet, which also works away from home.
         val binding = ip?.let { overlayGate?.bindingFor(it, store.trustedOverlays()) }
+        // A node shared in from another tailnet is never trusted, not even through the home network (design section 6).
+        if (binding == null && ip != null && AddressPolicy.isOverlay(ip) &&
+            overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
+        ) return refresh(error = Copy.SHARED_PEER)
         val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR) else null
         // While on a Trusted Network any private (RFC 1918) or overlay (100.64.0.0/10) address may be tried; public addresses never are.
         if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
