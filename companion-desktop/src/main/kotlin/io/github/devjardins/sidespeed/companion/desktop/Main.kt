@@ -30,7 +30,7 @@ import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
-import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
+import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
 import io.github.devjardins.sidespeed.companion.upkeep.overlayJoined
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
@@ -69,7 +69,8 @@ fun main() {
     val store = JsonFileCompanionStore(File(appData, "store"))
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
-    val scanner = TcpScanner()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val scanner = ProbeScanner(SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
     val tailscale = TailscaleCli()
     // Desktop only (design decision D1): the tailnet's administrators are trusted to reach the TV.
     val overlay = OverlayAccess({ tailscale.statusJson()?.let(TailscaleStatus::snapshot) }, DesktopEgressCheck())

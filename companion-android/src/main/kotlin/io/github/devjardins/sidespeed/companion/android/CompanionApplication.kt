@@ -13,7 +13,7 @@ import io.github.devjardins.sidespeed.companion.tv.AndroidDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
 import io.github.devjardins.sidespeed.companion.upkeep.Scanner
-import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
+import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
@@ -33,7 +33,8 @@ class Graph(app: Application, scope: CoroutineScope) {
     val store = JsonFileCompanionStore(java.io.File(app.filesDir, "companion"))
     val fingerprints = AndroidFingerprintSource(app)
     val connector = KadbTvConnector(AndroidDirs.keyDir(app))
-    val scanner: Scanner = TcpScanner()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val scanner: Scanner = ProbeScanner(SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
     val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
     val notifier = Notifier(app)
 
