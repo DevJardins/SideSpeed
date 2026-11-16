@@ -16,7 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AddTvScreen(state: CompanionUiState, onFind: () -> Unit, onAddAddress: (String) -> Unit, onBack: () -> Unit) {
+fun AddTvScreen(
+    state: CompanionUiState,
+    onFind: () -> Unit,
+    onAddAddress: (String) -> Unit,
+    onStop: () -> Unit,
+    onKeepScanning: () -> Unit,
+    onBack: () -> Unit,
+) {
     var address by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Header("Add a TV", onBack = onBack)
@@ -32,6 +39,12 @@ fun AddTvScreen(state: CompanionUiState, onFind: () -> Unit, onAddAddress: (Stri
                 modifier = Modifier.defaultMinSize(minWidth = 110.dp),
                 content = if (state.scanning) ({ SsSpinner() }) else null,
             )
+        }
+        state.scanProgress?.let { SsText(it, Ss.caption) }
+        if (state.scanning) {
+            SsButton("Stop", onStop)
+        } else if (state.scanStopped) {
+            SsButton("Keep scanning", onKeepScanning)
         }
         if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
         state.found.forEach { host ->

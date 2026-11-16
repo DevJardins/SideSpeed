@@ -4,6 +4,9 @@ import android.app.Application
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
+import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.SweepSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.AndroidDirs
@@ -16,6 +19,7 @@ import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
@@ -33,8 +37,11 @@ class Graph(app: Application, scope: CoroutineScope) {
     val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
     val notifier = Notifier(app)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val discovery = Discovery(listOf(SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+
     /** One view model for the whole process: rotating or recreating the Activity doesn't restart it. */
-    val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, scanner, scope)
+    val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
 }
 
 class CompanionApplication : Application() {

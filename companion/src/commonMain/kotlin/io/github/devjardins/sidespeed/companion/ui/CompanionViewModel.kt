@@ -1,7 +1,11 @@
 package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.DiscoveryEvent
+import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
+import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
@@ -16,13 +20,15 @@ import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.open
-import io.github.devjardins.sidespeed.companion.upkeep.Scanner
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -87,6 +93,10 @@ data class CompanionUiState(
     val scanning: Boolean = false,
     /** The last scan finished with no new TVs. */
     val noneFound: Boolean = false,
+    /** "Scanned N of M" for the running or latest scan; null before the first one. */
+    val scanProgress: String? = null,
+    /** The latest scan was stopped before it finished: the Add screen offers "Keep scanning". */
+    val scanStopped: Boolean = false,
 )
 
 class CompanionViewModel(
@@ -94,7 +104,7 @@ class CompanionViewModel(
     private val fingerprints: FingerprintSource,
     private val upkeep: Upkeep,
     private val connector: TvConnector,
-    private val scanner: Scanner,
+    private val discovery: Discovery,
     private val scope: CoroutineScope,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { "tv-" + clock() + "-" + (counter++) },
@@ -102,6 +112,7 @@ class CompanionViewModel(
     private val _state = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
     private val work = Mutex()
+    private var findJob: Job? = null
 
     init {
         scope.launch { refresh() }
@@ -173,29 +184,71 @@ class CompanionViewModel(
         _state.update { it.copy(addedAddress = null) }
     }
 
-    fun findTvs() {
+    /**
+     * Sweeps the Trusted Network for TVs, streaming results as they arrive. Runs in its own job outside the
+     * [work] mutex, so adding a TV or running upkeep never waits for the sweep. A press while scanning, or a
+     * second [keepScanning], does nothing. Clears the previous results first; [keepScanning] keeps them.
+     */
+    fun findTvs() = startFind(clearFound = true)
+
+    /** Re-sweeps without clearing what the stopped scan already found. */
+    fun keepScanning() = startFind(clearFound = false)
+
+    /** Stops the running sweep, keeping whatever it streamed so far. */
+    fun cancelFind() {
+        findJob?.cancel()
+    }
+
+    /** The Add screen went away: a running sweep stops with it. */
+    fun onDispose() {
+        findJob?.cancel()
+    }
+
+    private fun startFind(clearFound: Boolean) {
         var accepted = false
         _state.update {
             accepted = !it.scanning
-            if (accepted) it.copy(scanning = true, noneFound = false) else it
+            if (!accepted) it else it.copy(
+                scanning = true,
+                noneFound = false,
+                found = if (clearFound) emptyList() else it.found,
+                scanProgress = null,
+                scanStopped = false,
+            )
         }
         if (!accepted) return
-        locked {
+        findJob?.cancel()
+        findJob = scope.launch {
+            var cancelled = false
             try {
-                val trusted = currentTrusted() ?: return@locked refresh(error = Copy.NOT_TRUSTED_ERROR)
-                _state.update { it.copy(busy = true, error = null) }
-                try {
-                    val saved = store.tvs().map { it.address }.toSet()
-                    val hosts = scanner.scan(trusted.fingerprint.subnet, TvConnector.DEFAULT_PORT).filter { it !in saved }
-                    refresh()
-                    _state.update { it.copy(found = hosts, noneFound = hosts.isEmpty()) }
-                } finally {
-                    _state.update { it.copy(busy = false) }
-                }
+                collectFind()
+            } catch (e: CancellationException) {
+                cancelled = true
+                throw e
             } finally {
-                _state.update { it.copy(scanning = false) }
+                _state.update { it.copy(scanning = false, scanStopped = cancelled) }
             }
         }
+    }
+
+    private suspend fun collectFind() {
+        val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        val saved = store.tvs().map { it.address }.toSet()
+        discovery.run(DiscoveryPlan(subnet, gateway = Ipv4.parse(trusted.fingerprint.gatewayIp))).collect { event ->
+            when (event) {
+                is DiscoveryEvent.Progress ->
+                    _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }
+                is DiscoveryEvent.Found -> {
+                    val host = event.address.toString()
+                    _state.update { s ->
+                        if (host in saved || host in s.found) s else s.copy(found = s.found + host)
+                    }
+                }
+            }
+        }
+        refresh()
+        _state.update { it.copy(noneFound = it.found.isEmpty()) }
     }
 
     /** Checks only [tvId] (or every TV on this Trusted Network when null) and clears its "waiting for Allow" skip. */

@@ -17,6 +17,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
+import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.SweepSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
@@ -30,6 +33,7 @@ import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -63,7 +67,9 @@ fun main() {
     val scanner = TcpScanner()
     val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val vm = CompanionViewModel(store, fingerprints, upkeep, connector, scanner, scope)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val discovery = Discovery(listOf(SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+    val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
 
     application {
         val tray = rememberTrayState()

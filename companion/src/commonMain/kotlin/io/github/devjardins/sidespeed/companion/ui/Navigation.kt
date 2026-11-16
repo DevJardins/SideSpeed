@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +68,10 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.FIRST_RUN ->
                     FirstRunScreen(state.currentNetwork, { vm.trustCurrentNetwork("Trusted Network 1") }, { dismissedFirstRun = true })
                 Screen.HOME -> HomeScreen(state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS })
-                Screen.ADD -> AddTvScreen(state, vm::findTvs, vm::addTvByAddress) { page = Page.HOME }
+                Screen.ADD -> {
+                    DisposableEffect(Unit) { onDispose { vm.onDispose() } }
+                    AddTvScreen(state, vm::findTvs, vm::addTvByAddress, vm::cancelFind, vm::keepScanning) { page = Page.HOME }
+                }
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },

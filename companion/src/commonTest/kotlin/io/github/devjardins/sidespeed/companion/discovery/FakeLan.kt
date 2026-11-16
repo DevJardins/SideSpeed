@@ -5,8 +5,9 @@ import kotlinx.coroutines.delay
 
 /**
  * A scripted LAN for virtual-time discovery tests. [script] maps each address to its per-attempt results;
- * an unscripted address stays silent ([ProbeResult.Timeout]). Every probe records its call, so tests can
- * assert order, ports, timeouts and attempt counts without any sockets.
+ * attempts past the script repeat its last entry, and an unscripted address stays silent
+ * ([ProbeResult.Timeout]). Every probe records its call, so tests can assert order, ports, timeouts and
+ * attempt counts without any sockets.
  */
 internal class FakeLan(
     private val script: Map<Ipv4, List<ProbeResult>> = emptyMap(),
@@ -24,6 +25,6 @@ internal class FakeLan(
         val n = attempts[address] ?: 0
         attempts[address] = n + 1
         if (delayMs > 0) delay(delayMs)
-        return script[address]?.getOrNull(n) ?: ProbeResult.Timeout
+        return script[address]?.getOrNull(n) ?: script[address]?.lastOrNull() ?: ProbeResult.Timeout
     }
 }

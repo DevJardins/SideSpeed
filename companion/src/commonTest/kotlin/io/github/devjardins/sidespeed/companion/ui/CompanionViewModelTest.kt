@@ -1,16 +1,27 @@
 package io.github.devjardins.sidespeed.companion.ui
 
+import io.github.devjardins.sidespeed.companion.discovery.AdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.FakeLan
+import io.github.devjardins.sidespeed.companion.discovery.HostSource
+import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
+import io.github.devjardins.sidespeed.companion.discovery.SweepSource
+import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
+import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
-import io.github.devjardins.sidespeed.companion.upkeep.Scanner
+import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,10 +34,7 @@ class CompanionViewModelTest {
     private val home = NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"))
     private val homeNet = TrustedNetwork("home", "Living room", home)
 
-    private class CountingScanner : Scanner {
-        var calls = 0
-        override suspend fun scan(subnet: String, port: Int): List<String> { calls++; return emptyList() }
-    }
+    private fun ip(s: String) = Ipv4.parse(s)!!
 
     private fun tv(manufacturer: String = "Amazon") = FakeTvSession(
         mapOf(
@@ -39,12 +47,18 @@ class CompanionViewModelTest {
         ),
     )
 
-    private class Rig(scope: TestScope, val store: InMemoryCompanionStore, val fake: FakeTvSession, var fp: NetworkFingerprint?) {
-        val scanner = CountingScanner()
+    private class Rig(
+        scope: TestScope,
+        val store: InMemoryCompanionStore,
+        val fake: FakeTvSession,
+        var fp: NetworkFingerprint?,
+        val lan: FakeLan = FakeLan(),
+    ) {
         val source = FingerprintSource { fp }
         val connector = fake.connector()
-        val upkeep = Upkeep(store, source, connector, HelperKeeper(), scanner) { 1_000_000L }
-        val vm = CompanionViewModel(store, source, upkeep, connector, scanner, scope, { 1_000_000L }, { "tv-1" })
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner()) { 1_000_000L }
+        val discovery = Discovery(listOf(SweepSource), lan)
+        val vm = CompanionViewModel(store, source, upkeep, connector, discovery, scope, { 1_000_000L }, { "tv-1" })
     }
 
     private fun TestScope.rig(trusted: Boolean, fake: FakeTvSession = tv()) = Rig(
@@ -79,7 +93,7 @@ class CompanionViewModelTest {
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
         r.vm.findTvs()
         assertEquals("Join a Trusted Network to find TVs", r.vm.state.value.error)
-        assertEquals(0, r.scanner.calls)
+        assertEquals(0, r.lan.calls.size)
     }
 
     @Test
@@ -243,26 +257,37 @@ class CompanionViewModelTest {
         assertEquals(1, r.store.tvs().size)
     }
 
-    private class GateScanner(private val result: List<String>) : Scanner {
-        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+    /** A LAN whose probes wait on [gate]: the sweep stays in flight until the test opens it. */
+    private class GateLan(private val found: Set<String>, open: Boolean = false) : AdbProbe {
+        val gate = CompletableDeferred<Unit>().also { if (open) it.complete(Unit) }
         var calls = 0
-        override suspend fun scan(subnet: String, port: Int): List<String> { calls++; gate.await(); return result }
+        override suspend fun probe(address: Ipv4, port: Int, timeoutMs: Int): ProbeResult {
+            calls++
+            gate.await()
+            return if (address.toString() in found) ProbeResult.AdbOpen else ProbeResult.Refused
+        }
     }
 
-    private fun TestScope.scanRig(scanner: Scanner): CompanionViewModel {
+    private fun TestScope.discoveryRig(lan: AdbProbe, source: HostSource = SweepSource): CompanionViewModel {
         val r = rig(trusted = true)
-        return CompanionViewModel(r.store, r.source, r.upkeep, r.connector, scanner, this, { 1_000_000L }, { "tv-1" })
+        return CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(source), lan), this, { 1_000_000L }, { "tv-1" })
     }
+
+    private fun allRefused(subnet: String) =
+        Cidr.parse(subnet)!!.hosts().associateWith { listOf(ProbeResult.Refused) }.toMutableMap()
 
     @Test
     fun scanningIsTrueWhileScanRunsAndRepeatPressesAreIgnored() = runTest(UnconfinedTestDispatcher()) {
-        val scanner = GateScanner(listOf("192.168.5.30"))
-        val vm = scanRig(scanner)
+        var runs = 0
+        val source = HostSource { runs++; SweepSource.hosts(it) }
+        val lan = GateLan(setOf("192.168.5.30"))
+        val vm = discoveryRig(lan, source)
         vm.findTvs()
         assertTrue(vm.state.value.scanning)
         vm.findTvs()
-        scanner.gate.complete(Unit)
-        assertEquals(1, scanner.calls)
+        lan.gate.complete(Unit)
+        runCurrent()
+        assertEquals(1, runs)
         assertEquals(false, vm.state.value.scanning)
         assertEquals(listOf("192.168.5.30"), vm.state.value.found)
         assertEquals(false, vm.state.value.noneFound)
@@ -270,12 +295,94 @@ class CompanionViewModelTest {
 
     @Test
     fun emptyScanSetsNoneFoundAndNextScanClearsIt() = runTest(UnconfinedTestDispatcher()) {
-        val scanner = GateScanner(emptyList())
-        val vm = scanRig(scanner)
-        scanner.gate.complete(Unit)
+        val script = allRefused("192.168.5.0/24")
+        val vm = discoveryRig(FakeLan(script))
         vm.findTvs()
+        runCurrent()
         assertEquals(false, vm.state.value.scanning)
         assertTrue(vm.state.value.noneFound)
+        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress)
+        script[ip("192.168.5.30")] = listOf(ProbeResult.AdbOpen)
+        vm.findTvs()
+        runCurrent()
+        assertEquals(listOf("192.168.5.30"), vm.state.value.found)
+        assertEquals(false, vm.state.value.noneFound)
+    }
+
+    @Test
+    fun foundStreamBeforeTheScanCompletes() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbAuthRequired)
+        script[ip("192.168.5.11")] = listOf(ProbeResult.AdbOpen)
+        script[ip("192.168.5.12")] = listOf(ProbeResult.Timeout, ProbeResult.AdbOpen)
+        val lan = FakeLan(script, delayMs = 100)
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        advanceTimeBy(150)
+        assertEquals(setOf("192.168.5.10", "192.168.5.11"), vm.state.value.found.toSet())
+        assertTrue(vm.state.value.scanning)
+        assertNotNull(vm.state.value.scanProgress)
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(setOf("192.168.5.10", "192.168.5.11", "192.168.5.12"), vm.state.value.found.toSet())
+        assertEquals(false, vm.state.value.scanning)
+        assertEquals("Scanned 255 of 255", vm.state.value.scanProgress)
+    }
+
+    @Test
+    fun cancelFindStopsTheScanAndKeepsPartialResults() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbAuthRequired)
+        script[ip("192.168.5.11")] = listOf(ProbeResult.AdbOpen)
+        script[ip("192.168.5.12")] = listOf(ProbeResult.Timeout, ProbeResult.AdbOpen)
+        val lan = FakeLan(script, delayMs = 100)
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        advanceTimeBy(150)
+        vm.cancelFind()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        assertTrue(vm.state.value.scanStopped)
+        assertEquals(setOf("192.168.5.10", "192.168.5.11"), vm.state.value.found.toSet())
+        val calls = lan.calls.size
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(calls, lan.calls.size)
+    }
+
+    @Test
+    fun keepScanningFinishesTheStoppedScanWithoutClearingFound() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        script[ip("192.168.5.10")] = listOf(ProbeResult.AdbAuthRequired)
+        script[ip("192.168.5.11")] = listOf(ProbeResult.AdbOpen)
+        script[ip("192.168.5.12")] = listOf(ProbeResult.Timeout, ProbeResult.AdbOpen)
+        val lan = FakeLan(script, delayMs = 100)
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        vm.cancelFind()
+        runCurrent()
+        assertTrue(vm.state.value.scanStopped)
+        vm.keepScanning()
+        assertTrue(vm.state.value.scanning)
+        assertEquals(false, vm.state.value.scanStopped)
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(setOf("192.168.5.10", "192.168.5.11", "192.168.5.12"), vm.state.value.found.toSet())
+        assertEquals(false, vm.state.value.scanning)
+    }
+
+    @Test
+    fun disposeCancelsARunningScan() = runTest(UnconfinedTestDispatcher()) {
+        val lan = GateLan(setOf("192.168.5.30"))
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        assertTrue(vm.state.value.scanning)
+        vm.onDispose()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        lan.gate.complete(Unit)
+        runCurrent()
+        assertTrue(vm.state.value.found.isEmpty())
     }
 
     @Test
