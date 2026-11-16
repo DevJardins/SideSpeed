@@ -4,9 +4,11 @@ import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -22,6 +24,39 @@ class DiscoveryTest {
     private fun plan(subnet: String, own: String? = null, gateway: String? = null, port: Int = 5555) =
         DiscoveryPlan(cidr(subnet), own?.let { ip(it) }, gateway?.let { ip(it) }, port)
     private fun sweepDiscovery(lan: FakeLan) = Discovery(listOf(SweepSource), lan)
+
+    @Test
+    fun sourcesAreAskedTogether() = runTest {
+        var firstCallAt = -1L
+        val probe = AdbProbe { _, _, _ ->
+            if (firstCallAt < 0) firstCallAt = currentTime
+            ProbeResult.AdbAuthRequired
+        }
+        val a = HostSource { delay(1500); listOf(ip("192.168.5.20")) }
+        val b = HostSource { delay(1500); listOf(ip("192.168.5.21")) }
+        Discovery(listOf(a, b), probe).run(plan("192.168.5.0/24")).toList()
+        assertEquals(1500, firstCallAt)
+    }
+
+    @Test
+    fun sourceOrderIsKeptAfterConcurrentAsk() = runTest {
+        val a = HostSource { delay(100); listOf(ip("192.168.5.30")) }
+        val b = HostSource { listOf(ip("192.168.5.31")) }
+        val script = mapOf(
+            ip("192.168.5.30") to listOf(ProbeResult.AdbOpen),
+            ip("192.168.5.31") to listOf(ProbeResult.AdbOpen),
+        )
+        val lan = FakeLan(script)
+        Discovery(listOf(a, b), lan).run(plan("192.168.5.0/24")).toList()
+        assertEquals(listOf(ip("192.168.5.30"), ip("192.168.5.31")), lan.calls.take(2).map { it.address })
+    }
+
+    @Test
+    fun aRefusedPlanNeverAsksAnySource() = runTest {
+        val never = HostSource { error("must not be called") }
+        val events = Discovery(listOf(never), FakeLan()).run(plan("100.64.0.0/16")).toList()
+        assertTrue(events.isEmpty())
+    }
 
     @Test
     fun nonSweepableSubnetOrWrongPortProbesNothing() = runTest {

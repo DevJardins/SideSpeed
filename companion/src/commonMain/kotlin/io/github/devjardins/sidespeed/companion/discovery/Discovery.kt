@@ -4,6 +4,8 @@ import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
@@ -79,7 +81,7 @@ class Discovery(
 ) {
     fun run(plan: DiscoveryPlan): Flow<DiscoveryEvent> = channelFlow {
         if (plan.port != 5555 || !AddressPolicy.sweepable(plan.subnet)) return@channelFlow
-        val candidates = sources.flatMap { it.hosts(plan) }
+        val candidates = coroutineScope { sources.map { s -> async { s.hosts(plan) } }.awaitAll().flatten() }
             .distinct()
             .filter { it != plan.own && it != plan.subnet.network && it != plan.subnet.broadcast }
             .filter { it !in plan.skip }
