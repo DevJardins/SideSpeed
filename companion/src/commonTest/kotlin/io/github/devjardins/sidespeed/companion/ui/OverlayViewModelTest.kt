@@ -215,6 +215,15 @@ class OverlayViewModelTest {
         assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
     }
 
+    @Test fun noRouteAnswerMeansNoBinding() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(fp = hotel, lan = false)
+        r.egress = { null }
+        r.vm.addTvByAddress("100.101.1.1")
+        assertTrue(r.store.tvs().isEmpty())
+        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertTrue(r.fake.opened.isEmpty())
+    }
+
     @Test fun removingAnOverlayRemovesItsTvsAndKeepsOthers() = runTest(UnconfinedTestDispatcher()) {
         val r = rig()
         r.store.saveTv(SavedTv("o", "O", "100.101.1.1", "S-O", trusted.id, overlayPeerId = "nCUBE"))
