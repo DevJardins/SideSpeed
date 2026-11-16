@@ -145,6 +145,27 @@ class DiscoveryTest {
     }
 
     @Test
+    fun aPeerSourceMayListOverlayAddressesButNeverPublicOnes() = runTest {
+        val peer = ip("100.101.102.103")
+        val lan = FakeLan(mapOf(peer to listOf(ProbeResult.AdbAuthRequired)))
+        val peers = HostSource { listOf(peer, ip("8.8.8.8"), ip("100.128.0.1")) }
+        val events = Discovery(listOf(peers, SweepSource), lan).run(plan("192.168.1.0/30")).toList()
+        val found = events.filterIsInstance<DiscoveryEvent.Found>().map { it.address }
+        assertEquals(listOf(peer), found)
+        val probed = lan.calls.map { it.address }.toSet()
+        assertTrue(ip("8.8.8.8") !in probed && ip("100.128.0.1") !in probed)
+    }
+
+    @Test
+    fun anOverlaySubnetIsNeverSweptEvenWithAPeerSource() = runTest {
+        val lan = FakeLan()
+        val peers = HostSource { listOf(ip("100.101.102.103")) }
+        val events = Discovery(listOf(peers, SweepSource), lan).run(plan("100.64.0.0/16")).toList()
+        assertTrue(events.isEmpty())
+        assertTrue(lan.calls.isEmpty())
+    }
+
+    @Test
     fun secondPassUses1500msOnlyOnSilentHosts() = runTest {
         val slow = ip("192.168.1.1")
         val live = ip("192.168.1.2")

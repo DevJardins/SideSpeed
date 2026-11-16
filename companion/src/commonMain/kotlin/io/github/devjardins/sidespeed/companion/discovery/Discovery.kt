@@ -34,12 +34,12 @@ data class DiscoveryPlan(
  * list: [Discovery] applies [DiscoveryPlan.limit] itself, so it can report when the cap cuts the sweep short.
  */
 fun interface HostSource {
-    fun hosts(plan: DiscoveryPlan): List<Ipv4>
+    suspend fun hosts(plan: DiscoveryPlan): List<Ipv4>
 }
 
 /** Hosts in sweep order: own /24, gateway /24, then outward (see [SweepOrder]). */
 object SweepSource : HostSource {
-    override fun hosts(plan: DiscoveryPlan): List<Ipv4> =
+    override suspend fun hosts(plan: DiscoveryPlan): List<Ipv4> =
         SweepOrder.of(plan.subnet, plan.own, plan.gateway, limit = Int.MAX_VALUE, skip = plan.skip)
 }
 
@@ -83,7 +83,7 @@ class Discovery(
             .distinct()
             .filter { it != plan.own && it != plan.subnet.network && it != plan.subnet.broadcast }
             .filter { it !in plan.skip }
-            .filter { AddressPolicy.isPrivate(it) }
+            .filter { AddressPolicy.contactable(it) }
         val targets = candidates.take(plan.limit)
         if (targets.isEmpty()) return@channelFlow
         val truncated = candidates.size > targets.size

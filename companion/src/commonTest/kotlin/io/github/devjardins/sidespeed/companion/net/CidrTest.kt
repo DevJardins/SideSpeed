@@ -79,6 +79,16 @@ class AddressPolicyTest {
         outside.forEach { assertFalse(AddressPolicy.isPrivate(ip(it)), it) }
     }
 
+    @Test fun overlayIsTheCgnatBlockExactAtBothBoundaries() {
+        listOf("100.64.0.0", "100.101.102.103", "100.127.255.255").forEach { assertTrue(AddressPolicy.isOverlay(ip(it)), it) }
+        listOf("100.63.255.255", "100.128.0.0", "10.0.0.1", "8.8.8.8", "192.168.1.1").forEach { assertFalse(AddressPolicy.isOverlay(ip(it)), it) }
+    }
+
+    @Test fun contactableIsPrivateOrOverlayAndNothingElse() {
+        listOf("10.1.2.3", "172.16.0.1", "192.168.1.1", "100.64.0.1", "100.127.255.254").forEach { assertTrue(AddressPolicy.contactable(ip(it)), it) }
+        listOf("8.8.8.8", "100.128.0.1", "127.0.0.1", "169.254.1.1", "172.32.0.1", "0.0.0.0").forEach { assertFalse(AddressPolicy.contactable(ip(it)), it) }
+    }
+
     @Test fun sweepableNeedsPrivateBlockAndPrefix16To30() {
         fun s(c: String) = AddressPolicy.sweepable(Cidr.parse(c)!!)
         assertTrue(s("192.168.0.0/16")); assertTrue(s("10.4.0.0/22")); assertTrue(s("172.16.5.0/30")); assertTrue(s("172.20.0.0/16"))

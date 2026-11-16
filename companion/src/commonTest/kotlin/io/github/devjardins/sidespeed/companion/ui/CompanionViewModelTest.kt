@@ -132,9 +132,17 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun addingAnOverlayAddressIsAllowedAndConnects() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("100.101.102.103")
+        assertTrue("100.101.102.103:5555" in r.fake.opened)
+        assertEquals("100.101.102.103", r.store.tvs().single().address)
+    }
+
+    @Test
     fun addPublicOrBadAddressConnectsToNothing() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        for (publicAddress in listOf("8.8.8.8", "172.32.0.1", "100.64.0.1", "127.0.0.1")) {
+        for (publicAddress in listOf("8.8.8.8", "172.32.0.1", "100.128.0.1", "127.0.0.1")) {
             r.vm.addTvByAddress(publicAddress)
             assertEquals(Copy.OUTSIDE_NETWORK, r.vm.state.value.error, publicAddress)
         }

@@ -71,6 +71,17 @@ object AddressPolicy {
     /** RFC 1918 only: 10/8, 172.16/12, 192.168/16. */
     fun isPrivate(ip: Ipv4): Boolean = blocks.any { ip in it }
 
+    private val overlay = Cidr.parse("100.64.0.0/10")!!
+
+    /**
+     * The shared CGNAT block (RFC 6598) that overlay networks such as Tailscale hand out. Contactable, but
+     * never swept: it is 4 million addresses, so only explicitly listed peers or typed addresses are tried.
+     */
+    fun isOverlay(ip: Ipv4): Boolean = ip in overlay
+
+    /** Addresses the companion may contact at all: RFC 1918 plus the overlay block. Public addresses never. */
+    fun contactable(ip: Ipv4): Boolean = isPrivate(ip) || isOverlay(ip)
+
     /** A block that may be swept: wholly inside RFC 1918 space, with a prefix from /16 to /30. */
     fun sweepable(c: Cidr): Boolean = c.prefix in 16..30 && isPrivate(c.network) && isPrivate(c.broadcast)
 }

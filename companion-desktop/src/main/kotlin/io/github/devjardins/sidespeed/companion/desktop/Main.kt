@@ -20,6 +20,7 @@ import androidx.compose.ui.window.rememberWindowState
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
+import io.github.devjardins.sidespeed.companion.discovery.TailscalePeersSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
@@ -68,7 +69,8 @@ fun main() {
     val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @OptIn(ExperimentalCoroutinesApi::class)
-    val discovery = Discovery(listOf(SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+    // Peers first, so the 4096-probe cap on the sweep can never push a Tailscale peer out.
+    val discovery = Discovery(listOf(TailscalePeersSource(TailscaleCli()::statusJson), SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
     val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
 
     application {
