@@ -33,8 +33,7 @@ X-GNOME-Autostart-enabled=true
     private fun xml(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     /** Returns whether the setting now matches [enabled]. */
-    fun set(enabled: Boolean, os: String = System.getProperty("os.name").orEmpty().lowercase(), home: String = System.getProperty("user.home")): Boolean {
-        val path = launchPath()
+    fun set(enabled: Boolean, os: String = System.getProperty("os.name").orEmpty().lowercase(), home: String = System.getProperty("user.home"), path: String? = launchPath()): Boolean {
         if (enabled && path == null) return false
         return runCatching {
             when {

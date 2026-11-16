@@ -28,4 +28,24 @@ class AutostartTest {
         assertFalse(Autostart.set(true, "linux", home.path))
         assertTrue(home.listFiles()!!.isEmpty())
     }
+
+    @Test fun macAndLinuxWriteThenRemoveTheEntry() {
+        val home = java.nio.file.Files.createTempDirectory("home").toFile()
+        val plist = java.io.File(home, "Library/LaunchAgents/io.github.devjardins.sidespeed.companion.plist")
+        assertTrue(Autostart.set(true, "mac os x", home.path, "/Apps/SideSpeed Companion"))
+        assertTrue(plist.readText().contains("/Apps/SideSpeed Companion"))
+        assertTrue(Autostart.set(false, "mac os x", home.path, "/Apps/SideSpeed Companion"))
+        assertFalse(plist.exists())
+
+        val desktop = java.io.File(home, ".config/autostart/sidespeed-companion.desktop")
+        assertTrue(Autostart.set(true, "linux", home.path, "/opt/app"))
+        assertTrue(desktop.readText().contains("Exec=\"/opt/app\""))
+        assertTrue(Autostart.set(false, "linux", home.path, "/opt/app"))
+        assertFalse(desktop.exists())
+    }
+
+    @Test fun disablingNeedsNoLauncher() {
+        val home = java.nio.file.Files.createTempDirectory("home").toFile()
+        assertTrue(Autostart.set(false, "linux", home.path, null))
+    }
 }

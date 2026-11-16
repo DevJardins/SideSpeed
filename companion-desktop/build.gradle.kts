@@ -33,6 +33,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Dmg, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "SideSpeed Companion"
+            // jpackage needs a major version of 1 or more on macOS and Windows, so this differs from the 0.x app versions.
             packageVersion = "1.0.0"
             description = "Keeps the SideSpeed helper running on your Fire TVs"
             vendor = "SideSpeed"

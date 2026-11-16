@@ -32,11 +32,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.RandomAccessFile
 import kotlin.system.exitProcess
 
 /** Holds a lock file for the life of the process so two copies never share the store. Null if already running. */
+private const val SHOW_REQUEST = "show.request"
+
 private fun singleInstanceLock(dir: File): RandomAccessFile? {
     dir.mkdirs()
     val raf = RandomAccessFile(File(dir, "instance.lock"), "rw")
@@ -47,7 +50,11 @@ private fun singleInstanceLock(dir: File): RandomAccessFile? {
 fun main() {
     val appData = DesktopDirs.appData()
     val lock = singleInstanceLock(appData)
-    if (lock == null) exitProcess(0)
+    if (lock == null) {
+        // Already running: ask that copy to show its window, then leave.
+        File(appData, SHOW_REQUEST).writeText("show")
+        exitProcess(0)
+    }
 
     // The store keeps its own subdirectory; the app-data folder itself is never re-permissioned.
     val store = JsonFileCompanionStore(File(appData, "store"))
@@ -73,28 +80,48 @@ fun main() {
             vm.refreshNow()
         }
 
-        // Check every intervalMinutes (re-read each round so a settings change applies), unless paused.
-        LaunchedEffect(Unit) {
-            vm.onOpen()
+        LaunchedEffect(Unit) { vm.onOpen() }
+        // Check every intervalMinutes, unless paused. Keyed on the interval, so a change restarts the wait.
+        LaunchedEffect(state.settings.intervalMinutes) {
             while (true) {
-                delay(store.settings().intervalMinutes * 60_000L)
+                delay(state.settings.intervalMinutes * 60_000L)
                 if (!paused) runAndNotify(Trigger.BACKGROUND)
             }
         }
-        // Every 30 s: joining a Trusted Network (a fingerprint change to a trusted one) triggers a check.
+        // Every 30 s: joining a Trusted Network triggers a check. Nothing is read while paused or before a
+        // Trusted Network exists, so the poll spawns no processes then.
         LaunchedEffect(Unit) {
             var last = fingerprints.current()
             while (true) {
                 delay(30_000)
+                if (paused || state.firstRun) continue
                 val now = fingerprints.current()
                 if (now != last) {
-                    if (!paused && TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null) runAndNotify(Trigger.NETWORK_JOINED)
+                    if (TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null) runAndNotify(Trigger.NETWORK_JOINED)
                     last = now
                 }
             }
         }
-        // "Start when I log in" follows the saved setting.
-        LaunchedEffect(state.settings.startAtLogin) { if (state.loaded) Autostart.set(state.settings.startAtLogin) }
+        // A second launch leaves a request file; show the window for it.
+        LaunchedEffect(Unit) {
+            val request = File(appData, SHOW_REQUEST)
+            while (true) {
+                delay(1_000)
+                if (request.exists()) { request.delete(); windowVisible = true }
+            }
+        }
+        // "Start when I log in" follows the saved setting, applied off the UI thread. A loaded "on" is
+        // re-applied (it heals a moved app); a loaded "off" needs nothing. If enabling fails the setting goes back off.
+        var autostartSeen by remember { mutableStateOf<Boolean?>(null) }
+        LaunchedEffect(state.settings.startAtLogin, state.loaded) {
+            if (!state.loaded) return@LaunchedEffect
+            val want = state.settings.startAtLogin
+            val first = autostartSeen == null
+            autostartSeen = want
+            if (first && !want) return@LaunchedEffect
+            val ok = withContext(Dispatchers.IO) { Autostart.set(want) }
+            if (!ok && want) vm.updateSettings(state.settings.copy(startAtLogin = false))
+        }
 
         Tray(
             icon = icon,

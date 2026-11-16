@@ -66,9 +66,12 @@ internal class FilePrivateKeyStore(private val file: File) : KadbPrivateKeyStore
         } else {
             f.setReadable(false, false)
             f.setWritable(false, false)
-            // Windows reports false for directories and inherits the per-user app-data ACL anyway: best effort.
-            f.setReadable(true, true)
-            f.setWritable(true, true)
+            val ownerOk = f.setReadable(true, true) and f.setWritable(true, true)
+            // Windows reports false for directories and inherits the per-user app-data ACL anyway: best effort
+            // there only. A non-POSIX filesystem on macOS or Linux (exFAT, a network mount) must still fail.
+            if (!ownerOk && !System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)) {
+                throw IOException("Cannot restrict $f to its owner")
+            }
         }
     }
 
