@@ -4,9 +4,11 @@ import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
+import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.Subnets
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.PromptedHost
 import io.github.devjardins.sidespeed.companion.store.SavedTv
@@ -69,9 +71,11 @@ class Upkeep(
     private val connector: TvConnector,
     private val keeper: HelperKeeper,
     private val scanner: Scanner,
+    private val overlay: OverlayAccess? = null,
     private val clock: () -> Long,
 ) {
     private val mutex = Mutex()
+    private val overlayGate = overlay?.let(::OverlayGate)
 
     private sealed interface Attempt {
         data class Visited(val result: VisitResult) : Attempt
@@ -90,28 +94,58 @@ class Upkeep(
     private data class Checked(val tv: SavedTv, val gateClosed: Boolean = false)
 
     suspend fun runOnce(trigger: Trigger, onlyTvId: String? = null): UpkeepReport = mutex.withLock {
-        val trusted = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
-            ?: return@withLock UpkeepReport(gated = true, visited = emptyMap(), restartedNames = emptyList())
+        val lan = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
+        val tailnet = currentOverlay()
+        if (lan == null && tailnet == null) {
+            return@withLock UpkeepReport(gated = true, visited = emptyMap(), restartedNames = emptyList())
+        }
 
         val visited = LinkedHashMap<String, TvStatus>()
         val restarted = mutableListOf<String>()
         val userAction = trigger == Trigger.APP_OPEN || trigger == Trigger.RESTART_NOW
         if (userAction && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
 
-        val ids = store.tvs().filter { it.trustedNetworkId == trusted.id && (onlyTvId == null || it.id == onlyTvId) }.map { it.id }
+        val scopeIds = setOfNotNull(lan?.id, tailnet?.id)
+        val ids = store.tvs().filter { it.trustedNetworkId in scopeIds && (onlyTvId == null || it.id == onlyTvId) }.map { it.id }
         for (id in ids) {
             // Fresh copy: the user may have removed or edited it since the run started.
             val saved = store.tvs().firstOrNull { it.id == id } ?: continue
-            if (saved.trustedNetworkId != trusted.id || saved.serial.isBlank()) continue
+            if (saved.trustedNetworkId !in scopeIds || saved.serial.isBlank()) continue
             if (saved.skipBackgroundUntilUserAction && !userAction) continue
-            if (!gateOpen(trusted)) return@withLock UpkeepReport(true, visited, restarted)
 
-            val checked = check(saved, trusted, restarted)
+            val checked = if (tailnet != null && saved.trustedNetworkId == tailnet.id) {
+                checkOverlay(saved, tailnet, restarted)
+            } else {
+                if (lan == null || !gateOpen(lan)) return@withLock UpkeepReport(true, visited, restarted)
+                check(saved, lan, restarted)
+            } ?: return@withLock UpkeepReport(true, visited, restarted)
             val stored = store.updateTv(id) { current -> merge(current, saved, checked.tv) }
             if (stored) visited[id] = checked.tv.status
             if (checked.gateClosed) return@withLock UpkeepReport(true, visited, restarted)
         }
         UpkeepReport(gated = false, visited = visited, restartedNames = restarted)
+    }
+
+    /** The trusted overlay Tailscale matches right now; Tailscale is not even asked when none is trusted. */
+    private suspend fun currentOverlay(): TrustedOverlay? {
+        val access = overlay ?: return null
+        val trusted = store.trustedOverlays()
+        if (trusted.isEmpty()) return null
+        return OverlayTrustMatcher.currentTrusted(access.source.snapshot(), trusted)
+    }
+
+    /**
+     * One visit to a TV on a trusted overlay, or null when the overlay gate is closed. There is no re-find: the
+     * peer's node ID already says where the TV is, and a scan would be a sweep of a tailnet. A peer that moved is
+     * followed only when the serial matches at its new address.
+     */
+    private suspend fun checkOverlay(tv: SavedTv, trusted: TrustedOverlay, restarted: MutableList<String>): Checked? {
+        val gate = overlayGate ?: return null
+        val address = gate.addressToUse(trusted, tv) ?: return null
+        val attempt = attempt(address, tv.serial)
+        val result = apply(tv.copy(skipBackgroundUntilUserAction = false), attempt, clock(), restarted)
+        val verified = attempt is Attempt.Visited && attempt.result != VisitResult.WrongDevice
+        return Checked(if (verified) result.copy(address = address) else result)
     }
 
     /**
