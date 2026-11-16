@@ -1,25 +1,12 @@
 package io.github.devjardins.sidespeed.companion.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.focusable
 import io.github.devjardins.sidespeed.theme.SsTokens
 
 object Ss {
@@ -49,22 +36,3 @@ object Ss {
 @Composable
 fun SsText(text: String, style: TextStyle = Ss.body, modifier: Modifier = Modifier) =
     BasicText(text, modifier, style)
-
-/** A calm button: focus and selection show in sage. */
-@Composable
-fun SsButton(label: String, onClick: () -> Unit, primary: Boolean = false, selected: Boolean = false, modifier: Modifier = Modifier) {
-    val source = remember { MutableInteractionSource() }
-    val focused by source.collectIsFocusedAsState()
-    val shape = RoundedCornerShape(12.dp)
-    val ring = if (focused || selected) Ss.accent else Color.Transparent
-    Box(
-        modifier
-            .background(if (focused) Ss.focusButton else if (primary) Ss.raised else Ss.button, shape)
-            .border(2.dp, ring, shape)
-            .clickable(interactionSource = source, indication = null, onClick = onClick)
-            .focusable(interactionSource = source)
-            .padding(PaddingValues(horizontal = 18.dp, vertical = 12.dp)),
-    ) {
-        SsText(label, Ss.body.copy(color = if (primary) Ss.accent else Ss.textPrimary))
-    }
-}
