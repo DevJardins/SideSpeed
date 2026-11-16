@@ -75,6 +75,8 @@ class MainActivity : ComponentActivity() {
                         appsVm,
                         lastCompile = (application as SideSpeedApp).container.prefs::lastCompile,
                         icon = icons,
+                        maintenance = (application as SideSpeedApp).container.maintenance.state,
+                        history = (application as SideSpeedApp).container.maintenanceStore.history,
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                     )
                     else -> {

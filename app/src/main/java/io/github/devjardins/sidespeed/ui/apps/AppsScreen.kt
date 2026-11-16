@@ -45,6 +45,8 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.maintenance.JobRecord
+import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsDimens
@@ -53,19 +55,23 @@ import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
 
-private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package") }
+private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package"), HISTORY("History") }
 
 @Composable
 fun AppsScreen(
     vm: AppsViewModel,
     lastCompile: (String) -> Flow<LastCompile?>,
     icon: IconSource,
+    maintenance: StateFlow<MaintenanceState>,
+    history: Flow<List<JobRecord>>,
     onSelect: (AppEntry, CompileMode) -> Unit,
 ) {
     val state by vm.state.collectAsState()
+    val maintenanceState by maintenance.collectAsState()
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
@@ -79,6 +85,9 @@ fun AppsScreen(
                 Text("Pick an app to compile", style = SsType.Headline, color = SsColors.TextPrimary)
                 Spacer(Modifier.weight(1f))
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
+            }
+            maintenanceLine(maintenanceState)?.let {
+                Text(it, style = SsType.Caption, color = SsColors.TextSecondary)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Tab.entries.forEach { t ->
@@ -101,6 +110,7 @@ fun AppsScreen(
             }
             when (tab) {
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }
+                Tab.HISTORY -> HistoryList(history)
                 else -> {
                     val apps = if (tab == Tab.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
                     when {
@@ -114,7 +124,8 @@ fun AppsScreen(
                                 AppRow(
                                     app,
                                     lastCompile(app.packageName),
-                                    pillFor(state.statusLoading, state.statuses[app.packageName]),
+                                    maintenancePill(app.packageName, maintenanceState)
+                                        ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
                                     icon,
                                 ) { onSelect(app, mode) }
                             }
@@ -204,5 +215,37 @@ private fun ManualEntry(vm: AppsViewModel, onValid: (AppEntry) -> Unit) {
         )
         error?.let { Text(it, style = SsType.Body, color = SsColors.DangerCardText) }
         SsButton("Continue", onClick = { submit() })
+    }
+}
+
+@Composable
+private fun HistoryList(history: Flow<List<JobRecord>>) {
+    val records by history.collectAsState(initial = emptyList())
+    if (records.isEmpty()) {
+        Text("Nothing has been optimized automatically yet.", style = SsType.Body, color = SsColors.TextSecondary)
+        return
+    }
+    val format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+    ) {
+        items(records) { r ->
+            // Focusable so the D-pad can scroll the list.
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(r.label, style = SsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(format.format(Date(r.epochMs)), style = SsType.Caption, color = SsColors.TextSecondary)
+                    }
+                    if (r.success) SsPill("Optimized", SsColors.OkPillBg, SsColors.OkPillText)
+                    else SsPill("Failed: ${r.message}", SsColors.WarnPillBg, SsColors.WarnPillText)
+                }
+            }
+        }
     }
 }

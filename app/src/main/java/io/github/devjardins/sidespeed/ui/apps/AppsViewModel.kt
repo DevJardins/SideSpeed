@@ -6,6 +6,8 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.apps.sortForPicker
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.maintenance.JobPhase
+import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.status.BadgeSource
 import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CoroutineDispatcher
@@ -45,6 +47,25 @@ fun pillFor(statusLoading: Boolean, badge: StatusBadge?): Pill? = when (badge) {
     StatusBadge.SPEED_PROFILE -> Pill("speed-profile", PillTone.WARN)
     StatusBadge.NEEDS_RECOMPILE -> Pill("Not compiled", PillTone.WARN)
     StatusBadge.UNKNOWN, null -> if (statusLoading) Pill("Checking…", PillTone.NEUTRAL) else null
+}
+
+/** The row pill for a maintained app, or null when the app is not maintained. */
+fun maintenancePill(pkg: String, state: MaintenanceState): Pill? = when {
+    pkg !in state.maintained -> null
+    else -> when (state.phases[pkg]) {
+        JobPhase.RUNNING -> Pill("Optimizing…", PillTone.NEUTRAL)
+        JobPhase.WAITING -> Pill("Waiting", PillTone.NEUTRAL)
+        JobPhase.RETRY -> Pill("Retry", PillTone.WARN)
+        null -> Pill("Optimized", PillTone.OK)
+    }
+}
+
+/** The "Maintenance" line under the Apps header, or null when there is nothing to say. */
+fun maintenanceLine(state: MaintenanceState): String? = when {
+    state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
+    state.maintained.isEmpty() && state.queueLength == 0 -> null
+    state.queueLength > 0 -> "Maintenance: ${state.queueLength} waiting"
+    else -> "Maintenance: up to date"
 }
 
 class AppsViewModel(
