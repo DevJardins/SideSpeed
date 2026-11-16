@@ -22,7 +22,9 @@ import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import io.github.devjardins.sidespeed.status.TvAddress
 import java.net.Inet4Address
+import java.net.NetworkInterface
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -70,6 +72,18 @@ class AppContainer(context: Context) {
         expectedApk = appContext.applicationInfo.sourceDir,
         isFireOs = isFireOs,
     )
+
+    /** This TV's own showable addresses (LAN first, then Tailscale), or empty when unknown. */
+    fun tvAddresses(): List<String> = try {
+        val ifs = NetworkInterface.getNetworkInterfaces() ?: return emptyList()
+        TvAddress.pick(
+            ifs.asSequence().filter { it.isUp && !it.isLoopback }
+                .flatMap { it.inetAddresses.asSequence() }.filterIsInstance<Inet4Address>()
+                .mapNotNull { it.hostAddress }.toList(),
+        )
+    } catch (_: Exception) {
+        emptyList()
+    }
 
     fun wifiIp(): String? = try {
         val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

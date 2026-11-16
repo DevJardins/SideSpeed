@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.isArmed
 import kotlinx.coroutines.launch
+import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
@@ -86,6 +87,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
+                        tvAddress = remember { TvAddress.label((application as SideSpeedApp).container.tvAddresses()) },
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running

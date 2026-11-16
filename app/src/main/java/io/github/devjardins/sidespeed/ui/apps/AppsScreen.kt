@@ -72,6 +72,7 @@ fun AppsScreen(
     autoOptimizeMode: Flow<AutoOptimizeMode>,
     onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
+    tvAddress: String? = null,
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
@@ -87,6 +88,7 @@ fun AppsScreen(
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Pick an app to compile", style = SsType.Headline, color = SsColors.TextPrimary)
+                tvAddress?.let { Spacer(Modifier.width(16.dp)); Text(it, style = SsType.Caption, color = SsColors.TextSecondary) }
                 Spacer(Modifier.weight(1f))
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
