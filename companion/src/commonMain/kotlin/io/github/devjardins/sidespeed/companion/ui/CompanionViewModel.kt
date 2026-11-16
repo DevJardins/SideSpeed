@@ -119,6 +119,8 @@ class CompanionViewModel(
     private val work = Mutex()
     private var findJob: Job? = null
     private var lastSummary = DiscoverySummary()
+    /** Every host probed across the runs since the last fresh Find TVs, so Keep scanning resumes past them. */
+    private var probedSinceFind = emptySet<Ipv4>()
 
     init {
         scope.launch { refresh() }
@@ -225,11 +227,13 @@ class CompanionViewModel(
         }
         if (!accepted) return
         findJob?.cancel()
+        val resumeSkip = if (clearFound) emptySet() else probedSinceFind
+        if (clearFound) probedSinceFind = emptySet()
         lastSummary = DiscoverySummary()
         findJob = scope.launch {
             var cancelled = false
             try {
-                collectFind()
+                collectFind(resumeSkip)
             } catch (e: CancellationException) {
                 cancelled = true
                 throw e
@@ -245,11 +249,13 @@ class CompanionViewModel(
         }
     }
 
-    private suspend fun collectFind() {
+    private suspend fun collectFind(resumeSkip: Set<Ipv4>) {
         val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val saved = store.tvs().map { it.address }.toSet()
-        discovery.run(DiscoveryPlan(subnet, own = trusted.fingerprint.ownIp?.let(Ipv4::parse), gateway = Ipv4.parse(trusted.fingerprint.gatewayIp))).collect { event ->
+        val own = trusted.fingerprint.ownIp?.let(Ipv4::parse)
+        val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
+        discovery.run(DiscoveryPlan(subnet, own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {
                 is DiscoveryEvent.Progress ->
                     _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }
@@ -259,7 +265,10 @@ class CompanionViewModel(
                         if (host in saved || host in s.found) s else s.copy(found = s.found + host)
                     }
                 }
-                is DiscoveryEvent.Done -> lastSummary = event.summary
+                is DiscoveryEvent.Done -> {
+                    lastSummary = event.summary
+                    probedSinceFind = probedSinceFind + event.summary.scanned
+                }
             }
         }
         refresh()

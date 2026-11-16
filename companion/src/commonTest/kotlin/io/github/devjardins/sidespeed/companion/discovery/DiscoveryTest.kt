@@ -123,7 +123,9 @@ class DiscoveryTest {
         val events = sweepDiscovery(lan).run(plan("192.168.1.0/30")).toList()
         val done = events.filterIsInstance<DiscoveryEvent.Done>()
         assertEquals(1, done.size)
-        assertEquals(DiscoverySummary(liveNonAdb = 1, truncated = false), done.single().summary)
+        assertEquals(setOf(ip("192.168.1.1"), ip("192.168.1.2")), done.single().summary.scanned)
+        assertEquals(1, done.single().summary.liveNonAdb)
+        assertEquals(false, done.single().summary.truncated)
     }
 
     @Test
@@ -134,6 +136,7 @@ class DiscoveryTest {
             .toList()
         val done = events.filterIsInstance<DiscoveryEvent.Done>()
         assertEquals(1, done.size)
+        assertEquals(1, done.single().summary.scanned.size)
         assertEquals(true, done.single().summary.truncated)
     }
 
@@ -150,6 +153,16 @@ class DiscoveryTest {
         val found = Discovery(listOf(SweepSource), lan, io).run(plan("192.168.1.0/30"))
             .filterIsInstance<DiscoveryEvent.Found>().toList()
         assertEquals(listOf(ip("192.168.1.1")), found.map { it.address })
+    }
+
+    @Test
+    fun skipSetIsNeverProbedAndReportedInSummary() = runTest {
+        val lan = FakeLan(mapOf(ip("192.168.1.2") to listOf(ProbeResult.Refused)))
+        val events = sweepDiscovery(lan).run(plan("192.168.1.0/30").copy(skip = setOf(ip("192.168.1.1")))).toList()
+        assertTrue(lan.calls.none { it.address == ip("192.168.1.1") })
+        val done = events.filterIsInstance<DiscoveryEvent.Done>()
+        assertEquals(1, done.size)
+        assertEquals(setOf(ip("192.168.1.2")), done.single().summary.scanned)
     }
 
     @Test

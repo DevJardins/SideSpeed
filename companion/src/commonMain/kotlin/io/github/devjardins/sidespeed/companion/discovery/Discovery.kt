@@ -25,6 +25,8 @@ data class DiscoveryPlan(
     val firstPassTimeoutMs: Int = 400,
     val secondPassTimeoutMs: Int = 1500,
     val limit: Int = SweepOrder.DEFAULT_LIMIT,
+    /** Already-probed hosts to leave out, so a resumed run never repeats them. */
+    val skip: Set<Ipv4> = emptySet(),
 )
 
 /**
@@ -38,7 +40,7 @@ fun interface HostSource {
 /** Hosts in sweep order: own /24, gateway /24, then outward (see [SweepOrder]). */
 object SweepSource : HostSource {
     override fun hosts(plan: DiscoveryPlan): List<Ipv4> =
-        SweepOrder.of(plan.subnet, plan.own, plan.gateway, limit = Int.MAX_VALUE)
+        SweepOrder.of(plan.subnet, plan.own, plan.gateway, limit = Int.MAX_VALUE, skip = plan.skip)
 }
 
 /** What a run reports as it goes; the flow completing is the end of the run. */
@@ -74,6 +76,7 @@ class Discovery(
         val candidates = sources.flatMap { it.hosts(plan) }
             .distinct()
             .filter { it != plan.own && it != plan.subnet.network && it != plan.subnet.broadcast }
+            .filter { it !in plan.skip }
             .filter { AddressPolicy.isPrivate(it) }
         val targets = candidates.take(plan.limit)
         if (targets.isEmpty()) return@channelFlow
@@ -101,7 +104,15 @@ class Discovery(
                 if (result.isAdb) send(DiscoveryEvent.Found(host, result))
             }
         }
-        send(DiscoveryEvent.Done(DiscoverySummary(liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb }, truncated = truncated)))
+        send(
+            DiscoveryEvent.Done(
+                DiscoverySummary(
+                    scanned = targets.toSet(),
+                    liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb },
+                    truncated = truncated,
+                ),
+            ),
+        )
     }
 
     private suspend fun SendChannel<DiscoveryEvent>.pass(

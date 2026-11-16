@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.companion.discovery
 
+import io.github.devjardins.sidespeed.companion.net.Ipv4
+
 /** What a Find TVs sweep concluded. */
 enum class Diagnosis {
     /** At least one ADB-speaking host was found. */
@@ -24,6 +26,8 @@ enum class Diagnosis {
 
 /** How much of a sweep answered; ADB-speaking hosts are reported as [DiscoveryEvent.Found]. */
 data class DiscoverySummary(
+    /** Every host this run probed, so a resumed run can skip them. */
+    val scanned: Set<Ipv4> = emptySet(),
     /** Hosts that answered but don't speak ADB. */
     val liveNonAdb: Int = 0,
     /** The probe cap cut the sweep short: only part of the subnet was covered. */

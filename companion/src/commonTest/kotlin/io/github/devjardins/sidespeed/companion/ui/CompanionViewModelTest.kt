@@ -353,6 +353,43 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun truncatedSweepOffersKeepScanning() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val fp16 = NetworkFingerprint("10.0.2.1", "10.0.0.0/16", setOf("10.0.2.1"), ownIp = "10.0.1.3")
+        r.store.saveTrustedNetwork(TrustedNetwork("big", "Big", fp16))
+        r.fp = fp16
+        val lan = FakeLan(allRefused("10.0.0.0/16"))
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        assertEquals(false, vm.state.value.scanStopped)
+        assertEquals(Diagnosis.PARTIAL, vm.state.value.diagnosis)
+        assertEquals("Scanned 4096 of 4096", vm.state.value.scanProgress)
+    }
+
+    @Test
+    fun keepScanningResumesPastProbedHosts() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val fp16 = NetworkFingerprint("10.0.2.1", "10.0.0.0/16", setOf("10.0.2.1"), ownIp = "10.0.1.3")
+        r.store.saveTrustedNetwork(TrustedNetwork("big", "Big", fp16))
+        r.fp = fp16
+        val lan = FakeLan(allRefused("10.0.0.0/16"))
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertEquals(4096, lan.calls.size)
+        vm.keepScanning()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        // The 4096 cap applies per run: the resume covers the next 4096 hosts, repeating none.
+        val probed = lan.calls.map { it.address }
+        assertEquals(8192, probed.size)
+        assertEquals(probed.size, probed.toSet().size)
+        assertEquals(Diagnosis.PARTIAL, vm.state.value.diagnosis)
+    }
+
+    @Test
     fun keepScanningFinishesTheStoppedScanWithoutClearingFound() = runTest(UnconfinedTestDispatcher()) {
         val script = allRefused("192.168.5.0/24")
         script[ip("192.168.5.10")] = listOf(ProbeResult.AdbAuthRequired)

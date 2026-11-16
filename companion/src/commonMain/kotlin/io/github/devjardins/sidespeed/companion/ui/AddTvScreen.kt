@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.helpFor
 
 @Composable
@@ -44,7 +45,7 @@ fun AddTvScreen(
         state.scanProgress?.let { SsText(it, Ss.caption) }
         if (state.scanning) {
             SsButton("Stop", onStop)
-        } else if (state.scanStopped) {
+        } else if (state.scanStopped || state.diagnosis == Diagnosis.PARTIAL) {
             SsButton("Keep scanning", onKeepScanning)
         }
         if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
