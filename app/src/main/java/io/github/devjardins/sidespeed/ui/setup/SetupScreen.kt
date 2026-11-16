@@ -277,23 +277,24 @@ private fun FireOsContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
         if (s.detected) StepState.DONE else StepState.TODO,
         if (s.detected) "Detected" else null,
     ) { Text("Settings > My Fire TV > Developer options", style = SsType.Caption, color = SsColors.TextSecondary) }
-    StepCard(2, "Start the helper from a PC", StepState.WAITING, WAITING_TEXT) {
+    StepCard(2, "Start the helper from your phone or computer", StepState.WAITING, WAITING_TEXT) {
         if (stale) {
             Text(
-                "The helper is running but out of date (SideSpeed was updated). Restart it:",
+                "The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.",
                 style = SsType.Body, color = SsColors.WarnPillText,
             )
-        } else {
-            Text("From a PC on the same network, run:", style = SsType.Body, color = SsColors.TextBody)
         }
-        // Only the primary form here; the alternatives sit behind "Other ways to run it".
-        Commands(cmds.connect + cmds.run)
+        Text(
+            "Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from github.com/DevJardins/SideSpeed/releases",
+            style = SsType.Body, color = SsColors.TextBody,
+        )
     }
     SsButton(if (showOther) "Hide other ways" else "Other ways to run it", onClick = { showOther = !showOther })
     if (showOther) {
         FocusableBlock {
+            Text("From a PC on the same network, run:", style = SsType.Body, color = SsColors.TextBody)
+            Commands(cmds.connect + cmds.run)
             OtherWays(cmds)
-            Text("Phone app coming later.", style = SsType.Caption, color = SsColors.TextSecondary)
         }
     }
     StepCard(3, "Helper starts", StepState.TODO, "Checks automatically")
