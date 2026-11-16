@@ -2,6 +2,8 @@ package io.github.devjardins.sidespeed.companion.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
@@ -25,7 +27,14 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
                 vm::removeTrustedNetwork, { page = Page.ABOUT }, { page = Page.HOME },
             )
-            else -> { SsText(aboutText, modifier = androidx.compose.ui.Modifier); }
+            else -> androidx.compose.foundation.layout.Column(
+                Modifier.padding(24.dp),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+            ) {
+                SsText("About and licences", Ss.title)
+                SsText(aboutText)
+                SsButton("Back", { page = Page.SETTINGS })
+            }
         }
     }
 }

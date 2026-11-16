@@ -87,7 +87,7 @@ class Upkeep(
     /** [gateClosed]: the network stopped being the Trusted Network part way through this TV. */
     private data class Checked(val tv: SavedTv, val gateClosed: Boolean = false)
 
-    suspend fun runOnce(trigger: Trigger): UpkeepReport = mutex.withLock {
+    suspend fun runOnce(trigger: Trigger, onlyTvId: String? = null): UpkeepReport = mutex.withLock {
         val trusted = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
             ?: return@withLock UpkeepReport(gated = true, visited = emptyMap(), restartedNames = emptyList())
 
@@ -96,7 +96,7 @@ class Upkeep(
         val userAction = trigger == Trigger.APP_OPEN || trigger == Trigger.RESTART_NOW
         if (userAction && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
 
-        val ids = store.tvs().filter { it.trustedNetworkId == trusted.id }.map { it.id }
+        val ids = store.tvs().filter { it.trustedNetworkId == trusted.id && (onlyTvId == null || it.id == onlyTvId) }.map { it.id }
         for (id in ids) {
             // Fresh copy: the user may have removed or edited it since the run started.
             val saved = store.tvs().firstOrNull { it.id == id } ?: continue

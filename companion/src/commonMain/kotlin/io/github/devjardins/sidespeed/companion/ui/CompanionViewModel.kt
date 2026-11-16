@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.companion.ui
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.Subnets
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
@@ -33,6 +34,7 @@ object Copy {
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
+    const val OUTSIDE_NETWORK = "That address isn't on your Trusted Network"
     const val UNREACHABLE = "Couldn't reach that address on this network"
 
     fun statusLabel(s: TvStatus): String = when (s) {
@@ -90,83 +92,83 @@ class CompanionViewModel(
     }
 
     fun onOpen() {
-        scope.launch {
-            if (currentTrusted() != null) runUpkeep(Trigger.APP_OPEN) else refresh()
-        }
+        locked { if (currentTrusted() != null) runUpkeep(Trigger.APP_OPEN) else refresh() }
     }
 
     fun trustCurrentNetwork(name: String) {
-        scope.launch {
+        locked {
             val fp = fingerprints.current()
             val clean = name.trim()
-            if (fp == null) {
-                _state.update { it.copy(error = "No network to trust") }
-                return@launch
-            }
+            if (fp == null) return@locked refresh(error = "No network to trust")
             val existing = store.trustedNetworks()
-            // Same fingerprint already trusted: keep that entry rather than adding a duplicate.
-            val match = TrustMatcher.currentTrusted(fp, existing)
-            val id = match?.id ?: "net-" + clock() + "-" + existing.size
-            store.saveTrustedNetwork(TrustedNetwork(id, clean.ifEmpty { "Trusted Network ${existing.size + 1}" }, fp))
+            // Already trusted: keep that entry untouched (name and fingerprint) rather than rewriting it.
+            if (TrustMatcher.currentTrusted(fp, existing) == null) {
+                val id = "net-" + clock() + "-" + existing.size
+                store.saveTrustedNetwork(TrustedNetwork(id, clean.ifEmpty { "Trusted Network ${existing.size + 1}" }, fp))
+            }
             refresh()
         }
     }
 
+    /** Removes the network and the TVs saved under it: upkeep would never check them again. */
     fun removeTrustedNetwork(id: String) {
-        scope.launch {
+        locked {
+            store.tvs().filter { it.trustedNetworkId == id }.forEach { store.removeTv(it.id) }
             store.removeTrustedNetwork(id)
             refresh()
         }
     }
 
     fun addTvByAddress(address: String) {
-        scope.launch { work.withLock { addTv(address.trim()) } }
+        locked { addTv(address.trim()) }
     }
 
     fun findTvs() {
-        scope.launch {
-            work.withLock {
-                val trusted = currentTrusted()
-                if (trusted == null) {
-                    refresh(error = Copy.NOT_TRUSTED_ERROR)
-                    return@withLock
-                }
-                _state.update { it.copy(busy = true, error = null) }
+        locked {
+            val trusted = currentTrusted() ?: return@locked refresh(error = Copy.NOT_TRUSTED_ERROR)
+            _state.update { it.copy(busy = true, error = null) }
+            try {
                 val saved = store.tvs().map { it.address }.toSet()
                 val hosts = scanner.scan(trusted.fingerprint.subnet, TvConnector.DEFAULT_PORT).filter { it !in saved }
                 refresh()
-                _state.update { it.copy(busy = false, found = hosts) }
+                _state.update { it.copy(found = hosts) }
+            } finally {
+                _state.update { it.copy(busy = false) }
             }
         }
     }
 
+    /** Checks only [tvId] (or every TV on this Trusted Network when null) and clears its "waiting for Allow" skip. */
     fun restartNow(tvId: String? = null) {
-        scope.launch {
-            if (tvId != null) {
-                store.updateTv(tvId) { it.copy(skipBackgroundUntilUserAction = false) }
-            }
-            runUpkeep(Trigger.RESTART_NOW)
+        locked {
+            if (tvId != null) store.updateTv(tvId) { it.copy(skipBackgroundUntilUserAction = false) }
+            runUpkeep(Trigger.RESTART_NOW, tvId)
         }
     }
 
     fun removeTv(id: String) {
-        scope.launch {
+        locked {
             store.removeTv(id)
             refresh()
         }
     }
 
     fun updateSettings(s: CompanionSettings) {
-        scope.launch {
+        locked {
             store.saveSettings(s)
             refresh()
         }
     }
 
-    private suspend fun runUpkeep(trigger: Trigger) {
+    /** Runs [block] one at a time, so busy and error state can't be clobbered by overlapping actions. */
+    private fun locked(block: suspend () -> Unit) {
+        scope.launch { work.withLock { block() } }
+    }
+
+    private suspend fun runUpkeep(trigger: Trigger, onlyTvId: String? = null) {
         _state.update { it.copy(busy = true) }
         try {
-            upkeep.runOnce(trigger)
+            upkeep.runOnce(trigger, onlyTvId)
         } finally {
             refresh()
         }
@@ -178,6 +180,8 @@ class CompanionViewModel(
     private suspend fun addTv(address: String) {
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
         val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        // Only addresses on the Trusted Network's own subnet are ever contacted.
+        if (!Subnets.containsHost(trusted.fingerprint.subnet, address)) return refresh(error = Copy.OUTSIDE_NETWORK)
         _state.update { it.copy(busy = true, error = null) }
         val identity = try {
             connector.open(address).use { session ->
@@ -196,6 +200,8 @@ class CompanionViewModel(
             return refresh(error = Copy.UNREACHABLE)
         }
         val (serial, model, maker) = identity
+        // The network may have changed during the connect: don't record a TV for a network we've left.
+        if (currentTrusted()?.id != trusted.id) return refresh(error = Copy.NOT_TRUSTED_ERROR)
         if (serial.isBlank()) return refresh(error = Copy.NO_SERIAL)
         val existing = store.tvs().firstOrNull { it.serial == serial }
         store.saveTv(
@@ -216,7 +222,9 @@ class CompanionViewModel(
         val networks = store.trustedNetworks()
         val trusted = TrustMatcher.currentTrusted(fp, networks)
         val now = clock()
-        val cards = store.tvs().map { tv ->
+        val tvs = store.tvs()
+        val saved = tvs.map { it.address }.toSet()
+        val cards = tvs.map { tv ->
             TvCardState(
                 id = tv.id,
                 name = tv.name,
@@ -237,6 +245,7 @@ class CompanionViewModel(
                 settings = store.settings(),
                 busy = false,
                 error = error,
+                found = if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
             )
         }
     }

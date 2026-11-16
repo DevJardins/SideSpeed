@@ -114,4 +114,51 @@ class CompanionViewModelTest {
             r.vm.state.value.tvs.single().note,
         )
     }
+
+    @Test
+    fun addOutsideTrustedSubnetOrBadAddressConnectsToNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("8.8.8.8")
+        assertEquals(Copy.OUTSIDE_NETWORK, r.vm.state.value.error)
+        r.vm.addTvByAddress("not-an-ip")
+        assertEquals(Copy.BAD_ADDRESS, r.vm.state.value.error)
+        assertTrue(r.fake.opened.isEmpty())
+        assertTrue(r.store.tvs().isEmpty())
+    }
+
+    @Test
+    fun addErrorPathsShowMessagesAndSaveNothing() = runTest(UnconfinedTestDispatcher()) {
+        val pending = rig(trusted = true, fake = tv().also { it.authPending = true })
+        pending.vm.addTvByAddress("192.168.5.20")
+        assertEquals(Copy.ALLOW_STEP, pending.vm.state.value.error)
+        val down = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
+        down.vm.addTvByAddress("192.168.5.20")
+        assertEquals(Copy.UNREACHABLE, down.vm.state.value.error)
+        val blank = rig(trusted = true, fake = tv().also { it.outputs[TvCommands.SERIAL] = "" })
+        blank.vm.addTvByAddress("192.168.5.20")
+        assertEquals(Copy.NO_SERIAL, blank.vm.state.value.error)
+        assertTrue(pending.store.tvs().isEmpty() && down.store.tvs().isEmpty() && blank.store.tvs().isEmpty())
+        assertEquals(false, blank.vm.state.value.busy)
+    }
+
+    @Test
+    fun restartNowWithTvIdChecksOnlyThatTv() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        r.store.saveTv(r.store.tv("tv-1").copy(id = "tv-2", serial = "OTHER", address = "192.168.5.21"))
+        r.fake.opened.clear()
+        r.vm.restartNow("tv-1")
+        assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
+    }
+
+    @Test
+    fun removingTrustedNetworkRemovesItsTvsAndRetrustKeepsName() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.trustCurrentNetwork("Renamed")
+        assertEquals("Living room", r.store.trustedNetworks().single().name)
+        r.vm.removeTrustedNetwork("home")
+        assertTrue(r.store.tvs().isEmpty())
+        assertTrue(r.vm.state.value.tvs.isEmpty())
+    }
 }

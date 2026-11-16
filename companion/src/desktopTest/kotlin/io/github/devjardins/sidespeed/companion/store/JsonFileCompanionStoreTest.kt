@@ -55,6 +55,13 @@ class JsonFileCompanionStoreTest {
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".tmp") })
     }
 
+    @Test fun isFireTvRoundTripsAndDefaultsToTrue() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv.copy(isFireTv = false))
+        assertEquals(false, JsonFileCompanionStore(dir).tvs().single().isFireTv)
+        assertEquals(true, SavedTv("a", "n", "1.2.3.4", "S", "net").isFireTv)
+    }
+
     @Test fun saveReplacesByIdAndRemoveDeletes() = runBlocking {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv)

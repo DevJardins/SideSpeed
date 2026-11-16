@@ -27,6 +27,14 @@ object Subnets {
         return "${(net shr 24) and 255}.${(net shr 16) and 255}.${(net shr 8) and 255}.${net and 255}/$prefix"
     }
 
+    /** True if [host] is a plain dotted IPv4 address inside [subnet] (any prefix). */
+    fun containsHost(subnet: String, host: String): Boolean {
+        val net = normalize(subnet) ?: return false
+        val prefix = net.substringAfter('/')
+        if (normalize("$host/32") == null) return false
+        return normalize("$host/$prefix") == net
+    }
+
     /** Lower-cases a MAC, uses ':' separators and zero-pads each byte; null if it isn't six hex bytes. */
     fun normalizeMac(mac: String): String? {
         val bytes = mac.trim().lowercase().split(':', '-')
