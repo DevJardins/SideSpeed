@@ -42,10 +42,11 @@ object Subnets {
 object TrustMatcher {
     /**
      * Same gateway IP and subnet, and DNS sets intersect (or both empty); if both have gatewayMac they must be
-     * equal. Malformed subnets or MACs never match.
+     * equal. A blank gateway IP, malformed subnets or MACs never match.
      */
     fun matches(current: NetworkFingerprint, trusted: NetworkFingerprint): Boolean {
-        if (current.gatewayIp.trim() != trusted.gatewayIp.trim()) return false
+        val cg = current.gatewayIp.trim()
+        if (cg.isEmpty() || cg != trusted.gatewayIp.trim()) return false
         val cs = Subnets.normalize(current.subnet) ?: return false
         val ts = Subnets.normalize(trusted.subnet) ?: return false
         if (cs != ts) return false

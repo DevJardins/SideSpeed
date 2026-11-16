@@ -27,6 +27,11 @@ class TrustedNetworksTest {
     @Test fun oneMacMissingIgnored() = assertTrue(TrustMatcher.matches(fp(mac = "aa:bb:cc:dd:ee:01"), fp()))
     @Test fun macFormatsEqual() =
         assertTrue(TrustMatcher.matches(fp(mac = "0:1A:2b:3C:4d:5E"), fp(mac = "00-1a-2B-3c-4D-5e")))
+    @Test fun blankGatewayNeverMatches() {
+        assertFalse(TrustMatcher.matches(fp(gw = ""), fp(gw = "")))
+        assertFalse(TrustMatcher.matches(fp(gw = " "), fp()))
+        assertFalse(TrustMatcher.matches(fp(), fp(gw = "")))
+    }
     @Test fun badSubnetNeverMatches() = assertFalse(TrustMatcher.matches(fp(subnet = "nope"), fp(subnet = "nope")))
     @Test fun badMacNeverMatches() = assertFalse(TrustMatcher.matches(fp(mac = "zz"), fp(mac = "zz")))
 

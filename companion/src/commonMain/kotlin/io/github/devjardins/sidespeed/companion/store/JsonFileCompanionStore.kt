@@ -1,0 +1,194 @@
+package io.github.devjardins.sidespeed.companion.store
+
+import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
+/**
+ * Keeps everything in one JSON file, [FILE_NAME], under [dir] (the platform data directory, supplied by the
+ * caller). Each save rewrites the whole file atomically: a temp file in the same directory, then a rename.
+ *
+ * A missing, unreadable or corrupt file reads as empty defaults and is never rewritten by a read. The next
+ * successful save moves a corrupt file aside to `<name>.corrupt` and writes fresh state. Individual entries that
+ * are malformed (missing fields, blank serial) are skipped; an unknown status reads as [TvStatus.UNKNOWN].
+ */
+class JsonFileCompanionStore(private val dir: File) : CompanionStore {
+    private data class State(
+        val tvs: List<SavedTv> = emptyList(),
+        val networks: List<TrustedNetwork> = emptyList(),
+        val settings: CompanionSettings = CompanionSettings(),
+    )
+
+    private val mutex = Mutex()
+    private var state: State? = null
+    private var loadedCorrupt = false
+
+    private val file get() = File(dir, FILE_NAME)
+
+    override suspend fun tvs(): List<SavedTv> = read { it.tvs }
+    override suspend fun trustedNetworks(): List<TrustedNetwork> = read { it.networks }
+    override suspend fun settings(): CompanionSettings = read { it.settings }
+
+    override suspend fun saveTv(tv: SavedTv) {
+        SavedTv.requireValid(tv)
+        update { it.copy(tvs = it.tvs.upsert(tv) { x -> x.id }) }
+    }
+
+    override suspend fun removeTv(id: String) = update { it.copy(tvs = it.tvs.filterNot { t -> t.id == id }) }
+
+    override suspend fun saveTrustedNetwork(n: TrustedNetwork) =
+        update { it.copy(networks = it.networks.upsert(n) { x -> x.id }) }
+
+    override suspend fun removeTrustedNetwork(id: String) =
+        update { it.copy(networks = it.networks.filterNot { n -> n.id == id }) }
+
+    override suspend fun saveSettings(s: CompanionSettings) = update { it.copy(settings = s) }
+
+    private suspend fun <T> read(pick: (State) -> T): T = mutex.withLock { pick(loaded()) }
+
+    private suspend fun update(change: (State) -> State) = mutex.withLock {
+        val next = change(loaded())
+        withContext(Dispatchers.IO) { writeAtomically(encode(next)) }
+        state = next
+    }
+
+    private suspend fun loaded(): State = state ?: withContext(Dispatchers.IO) { load() }.also { state = it }
+
+    private fun load(): State {
+        val f = file
+        if (!f.exists()) return State()
+        return try {
+            decode(MiniJson.parse(f.readText(Charsets.UTF_8))) ?: throw MiniJson.Malformed("Not a store object")
+        } catch (e: MiniJson.Malformed) {
+            loadedCorrupt = true
+            State()
+        } catch (e: IOException) {
+            // Unreadable: same as corrupt, so it is set aside rather than lost on the next save.
+            loadedCorrupt = true
+            State()
+        }
+    }
+
+    private fun writeAtomically(text: String) {
+        if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) throw IOException("Cannot create $dir")
+        val target = file.toPath()
+        if (loadedCorrupt && file.exists()) {
+            Files.move(target, File(dir, "$FILE_NAME.corrupt").toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        val tmp = File.createTempFile(FILE_NAME, ".tmp", dir)
+        try {
+            tmp.writeText(text, Charsets.UTF_8)
+            try {
+                Files.move(tmp.toPath(), target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (e: AtomicMoveNotSupportedException) {
+                Files.move(tmp.toPath(), target, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            tmp.delete()
+        }
+        loadedCorrupt = false
+    }
+
+    private fun <T> List<T>.upsert(item: T, id: (T) -> String): List<T> {
+        val i = indexOfFirst { id(it) == id(item) }
+        return if (i >= 0) toMutableList().also { it[i] = item } else this + item
+    }
+
+    // --- Encoding ---------------------------------------------------------------------------------------------
+
+    private fun encode(s: State): String = MiniJson.write(
+        mapOf(
+            "version" to VERSION,
+            "tvs" to s.tvs.map { t ->
+                mapOf(
+                    "id" to t.id, "name" to t.name, "address" to t.address, "serial" to t.serial,
+                    "trustedNetworkId" to t.trustedNetworkId, "status" to t.status.name,
+                    "lastCheckedEpochMs" to t.lastCheckedEpochMs, "offlineCount" to t.offlineCount,
+                    "lastRefindEpochMs" to t.lastRefindEpochMs,
+                    "skipBackgroundUntilUserAction" to t.skipBackgroundUntilUserAction,
+                )
+            },
+            "trustedNetworks" to s.networks.map { n ->
+                mapOf(
+                    "id" to n.id, "name" to n.name,
+                    "fingerprint" to mapOf(
+                        "gatewayIp" to n.fingerprint.gatewayIp,
+                        "subnet" to n.fingerprint.subnet,
+                        "dnsServers" to n.fingerprint.dnsServers.toList(),
+                        "gatewayMac" to n.fingerprint.gatewayMac,
+                    ),
+                )
+            },
+            "settings" to mapOf(
+                "notifications" to s.settings.notifications,
+                "intervalMinutes" to s.settings.intervalMinutes,
+                "startAtLogin" to s.settings.startAtLogin,
+            ),
+        ),
+    )
+
+    private fun decode(root: Any?): State? {
+        if (root !is Map<*, *>) return null
+        val tvs = (root["tvs"] as? List<*>).orEmpty().mapNotNull { decodeTv(it) }
+        val networks = (root["trustedNetworks"] as? List<*>).orEmpty().mapNotNull { decodeNetwork(it) }
+        val defaults = CompanionSettings()
+        val settings = (root["settings"] as? Map<*, *>)?.let { m ->
+            CompanionSettings(
+                notifications = m["notifications"] as? Boolean ?: defaults.notifications,
+                intervalMinutes = m.int("intervalMinutes")?.takeIf { it > 0 } ?: defaults.intervalMinutes,
+                startAtLogin = m["startAtLogin"] as? Boolean ?: defaults.startAtLogin,
+            )
+        } ?: defaults
+        return State(tvs, networks, settings)
+    }
+
+    private fun decodeTv(v: Any?): SavedTv? {
+        val m = v as? Map<*, *> ?: return null
+        val tv = SavedTv(
+            id = m["id"] as? String ?: return null,
+            name = m["name"] as? String ?: return null,
+            address = m["address"] as? String ?: return null,
+            serial = m["serial"] as? String ?: return null,
+            trustedNetworkId = m["trustedNetworkId"] as? String ?: return null,
+            status = TvStatus.entries.firstOrNull { it.name == m["status"] } ?: TvStatus.UNKNOWN,
+            lastCheckedEpochMs = m.long("lastCheckedEpochMs"),
+            offlineCount = m.int("offlineCount")?.coerceAtLeast(0) ?: 0,
+            lastRefindEpochMs = m.long("lastRefindEpochMs"),
+            skipBackgroundUntilUserAction = m["skipBackgroundUntilUserAction"] as? Boolean ?: false,
+        )
+        return if (tv.id.isBlank() || tv.serial.isBlank()) null else tv
+    }
+
+    private fun decodeNetwork(v: Any?): TrustedNetwork? {
+        val m = v as? Map<*, *> ?: return null
+        val fp = m["fingerprint"] as? Map<*, *> ?: return null
+        return TrustedNetwork(
+            id = m["id"] as? String ?: return null,
+            name = m["name"] as? String ?: return null,
+            fingerprint = NetworkFingerprint(
+                gatewayIp = fp["gatewayIp"] as? String ?: return null,
+                subnet = fp["subnet"] as? String ?: return null,
+                dnsServers = (fp["dnsServers"] as? List<*>)?.map { it as? String ?: return null }?.toSet() ?: return null,
+                gatewayMac = fp["gatewayMac"] as? String,
+            ),
+        )
+    }
+
+    private fun Map<*, *>.long(key: String): Long? = this[key] as? Long
+
+    private fun Map<*, *>.int(key: String): Int? =
+        (this[key] as? Long)?.takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }?.toInt()
+
+    companion object {
+        const val FILE_NAME = "companion.json"
+        private const val VERSION = 1
+    }
+}
