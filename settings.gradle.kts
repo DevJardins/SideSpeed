@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 rootProject.name = "SideSpeed"
 include(":app")
 include(":shared")
+include(":companion")

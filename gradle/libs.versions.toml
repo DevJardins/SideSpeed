@@ -12,6 +12,7 @@ conscrypt = "2.5.3"
 hiddenapibypass = "6.1"
 junit = "4.13.2"
 coroutines = "1.11.0"
+kadb = "2.1.4"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -29,6 +30,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kadb = { module = "com.flyfishxu:kadb", version.ref = "kadb" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
