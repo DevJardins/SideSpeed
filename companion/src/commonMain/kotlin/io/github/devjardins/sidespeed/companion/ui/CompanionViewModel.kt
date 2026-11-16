@@ -439,7 +439,10 @@ class CompanionViewModel(
         }
         if (!stillHere) return refresh(error = Copy.NOT_TRUSTED_ERROR)
         if (serial.isBlank()) return refresh(error = Copy.NO_SERIAL)
-        val existing = store.tvs().firstOrNull { it.serial == serial && it.trustedNetworkId == scopeId }
+        // Same TV: same scope, or any LAN entry when this add is a LAN one (a TV moved between Trusted Networks).
+        val existing = store.tvs().firstOrNull {
+            it.serial == serial && (it.trustedNetworkId == scopeId || (binding == null && it.overlayPeerId == null))
+        }
         store.saveTv(
             SavedTv(
                 id = existing?.id ?: idGenerator(),

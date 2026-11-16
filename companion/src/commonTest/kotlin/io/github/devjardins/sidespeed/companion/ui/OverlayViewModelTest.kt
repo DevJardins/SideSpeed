@@ -190,6 +190,18 @@ class OverlayViewModelTest {
         assertEquals(TvStatus.RUNNING, r.store.tv("o").status)
     }
 
+    @Test fun reAddingOnASecondTrustedNetworkMovesTheTvInsteadOfDuplicating() = runTest(UnconfinedTestDispatcher()) {
+        val cabin = NetworkFingerprint("10.1.1.1", "10.1.1.0/24", setOf("10.1.1.1"))
+        val store = InMemoryCompanionStore(networks = listOf(homeNet, TrustedNetwork("cabin", "Cabin", cabin)))
+        val r = Rig(this, store, tv(), home, null)
+        r.vm.addTvByAddress("192.168.5.20")
+        r.fp = cabin
+        r.vm.addTvByAddress("10.1.1.20")
+        val saved = r.store.tvs().single()
+        assertEquals("cabin", saved.trustedNetworkId)
+        assertEquals("10.1.1.20", saved.address)
+    }
+
     @Test fun removingAnOverlayRemovesItsTvsAndKeepsOthers() = runTest(UnconfinedTestDispatcher()) {
         val r = rig()
         r.store.saveTv(SavedTv("o", "O", "100.101.1.1", "S-O", trusted.id, overlayPeerId = "nCUBE"))
