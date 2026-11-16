@@ -7,7 +7,9 @@ import io.github.devjardins.sidespeed.companion.discovery.DiscoveryEvent
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
 import io.github.devjardins.sidespeed.companion.discovery.DiscoverySummary
 import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
+import io.github.devjardins.sidespeed.companion.discovery.RangeChoice
 import io.github.devjardins.sidespeed.companion.discovery.diagnose
+import io.github.devjardins.sidespeed.companion.discovery.scanRangeFor
 import io.github.devjardins.sidespeed.companion.discovery.sweepScope
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
@@ -60,6 +62,7 @@ object Copy {
     const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
+    const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
 
     fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
 
@@ -145,6 +148,8 @@ class CompanionViewModel(
     private val work = Mutex()
     private var findJob: Job? = null
     private var lastSummary = DiscoverySummary()
+    /** The range the current sweep is limited to; blank is the automatic one. Keep scanning reuses it. */
+    private var findRange = ""
     /** Every host probed across the runs since the last fresh Find TVs, so Keep scanning resumes past them. */
     private val probedSinceFind = HashSet<Ipv4>()
 
@@ -253,7 +258,13 @@ class CompanionViewModel(
      * [work] mutex, so adding a TV or running upkeep never waits for the sweep. A press while scanning, or a
      * second [keepScanning], does nothing. Clears the previous results first; [keepScanning] keeps them.
      */
-    fun findTvs() = startFind(clearFound = true)
+    fun findTvs() = findTvsIn("")
+
+    /** Sweeps the Trusted Network, limited to [range] when it names a block on it; blank is automatic. */
+    fun findTvsIn(range: String) {
+        findRange = range
+        startFind(clearFound = true)
+    }
 
     /** Re-sweeps without clearing what the stopped scan already found. */
     fun keepScanning() = startFind(clearFound = false)
@@ -331,8 +342,16 @@ class CompanionViewModel(
         // The live address, not the saved one: DHCP moves it, and networks saved before ownIp existed have none.
         val own = fingerprints.current()?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
         val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
+        val scope = when (val c = scanRangeFor(findRange, trusted)) {
+            RangeChoice.Invalid -> {
+                refresh(error = Copy.BAD_RANGE, settleBusy = false)
+                return false
+            }
+            is RangeChoice.Custom -> c.cidr
+            RangeChoice.Default -> sweepScope(subnet, own, gateway)
+        }
         var swept = false
-        discovery.run(DiscoveryPlan(sweepScope(subnet, own, gateway), own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
+        discovery.run(DiscoveryPlan(scope, own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {
                 is DiscoveryEvent.Progress ->
                     _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }

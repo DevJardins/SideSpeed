@@ -101,6 +101,56 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun findTvsInACustomRangeSweepsOnlyThatRange() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.findTvsIn("192.168.4.0/23")
+        runCurrent()
+        val scope = Cidr.parse("192.168.4.0/23")!!
+        assertTrue(r.lan.calls.isNotEmpty())
+        assertTrue(r.lan.calls.all { it.address in scope })
+        assertTrue(r.lan.calls.any { it.address.toString().startsWith("192.168.4.") })
+        assertNotNull(r.vm.state.value.diagnosis)
+    }
+
+    @Test
+    fun aBadRangeErrorsAndDoesNotScan() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.findTvsIn("10.0.0.0/8")
+        runCurrent()
+        assertTrue(r.lan.calls.isEmpty())
+        assertEquals(Copy.BAD_RANGE, r.vm.state.value.error)
+        assertEquals(false, r.vm.state.value.scanning)
+        assertNull(r.vm.state.value.diagnosis)
+    }
+
+    @Test
+    fun keepScanningStaysInTheCustomRange() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val lan = FakeLan(delayMs = 10)
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvsIn("192.168.4.0/23")
+        advanceTimeBy(150)
+        vm.cancelFind()
+        runCurrent()
+        vm.keepScanning()
+        advanceUntilIdle()
+        val scope = Cidr.parse("192.168.4.0/23")!!
+        assertTrue(lan.calls.isNotEmpty())
+        assertTrue(lan.calls.all { it.address in scope })
+    }
+
+    @Test
+    fun blankRangeIsTheAutomaticSweep() = runTest(UnconfinedTestDispatcher()) {
+        val a = rig(trusted = true)
+        val b = rig(trusted = true)
+        a.vm.findTvs()
+        b.vm.findTvsIn("")
+        runCurrent()
+        assertTrue(a.lan.calls.isNotEmpty())
+        assertEquals(a.lan.calls.map { it.address }, b.lan.calls.map { it.address })
+    }
+
+    @Test
     fun addTvSavesSerialAndModelThenRunsUpkeep() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         r.vm.addTvByAddress("192.168.5.20")
