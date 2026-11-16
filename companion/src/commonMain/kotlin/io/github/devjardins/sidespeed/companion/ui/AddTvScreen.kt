@@ -48,8 +48,6 @@ fun AddTvScreen(
         } else if (state.scanStopped || state.diagnosis == Diagnosis.PARTIAL) {
             SsButton("Keep scanning", onKeepScanning)
         }
-        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
-        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
         state.found.forEach { host ->
             val adding = host in state.adding
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -65,5 +63,7 @@ fun AddTvScreen(
         state.unsupported.forEach { host ->
             SsText("$host  ${Copy.TLS_UNSUPPORTED}", Ss.caption)
         }
+        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
+        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
     }
 }
