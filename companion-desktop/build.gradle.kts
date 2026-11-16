@@ -44,6 +44,12 @@ compose.desktop {
                 bundleID = "io.github.devjardins.sidespeed.companion"
                 dockName = "SideSpeed Companion"
                 iconFile.set(project.file("src/main/resources/icons/app.icns"))
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>NSLocalNetworkUsageDescription</key>
+                        <string>SideSpeed Companion checks your TVs on your Trusted Networks.</string>
+                    """.trimIndent()
+                }
             }
             windows {
                 menuGroup = "SideSpeed"
