@@ -14,8 +14,8 @@ import java.net.Socket
 
 /** Finds hosts accepting TCP on [port]. It only opens and closes a TCP connection; it never speaks ADB. */
 interface Scanner {
-    /** Addresses in [subnet] answering on [port], in address order. */
-    suspend fun scan(subnet: String, port: Int = 5555): List<String>
+    /** ADB hosts in [subnet] answering on [port]; [near], a host in [subnet], is scanned around first. */
+    suspend fun scan(subnet: String, port: Int = 5555, near: String? = null): List<String>
 }
 
 /**
@@ -53,7 +53,7 @@ class TcpScanner(
         require(connectTimeoutMs > 0 && parallelism > 0) { "invalid scanner settings" }
     }
 
-    override suspend fun scan(subnet: String, port: Int): List<String> {
+    override suspend fun scan(subnet: String, port: Int, near: String?): List<String> {
         if (port !in 1..65535) return emptyList()
         val targets = probeTargets(subnet)
         if (targets.isEmpty()) return emptyList()

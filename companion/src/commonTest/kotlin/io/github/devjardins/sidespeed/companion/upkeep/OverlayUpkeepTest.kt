@@ -68,7 +68,7 @@ class OverlayUpkeepTest {
 
     private class Scan : Scanner {
         val calls = mutableListOf<String>()
-        override suspend fun scan(subnet: String, port: Int): List<String> { calls += subnet; return emptyList() }
+        override suspend fun scan(subnet: String, port: Int, near: String?): List<String> { calls += subnet; return emptyList() }
     }
 
     private class Snapshots(var current: OverlaySnapshot?) : OverlaySource {

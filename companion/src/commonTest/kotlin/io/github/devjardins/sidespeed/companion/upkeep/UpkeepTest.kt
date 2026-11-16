@@ -66,9 +66,11 @@ class UpkeepTest {
 
     private class FakeScanner(var answer: List<String> = emptyList()) : Scanner {
         val calls = mutableListOf<String>()
+        val nears = mutableListOf<String?>()
         var onScan: () -> Unit = {}
-        override suspend fun scan(subnet: String, port: Int): List<String> {
+        override suspend fun scan(subnet: String, port: Int, near: String?): List<String> {
             calls += "$subnet:$port"
+            nears += near
             onScan()
             return answer
         }
