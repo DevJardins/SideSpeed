@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.companion.store
 
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -68,6 +69,32 @@ class JsonFileCompanionStoreTest {
         s.saveTv(tv.copy(isFireTv = false))
         assertEquals(false, JsonFileCompanionStore(dir).tvs().single().isFireTv)
         assertEquals(true, SavedTv("a", "n", "1.2.3.4", "S", "net").isFireTv)
+    }
+
+    @Test fun overlaysAndPeerBindingsRoundTripAndOldFilesLoadWithNone() = runBlocking {
+        val overlay = TrustedOverlay("overlay-1", "Home tailnet", "me@example.com", "nSELF")
+        val bound = tv.copy(id = "tv3", serial = "S3", trustedNetworkId = overlay.id, overlayPeerId = "nCUBE")
+        val s = JsonFileCompanionStore(dir)
+        s.saveTrustedOverlay(overlay)
+        s.saveTv(bound)
+        s.saveTv(tv)
+        val r = JsonFileCompanionStore(dir)
+        assertEquals(listOf(overlay), r.trustedOverlays())
+        assertEquals(bound, r.tvs().first { it.id == "tv3" })
+        assertEquals(null, r.tvs().first { it.id == "tv1" }.overlayPeerId)
+        r.saveTrustedOverlay(overlay.copy(name = "Renamed"))
+        assertEquals("Renamed", r.trustedOverlays().single().name)
+        r.removeTrustedOverlay(overlay.id)
+        assertEquals(emptyList(), JsonFileCompanionStore(dir).trustedOverlays())
+
+        // A store written before overlays existed has neither key.
+        file.writeText("""{"version":1,"tvs":[],"trustedNetworks":[],"settings":{}}""")
+        assertEquals(emptyList(), JsonFileCompanionStore(dir).trustedOverlays())
+    }
+
+    @Test fun malformedOverlayEntriesAreSkipped() = runBlocking {
+        file.writeText("""{"version":1,"trustedOverlays":[{"id":"o1","name":"ok","tailnet":"t","selfId":"s"},{"id":"o2"},5,{"id":"o3","name":"n","tailnet":"","selfId":"s"}]}""")
+        assertEquals(listOf("o1"), JsonFileCompanionStore(dir).trustedOverlays().map { it.id })
     }
 
     @Test fun saveReplacesByIdAndRemoveDeletes() = runBlocking {

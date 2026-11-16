@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.companion.store
 
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 
 enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, UNKNOWN }
 
@@ -24,6 +25,11 @@ data class SavedTv(
     val skipBackgroundUntilUserAction: Boolean = false,
     /** False when the TV's manufacturer isn't Amazon: SideSpeed there handles setup itself (the spec's Google TV note). */
     val isFireTv: Boolean = true,
+    /**
+     * For a TV on a [TrustedOverlay]: the Tailscale node ID it is bound to. The address may change (and is then
+     * updated once the serial matches); the node may not. Null for a TV on a Trusted Network.
+     */
+    val overlayPeerId: String? = null,
 ) {
     companion object {
         /** @throws IllegalArgumentException if [tv] has a blank id or serial. */
@@ -79,6 +85,10 @@ interface CompanionStore {
     suspend fun trustedNetworks(): List<TrustedNetwork>
     suspend fun saveTrustedNetwork(n: TrustedNetwork)
     suspend fun removeTrustedNetwork(id: String)
+
+    suspend fun trustedOverlays(): List<TrustedOverlay>
+    suspend fun saveTrustedOverlay(o: TrustedOverlay)
+    suspend fun removeTrustedOverlay(id: String)
 
     suspend fun settings(): CompanionSettings
     suspend fun saveSettings(s: CompanionSettings)

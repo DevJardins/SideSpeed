@@ -264,6 +264,7 @@ failing test, then the code.
 
 - **D1** Is "anyone who administers the tailnet can reach the TV" acceptable as the trust root for remote
   upkeep? (Recommended: yes, desktop only.)
+  **Decided (2026-11-16): yes, desktop only, as recommended.** Phase 2 is unblocked; Phase 3 still waits on D3/D4/D5.
 - **D2** Tailscale/Headscale as the only adapter for now? NetBird later only if someone asks?
 - **D3** Android away-from-home upkeep with the weaker trust in phase 3, or desktop-only for remote?
 - **D4** Support TVs reached via a subnet router (no Tailscale on the TV)? Riskier (collisions) and the

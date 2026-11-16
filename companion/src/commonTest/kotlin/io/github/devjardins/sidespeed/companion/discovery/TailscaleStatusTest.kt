@@ -3,6 +3,10 @@ package io.github.devjardins.sidespeed.companion.discovery
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TailscaleStatusTest {
     private fun ip(s: String) = Ipv4.parse(s)!!
@@ -58,5 +62,54 @@ class TailscaleStatusTest {
     fun capsHowManyPeersAreListed() {
         val peers = (1..400).joinToString(",") { """"n$it":{"TailscaleIPs":["100.102.${it / 250}.${it % 250 + 1}"],"OS":"android"}""" }
         assertEquals(TailscaleStatus.MAX_PEERS, TailscaleStatus.peerAddresses("""{"Peer":{$peers}}""").size)
+    }
+}
+
+class TailscaleSnapshotTest {
+    private fun ip(s: String) = Ipv4.parse(s)!!
+
+    private val running = """
+        {"Version":"1.80.0","BackendState":"Running","TUN":true,
+         "CurrentTailnet":{"Name":"me@example.com","MagicDNSSuffix":"tail1234.ts.net"},
+         "Self":{"ID":"nSELF","HostName":"mac","TailscaleIPs":["100.100.1.1","fd7a:115c:a1e0::1"],"Online":true},
+         "Peer":{
+           "nodekey:aaa":{"ID":"nCUBE","HostName":"cube","OS":"android","TailscaleIPs":["100.101.102.103","fd7a:115c:a1e0::2"],"Online":true},
+           "nodekey:bbb":{"ID":"nSHARED","HostName":"friend","OS":"android","TailscaleIPs":["100.101.102.104"],"Online":true,"ShareeNode":true},
+           "nodekey:ccc":{"HostName":"no-id","TailscaleIPs":["100.101.102.105"]},
+           "nodekey:ddd":{"ID":"nASLEEP","HostName":"tv2","TailscaleIPs":["100.101.102.106"],"Online":false}
+         }}
+    """.trimIndent()
+
+    @Test fun readsTheTailnetSelfAndPeersKeepingOnlyIpv4() {
+        val s = assertNotNull(TailscaleStatus.snapshot(running))
+        assertEquals("me@example.com", s.tailnet)
+        assertEquals("nSELF", s.selfId)
+        assertEquals(listOf(ip("100.100.1.1")), s.selfIps)
+        assertTrue(s.running && s.tun)
+        val cube = s.peers.first { it.id == "nCUBE" }
+        assertEquals(listOf(ip("100.101.102.103")), cube.ips)
+        assertEquals("android", cube.os)
+        assertTrue(cube.online && !cube.shared)
+        assertTrue(s.peers.first { it.id == "nSHARED" }.shared)
+        assertFalse(s.peers.first { it.id == "nASLEEP" }.online)
+    }
+
+    @Test fun peersWithoutAnIdAreDropped() {
+        assertEquals(setOf("nCUBE", "nSHARED", "nASLEEP"), TailscaleStatus.snapshot(running)!!.peers.map { it.id }.toSet())
+    }
+
+    @Test fun notRunningOrUserspaceIsReportedNotHidden() {
+        val stopped = TailscaleStatus.snapshot(running.replace("\"Running\"", "\"Stopped\""))!!
+        assertFalse(stopped.running)
+        val userspace = TailscaleStatus.snapshot(running.replace("\"TUN\":true", "\"TUN\":false"))!!
+        assertFalse(userspace.tun)
+        val missingTun = TailscaleStatus.snapshot(running.replace("\"TUN\":true,", ""))!!
+        assertFalse(missingTun.tun, "an unreported TUN is not trusted")
+    }
+
+    @Test fun missingIdentityOrGarbageGivesNull() {
+        assertNull(TailscaleStatus.snapshot(running.replace("\"CurrentTailnet\"", "\"Other\"")))
+        assertNull(TailscaleStatus.snapshot(running.replace("\"ID\":\"nSELF\",", "")))
+        for (bad in listOf("", "not json", "[]", "{}", """{"Self":5}""")) assertNull(TailscaleStatus.snapshot(bad), bad)
     }
 }

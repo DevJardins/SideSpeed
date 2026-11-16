@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.companion.store
 
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 
 /** A [CompanionStore] for tests. Applies the same blank-serial rule as the file store. */
 class InMemoryCompanionStore(
@@ -10,6 +11,7 @@ class InMemoryCompanionStore(
 ) : CompanionStore {
     private val tvs = tvs.toMutableList()
     private val networks = networks.toMutableList()
+    private val overlays = mutableListOf<TrustedOverlay>()
     var prompted: List<PromptedHost> = emptyList()
 
     fun tv(id: String): SavedTv = tvs.first { it.id == id }
@@ -39,6 +41,12 @@ class InMemoryCompanionStore(
         if (i >= 0) networks[i] = n else networks += n
     }
     override suspend fun removeTrustedNetwork(id: String) { networks.removeAll { it.id == id } }
+    override suspend fun trustedOverlays(): List<TrustedOverlay> = overlays.toList()
+    override suspend fun saveTrustedOverlay(o: TrustedOverlay) {
+        val i = overlays.indexOfFirst { it.id == o.id }
+        if (i >= 0) overlays[i] = o else overlays += o
+    }
+    override suspend fun removeTrustedOverlay(id: String) { overlays.removeAll { it.id == id } }
     override suspend fun settings(): CompanionSettings = settings
     override suspend fun saveSettings(s: CompanionSettings) { settings = s }
 }

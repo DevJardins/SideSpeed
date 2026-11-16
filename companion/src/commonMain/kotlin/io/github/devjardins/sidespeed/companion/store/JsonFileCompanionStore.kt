@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.store
 
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -28,6 +29,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
     private data class State(
         val tvs: List<SavedTv> = emptyList(),
         val networks: List<TrustedNetwork> = emptyList(),
+        val overlays: List<TrustedOverlay> = emptyList(),
         val settings: CompanionSettings = CompanionSettings(),
         val prompted: List<PromptedHost> = emptyList(),
     )
@@ -41,6 +43,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
     override suspend fun tvs(): List<SavedTv> = read { it.tvs }
     override suspend fun trustedNetworks(): List<TrustedNetwork> = read { it.networks }
     override suspend fun settings(): CompanionSettings = read { it.settings }
+    override suspend fun trustedOverlays(): List<TrustedOverlay> = read { it.overlays }
 
     override suspend fun saveTv(tv: SavedTv) {
         SavedTv.requireValid(tv)
@@ -68,6 +71,12 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     override suspend fun removeTrustedNetwork(id: String) =
         update { it.copy(networks = it.networks.filterNot { n -> n.id == id }) }
+
+    override suspend fun saveTrustedOverlay(o: TrustedOverlay) =
+        update { it.copy(overlays = it.overlays.upsert(o) { x -> x.id }) }
+
+    override suspend fun removeTrustedOverlay(id: String) =
+        update { it.copy(overlays = it.overlays.filterNot { o -> o.id == id }) }
 
     override suspend fun saveSettings(s: CompanionSettings) = update { it.copy(settings = s) }
 
@@ -141,6 +150,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                     "lastRefindEpochMs" to t.lastRefindEpochMs,
                     "skipBackgroundUntilUserAction" to t.skipBackgroundUntilUserAction,
                     "isFireTv" to t.isFireTv,
+                    "overlayPeerId" to t.overlayPeerId,
                 )
             },
             "trustedNetworks" to s.networks.map { n ->
@@ -153,6 +163,9 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                         "gatewayMac" to n.fingerprint.gatewayMac,
                     ),
                 )
+            },
+            "trustedOverlays" to s.overlays.map { o ->
+                mapOf("id" to o.id, "name" to o.name, "tailnet" to o.tailnet, "selfId" to o.selfId)
             },
             "promptedHosts" to s.prompted.map { p ->
                 mapOf("trustedNetworkId" to p.trustedNetworkId, "address" to p.address, "atEpochMs" to p.atEpochMs)
@@ -169,6 +182,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
         if (root !is Map<*, *>) return null
         val tvs = (root["tvs"] as? List<*>).orEmpty().mapNotNull { decodeTv(it) }
         val networks = (root["trustedNetworks"] as? List<*>).orEmpty().mapNotNull { decodeNetwork(it) }
+        val overlays = (root["trustedOverlays"] as? List<*>).orEmpty().mapNotNull { decodeOverlay(it) }
         val defaults = CompanionSettings()
         val settings = (root["settings"] as? Map<*, *>)?.let { m ->
             CompanionSettings(
@@ -185,7 +199,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 atEpochMs = m.long("atEpochMs") ?: return@mapNotNull null,
             )
         }
-        return State(tvs, networks, settings, prompted)
+        return State(tvs, networks, overlays, settings, prompted)
     }
 
     private fun decodeTv(v: Any?): SavedTv? {
@@ -202,8 +216,21 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             lastRefindEpochMs = m.long("lastRefindEpochMs"),
             skipBackgroundUntilUserAction = m["skipBackgroundUntilUserAction"] as? Boolean ?: false,
             isFireTv = m["isFireTv"] as? Boolean ?: true,
+            overlayPeerId = (m["overlayPeerId"] as? String)?.takeIf { it.isNotEmpty() },
         )
         return if (tv.id.isBlank() || tv.serial.isBlank()) null else tv
+    }
+
+    private fun decodeOverlay(v: Any?): TrustedOverlay? {
+        val m = v as? Map<*, *> ?: return null
+        val o = TrustedOverlay(
+            id = m["id"] as? String ?: return null,
+            name = m["name"] as? String ?: return null,
+            tailnet = m["tailnet"] as? String ?: return null,
+            selfId = m["selfId"] as? String ?: return null,
+        )
+        // A blank identity could never match, so keeping it would only be a dead entry.
+        return if (o.id.isBlank() || o.tailnet.isBlank() || o.selfId.isBlank()) null else o
     }
 
     private fun decodeNetwork(v: Any?): TrustedNetwork? {
