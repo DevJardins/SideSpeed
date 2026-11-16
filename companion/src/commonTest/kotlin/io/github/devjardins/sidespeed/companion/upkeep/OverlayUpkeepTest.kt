@@ -106,6 +106,22 @@ class OverlayUpkeepTest {
         assertEquals(listOf("100.101.1.1"), net.opened)
     }
 
+    @Test fun aClosedLanGateStillVisitsTailnetTvs() = runTest {
+        val st = store(lanTv("l", "192.168.5.50"), ovTv("o", "100.101.1.1", "nA"))
+        val net = Net().also { it.sessions["100.101.1.1"] = running("SER-o") }
+        // Trusted when the run starts, gone by the LAN TV's gate check; the tailnet part never re-reads it.
+        var reads = 0
+        val source = FingerprintSource { if (reads++ == 0) home else hotel }
+        val report = Upkeep(
+            st, source, net.connector,
+            HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), Scan(),
+            overlay = OverlayAccess(Snapshots(snap(peer("nA", "100.101.1.1"))), Egress()),
+        ) { now }.runOnce(Trigger.BACKGROUND)
+        assertEquals(mapOf("o" to TvStatus.RUNNING), report.visited)
+        assertEquals(listOf("100.101.1.1"), net.opened)
+        assertTrue(report.gated)
+    }
+
     @Test fun aClosedOverlayGatesTheRunWithoutAConnection() = runTest {
         val tv = ovTv("a", "100.101.1.1", "nA")
         val cases = mapOf(

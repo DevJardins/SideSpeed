@@ -46,7 +46,8 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   The gate is read again before every TV visit, before a re-find scan, before *each* re-find connection and
  *   before the visit at a re-found address. If the network is no longer that Trusted Network the run stops there
  *   and reports `gated`. A closed overlay gate skips the remaining overlay TVs but not the
- *   LAN ones; the report is then `gated`.
+ *   LAN ones, and a closed LAN gate skips the remaining LAN TVs but not the overlay ones;
+ *   the report is then `gated`.
  * - Only TVs saved on that Trusted Network are checked. Each TV is re-read from the store just before its visit,
  *   and results are written with [CompanionStore.updateTv], touching only the upkeep fields, so a TV removed or
  *   edited during a run is not brought back or reverted.
@@ -114,6 +115,7 @@ class Upkeep(
         val visited = LinkedHashMap<String, TvStatus>()
         val restarted = mutableListOf<String>()
         var overlayClosed = false
+        var lanClosed = false
         val userAction = trigger == Trigger.APP_OPEN || trigger == Trigger.RESTART_NOW
         if (userAction && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
 
@@ -130,14 +132,21 @@ class Upkeep(
                 if (overlayClosed) continue
                 checkOverlay(saved, tailnet, restarted) ?: run { overlayClosed = true; null }
             } else {
-                if (lan == null || !gateOpen(lan)) return@withLock UpkeepReport(true, visited, restarted)
-                check(saved, lan, restarted)
+                // A closed LAN gate skips the remaining LAN TVs but not the overlay ones.
+                if (lanClosed) continue
+                if (lan == null || !gateOpen(lan)) run { lanClosed = true; null }
+                else check(saved, lan, restarted)
             } ?: continue
             val stored = store.updateTv(id) { current -> merge(current, saved, checked.tv) }
             if (stored && checked.attempted) visited[id] = checked.tv.status
-            if (checked.gateClosed) return@withLock UpkeepReport(true, visited, restarted)
+            if (checked.gateClosed) {
+                // Only a LAN check reports a closed gate; the overlay branch keeps its own flag.
+                if (tailnet != null && saved.trustedNetworkId == tailnet.id) return@withLock UpkeepReport(true, visited, restarted)
+                lanClosed = true
+                continue
+            }
         }
-        UpkeepReport(gated = overlayClosed, visited = visited, restartedNames = restarted)
+        UpkeepReport(gated = lanClosed || overlayClosed, visited = visited, restartedNames = restarted)
     }
 
     /** The trusted overlay Tailscale matches right now; Tailscale is not even asked when none is trusted. */
