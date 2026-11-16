@@ -11,6 +11,7 @@ import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
@@ -26,6 +27,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -172,6 +174,20 @@ class OverlayViewModelTest {
         val tvs = r.store.tvs()
         assertEquals(2, tvs.size)
         assertEquals(setOf("home", trusted.id), tvs.map { it.trustedNetworkId }.toSet())
+    }
+
+    @Test fun onOpenAwayFromHomeChecksTailnetTvsAndClearsTheAllowSkip() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(fp = hotel, lan = false)
+        r.store.saveTv(
+            SavedTv(
+                "o", "Cube", "100.101.1.1", "SER-1", trusted.id,
+                status = TvStatus.WAITING_FOR_ALLOW, skipBackgroundUntilUserAction = true, overlayPeerId = "nCUBE",
+            ),
+        )
+        r.vm.onOpen()
+        assertTrue(r.fake.opened.isNotEmpty())
+        assertFalse(r.store.tv("o").skipBackgroundUntilUserAction)
+        assertEquals(TvStatus.RUNNING, r.store.tv("o").status)
     }
 
     @Test fun removingAnOverlayRemovesItsTvsAndKeepsOthers() = runTest(UnconfinedTestDispatcher()) {

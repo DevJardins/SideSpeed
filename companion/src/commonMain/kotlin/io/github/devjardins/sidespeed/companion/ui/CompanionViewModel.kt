@@ -153,7 +153,10 @@ class CompanionViewModel(
     }
 
     fun onOpen() {
-        locked { if (currentTrusted() != null) runUpkeep(Trigger.APP_OPEN) else refresh() }
+        locked {
+            val anyScope = currentTrusted() != null || (overlay != null && store.trustedOverlays().isNotEmpty())
+            if (anyScope) runUpkeep(Trigger.APP_OPEN) else refresh()
+        }
     }
 
     fun trustCurrentNetwork(name: String) {
