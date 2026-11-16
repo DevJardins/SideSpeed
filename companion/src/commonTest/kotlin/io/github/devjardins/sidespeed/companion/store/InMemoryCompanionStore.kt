@@ -7,11 +7,12 @@ import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 class InMemoryCompanionStore(
     tvs: List<SavedTv> = emptyList(),
     networks: List<TrustedNetwork> = emptyList(),
+    overlays: List<TrustedOverlay> = emptyList(),
     private var settings: CompanionSettings = CompanionSettings(),
 ) : CompanionStore {
     private val tvs = tvs.toMutableList()
     private val networks = networks.toMutableList()
-    private val overlays = mutableListOf<TrustedOverlay>()
+    private val overlays = overlays.toMutableList()
     var prompted: List<PromptedHost> = emptyList()
 
     fun tv(id: String): SavedTv = tvs.first { it.id == id }

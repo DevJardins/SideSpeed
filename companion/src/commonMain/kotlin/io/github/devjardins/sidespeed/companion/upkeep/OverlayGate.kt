@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.upkeep
 
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import io.github.devjardins.sidespeed.companion.net.OverlayPeer
 import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
@@ -43,6 +44,17 @@ internal class OverlayGate(private val access: OverlayAccess) {
         val usable = peer.ips.filter(AddressPolicy::isOverlay)
         val target = usable.firstOrNull { it.toString() == tv.address } ?: usable.firstOrNull() ?: return null
         return target.toString().takeIf { leavesThroughTailnet(snapshot, target) }
+    }
+
+    /** A trusted tailnet peer that owns [address], when the gate would be open for a TV added there; else null. */
+    class Binding(val overlay: TrustedOverlay, val peer: OverlayPeer)
+
+    suspend fun bindingFor(address: Ipv4, trusted: List<TrustedOverlay>): Binding? {
+        if (!AddressPolicy.isOverlay(address) || trusted.isEmpty()) return null
+        val snapshot = access.source.snapshot() ?: return null
+        val overlay = OverlayTrustMatcher.currentTrusted(snapshot, trusted) ?: return null
+        val peer = snapshot.peers.firstOrNull { !it.shared && address in it.ips } ?: return null
+        return Binding(overlay, peer).takeIf { leavesThroughTailnet(snapshot, address) }
     }
 
     private suspend fun leavesThroughTailnet(snapshot: OverlaySnapshot, address: Ipv4): Boolean {

@@ -14,8 +14,10 @@ import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
@@ -25,6 +27,8 @@ import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.open
+import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
+import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import kotlinx.coroutines.CancellationException
@@ -51,6 +55,7 @@ object Copy {
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
+    const val NO_OVERLAY = "Tailscale isn't running with a network connection, so there is no tailnet to trust"
     const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
@@ -77,6 +82,9 @@ data class TvCardState(
     val note: String?,
 )
 
+/** What Tailscale reports on this computer: its tailnet, whether it is trusted, and whether it can reach peers. */
+data class TailnetState(val name: String, val trusted: Boolean, val ready: Boolean)
+
 data class CompanionUiState(
     val loaded: Boolean = false,
     /** No Trusted Network chosen yet: the first-run screen shows and nothing touches the network. */
@@ -84,6 +92,9 @@ data class CompanionUiState(
     val currentNetwork: NetworkFingerprint? = null,
     val trustedNetworkName: String? = null,
     val trustedNetworks: List<TrustedNetwork> = emptyList(),
+    val trustedOverlays: List<TrustedOverlay> = emptyList(),
+    /** Null when there is no Tailscale to ask (Android, not installed, logged out). */
+    val tailnet: TailnetState? = null,
     val tvs: List<TvCardState> = emptyList(),
     val settings: CompanionSettings = CompanionSettings(),
     val busy: Boolean = false,
@@ -121,7 +132,10 @@ class CompanionViewModel(
     private val scope: CoroutineScope,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { "tv-" + clock() + "-" + (counter++) },
+    private val overlay: OverlayAccess? = null,
 ) {
+    private val overlayGate = overlay?.let(::OverlayGate)
+
     private val _state = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
     private val work = Mutex()
@@ -152,6 +166,30 @@ class CompanionViewModel(
                 val id = "net-" + clock() + "-" + existing.size
                 store.saveTrustedNetwork(TrustedNetwork(id, clean.ifEmpty { "Trusted Network ${existing.size + 1}" }, fp))
             }
+            refresh()
+        }
+    }
+
+    /** Trusts the tailnet this computer is on now, so TVs bound to it are kept alive wherever Tailscale is up. */
+    fun trustCurrentOverlay(name: String) {
+        locked {
+            val snapshot = overlay?.source?.snapshot()
+            if (snapshot == null || !snapshot.running || !snapshot.tun) return@locked refresh(error = Copy.NO_OVERLAY)
+            val existing = store.trustedOverlays()
+            if (OverlayTrustMatcher.currentTrusted(snapshot, existing) == null) {
+                val id = "overlay-" + clock() + "-" + existing.size
+                val label = name.trim().ifEmpty { "Tailnet ${existing.size + 1}" }
+                store.saveTrustedOverlay(TrustedOverlay(id, label, snapshot.tailnet, snapshot.selfId))
+            }
+            refresh()
+        }
+    }
+
+    /** Removes the tailnet and the TVs bound to it: upkeep would never check them again. */
+    fun removeTrustedOverlay(id: String) {
+        locked {
+            store.tvs().filter { it.trustedNetworkId == id }.forEach { store.removeTv(it.id) }
+            store.removeTrustedOverlay(id)
             refresh()
         }
     }
@@ -360,9 +398,13 @@ class CompanionViewModel(
 
     private suspend fun addTv(address: String) {
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
-        val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        val ip = Ipv4.parse(address)
+        // A tailnet peer's address binds the TV to that peer on the trusted tailnet, which also works away from home.
+        val binding = ip?.let { overlayGate?.bindingFor(it, store.trustedOverlays()) }
+        val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR) else null
         // While on a Trusted Network any private (RFC 1918) or overlay (100.64.0.0/10) address may be tried; public addresses never are.
-        if (Ipv4.parse(address)?.let { AddressPolicy.contactable(it) } != true) return refresh(error = Copy.OUTSIDE_NETWORK)
+        if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
+        val scopeId = binding?.overlay?.id ?: trusted!!.id
         _state.update { it.copy(busy = true, error = null) }
         val identity = try {
             connector.open(address).use { session ->
@@ -382,16 +424,22 @@ class CompanionViewModel(
         }
         val (serial, model, maker) = identity
         // The network may have changed during the connect: don't record a TV for a network we've left.
-        if (currentTrusted()?.id != trusted.id) return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        val stillHere = if (binding != null) {
+            overlayGate?.bindingFor(ip, store.trustedOverlays())?.overlay?.id == binding.overlay.id
+        } else {
+            currentTrusted()?.id == scopeId
+        }
+        if (!stillHere) return refresh(error = Copy.NOT_TRUSTED_ERROR)
         if (serial.isBlank()) return refresh(error = Copy.NO_SERIAL)
-        val existing = store.tvs().firstOrNull { it.serial == serial }
+        val existing = store.tvs().firstOrNull { it.serial == serial && it.trustedNetworkId == scopeId }
         store.saveTv(
             SavedTv(
                 id = existing?.id ?: idGenerator(),
                 name = model.ifBlank { "TV at $address" },
                 address = address,
                 serial = serial,
-                trustedNetworkId = trusted.id,
+                trustedNetworkId = scopeId,
+                overlayPeerId = binding?.peer?.id,
                 isFireTv = maker.equals("Amazon", ignoreCase = true),
             ),
         )
@@ -402,6 +450,10 @@ class CompanionViewModel(
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
         val trusted = TrustMatcher.currentTrusted(fp, networks)
+        val overlays = store.trustedOverlays()
+        val tailnet = overlay?.source?.snapshot()?.let { snap ->
+            TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
+        }
         val tvs = store.tvs()
         val saved = tvs.map { it.address }.toSet()
         val cards = tvs.map { tv ->
@@ -418,10 +470,12 @@ class CompanionViewModel(
         _state.update {
             it.copy(
                 loaded = true,
-                firstRun = networks.isEmpty(),
+                firstRun = networks.isEmpty() && overlays.isEmpty(),
                 currentNetwork = fp,
                 trustedNetworkName = trusted?.displayName,
                 trustedNetworks = networks,
+                trustedOverlays = overlays,
+                tailnet = tailnet,
                 tvs = cards,
                 settings = store.settings(),
                 busy = if (settleBusy) false else it.busy,
