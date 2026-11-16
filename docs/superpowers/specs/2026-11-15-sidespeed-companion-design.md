@@ -1,7 +1,7 @@
 # SideSpeed Companion — Design (M2)
 
 Date: 2026-11-15
-Status: draft (builder-checked; owner answered the 3 questions), awaiting owner approval
+Status: approved by owner 2026-11-15
 Builds on: `docs/superpowers/specs/2026-11-15-sidespeed-design.md` (SideSpeed TV, Revisions 1–4) and `docs/spike/M0-results.md`.
 Replaces the earlier "Phone companion (M4)" section of the TV design. The companion is now M2, and it covers phone **and** desktop.
 
@@ -17,21 +17,21 @@ On current Fire OS, an app on the Fire TV can't use the box's own ADB (Amazon's 
 
 1. **One codebase** that builds an Android phone app and desktop apps for Windows, macOS and Linux.
 2. **Setup in about a minute:**
-   - add a TV (enter its address, or "Find TVs" on a trusted network);
+   - add a TV (enter its address, or "Find TVs" on a Trusted Network);
    - accept "Always allow" on the TV once;
    - done.
 3. **Background upkeep:**
-   - about every 15 minutes, and immediately on joining a trusted network: check each saved TV and start the helper if it's missing;
+   - about every 15 minutes, and immediately on joining a Trusted Network: check each saved TV and start the helper if it's missing;
    - silent by default, with an optional notification.
 4. **"Restart now":** opening the phone app, or choosing "Restart now" in the desktop tray, checks all saved TVs immediately.
-5. **Trusted networks:** the companion never connects, checks or scans on a network the user hasn't trusted.
+5. **Trusted Networks:** the companion never connects, checks or scans on a network the user hasn't trusted.
 6. **TV nudge:** when SideSpeed on a Fire TV finds the helper missing, it tells the user to open SideSpeed Companion on their phone or computer. PC commands stay available as a fallback.
 7. **The same calm dark theme** as the TV app, adapted for phone and desktop.
 
 ## Non-goals
 
 - iPhone / iOS (Apple doesn't allow this kind of app).
-- Cloud, accounts, push servers, telemetry. Everything stays on the home network.
+- Cloud, accounts, push servers, telemetry. Everything stays on the Trusted Network.
 - Google TV / onn support. After a reboot its Wireless debugging is off and port 5555 is closed, so a companion can't reach it either, and on-TV "Always allow" already covers it. The companion may list such a TV, but it says it can't help after reboots.
 - Doing anything to the TV other than checking for the helper and starting it. No compiles from the companion, and no arbitrary shell.
 - App store distribution. Sideload / GitHub Releases only.
@@ -42,7 +42,7 @@ On current Fire OS, an app on the Fire TV can't use the box's own ADB (Amazon's 
 - **Scanning or connecting on networks the user didn't trust** (coffee shops, work, neighbours).
 - **Running any TV command beyond the fixed check and launch.** The phone's or desktop's key is trusted by the TV, so a bug here would be a real exposure.
 - **Draining the phone battery** or keeping a permanent notification just to exist. Background work uses WorkManager, not a foreground service.
-- **Requesting the location permission at all.** Home networks are recognised without it.
+- **Requesting the location permission at all.** Trusted Networks are recognised without it.
 - **A desktop app that needs a terminal to install or run.**
 
 ## Constraints
@@ -128,41 +128,41 @@ If the TV's auth prompt is pending (connect times out), report "Waiting for you 
 
 Two ways:
 - **Enter the address:** SideSpeed on the TV shows it.
-- **"Find TVs":** only on a network the user has marked as home (see Trusted networks). Scan the local /24 for port 5555 with short timeouts and list the hosts that answer. A host is identified only after connecting, via `getprop ro.product.manufacturer`, `ro.product.model`, `ro.build.version.name` and `ro.serialno` (all read-only).
+- **"Find TVs":** only on a network the user has marked as home (see Trusted Networks). Scan the local /24 for port 5555 with short timeouts and list the hosts that answer. A host is identified only after connecting, via `getprop ro.product.manufacturer`, `ro.product.model`, `ro.build.version.name` and `ro.serialno` (all read-only).
 
 Adding a TV:
 1. connects (the TV shows "Allow debugging?"; the UI says "Tick Always allow on your TV");
-2. saves the TV: name (editable, defaults to the model, e.g. "Fire TV Cube"), address, **serial number**, and the home network it belongs to;
+2. saves the TV: name (editable, defaults to the model, e.g. "Fire TV Cube"), address, **serial number**, and the Trusted Network it belongs to;
 3. runs a check and start right away.
 
-### Home networks (trusted networks)
+### Trusted Networks
 
 **The user chooses them explicitly. It's set-and-forget (owner decision, 2026-11-15).**
-- **First-run setup:** the first screen is "Choose your home network". It shows the network the device is on now, with a fingerprint summary such as "Router 192.168.5.1 · 192.168.5.x". The user confirms "This is my home network", or says "Not now". Nothing touches the network until a home network is chosen. Adding a TV comes after.
-- **Later:** to add another home network, the user opens the app while on it and chooses "Add this network as home" in Settings. The app never suggests or auto-adds networks.
+- **First-run setup:** the first screen is "Choose your Trusted Network". It shows the network the device is on now, with a fingerprint summary such as "Router 192.168.5.1 · 192.168.5.x". The user confirms "Trust this network", or says "Not now". Nothing touches the network until a Trusted Network is chosen. Adding a TV comes after.
+- **Later:** to add another Trusted Network, the user opens the app while on it and chooses "Add as Trusted Network" in Settings. The app never suggests or auto-adds networks.
 
 **Identity of a network: no location permission on any platform (owner decision 1 = option b).**
 - **Fingerprint:** the default gateway IP, the subnet (address and prefix length) and the DNS server addresses.
   - Android: `ConnectivityManager.getLinkProperties(activeNetwork)`, which needs no location permission. The Wi-Fi name (SSID) is **not** used.
   - Desktop: OS routing and DNS info, behind an interface per OS. The builder may add the gateway MAC where it's readable without prompts (Windows / Linux ARP table) to strengthen the match.
-- **Display name:** the user can name each home network (default "Home"). The app never needs the real Wi-Fi name.
+- **Display name:** the user can name each Trusted Network (default "Trusted Network 1"). The app never needs the real Wi-Fi name.
 - **Collision safety:** a different network with the same router address and subnet (e.g. 192.168.1.1/24 at a café) could match. The worst outcome is one TCP connection attempt to the saved TV address, which fails or reaches a device whose `ro.serialno` doesn't match, so the companion stops (step 1 of the command set). It never sends any command to a device whose serial doesn't match, and it never scans because of a fingerprint match alone. The automatic re-find (below) needs 3 consecutive offline checks on that network first.
 - **Rules:**
-  - Background checks, "Restart now" and "Find TVs" run only while the current network matches a trusted network.
-  - Otherwise: show "Not on a trusted network" and do nothing on the network.
+  - Background checks, "Restart now" and "Find TVs" run only while the current network matches a Trusted Network.
+  - Otherwise: show "Not on a Trusted Network" and do nothing on the network.
   - Saved TVs are checked only if their saved network is the current one.
-- **Automatic re-find (owner decision 3 = option a):** after 3 consecutive offline checks for a TV while on its home network, scan that network's /24 once for port 5555, connect to hosts that answer, and match by `ro.serialno`. If found, update the saved address and continue. Run at most once per hour per TV. Manual "Find TVs" stays available.
-- **Joining a trusted network** triggers a check immediately:
+- **Automatic re-find (owner decision 3 = option a):** after 3 consecutive offline checks for a TV while on its Trusted Network, scan that network's /24 once for port 5555, connect to hosts that answer, and match by `ro.serialno`. If found, update the saved address and continue. Run at most once per hour per TV. Manual "Find TVs" stays available.
+- **Joining a Trusted Network** triggers a check immediately:
   - Android: a `ConnectivityManager.NetworkCallback` registered while the app process is alive, plus the WorkManager periodic job;
   - desktop: poll the network identity every 30 s while running.
-- **Settings:** the home-network list (rename, remove) and "Add this network as home", offered only as an explicit user action while on that network.
+- **Settings:** the Trusted Network list (rename, remove) and "Add as Trusted Network", offered only as an explicit user action while on that network.
 
 ### Background upkeep
 
 - **Android:**
   - a `WorkManager` periodic job every 15 minutes with constraint `NetworkType.CONNECTED`. The job itself checks the trusted-network rule before doing anything;
   - no foreground service;
-  - a one-off expedited job when the app opens or a trusted network is joined.
+  - a one-off expedited job when the app opens or a Trusted Network is joined.
 - **Desktop:**
   - a tray icon with menu items "Restart now", "Open SideSpeed Companion", "Pause checks", "Quit";
   - a coroutine timer every 15 minutes, plus the 30 s network-identity poll;
@@ -176,13 +176,13 @@ The same tokens as the TV app (Revision 4 table): background `#10151E`, surface 
 
 Screens:
 1. **Home:**
-   - a "Trusted network: <name> ✓" or "Not on a trusted network" banner;
+   - a "Trusted network: <name> ✓" or "Not on a Trusted Network" banner;
    - one card per TV: name, address, status (● Helper running / Not running / Offline / Waiting for you to allow / SideSpeed not installed), and "Checked N min ago";
    - per-card "Restart now";
    - "+ Add a TV".
-2. **Add a TV:** an address field, "Find TVs" (trusted network only), the scan results list, the "Tick Always allow on your TV" step, done.
+2. **Add a TV:** an address field, "Find TVs" (Trusted Network only), the scan results list, the "Tick Always allow on your TV" step, done.
 3. **Settings:**
-   - trusted networks;
+   - Trusted Networks;
    - notifications on/off;
    - check interval (15 min, fixed minimum; "1 hour" option);
    - desktop only: "Start when I log in";
@@ -216,7 +216,7 @@ The existing retry loop already detects the helper within a few seconds of the c
   - "SideSpeed not installed";
   - pending-auth timeout;
   - offline backoff;
-  - home-network gating: no network calls when the current fingerprint isn't a home network, and none before first-run setup chooses one;
+  - Trusted Network gating: no network calls when the current fingerprint isn't a Trusted Network, and none before first-run setup chooses one;
   - serial mismatch → no further commands;
   - stale helper (`--apk` mismatch) → kill, then launch; validated numeric pid only;
   - automatic re-find after 3 offline checks, at most hourly, matched by serial;
@@ -225,19 +225,21 @@ The existing retry loop already detects the helper within a few seconds of the c
 - **Device checks:**
   - phone + Fire TV Cube: add, Always allow, reboot the TV, helper back within 15 min, and immediately on opening the app;
   - Mac + Cube: the same;
-  - untrusted network (phone hotspot): no connections attempted.
+  - unTrusted Network (phone hotspot): no connections attempted.
 
 ## Decided by the owner
+
+- Wording: the feature is called **Trusted Network** everywhere in the UI and docs, not "home network".
 
 - M2 is the Fire TV companion, on phone **and** desktop.
 - Code layout A (shared module + separate companion app). Technology A (Kotlin Multiplatform + Compose Multiplatform).
 - Background check ~15 min + "Restart now" + TV nudge.
-- Trusted networks: only act on networks the user marked as theirs; no checking or scanning elsewhere.
+- Trusted Networks: only act on networks the user marked as theirs; no checking or scanning elsewhere.
 - The same calm theme on phone and desktop.
-- **Home networks are chosen by the user** at first-run setup, plus "Add this network as home" later from Settings. Set and forget.
+- **Trusted Networks are chosen by the user** at first-run setup, plus "Add as Trusted Network" later from Settings. Set and forget.
 - **Network identity uses no location permission** (decision 1 = b): a router, subnet and DNS fingerprint, with a serial-number check before any command.
 - **Stale helper (decision 2 = a):** the companion may read the helper's command line and kill it when stale, then relaunch.
-- **Address changes (decision 3 = a):** automatic re-find on the home network after 3 offline checks, matched by serial.
+- **Address changes (decision 3 = a):** automatic re-find on the Trusted Network after 3 offline checks, matched by serial.
 - Everything in the earlier playback: setup flow, silent by default with optional notification, fixed command set, multiple TVs, Android only on mobile, no cloud.
 
 ## Calls made in this design (owner can override)
@@ -245,7 +247,7 @@ The existing retry loop already detects the helper within a few seconds of the c
 - ADB via Kadb in the companions; the TV app stays on libadb-android.
 - Android companion minSdk 26.
 - Fingerprint = gateway IP + subnet + DNS servers (plus gateway MAC on desktop where readable without prompts).
-- "Find TVs" scans the /24 only, and only on a home network; automatic re-find at most hourly per TV.
+- "Find TVs" scans the /24 only, and only on a Trusted Network; automatic re-find at most hourly per TV.
 - Desktop: tray app, "Start when I log in" off by default, window about 420×640.
 - Notifications off by default. Check interval options: 15 min (default) or 1 hour.
 - "Offline" after 3 failed checks, with no faster retry.
