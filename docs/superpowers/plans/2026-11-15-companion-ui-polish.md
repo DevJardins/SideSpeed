@@ -15,6 +15,7 @@
 - Palette only from `SsTokens` via `Ss.*`; new tints are alpha or lerp of those colours.
 - No Material 3 dependency; no behaviour, store, upkeep or `Copy` string changes.
 - Motion 120-250 ms; desktop window 420x640 must fit every screen.
+- Keep every control focusable with a visible focus ring and reachable by D-pad/keyboard (Android TV support is the next project, so don't regress remote navigation).
 - Existing tests keep passing: `:companion:desktopTest :companion-android:testDebugUnitTest`.
 
 ## Review Focus
