@@ -468,6 +468,41 @@ class UpkeepTest {
         assertEquals(listOf("192.168.5.50"), net.opened)
     }
 
+    @Test fun refindCoversASlash22TrustedNetwork() = runTest {
+        val wide = NetworkFingerprint("192.168.4.1", "192.168.4.0/22", setOf("192.168.4.1"))
+        val wideNet = TrustedNetwork("home", "Trusted Network 1", wide)
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(wideNet))
+        val net = FakeNet().also { it.sessions["192.168.6.77"] = runningTv("SER-a") }
+        val scanner = FakeScanner(listOf("192.168.6.77"))
+        val report = upkeep(store, net, scanner, FingerprintSource { wide }).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.4.0/22:5555"), scanner.calls)
+        assertEquals(listOf<String?>("192.168.5.50"), scanner.nears)
+        assertEquals("192.168.6.77", store.tv("a").address)
+        assertEquals(TvStatus.RUNNING, store.tv("a").status)
+        assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited)
+    }
+
+    @Test fun refindOnASlash8ScansTheSlash16AroundTheTv() = runTest {
+        val big = NetworkFingerprint("10.0.0.1", "10.0.0.0/8", setOf("10.0.0.1"))
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "10.20.30.40").copy(offlineCount = 2)),
+            listOf(TrustedNetwork("home", "Office", big)),
+        )
+        val scanner = FakeScanner()
+        upkeep(store, FakeNet(), scanner, FingerprintSource { big }).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("10.20.0.0/16:5555"), scanner.calls)
+    }
+
+    @Test fun refindDropsTheScopesNetworkAndBroadcast() = runTest {
+        val wide = NetworkFingerprint("192.168.4.1", "192.168.4.0/22", setOf("192.168.4.1"))
+        val wideNet = TrustedNetwork("home", "Trusted Network 1", wide)
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(wideNet))
+        val net = FakeNet()
+        val scanner = FakeScanner(listOf("192.168.4.0", "192.168.7.255", "192.168.8.1"))
+        upkeep(store, net, scanner, FingerprintSource { wide }).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50"), net.opened)
+    }
+
     @Test fun refindNeverScansASubnetOutsidePrivateSpace() = runTest {
         val pub = NetworkFingerprint("8.8.8.1", "8.8.8.0/24", setOf("8.8.8.1"))
         val store = InMemoryCompanionStore(

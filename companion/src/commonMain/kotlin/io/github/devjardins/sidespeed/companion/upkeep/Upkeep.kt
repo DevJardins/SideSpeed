@@ -1,11 +1,12 @@
 package io.github.devjardins.sidespeed.companion.upkeep
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.companion.discovery.sweepScope
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
+import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
-import io.github.devjardins.sidespeed.companion.net.Subnets
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
@@ -55,8 +56,9 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   which is [TvStatus.OFFLINE]; WrongDevice shows [TvStatus.WRONG_DEVICE]. No faster retry.
  * - Unreachable and WrongDevice can lead to a re-find (a lost connection means our TV answered at that address):
  *   once `offlineCount >= 3` and an hour has passed since the last re-find (or the clock moved back), scan the
- *   Trusted Network's /24 for port 5555, keep only addresses inside it, open each host not recently prompted,
- *   read only [TvCommands.SERIAL], close, and take the first host whose serial equals the saved one. The
+ *   Trusted Network's subnet for port 5555 (starting around the TV's last address), keep only usable host
+ *   addresses inside it, open each host not recently prompted, read only [TvCommands.SERIAL], close, and take
+ *   the first host whose serial equals the saved one. The
  *   address is updated and the TV visited there. Hosts with another serial get nothing else.
  *   `lastRefindEpochMs` is set whenever the scan runs.
  * - [TvAuthPending] is [TvStatus.WAITING_FOR_ALLOW] and sets the skip flag; the TV answered, so `offlineCount`
@@ -207,12 +209,15 @@ class Upkeep(
         return gap < 0 || gap >= REFIND_INTERVAL_MS
     }
 
-    /** Scans the Trusted Network's /24 for the TV's serial, checking the gate before every connection. */
+    /** Scans the Trusted Network's subnet for the TV's serial, checking the gate before every connection. */
     private suspend fun refind(tv: SavedTv, trusted: TrustedNetwork, now: Long): Refind {
-        val subnet = Subnets.normalize(trusted.fingerprint.subnet)?.takeIf { it.endsWith("/24") } ?: return Refind.NotFound
+        val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return Refind.NotFound
         // Like Find TVs, a re-find only ever sweeps private (RFC 1918) space, whatever the saved fingerprint says.
-        if (Cidr.parse(subnet)?.let(AddressPolicy::sweepable) != true) return Refind.NotFound
-        val hosts = scanner.scan(subnet, TvConnector.DEFAULT_PORT).filter { inSubnet(it, subnet) }.distinct()
+        val scope = sweepScope(subnet, Ipv4.parse(tv.address), Ipv4.parse(trusted.fingerprint.gatewayIp))
+        if (!AddressPolicy.sweepable(scope)) return Refind.NotFound
+        val hosts = scanner.scan(scope.toString(), TvConnector.DEFAULT_PORT, near = tv.address)
+            .filter { h -> Ipv4.parse(h)?.let { it in scope && it != scope.network && it != scope.broadcast } == true }
+            .distinct()
         for (host in hosts) {
             val skip = store.promptedHosts().any { it.trustedNetworkId == trusted.id && it.address == host && it.isFresh(now) }
             if (skip) continue
@@ -235,14 +240,6 @@ class Upkeep(
     private suspend fun rememberPrompted(networkId: String, host: String, now: Long) {
         val kept = store.promptedHosts().filter { it.isFresh(now) && !(it.trustedNetworkId == networkId && it.address == host) }
         store.savePromptedHosts(kept + PromptedHost(networkId, host, now))
-    }
-
-    /** A plain dotted IPv4 host address (.1 to .254) inside the normalised /24 [subnet]. */
-    private fun inSubnet(host: String, subnet: String): Boolean {
-        val octets = host.split('.')
-        if (octets.size != 4 || octets.any { o -> o.isEmpty() || o.length > 3 || !o.all { it in '0'..'9' } }) return false
-        if (octets.last().toInt() !in 1..254) return false
-        return Subnets.normalize("$host/24") == subnet
     }
 
     private suspend fun attempt(address: String, serial: String): Attempt = try {
