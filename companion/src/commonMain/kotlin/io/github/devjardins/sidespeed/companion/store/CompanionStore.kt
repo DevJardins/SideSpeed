@@ -22,6 +22,8 @@ data class SavedTv(
     val offlineCount: Int = 0,
     val lastRefindEpochMs: Long? = null,
     val skipBackgroundUntilUserAction: Boolean = false,
+    /** False when the TV's manufacturer isn't Amazon: SideSpeed there handles setup itself (the spec's Google TV note). */
+    val isFireTv: Boolean = true,
 ) {
     companion object {
         /** @throws IllegalArgumentException if [tv] has a blank id or serial. */

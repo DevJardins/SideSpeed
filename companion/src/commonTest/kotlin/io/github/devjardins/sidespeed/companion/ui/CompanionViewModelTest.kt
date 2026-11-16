@@ -1,0 +1,117 @@
+package io.github.devjardins.sidespeed.companion.ui
+
+import io.github.devjardins.sidespeed.companion.net.FingerprintSource
+import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
+import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
+import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
+import io.github.devjardins.sidespeed.companion.tv.TvCommands
+import io.github.devjardins.sidespeed.companion.upkeep.Scanner
+import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class CompanionViewModelTest {
+    private val apk = "/data/app/x/base.apk"
+    private val home = NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"))
+    private val homeNet = TrustedNetwork("home", "Living room", home)
+
+    private class CountingScanner : Scanner {
+        var calls = 0
+        override suspend fun scan(subnet: String, port: Int): List<String> { calls++; return emptyList() }
+    }
+
+    private fun tv(manufacturer: String = "Amazon") = FakeTvSession(
+        mapOf(
+            TvCommands.SERIAL to "SER-1",
+            TvCommands.MODEL to "Fire TV Cube",
+            TvCommands.MANUFACTURER to manufacturer,
+            TvCommands.PKG_PATH to "package:$apk",
+            TvCommands.PIDOF to "123",
+            TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
+        ),
+    )
+
+    private class Rig(scope: TestScope, val store: InMemoryCompanionStore, val fake: FakeTvSession, var fp: NetworkFingerprint?) {
+        val scanner = CountingScanner()
+        val source = FingerprintSource { fp }
+        val connector = fake.connector()
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), scanner) { 1_000_000L }
+        val vm = CompanionViewModel(store, source, upkeep, connector, scanner, scope, { 1_000_000L }, { "tv-1" })
+    }
+
+    private fun TestScope.rig(trusted: Boolean, fake: FakeTvSession = tv()) = Rig(
+        this,
+        InMemoryCompanionStore(networks = if (trusted) listOf(homeNet) else emptyList()),
+        fake,
+        home,
+    )
+
+    @Test
+    fun noTrustedNetworkIsFirstRunAndOnOpenTouchesNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = false)
+        r.vm.onOpen()
+        assertTrue(r.vm.state.value.firstRun)
+        assertTrue(r.fake.opened.isEmpty())
+    }
+
+    @Test
+    fun trustCurrentNetworkSavesFingerprintUnderName() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = false)
+        r.vm.trustCurrentNetwork("Living room")
+        val saved = r.store.trustedNetworks().single()
+        assertEquals("Living room", saved.name)
+        assertEquals(home, saved.fingerprint)
+        assertEquals(false, r.vm.state.value.firstRun)
+        assertEquals("Living room", r.vm.state.value.trustedNetworkName)
+    }
+
+    @Test
+    fun findTvsOnUntrustedNetworkErrorsAndDoesNotScan() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        r.vm.findTvs()
+        assertEquals("Join a Trusted Network to find TVs", r.vm.state.value.error)
+        assertEquals(0, r.scanner.calls)
+    }
+
+    @Test
+    fun addTvSavesSerialAndModelThenRunsUpkeep() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        val saved = r.store.tvs().single()
+        assertEquals("SER-1", saved.serial)
+        assertEquals("Fire TV Cube", saved.name)
+        assertEquals("home", saved.trustedNetworkId)
+        // Upkeep ran: it checked the helper (APP_OPEN) and recorded a status.
+        assertNotNull(r.store.tv("tv-1").lastCheckedEpochMs)
+        assertNull(r.vm.state.value.tvs.single().note)
+    }
+
+    @Test
+    fun restartNowRunsRestartUpkeepClearingAllowFlag() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        r.store.updateTv("tv-1") { it.copy(skipBackgroundUntilUserAction = true) }
+        r.vm.restartNow()
+        assertEquals(false, r.store.tv("tv-1").skipBackgroundUntilUserAction)
+    }
+
+    @Test
+    fun nonAmazonTvIsSavedWithGoogleTvNote() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true, fake = tv("Google"))
+        r.vm.addTvByAddress("192.168.5.20")
+        assertEquals(1, r.store.tvs().size)
+        assertEquals(
+            "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts.",
+            r.vm.state.value.tvs.single().note,
+        )
+    }
+}

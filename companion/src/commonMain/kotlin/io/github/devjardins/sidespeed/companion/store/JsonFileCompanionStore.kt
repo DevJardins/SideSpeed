@@ -140,6 +140,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                     "lastCheckedEpochMs" to t.lastCheckedEpochMs, "offlineCount" to t.offlineCount,
                     "lastRefindEpochMs" to t.lastRefindEpochMs,
                     "skipBackgroundUntilUserAction" to t.skipBackgroundUntilUserAction,
+                    "isFireTv" to t.isFireTv,
                 )
             },
             "trustedNetworks" to s.networks.map { n ->
@@ -200,6 +201,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             offlineCount = m.int("offlineCount")?.coerceAtLeast(0) ?: 0,
             lastRefindEpochMs = m.long("lastRefindEpochMs"),
             skipBackgroundUntilUserAction = m["skipBackgroundUntilUserAction"] as? Boolean ?: false,
+            isFireTv = m["isFireTv"] as? Boolean ?: true,
         )
         return if (tv.id.isBlank() || tv.serial.isBlank()) null else tv
     }
