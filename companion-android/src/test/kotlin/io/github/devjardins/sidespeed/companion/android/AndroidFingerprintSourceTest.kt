@@ -8,7 +8,16 @@ import org.junit.Test
 class AndroidFingerprintSourceTest {
     @Test fun mapsGatewaySubnetAndDns() {
         val data = LinkData(listOf("192.168.5.1"), listOf("192.168.5.23/24"), listOf("192.168.5.1"))
-        assertEquals(NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1")), FingerprintMapping.map(data))
+        assertEquals(NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"), ownIp = "192.168.5.23"), FingerprintMapping.map(data))
+    }
+
+    @Test fun ownIpComesFromTheLinkAddressInsideTheGatewaySubnet() {
+        val data = LinkData(
+            listOf("10.0.0.1"),
+            listOf("172.16.9.4/16", "10.0.0.7/24"),
+            listOf("10.0.0.1"),
+        )
+        assertEquals("10.0.0.7", FingerprintMapping.map(data)?.ownIp)
     }
 
     @Test fun noIpv4DefaultRouteIsNull() {
@@ -28,7 +37,7 @@ class AndroidFingerprintSourceTest {
             listOf("172.16.9.4/16", "10.0.0.7/24"),
             listOf("fe80::1%wlan0", "10.0.0.1"),
         )
-        assertEquals(NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1")), FingerprintMapping.map(data))
+        assertEquals(NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"), ownIp = "10.0.0.7"), FingerprintMapping.map(data))
     }
 
     @Test fun zeroGatewayAndGatewayOutsideLinkSubnetAreNull() {

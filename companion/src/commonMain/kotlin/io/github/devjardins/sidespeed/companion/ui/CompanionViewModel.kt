@@ -249,7 +249,7 @@ class CompanionViewModel(
         val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
         val saved = store.tvs().map { it.address }.toSet()
-        discovery.run(DiscoveryPlan(subnet, gateway = Ipv4.parse(trusted.fingerprint.gatewayIp))).collect { event ->
+        discovery.run(DiscoveryPlan(subnet, own = trusted.fingerprint.ownIp?.let(Ipv4::parse), gateway = Ipv4.parse(trusted.fingerprint.gatewayIp))).collect { event ->
             when (event) {
                 is DiscoveryEvent.Progress ->
                     _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }

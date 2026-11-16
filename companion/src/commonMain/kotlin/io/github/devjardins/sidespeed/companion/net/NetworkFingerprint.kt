@@ -11,6 +11,11 @@ data class NetworkFingerprint(
     val subnet: String,
     val dnsServers: Set<String>,
     val gatewayMac: String? = null,
+    /**
+     * The device's own address on this network right now, when the source knows it. Never part of trust
+     * matching (DHCP reassigns it): discovery uses it only to skip itself and to sweep its own /24 first.
+     */
+    val ownIp: String? = null,
 )
 
 /** A network the user chose to trust. */

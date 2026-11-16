@@ -409,6 +409,29 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun ownAddressIsNeverProbedAndOwnSlash24ComesFirst() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val fp16 = NetworkFingerprint("10.0.2.1", "10.0.0.0/16", setOf("10.0.2.1"), ownIp = "10.0.1.3")
+        r.store.saveTrustedNetwork(TrustedNetwork("big", "Big", fp16))
+        r.fp = fp16
+        val script = Cidr.parse("10.0.0.0/16")!!.hosts()
+            .associateWith { listOf(ProbeResult.Refused) }.toMutableMap()
+        val tv = ip("10.0.1.50")
+        script[tv] = listOf(ProbeResult.AdbAuthRequired)
+        val lan = FakeLan(script)
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        assertTrue(lan.calls.none { it.address == ip("10.0.1.3") }, "own address was probed")
+        assertEquals(ip("10.0.1.0"), lan.calls.first().address)
+        val tvIndex = lan.calls.indexOfFirst { it.address == tv }
+        val outwardIndex = lan.calls.indexOfFirst { it.address.toString().startsWith("10.0.2.") }
+        assertTrue(tvIndex >= 0 && outwardIndex > tvIndex, "tv at $tvIndex, outward at $outwardIndex")
+        assertEquals(listOf("10.0.1.50"), vm.state.value.found)
+    }
+
+    @Test
     fun disposeCancelsARunningScan() = runTest(UnconfinedTestDispatcher()) {
         val lan = GateLan(setOf("192.168.5.30"))
         val vm = discoveryRig(lan)

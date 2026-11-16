@@ -25,7 +25,7 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             windows -> FingerprintParsers.windowsGateway(run("route", "print", "-4"))
             else -> FingerprintParsers.linuxGateway(run("ip", "route", "show", "default"))
         } ?: return@withContext null
-        val subnet = subnetContaining(gateway) ?: return@withContext null
+        val (ownIp, subnet) = ownAddressAndSubnet(gateway) ?: return@withContext null
         val dns = when {
             mac -> FingerprintParsers.macDns(run("scutil", "--dns"))
             windows -> FingerprintParsers.windowsDns(
@@ -45,15 +45,19 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             },
             gateway,
         )
-        NetworkFingerprint(gateway, subnet, dns, macAddr)
+        NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp)
     }
 
-    private fun subnetContaining(gateway: String): String? = runCatching {
+    /** The interface address inside the gateway's subnet, with that subnet's normalized form. */
+    private fun ownAddressAndSubnet(gateway: String): Pair<String, String>? = runCatching {
         NetworkInterface.getNetworkInterfaces().asSequence().filter { it.isUp }
             .flatMap { it.interfaceAddresses.asSequence() }
             .filter { it.address is Inet4Address }
-            .mapNotNull { Subnets.normalize("${it.address.hostAddress}/${it.networkPrefixLength}") }
-            .firstOrNull { Subnets.containsHost(it, gateway) }
+            .mapNotNull { ia ->
+                val own = ia.address.hostAddress
+                val subnet = Subnets.normalize("$own/${ia.networkPrefixLength}") ?: return@mapNotNull null
+                if (Subnets.containsHost(subnet, gateway)) own to subnet else null
+            }.firstOrNull()
     }.getOrNull()
 
     /** Runs a fixed command, returning stdout, or "" if it fails or takes over 5 s (a hung command is killed). */

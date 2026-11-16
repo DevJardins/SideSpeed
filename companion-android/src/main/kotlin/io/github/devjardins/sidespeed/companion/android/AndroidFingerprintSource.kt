@@ -28,8 +28,9 @@ object FingerprintMapping {
         for (gateway in data.defaultGateways) {
             if (gateway == null || gateway == "0.0.0.0" || Subnets.normalize("$gateway/32") == null) continue
             val subnet = subnets.firstOrNull { Subnets.containsHost(it, gateway) } ?: continue
+            val own = data.linkAddresses.firstOrNull { Subnets.normalize(it) == subnet }?.substringBefore('/')
             // Scoped IPv6 link-local entries ("fe80::1%wlan0") change between joins; leave them out.
-            return NetworkFingerprint(gateway, subnet, data.dnsServers.filter { '%' !in it }.toSet())
+            return NetworkFingerprint(gateway, subnet, data.dnsServers.filter { '%' !in it }.toSet(), ownIp = own)
         }
         return null
     }
