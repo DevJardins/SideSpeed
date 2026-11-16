@@ -5,7 +5,10 @@ import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.MdnsSource
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.SocketDatagramQuery
+import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
@@ -39,7 +42,11 @@ class Graph(app: Application, scope: CoroutineScope) {
     val notifier = Notifier(app)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val discovery = Discovery(listOf(SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+    val discovery = Discovery(
+        listOf(MdnsSource(SocketDatagramQuery()), SsdpSource(SocketDatagramQuery()), SweepSource),
+        SocketAdbProbe(),
+        Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM),
+    )
 
     /** One view model for the whole process: rotating or recreating the Activity doesn't restart it. */
     val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)

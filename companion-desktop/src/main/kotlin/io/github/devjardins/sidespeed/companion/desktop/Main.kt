@@ -18,7 +18,10 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.MdnsSource
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.SocketDatagramQuery
+import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
 import io.github.devjardins.sidespeed.companion.discovery.TailscalePeersSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
@@ -76,9 +79,34 @@ fun main() {
     val overlay = OverlayAccess({ tailscale.statusJson()?.let(TailscaleStatus::snapshot) }, DesktopEgressCheck())
     val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner, overlay) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Hints first, so the 4096-probe cap on the sweep can never push them out; the ARP table is read on IO.
+    val osName = System.getProperty("os.name").orEmpty().lowercase()
+    val arpReader: suspend () -> String = {
+        withContext(Dispatchers.IO) {
+            when {
+                osName.startsWith("mac") || osName.startsWith("darwin") -> Commands.run("arp", "-an")
+                osName.startsWith("windows") -> Commands.run("arp", "-a")
+                else -> Commands.run("ip", "neigh", "show")
+            }
+        }
+    }
+    val arpParser = when {
+        osName.startsWith("mac") || osName.startsWith("darwin") -> NeighbourParsers::mac
+        osName.startsWith("windows") -> NeighbourParsers::windows
+        else -> NeighbourParsers::linux
+    }
     @OptIn(ExperimentalCoroutinesApi::class)
-    // Peers first, so the 4096-probe cap on the sweep can never push a Tailscale peer out.
-    val discovery = Discovery(listOf(TailscalePeersSource(tailscale::statusJson), SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+    val discovery = Discovery(
+        listOf(
+            TailscalePeersSource(tailscale::statusJson),
+            ArpSource(arpReader, arpParser),
+            MdnsSource(SocketDatagramQuery()),
+            SsdpSource(SocketDatagramQuery()),
+            SweepSource,
+        ),
+        SocketAdbProbe(),
+        Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM),
+    )
     val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope, overlay = overlay)
 
     application {
