@@ -73,11 +73,15 @@ object AddressPolicy {
 
     private val overlay = Cidr.parse("100.64.0.0/10")!!
 
+    /** Tailscale's own services, not devices: Quad100 (100.100.100.100: DNS and HTTP) and the ChromeOS range. */
+    private val overlayReserved = listOf("100.100.0.0/24", "100.100.100.0/24", "100.115.92.0/23").map { Cidr.parse(it)!! }
+
     /**
-     * The shared CGNAT block (RFC 6598) that overlay networks such as Tailscale hand out. Contactable, but
-     * never swept: it is 4 million addresses, so only explicitly listed peers or typed addresses are tried.
+     * The shared CGNAT block (RFC 6598) that overlay networks such as Tailscale hand out, minus Tailscale's
+     * reserved service blocks. Contactable, but never swept: it is 4 million addresses, so only explicitly
+     * listed peers or typed addresses are tried.
      */
-    fun isOverlay(ip: Ipv4): Boolean = ip in overlay
+    fun isOverlay(ip: Ipv4): Boolean = ip in overlay && overlayReserved.none { ip in it }
 
     /** Addresses the companion may contact at all: RFC 1918 plus the overlay block. Public addresses never. */
     fun contactable(ip: Ipv4): Boolean = isPrivate(ip) || isOverlay(ip)

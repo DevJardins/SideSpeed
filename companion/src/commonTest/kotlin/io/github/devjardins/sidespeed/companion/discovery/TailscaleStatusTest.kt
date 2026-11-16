@@ -35,4 +35,28 @@ class TailscaleStatusTest {
             assertEquals(emptyList(), TailscaleStatus.peerAddresses(bad), bad)
         }
     }
+
+    @Test
+    fun skipsSharedInNodesAndPeersThatAreNotAndroid() {
+        val json = """
+            {"Peer":{
+              "a":{"TailscaleIPs":["100.101.0.1"],"OS":"android","Online":true},
+              "b":{"TailscaleIPs":["100.101.0.2"],"OS":"Android","Online":true},
+              "c":{"TailscaleIPs":["100.101.0.3"],"OS":"macOS","Online":true},
+              "d":{"TailscaleIPs":["100.101.0.4"],"OS":"android","Online":true,"ShareeNode":true},
+              "e":{"TailscaleIPs":["100.101.0.5"],"OS":"","Online":true},
+              "f":{"TailscaleIPs":["100.101.0.6"],"Online":true,"ShareeNode":false}
+            }}
+        """.trimIndent()
+        assertEquals(
+            listOf(ip("100.101.0.1"), ip("100.101.0.2"), ip("100.101.0.5"), ip("100.101.0.6")),
+            TailscaleStatus.peerAddresses(json),
+        )
+    }
+
+    @Test
+    fun capsHowManyPeersAreListed() {
+        val peers = (1..400).joinToString(",") { """"n$it":{"TailscaleIPs":["100.102.${it / 250}.${it % 250 + 1}"],"OS":"android"}""" }
+        assertEquals(TailscaleStatus.MAX_PEERS, TailscaleStatus.peerAddresses("""{"Peer":{$peers}}""").size)
+    }
 }

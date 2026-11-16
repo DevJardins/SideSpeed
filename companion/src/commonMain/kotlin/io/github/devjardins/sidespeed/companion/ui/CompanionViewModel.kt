@@ -51,6 +51,7 @@ object Copy {
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
+    const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
 
@@ -103,6 +104,8 @@ data class CompanionUiState(
     val noneFound: Boolean = false,
     /** "Scanned N of M" for the running or latest scan; null before the first one. */
     val scanProgress: String? = null,
+    /** The latest scan finished but the probe cap cut it short: the Add screen offers "Keep scanning". */
+    val scanTruncated: Boolean = false,
     /** The latest scan was stopped before it finished: the Add screen offers "Keep scanning". */
     val scanStopped: Boolean = false,
     /** What the latest finished or stopped scan concluded; null before the first one. */
@@ -125,7 +128,10 @@ class CompanionViewModel(
     private var findJob: Job? = null
     private var lastSummary = DiscoverySummary()
     /** Every host probed across the runs since the last fresh Find TVs, so Keep scanning resumes past them. */
-    private var probedSinceFind = emptySet<Ipv4>()
+    private val probedSinceFind = HashSet<Ipv4>()
+
+    /** Hosts that answered without speaking ADB since the last fresh Find TVs, kept across a stop and resume. */
+    private val liveNonAdbSinceFind = HashSet<Ipv4>()
 
     init {
         scope.launch { refresh() }
@@ -228,18 +234,24 @@ class CompanionViewModel(
                 unsupported = if (clearFound) emptyList() else it.unsupported,
                 scanProgress = null,
                 scanStopped = false,
+                scanTruncated = false,
                 diagnosis = null,
             )
         }
         if (!accepted) return
         findJob?.cancel()
-        val resumeSkip = if (clearFound) emptySet() else probedSinceFind
-        if (clearFound) probedSinceFind = emptySet()
+        // A run that finished has stopped touching these sets before it cleared `scanning`.
+        val resumeSkip = if (clearFound) emptySet() else probedSinceFind.toSet()
+        if (clearFound) {
+            probedSinceFind.clear()
+            liveNonAdbSinceFind.clear()
+        }
         lastSummary = DiscoverySummary()
         findJob = scope.launch {
             var cancelled = false
+            var swept = false
             try {
-                collectFind(resumeSkip)
+                swept = collectFind(resumeSkip)
             } catch (e: CancellationException) {
                 cancelled = true
                 throw e
@@ -248,20 +260,33 @@ class CompanionViewModel(
                     it.copy(
                         scanning = false,
                         scanStopped = cancelled,
-                        diagnosis = diagnose(lastSummary, found = it.found.isNotEmpty(), complete = !cancelled),
+                        scanTruncated = !cancelled && lastSummary.truncated,
+                        // A run that never swept (no network, plan refused) has nothing to diagnose.
+                        diagnosis = if (!swept && !cancelled) null else diagnose(
+                            lastSummary.copy(liveNonAdb = liveNonAdbSinceFind.size),
+                            found = it.found.isNotEmpty(),
+                            complete = !cancelled,
+                            tlsOnly = it.found.isEmpty() && it.unsupported.isNotEmpty(),
+                        ),
                     )
                 }
             }
         }
     }
 
-    private suspend fun collectFind(resumeSkip: Set<Ipv4>) {
-        val trusted = currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
-        val subnet = Cidr.parse(trusted.fingerprint.subnet) ?: return refresh(error = Copy.NOT_TRUSTED_ERROR)
+    /** Returns whether a sweep ran to its end. Its refreshes leave `busy` alone: an add or upkeep may still be running. */
+    private suspend fun collectFind(resumeSkip: Set<Ipv4>): Boolean {
+        val trusted = currentTrusted()
+        val subnet = trusted?.let { Cidr.parse(it.fingerprint.subnet) }
+        if (trusted == null || subnet == null) {
+            refresh(error = Copy.NOT_TRUSTED_ERROR, settleBusy = false)
+            return false
+        }
         val saved = store.tvs().map { it.address }.toSet()
         // The live address, not the saved one: DHCP moves it, and networks saved before ownIp existed have none.
         val own = fingerprints.current()?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
         val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
+        var swept = false
         discovery.run(DiscoveryPlan(sweepScope(subnet, own, gateway), own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {
                 is DiscoveryEvent.Progress ->
@@ -274,12 +299,19 @@ class CompanionViewModel(
                         else s.copy(found = s.found + host)
                     }
                 }
-                is DiscoveryEvent.Probed -> probedSinceFind = probedSinceFind + event.address
-                is DiscoveryEvent.Done -> lastSummary = event.summary
+                is DiscoveryEvent.Probed -> {
+                    probedSinceFind += event.address
+                    if (!event.result.isAdb) liveNonAdbSinceFind += event.address
+                }
+                is DiscoveryEvent.Done -> {
+                    lastSummary = event.summary
+                    swept = true
+                }
             }
         }
-        refresh()
-        _state.update { it.copy(noneFound = it.found.isEmpty()) }
+        refresh(error = if (swept) null else Copy.CANT_SCAN, settleBusy = false)
+        if (swept) _state.update { it.copy(noneFound = it.found.isEmpty()) }
+        return swept
     }
 
     /** Checks only [tvId] (or every TV on this Trusted Network when null) and clears its "waiting for Allow" skip. */
@@ -366,7 +398,7 @@ class CompanionViewModel(
         runUpkeep(Trigger.APP_OPEN)
     }
 
-    private suspend fun refresh(error: String? = null) {
+    private suspend fun refresh(error: String? = null, settleBusy: Boolean = true) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
         val trusted = TrustMatcher.currentTrusted(fp, networks)
@@ -392,7 +424,7 @@ class CompanionViewModel(
                 trustedNetworks = networks,
                 tvs = cards,
                 settings = store.settings(),
-                busy = false,
+                busy = if (settleBusy) false else it.busy,
                 error = error,
                 found = if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
             )

@@ -17,12 +17,14 @@ import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
+import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -552,7 +554,7 @@ class CompanionViewModelTest {
     }
 
     @Test
-    fun tlsOnlySweepDiagnosesLiveHostsWithoutAdb() = runTest(UnconfinedTestDispatcher()) {
+    fun tlsOnlySweepSaysTheDeviceNeedsTlsNotThatNothingHasAdb() = runTest(UnconfinedTestDispatcher()) {
         val script = allRefused("192.168.5.0/24")
         script[ip("192.168.5.10")] = listOf(ProbeResult.AdbTls)
         val vm = discoveryRig(FakeLan(script))
@@ -560,7 +562,7 @@ class CompanionViewModelTest {
         runCurrent()
         assertTrue(vm.state.value.found.isEmpty())
         assertEquals(listOf("192.168.5.10"), vm.state.value.unsupported)
-        assertEquals(Diagnosis.NO_ADB_ON_LIVE_HOSTS, vm.state.value.diagnosis)
+        assertEquals(Diagnosis.TLS_ONLY, vm.state.value.diagnosis)
     }
 
     @Test
@@ -583,5 +585,83 @@ class CompanionViewModelTest {
         r.vm.findTvs()
         assertEquals(false, r.vm.state.value.scanning)
         assertEquals(false, r.vm.state.value.noneFound)
+    }
+
+    @Test
+    fun aScanThatNeverRanHasNoDiagnosisAndSaysSo() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val tiny = NetworkFingerprint("192.168.5.5", "192.168.5.4/31", setOf("192.168.5.5"))
+        r.store.saveTrustedNetwork(TrustedNetwork("tiny", "Tiny", tiny))
+        r.fp = tiny
+        val lan = FakeLan()
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), lan), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertTrue(lan.calls.isEmpty())
+        assertNull(vm.state.value.diagnosis)
+        assertEquals(false, vm.state.value.noneFound)
+        assertEquals(Copy.CANT_SCAN, vm.state.value.error)
+    }
+
+    @Test
+    fun offATrustedNetworkTheScanLeavesNoDiagnosis() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = false)
+        r.vm.findTvs()
+        assertNull(r.vm.state.value.diagnosis)
+        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+    }
+
+    @Test
+    fun keepScanningRemembersLiveHostsSeenBeforeTheStop() = runTest(UnconfinedTestDispatcher()) {
+        val script = allRefused("192.168.5.0/24")
+        val lan = FakeLan(script, delayMs = 100)
+        val vm = discoveryRig(lan)
+        vm.findTvs()
+        advanceTimeBy(150)
+        vm.cancelFind()
+        runCurrent()
+        // The first wave (128 in flight) had answered by the stop; later hosts had only been started.
+        val answered = lan.calls.take(128).map { it.address }.toSet()
+        assertEquals(128, answered.size)
+        Cidr.parse("192.168.5.0/24")!!.hosts().filter { it !in answered }.forEach { script[it] = listOf(ProbeResult.Timeout) }
+        vm.keepScanning()
+        advanceUntilIdle()
+        assertEquals(false, vm.state.value.scanning)
+        assertEquals(Diagnosis.NO_ADB_ON_LIVE_HOSTS, vm.state.value.diagnosis)
+    }
+
+    @Test
+    fun aCappedSweepThatFoundATvStillOffersKeepScanning() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val fp16 = NetworkFingerprint("10.0.2.1", "10.0.0.0/16", setOf("10.0.2.1"), ownIp = "10.0.1.3")
+        r.store.saveTrustedNetwork(TrustedNetwork("big", "Big", fp16))
+        r.fp = fp16
+        val script = allRefused("10.0.0.0/16")
+        script[ip("10.0.1.50")] = listOf(ProbeResult.AdbAuthRequired)
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, r.connector, Discovery(listOf(SweepSource), FakeLan(script)), this, { 1_000_000L }, { "tv-1" })
+        vm.findTvs()
+        runCurrent()
+        assertEquals(Diagnosis.FOUND, vm.state.value.diagnosis)
+        assertTrue(vm.state.value.scanTruncated)
+        vm.keepScanning()
+        runCurrent()
+        assertEquals(listOf("10.0.1.50"), vm.state.value.found)
+    }
+
+    @Test
+    fun aScanFinishingDuringAnAddDoesNotClearTheAddsBusyState() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val gate = CompletableDeferred<Unit>()
+        val gated = TvConnector { address, port -> gate.await(); r.connector.open(address, port) }
+        val vm = CompanionViewModel(r.store, r.source, r.upkeep, gated, Discovery(listOf(SweepSource), FakeLan(allRefused("192.168.5.0/24"))), this, { 1_000_000L }, { "tv-1" })
+        vm.addTvByAddress("192.168.5.77")
+        assertTrue(vm.state.value.busy)
+        vm.findTvs()
+        runCurrent()
+        assertEquals(false, vm.state.value.scanning)
+        assertTrue(vm.state.value.busy, "the scan's refresh cleared busy while the add was still running")
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(false, vm.state.value.busy)
     }
 }

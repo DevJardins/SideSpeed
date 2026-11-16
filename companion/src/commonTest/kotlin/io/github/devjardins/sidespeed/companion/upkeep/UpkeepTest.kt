@@ -465,4 +465,15 @@ class UpkeepTest {
         upkeep(store, net, FakeScanner(bogus)).runOnce(Trigger.BACKGROUND)
         assertEquals(listOf("192.168.5.50"), net.opened)
     }
+
+    @Test fun refindNeverScansASubnetOutsidePrivateSpace() = runTest {
+        val pub = NetworkFingerprint("8.8.8.1", "8.8.8.0/24", setOf("8.8.8.1"))
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "8.8.8.50").copy(trustedNetworkId = "pub", offlineCount = 3)),
+            listOf(TrustedNetwork("pub", "Pub", pub)),
+        )
+        val scanner = FakeScanner(listOf("8.8.8.77"))
+        upkeep(store, FakeNet(), scanner, FingerprintSource { pub }).runOnce(Trigger.BACKGROUND)
+        assertTrue(scanner.calls.isEmpty(), "scanned ${scanner.calls}")
+    }
 }

@@ -45,7 +45,7 @@ fun AddTvScreen(
         state.scanProgress?.let { SsText(it, Ss.caption) }
         if (state.scanning) {
             SsButton("Stop", onStop)
-        } else if (state.scanStopped || state.diagnosis == Diagnosis.PARTIAL) {
+        } else if (state.scanStopped || state.scanTruncated || state.diagnosis == Diagnosis.PARTIAL) {
             SsButton("Keep scanning", onKeepScanning)
         }
         state.found.forEach { host ->

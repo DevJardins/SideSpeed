@@ -20,14 +20,25 @@ class TailscaleCli(
             .firstNotNullOfOrNull(::run)
     }
 
-    private fun run(exe: String): String? = try {
-        val p = ProcessBuilder(exe, "status", "--json").redirectErrorStream(false).start()
-        p.outputStream.close()
-        val out = p.inputStream.bufferedReader().use { it.readText() }
-        if (!p.waitFor(timeoutSeconds, TimeUnit.SECONDS)) { p.destroyForcibly(); null }
-        else if (p.exitValue() == 0) out.takeIf { it.isNotBlank() } else null
-    } catch (_: Exception) {
-        null
+    private fun run(exe: String): String? {
+        // Output goes to a file, not a pipe: reading a pipe to its end would block past the timeout when the
+        // CLI hangs with stdout open, and a file also keeps a chatty stderr from filling a pipe.
+        val out = File.createTempFile("te-tailscale", ".json")
+        return try {
+            val p = ProcessBuilder(exe, "status", "--json")
+                .redirectInput(ProcessBuilder.Redirect.from(File(if (File.separatorChar == '\\') "NUL" else "/dev/null")))
+                .redirectOutput(out)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            if (!p.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                p.destroyForcibly()
+                null
+            } else if (p.exitValue() == 0) out.readText().takeIf { it.isNotBlank() } else null
+        } catch (_: Exception) {
+            null
+        } finally {
+            out.delete()
+        }
     }
 
     companion object {

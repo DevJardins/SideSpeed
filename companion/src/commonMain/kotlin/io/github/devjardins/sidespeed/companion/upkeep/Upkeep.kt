@@ -1,6 +1,8 @@
 package io.github.devjardins.sidespeed.companion.upkeep
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
+import io.github.devjardins.sidespeed.companion.net.AddressPolicy
+import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Subnets
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
@@ -159,6 +161,8 @@ class Upkeep(
     /** Scans the Trusted Network's /24 for the TV's serial, checking the gate before every connection. */
     private suspend fun refind(tv: SavedTv, trusted: TrustedNetwork, now: Long): Refind {
         val subnet = Subnets.normalize(trusted.fingerprint.subnet)?.takeIf { it.endsWith("/24") } ?: return Refind.NotFound
+        // Like Find TVs, a re-find only ever sweeps private (RFC 1918) space, whatever the saved fingerprint says.
+        if (Cidr.parse(subnet)?.let(AddressPolicy::sweepable) != true) return Refind.NotFound
         val hosts = scanner.scan(subnet, TvConnector.DEFAULT_PORT).filter { inSubnet(it, subnet) }.distinct()
         for (host in hosts) {
             val skip = store.promptedHosts().any { it.trustedNetworkId == trusted.id && it.address == host && it.isFresh(now) }

@@ -55,7 +55,7 @@ sealed interface DiscoveryEvent {
      * [address] is fully probed: it answered, or stayed silent through both passes. A stopped run's
      * collector uses these to resume past them. A host silent after pass 1 only is not reported yet.
      */
-    data class Probed(val address: Ipv4) : DiscoveryEvent
+    data class Probed(val address: Ipv4, val result: ProbeResult) : DiscoveryEvent
 
     /** The sweep ran to the end: how much of it answered. Never emitted when cancelled. */
     data class Done(val summary: DiscoverySummary) : DiscoveryEvent
@@ -85,7 +85,8 @@ class Discovery(
             .filter { it !in plan.skip }
             .filter { AddressPolicy.contactable(it) }
         val targets = candidates.take(plan.limit)
-        if (targets.isEmpty()) return@channelFlow
+        // A resume with nothing left to probe still finished: only a refused plan reports nothing at all.
+        if (targets.isEmpty()) return@channelFlow run { send(DiscoveryEvent.Done(DiscoverySummary())) }
         val truncated = candidates.size > targets.size
         val inDispatcher = dispatcher
         if (inDispatcher != null) withContext(inDispatcher) { sweep(plan, targets, truncated) } else sweep(plan, targets, truncated)
@@ -98,7 +99,7 @@ class Discovery(
             scanned++
             send(DiscoveryEvent.Progress(scanned, total))
             if (result.isAdb) send(DiscoveryEvent.Found(host, result))
-            if (result.hostIsLive) send(DiscoveryEvent.Probed(host))
+            if (result.hostIsLive) send(DiscoveryEvent.Probed(host, result))
         }.toMutableMap()
         val silent = targets.filter { results[it]?.hostIsLive == false }
         if (silent.isNotEmpty()) {
@@ -106,15 +107,15 @@ class Discovery(
             pass(plan, silent, plan.secondPassTimeoutMs) { host, result ->
                 results[host] = result
                 if (result.isAdb) send(DiscoveryEvent.Found(host, result))
-                send(DiscoveryEvent.Probed(host))
+                send(DiscoveryEvent.Probed(host, result))
             }
         }
         send(
             DiscoveryEvent.Done(
                 DiscoverySummary(
                     scanned = targets.toSet(),
-                    // TLS answers, but this companion can't use it: it counts as live, not as a find.
-                    liveNonAdb = results.count { (_, r) -> r.hostIsLive && r != ProbeResult.AdbAuthRequired && r != ProbeResult.AdbOpen },
+                    // TLS answers, but this companion can't use it: it is reported as unsupported, not counted here.
+                    liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb },
                     truncated = truncated,
                 ),
             ),

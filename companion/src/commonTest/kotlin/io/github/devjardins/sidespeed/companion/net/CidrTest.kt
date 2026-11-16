@@ -84,6 +84,15 @@ class AddressPolicyTest {
         listOf("100.63.255.255", "100.128.0.0", "10.0.0.1", "8.8.8.8", "192.168.1.1").forEach { assertFalse(AddressPolicy.isOverlay(ip(it)), it) }
     }
 
+    @Test fun tailscaleReservedBlocksAreNeverContactable() {
+        // Quad100 serves Tailscale's DNS and HTTP; 100.100.0.0/24 and 100.115.92.0/23 are reserved too.
+        listOf("100.100.100.100", "100.100.100.0", "100.100.100.255", "100.100.0.1", "100.115.92.0", "100.115.93.255").forEach {
+            assertFalse(AddressPolicy.isOverlay(ip(it)), it)
+            assertFalse(AddressPolicy.contactable(ip(it)), it)
+        }
+        listOf("100.100.1.1", "100.115.91.255", "100.115.94.0", "100.99.0.1").forEach { assertTrue(AddressPolicy.contactable(ip(it)), it) }
+    }
+
     @Test fun contactableIsPrivateOrOverlayAndNothingElse() {
         listOf("10.1.2.3", "172.16.0.1", "192.168.1.1", "100.64.0.1", "100.127.255.254").forEach { assertTrue(AddressPolicy.contactable(ip(it)), it) }
         listOf("8.8.8.8", "100.128.0.1", "127.0.0.1", "169.254.1.1", "172.32.0.1", "0.0.0.0").forEach { assertFalse(AddressPolicy.contactable(ip(it)), it) }

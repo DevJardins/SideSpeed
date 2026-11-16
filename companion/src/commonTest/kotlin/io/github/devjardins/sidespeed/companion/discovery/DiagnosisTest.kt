@@ -21,6 +21,11 @@ class DiagnosisTest {
         assertEquals(Diagnosis.NOTHING_ANSWERED, diagnose(DiscoverySummary(), found = false, complete = true))
     }
 
+    @Test fun aTlsOnlyAnswerHasItsOwnDiagnosisNotNothingAnswered() {
+        assertEquals(Diagnosis.TLS_ONLY, diagnose(DiscoverySummary(), found = false, complete = true, tlsOnly = true))
+        assertEquals(Diagnosis.FOUND, diagnose(DiscoverySummary(), found = true, complete = true, tlsOnly = true))
+    }
+
     @Test fun foundOutranksEveryOtherSignal() {
         assertEquals(Diagnosis.FOUND, diagnose(DiscoverySummary(truncated = true), found = true, complete = false))
         assertEquals(Diagnosis.FOUND, diagnose(DiscoverySummary(), found = true, complete = true, vpnActive = true))

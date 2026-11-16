@@ -276,4 +276,30 @@ class DiscoveryTest {
         assertEquals(callsAfterCancel, lan.calls.size)
         assertTrue(job.isCancelled)
     }
+
+    @Test
+    fun probedEventsCarryTheResult() = runTest {
+        val lan = FakeLan(mapOf(ip("192.168.1.1") to listOf(ProbeResult.AdbTls), ip("192.168.1.2") to listOf(ProbeResult.NotAdb)))
+        val probed = sweepDiscovery(lan).run(plan("192.168.1.0/30")).toList().filterIsInstance<DiscoveryEvent.Probed>()
+        assertEquals(
+            mapOf(ip("192.168.1.1") to ProbeResult.AdbTls, ip("192.168.1.2") to ProbeResult.NotAdb),
+            probed.associate { it.address to it.result },
+        )
+    }
+
+    @Test
+    fun aResumeWithNothingLeftStillReportsDone() = runTest {
+        val lan = FakeLan()
+        val skip = setOf(ip("192.168.1.1"), ip("192.168.1.2"))
+        val events = sweepDiscovery(lan).run(plan("192.168.1.0/30").copy(skip = skip)).toList()
+        assertTrue(lan.calls.isEmpty())
+        assertEquals(1, events.filterIsInstance<DiscoveryEvent.Done>().size)
+    }
+
+    @Test
+    fun aTlsHostIsNotCountedAsLiveWithoutAdb() = runTest {
+        val lan = FakeLan(mapOf(ip("192.168.1.1") to listOf(ProbeResult.AdbTls), ip("192.168.1.2") to listOf(ProbeResult.NotAdb)))
+        val done = sweepDiscovery(lan).run(plan("192.168.1.0/30")).toList().filterIsInstance<DiscoveryEvent.Done>().single()
+        assertEquals(1, done.summary.liveNonAdb)
+    }
 }
