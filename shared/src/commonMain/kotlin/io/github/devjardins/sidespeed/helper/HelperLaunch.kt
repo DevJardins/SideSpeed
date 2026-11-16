@@ -9,6 +9,9 @@ package io.github.devjardins.sidespeed.helper
  * No single quotes: the PC command wraps this in single quotes.
  */
 object HelperLaunch {
+    /** Stops a running helper (matched by its process name). */
+    const val KILL_COMMAND = "kill \$(pidof sidespeed_helper)"
+
     fun command(): String =
         "trap \"\" HUP; P=\$(pm path io.github.devjardins.sidespeed | cut -d: -f2); " +
             "CLASSPATH=\$P setsid nohup app_process /system/bin --nice-name=sidespeed_helper " +

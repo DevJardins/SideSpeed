@@ -9,24 +9,25 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
+import io.github.devjardins.sidespeed.theme.SsTokens
 
-/** Dark-room palette (design Revision 4). No bright fills, no lime, never pure white. */
+/** Dark-room palette (design Revision 4), values from [SsTokens]. No bright fills, no lime, never pure white. */
 object SsColors {
-    val Background = Color(0xFF10151E)
-    val Surface = Color(0xFF171E29)
-    val Button = Color(0xFF1A222E)
-    val Raised = Color(0xFF222C38)
-    val FocusButton = Color(0xFF2A3644)
-    val TextPrimary = Color(0xFFEEF1F5)
-    val TextBody = Color(0xFFD9DEE6)
-    val TextSecondary = Color(0xFF8C96A4)
-    val Accent = Color(0xFF93BFA2)
-    val OkPillBg = Color(0xFF1D2B24)
-    val OkPillText = Color(0xFF9FC9AC)
-    val WarnPillBg = Color(0xFF2A2620)
-    val WarnPillText = Color(0xFFC9B48F)
-    val DangerCardBg = Color(0xFF2E1F22)
-    val DangerCardText = Color(0xFFE3B1B1)
+    val Background = Color(SsTokens.BACKGROUND)
+    val Surface = Color(SsTokens.SURFACE)
+    val Button = Color(SsTokens.BUTTON)
+    val Raised = Color(SsTokens.RAISED)
+    val FocusButton = Color(SsTokens.FOCUS_BUTTON)
+    val TextPrimary = Color(SsTokens.TEXT_PRIMARY)
+    val TextBody = Color(SsTokens.TEXT_BODY)
+    val TextSecondary = Color(SsTokens.TEXT_SECONDARY)
+    val Accent = Color(SsTokens.ACCENT)
+    val OkPillBg = Color(SsTokens.OK_PILL_BG)
+    val OkPillText = Color(SsTokens.OK_PILL_TEXT)
+    val WarnPillBg = Color(SsTokens.WARN_PILL_BG)
+    val WarnPillText = Color(SsTokens.WARN_PILL_TEXT)
+    val DangerCardBg = Color(SsTokens.DANGER_CARD_BG)
+    val DangerCardText = Color(SsTokens.DANGER_CARD_TEXT)
 }
 
 /**
@@ -34,10 +35,10 @@ object SsColors {
  * the button's focused/unfocused content colour; screens pass a colour where needed.
  */
 object SsType {
-    val Headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Medium)
-    val Title = TextStyle(fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium)
-    val Body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp)
-    val Caption = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
+    val Headline = TextStyle(fontSize = SsTokens.HEADLINE_SP.sp, lineHeight = 36.sp, fontWeight = FontWeight.Medium)
+    val Title = TextStyle(fontSize = SsTokens.TITLE_SP.sp, lineHeight = 28.sp, fontWeight = FontWeight.Medium)
+    val Body = TextStyle(fontSize = SsTokens.BODY_SP.sp, lineHeight = 24.sp)
+    val Caption = TextStyle(fontSize = SsTokens.CAPTION_SP.sp, lineHeight = 18.sp)
 }
 
 /** Spacing. [ScreenH] keeps content inside the overscan-safe area. */

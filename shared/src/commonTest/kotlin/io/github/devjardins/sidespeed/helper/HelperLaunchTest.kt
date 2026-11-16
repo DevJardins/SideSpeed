@@ -1,7 +1,7 @@
 package io.github.devjardins.sidespeed.helper
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class HelperLaunchTest {
     @Test fun exactCommand() = assertEquals(
@@ -14,7 +14,4 @@ class HelperLaunchTest {
     /** libadb runs commands over the legacy PTY shell; without ignoring SIGHUP first the helper dies when the session closes (seen on the onn). */
     @Test fun ignoresHangupBeforeBackgrounding() =
         assertEquals(true, HelperLaunch.command().startsWith("trap \"\" HUP; "))
-
-    @Test fun namesTheRealMainClass() =
-        assertEquals(true, HelperLaunch.command().contains(" ${HelperMain::class.java.name} "))
 }

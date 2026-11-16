@@ -53,7 +53,7 @@ fun pcStartCommands(kind: DeviceKind, wifiIp: String?, launch: String, killFirst
         DeviceKind.GOOGLE_TV -> listOf("adb pair $ip:<pairing port>", "adb connect $ip:<port>")
     }
     val raw = buildList {
-        if (killFirst) add(ConnectionStrategy.KILL_COMMAND)
+        if (killFirst) add(HelperLaunch.KILL_COMMAND)
         add(launch)
     }
     return PcStartCommands(connect, raw.map { "adb shell '$it'" }, raw)
@@ -109,7 +109,7 @@ class ConnectionStrategy(
 
         try {
             if (killFirst) {
-                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(KILL_COMMAND).collect { } }
+                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.KILL_COMMAND).collect { } }
                 delay(KILL_SETTLE_MS)
             }
             withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command()).collect { } }
@@ -135,7 +135,6 @@ class ConnectionStrategy(
         generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is ConnectException }
 
     companion object {
-        const val KILL_COMMAND = "kill \$(pidof sidespeed_helper)"
         const val SHELL_TIMEOUT_MS = 10_000L
         const val KILL_SETTLE_MS = 500L
         const val POLL_INTERVAL_MS = 500L

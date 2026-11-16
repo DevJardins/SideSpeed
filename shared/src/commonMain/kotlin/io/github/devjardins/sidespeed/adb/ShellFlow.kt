@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.transform
  * A connection drop right after a line, such as a compile's last error output, would vanish. So the loss
  * travels as a final in-order item instead, and the producer completes normally.
  */
-internal fun shellFlow(body: suspend FlowCollector<ShellEvent>.() -> Unit): Flow<ShellEvent> =
+fun shellFlow(body: suspend FlowCollector<ShellEvent>.() -> Unit): Flow<ShellEvent> =
     flow<Any> {
         val out = FlowCollector<ShellEvent> { emit(it) }
         try {
