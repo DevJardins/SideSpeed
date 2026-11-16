@@ -7,8 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.NetworkInterface
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 /**
  * Reads the current network's fingerprint with fixed read-only OS commands (no prompts, no permissions).
@@ -21,27 +19,27 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
 
     override suspend fun current(): NetworkFingerprint? = withContext(Dispatchers.IO) {
         val gateway = when {
-            mac -> FingerprintParsers.macGateway(run("route", "-n", "get", "default"))
-            windows -> FingerprintParsers.windowsGateway(run("route", "print", "-4"))
-            else -> FingerprintParsers.linuxGateway(run("ip", "route", "show", "default"))
+            mac -> FingerprintParsers.macGateway(runCommand("route", "-n", "get", "default"))
+            windows -> FingerprintParsers.windowsGateway(runCommand("route", "print", "-4"))
+            else -> FingerprintParsers.linuxGateway(runCommand("ip", "route", "show", "default"))
         } ?: return@withContext null
         val (ownIp, subnet) = ownAddressAndSubnet(gateway) ?: return@withContext null
         val dns = when {
-            mac -> FingerprintParsers.macDns(run("scutil", "--dns"))
+            mac -> FingerprintParsers.macDns(runCommand("scutil", "--dns"))
             windows -> FingerprintParsers.windowsDns(
-                run("powershell", "-NoProfile", "-NonInteractive", "-Command",
+                runCommand("powershell", "-NoProfile", "-NonInteractive", "-Command",
                     "(Get-DnsClientServerAddress -AddressFamily IPv4).ServerAddresses"),
             )
-            else -> FingerprintParsers.resolvectl(run("resolvectl", "dns")).ifEmpty {
+            else -> FingerprintParsers.resolvectl(runCommand("resolvectl", "dns")).ifEmpty {
                 FingerprintParsers.resolvConf(runCatching { java.io.File("/etc/resolv.conf").readText() }.getOrDefault(""))
             }
         }
         // `gateway` is a validated IPv4 literal, so it is safe as a command argument.
         val macAddr = FingerprintParsers.gatewayMac(
             when {
-                mac -> run("arp", "-n", gateway)
-                windows -> run("arp", "-a", gateway)
-                else -> run("ip", "neigh", "show", gateway)
+                mac -> runCommand("arp", "-n", gateway)
+                windows -> runCommand("arp", "-a", gateway)
+                else -> runCommand("ip", "neigh", "show", gateway)
             },
             gateway,
         )
@@ -60,21 +58,4 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             }.firstOrNull()
     }.getOrNull()
 
-    /** Runs a fixed command, returning stdout, or "" if it fails or takes over 5 s (a hung command is killed). */
-    private fun run(vararg cmd: String): String {
-        val p = try {
-            ProcessBuilder(*cmd).redirectErrorStream(true).start().also { it.outputStream.close() }
-        } catch (e: Exception) {
-            return ""
-        }
-        // Read on another thread: reading here would block past the timeout if the command hangs.
-        val out = CompletableFuture.supplyAsync { runCatching { p.inputStream.bufferedReader().readText() }.getOrDefault("") }
-        return try {
-            out.get(5, TimeUnit.SECONDS)
-        } catch (e: Exception) {
-            ""
-        } finally {
-            if (p.isAlive) p.destroyForcibly()
-        }
-    }
 }

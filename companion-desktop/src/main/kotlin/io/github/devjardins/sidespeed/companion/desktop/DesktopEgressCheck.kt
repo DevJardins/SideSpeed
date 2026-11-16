@@ -7,8 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.NetworkInterface
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
 
 /** Asks the OS routing table (a read-only query, nothing is sent) which interface traffic to an address uses. */
 class DesktopEgressCheck(private val os: String = System.getProperty("os.name").orEmpty().lowercase()) : EgressCheck {
@@ -18,11 +16,11 @@ class DesktopEgressCheck(private val os: String = System.getProperty("os.name").
     override suspend fun route(address: Ipv4): EgressRoute? = withContext(Dispatchers.IO) {
         val ip = EgressParsers.safeIpv4(address.toString()) ?: return@withContext null
         val name = when {
-            mac -> EgressParsers.macInterface(run("route", "-n", "get", ip))
+            mac -> EgressParsers.macInterface(runCommand("route", "-n", "get", ip))
             windows -> EgressParsers.windowsInterface(
-                run("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Find-NetRoute -RemoteIPAddress $ip).InterfaceAlias"),
+                runCommand("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Find-NetRoute -RemoteIPAddress $ip).InterfaceAlias"),
             )
-            else -> EgressParsers.linuxInterface(run("ip", "route", "get", ip))
+            else -> EgressParsers.linuxInterface(runCommand("ip", "route", "get", ip))
         } ?: return@withContext null
         val addresses = runCatching {
             NetworkInterface.getNetworkInterfaces().asSequence()
@@ -35,19 +33,4 @@ class DesktopEgressCheck(private val os: String = System.getProperty("os.name").
         EgressRoute(name, addresses)
     }
 
-    private fun run(vararg cmd: String): String {
-        val p = try {
-            ProcessBuilder(*cmd).redirectErrorStream(true).start().also { it.outputStream.close() }
-        } catch (e: Exception) {
-            return ""
-        }
-        val out = CompletableFuture.supplyAsync { runCatching { p.inputStream.bufferedReader().readText() }.getOrDefault("") }
-        return try {
-            out.get(5, TimeUnit.SECONDS)
-        } catch (e: Exception) {
-            ""
-        } finally {
-            if (p.isAlive) p.destroyForcibly()
-        }
-    }
 }
