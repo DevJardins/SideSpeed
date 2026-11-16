@@ -84,9 +84,9 @@ fun main() {
     val arpReader: suspend () -> String = {
         withContext(Dispatchers.IO) {
             when {
-                osName.startsWith("mac") || osName.startsWith("darwin") -> Commands.run("arp", "-an")
-                osName.startsWith("windows") -> Commands.run("arp", "-a")
-                else -> Commands.run("ip", "neigh", "show")
+                osName.startsWith("mac") || osName.startsWith("darwin") -> runCommand("arp", "-an")
+                osName.startsWith("windows") -> runCommand("arp", "-a")
+                else -> runCommand("ip", "neigh", "show")
             }
         }
     }
