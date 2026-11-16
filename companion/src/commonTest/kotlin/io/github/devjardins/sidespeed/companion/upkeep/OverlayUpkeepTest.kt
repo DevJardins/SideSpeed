@@ -151,6 +151,20 @@ class OverlayUpkeepTest {
         assertEquals(mapOf("l" to TvStatus.RUNNING), report.visited)
     }
 
+    @Test fun aClosedOverlayStillLetsLanTvsRun() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nA"), lanTv("l", "192.168.5.50"))
+        val net = Net().also {
+            it.sessions["100.101.1.1"] = running("SER-a")
+            it.sessions["192.168.5.50"] = running("SER-l")
+        }
+        val lanRoute = Egress { EgressRoute("en0", listOf(ip("192.168.5.9"))) }
+        val report = upkeep(st, net, Snapshots(snap(peer("nA", "100.101.1.1"))), lanRoute, fingerprint = home)
+            .runOnce(Trigger.BACKGROUND)
+        assertTrue(report.gated, "the overlay part was gated")
+        assertEquals(mapOf("l" to TvStatus.RUNNING), report.visited)
+        assertEquals(listOf("192.168.5.50"), net.opened)
+    }
+
     @Test fun aPeerWhoseOnlyAddressIsQuad100IsNeverContacted() = runTest {
         val st = store(ovTv("a", "100.100.100.100", "nA"))
         val net = Net().also { it.sessions["100.100.100.100"] = running("SER-a") }
