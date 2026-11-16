@@ -11,8 +11,8 @@ class NotificationTextTest {
 
     @Test fun singleAppIsNotPlural() = assertEquals("Keeping 1 app optimized", notificationText(idle("a.a")))
 
-    @Test fun allOrSideloadedModeWithNoMatchingAppsCountsZero() =
-        assertEquals("Keeping 0 apps optimized", notificationText(idle()))
+    @Test fun nothingToKeepYetSaysItIsWatching() =
+        assertEquals("Watching for apps to optimize", notificationText(idle()))
 
     @Test fun queuedWorkShowsProgress() {
         val s = MaintenanceState(setOf("a.a", "b.b"), mapOf("a.a" to JobPhase.RUNNING, "b.b" to JobPhase.WAITING))

@@ -27,6 +27,7 @@ import kotlin.time.Duration.Companion.hours
 fun notificationText(state: MaintenanceState): String = when {
     state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
     state.queueLength > 0 -> "Optimizing apps (${state.queueLength} left)"
+    state.maintained.isEmpty() -> "Watching for apps to optimize"
     state.maintained.size == 1 -> "Keeping 1 app optimized"
     else -> "Keeping ${state.maintained.size} apps optimized"
 }
