@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
@@ -19,12 +20,16 @@ import java.nio.file.StandardCopyOption
  * A missing, unreadable or corrupt file reads as empty defaults and is never rewritten by a read. The next
  * successful save moves a corrupt file aside to `<name>.corrupt` and writes fresh state. Individual entries that
  * are malformed (missing fields, blank serial) are skipped; an unknown status reads as [TvStatus.UNKNOWN].
+ *
+ * The file and its directory are owner-only (POSIX 0600 / 0700; best effort on Windows, whose per-user app-data
+ * ACL already restricts access), and the temp file is fsynced before the rename.
  */
 class JsonFileCompanionStore(private val dir: File) : CompanionStore {
     private data class State(
         val tvs: List<SavedTv> = emptyList(),
         val networks: List<TrustedNetwork> = emptyList(),
         val settings: CompanionSettings = CompanionSettings(),
+        val prompted: List<PromptedHost> = emptyList(),
     )
 
     private val mutex = Mutex()
@@ -39,8 +44,22 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     override suspend fun saveTv(tv: SavedTv) {
         SavedTv.requireValid(tv)
-        update { it.copy(tvs = it.tvs.upsert(tv) { x -> x.id }) }
+        update { it.copy(tvs = it.tvs.upsert(tv) { x -> x.id }, prompted = emptyList()) }
     }
+
+    override suspend fun updateTv(id: String, transform: (SavedTv) -> SavedTv): Boolean = mutex.withLock {
+        val current = loaded()
+        val old = current.tvs.firstOrNull { it.id == id } ?: return@withLock false
+        val new = transform(old)
+        require(new.id == id) { "updateTv cannot change the id" }
+        SavedTv.requireValid(new)
+        commit(current.copy(tvs = current.tvs.upsert(new) { x -> x.id }))
+        true
+    }
+
+    override suspend fun promptedHosts(): List<PromptedHost> = read { it.prompted }
+
+    override suspend fun savePromptedHosts(hosts: List<PromptedHost>) = update { it.copy(prompted = hosts) }
 
     override suspend fun removeTv(id: String) = update { it.copy(tvs = it.tvs.filterNot { t -> t.id == id }) }
 
@@ -54,8 +73,10 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     private suspend fun <T> read(pick: (State) -> T): T = mutex.withLock { pick(loaded()) }
 
-    private suspend fun update(change: (State) -> State) = mutex.withLock {
-        val next = change(loaded())
+    private suspend fun update(change: (State) -> State) = mutex.withLock { commit(change(loaded())) }
+
+    /** Caller holds [mutex]. */
+    private suspend fun commit(next: State) {
         withContext(Dispatchers.IO) { writeAtomically(encode(next)) }
         state = next
     }
@@ -79,13 +100,18 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     private fun writeAtomically(text: String) {
         if (!dir.isDirectory && !dir.mkdirs() && !dir.isDirectory) throw IOException("Cannot create $dir")
+        OwnerOnly.restrict(dir, directory = true)
         val target = file.toPath()
         if (loadedCorrupt && file.exists()) {
             Files.move(target, File(dir, "$FILE_NAME.corrupt").toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
         val tmp = File.createTempFile(FILE_NAME, ".tmp", dir)
         try {
-            tmp.writeText(text, Charsets.UTF_8)
+            OwnerOnly.restrict(tmp, directory = false)
+            FileOutputStream(tmp).use { out ->
+                out.write(text.toByteArray(Charsets.UTF_8))
+                out.fd.sync() // on disk before the rename makes it the store
+            }
             try {
                 Files.move(tmp.toPath(), target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
             } catch (e: AtomicMoveNotSupportedException) {
@@ -127,6 +153,9 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                     ),
                 )
             },
+            "promptedHosts" to s.prompted.map { p ->
+                mapOf("trustedNetworkId" to p.trustedNetworkId, "address" to p.address, "atEpochMs" to p.atEpochMs)
+            },
             "settings" to mapOf(
                 "notifications" to s.settings.notifications,
                 "intervalMinutes" to s.settings.intervalMinutes,
@@ -147,7 +176,15 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 startAtLogin = m["startAtLogin"] as? Boolean ?: defaults.startAtLogin,
             )
         } ?: defaults
-        return State(tvs, networks, settings)
+        val prompted = (root["promptedHosts"] as? List<*>).orEmpty().mapNotNull { v ->
+            val m = v as? Map<*, *> ?: return@mapNotNull null
+            PromptedHost(
+                trustedNetworkId = m["trustedNetworkId"] as? String ?: return@mapNotNull null,
+                address = m["address"] as? String ?: return@mapNotNull null,
+                atEpochMs = m.long("atEpochMs") ?: return@mapNotNull null,
+            )
+        }
+        return State(tvs, networks, settings, prompted)
     }
 
     private fun decodeTv(v: Any?): SavedTv? {

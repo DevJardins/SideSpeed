@@ -4,6 +4,7 @@ import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.store.PromptedHost
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
@@ -52,8 +53,10 @@ class UpkeepTest {
         val sessions = mutableMapOf<String, FakeTvSession>()
         val wrappers = mutableMapOf<String, TvSession>()
         val opened = mutableListOf<String>()
+        var onOpen: suspend (String) -> Unit = {}
         val connector = TvConnector { address, port ->
             opened += address
+            onOpen(address)
             assertEquals(TvConnector.DEFAULT_PORT, port)
             val s = sessions[address] ?: throw TvUnreachable(null)
             s.connector().open(address, port)
@@ -63,8 +66,10 @@ class UpkeepTest {
 
     private class FakeScanner(var answer: List<String> = emptyList()) : Scanner {
         val calls = mutableListOf<String>()
+        var onScan: () -> Unit = {}
         override suspend fun scan(subnet: String, port: Int): List<String> {
             calls += "$subnet:$port"
+            onScan()
             return answer
         }
     }
@@ -73,6 +78,10 @@ class UpkeepTest {
     private class ScriptedSource(vararg val fps: NetworkFingerprint?) : FingerprintSource {
         var calls = 0
         override suspend fun current(): NetworkFingerprint? = fps[minOf(calls++, fps.size - 1)]
+    }
+
+    private class MutableSource(var fp: NetworkFingerprint?) : FingerprintSource {
+        override suspend fun current(): NetworkFingerprint? = fp
     }
 
     private var now = 1_000_000L
@@ -240,7 +249,7 @@ class UpkeepTest {
             it.sessions["192.168.5.50"] = runningTv("SER-a")
             it.sessions["192.168.5.51"] = runningTv("SER-b")
         }
-        val report = upkeep(store, net, source = ScriptedSource(home, cafe)).runOnce(Trigger.BACKGROUND)
+        val report = upkeep(store, net, source = ScriptedSource(home, home, cafe)).runOnce(Trigger.BACKGROUND)
         assertEquals(listOf("192.168.5.50"), net.opened)
         assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited)
         assertTrue(report.gated)
@@ -250,7 +259,7 @@ class UpkeepTest {
         val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(homeNet))
         val net = FakeNet()
         val scanner = FakeScanner(listOf("192.168.5.77"))
-        val report = upkeep(store, net, scanner, ScriptedSource(home, cafe)).runOnce(Trigger.BACKGROUND)
+        val report = upkeep(store, net, scanner, ScriptedSource(home, home, cafe)).runOnce(Trigger.BACKGROUND)
         assertTrue(scanner.calls.isEmpty())
         assertTrue(report.gated)
         assertEquals(null, store.tv("a").lastRefindEpochMs)
@@ -285,5 +294,175 @@ class UpkeepTest {
         val report = upkeep(store, net).runOnce(Trigger.RESTART_NOW)
         assertEquals(mapOf("w" to TvStatus.WRONG_DEVICE, "n" to TvStatus.NOT_INSTALLED), report.visited)
         assertTrue(report.restartedNames.isEmpty())
+    }
+
+    // --- Fix round 1 ---------------------------------------------------------------------------------------
+
+    private fun offlineTv() = tv("a", "192.168.5.50").copy(offlineCount = 2)
+
+    @Test fun gateIsCheckedBeforeEachRefindConnect() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val source = MutableSource(home)
+        val net = FakeNet().also {
+            it.sessions["192.168.5.23"] = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER-1"))
+            it.sessions["192.168.5.24"] = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER-2"))
+            it.onOpen = { address -> if (address == "192.168.5.23") source.fp = cafe }
+        }
+        val scanner = FakeScanner(listOf("192.168.5.23", "192.168.5.24"))
+        val report = upkeep(store, net, scanner, source).runOnce(Trigger.BACKGROUND)
+        assertTrue("192.168.5.24" !in net.opened, "opened: ${net.opened}")
+        assertTrue(report.gated)
+        assertEquals(TvStatus.OFFLINE, store.tv("a").status)
+        assertEquals(now, store.tv("a").lastRefindEpochMs)
+    }
+
+    @Test fun gateClosingRightAfterTheScanOpensNoHost() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val source = MutableSource(home)
+        val net = FakeNet().also { it.sessions["192.168.5.23"] = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-a")) }
+        val scanner = FakeScanner(listOf("192.168.5.23")).also { it.onScan = { source.fp = cafe } }
+        val report = upkeep(store, net, scanner, source).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50"), net.opened)
+        assertTrue(report.gated)
+    }
+
+    @Test fun gateClosingBetweenFindingAndVisitingKeepsTheAddressButDoesNotVisit() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val source = MutableSource(home)
+        val found = runningTv("SER-a")
+        val net = FakeNet().also {
+            it.sessions["192.168.5.77"] = found
+            it.onOpen = { address -> if (address == "192.168.5.77") source.fp = cafe }
+        }
+        val report = upkeep(store, net, FakeScanner(listOf("192.168.5.77")), source).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50", "192.168.5.77"), net.opened)
+        assertEquals(listOf(TvCommands.SERIAL), found.sent)
+        assertTrue(report.gated)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(TvStatus.OFFLINE, store.tv("a").status)
+    }
+
+    @Test fun skipFlaggedFirstTvThenGateFlipVisitsNothing() = runTest {
+        val store = InMemoryCompanionStore(
+            listOf(tv("s", "192.168.5.40").copy(skipBackgroundUntilUserAction = true), tv("b", "192.168.5.51")),
+            listOf(homeNet),
+        )
+        val net = FakeNet().also {
+            it.sessions["192.168.5.40"] = runningTv("SER-s")
+            it.sessions["192.168.5.51"] = runningTv("SER-b")
+        }
+        val report = upkeep(store, net, source = ScriptedSource(home, cafe)).runOnce(Trigger.BACKGROUND)
+        assertTrue(net.opened.isEmpty())
+        assertTrue(report.gated)
+    }
+
+    @Test fun refindCandidateLosingConnectionIsSkipped() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val flaky = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-a"), loseConnectionOn = TvCommands.SERIAL)
+        val net = FakeNet().also {
+            it.sessions["192.168.5.23"] = flaky
+            it.sessions["192.168.5.77"] = runningTv("SER-a")
+        }
+        upkeep(store, net, FakeScanner(listOf("192.168.5.23", "192.168.5.77"))).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf(TvCommands.SERIAL), flaky.sent)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(TvStatus.RUNNING, store.tv("a").status)
+    }
+
+    @Test fun promptedForeignHostIsSkippedUntilUserActionOrExpiry() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val foreign = FakeTvSession(authPending = true)
+        val net = FakeNet().also { it.sessions["192.168.5.23"] = foreign }
+        val scanner = FakeScanner(listOf("192.168.5.23"))
+        val u = upkeep(store, net, scanner)
+        val opens = { net.opened.count { it == "192.168.5.23" } }
+
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(1, opens())
+        assertEquals(listOf("192.168.5.23"), store.prompted.map { it.address })
+
+        now += hour
+        u.runOnce(Trigger.BACKGROUND)
+        u.runOnce(Trigger.NETWORK_JOINED) // not due again within the hour anyway
+        now += hour
+        u.runOnce(Trigger.NETWORK_JOINED)
+        assertEquals(3, scanner.calls.size)
+        assertEquals(1, opens(), "a prompted device is not bothered again by background re-finds")
+
+        now += hour
+        u.runOnce(Trigger.APP_OPEN)
+        assertEquals(2, opens(), "a user action clears the list")
+
+        now = store.prompted.single().atEpochMs + PromptedHost.PROMPTED_HOST_TTL_MS
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(3, opens(), "entries expire after 24 h")
+    }
+
+    @Test fun savingATvClearsPromptedHosts() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        store.prompted = listOf(PromptedHost("home", "192.168.5.23", now))
+        store.saveTv(tv("b", "192.168.5.51"))
+        assertTrue(store.promptedHosts().isEmpty())
+    }
+
+    @Test fun wrongDeviceThreeTimesStartsRefind() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val stranger = runningTv("NOT-MINE")
+        val net = FakeNet().also {
+            it.sessions["192.168.5.50"] = stranger
+            it.sessions["192.168.5.77"] = runningTv("SER-a")
+        }
+        val scanner = FakeScanner(listOf("192.168.5.50", "192.168.5.77"))
+        val u = upkeep(store, net, scanner)
+        u.runOnce(Trigger.BACKGROUND)
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(TvStatus.WRONG_DEVICE, store.tv("a").status)
+        assertEquals(2, store.tv("a").offlineCount)
+        assertTrue(scanner.calls.isEmpty())
+
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(1, scanner.calls.size)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(TvStatus.RUNNING, store.tv("a").status)
+        assertTrue(stranger.sent.all { it == TvCommands.SERIAL })
+    }
+
+    @Test fun tvRemovedDuringVisitIsNotResurrected() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val net = FakeNet().also {
+            it.sessions["192.168.5.50"] = runningTv("SER-a")
+            it.onOpen = { store.removeTv("a") }
+        }
+        val report = upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertTrue(store.tvs().isEmpty())
+        assertTrue(report.visited.isEmpty())
+    }
+
+    @Test fun tvRenamedDuringVisitKeepsTheRename() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val net = FakeNet().also {
+            it.sessions["192.168.5.50"] = runningTv("SER-a")
+            it.onOpen = { store.saveTv(store.tv("a").copy(name = "Bedroom")) }
+        }
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertEquals("Bedroom", store.tv("a").name)
+        assertEquals(TvStatus.RUNNING, store.tv("a").status)
+        assertEquals(now, store.tv("a").lastCheckedEpochMs)
+    }
+
+    @Test fun clockMovedBackMakesRefindDue() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv().copy(lastRefindEpochMs = now + hour)), listOf(homeNet))
+        val scanner = FakeScanner()
+        upkeep(store, FakeNet(), scanner).runOnce(Trigger.BACKGROUND)
+        assertEquals(1, scanner.calls.size)
+        assertEquals(now, store.tv("a").lastRefindEpochMs)
+    }
+
+    @Test fun scannerResultsOutsideTheSubnetAreIgnored() = runTest {
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val net = FakeNet()
+        val bogus = listOf("10.0.0.5", "192.168.5.0", "192.168.5.255", "192.168.6.7", "example.com", "192.168.5.x")
+        upkeep(store, net, FakeScanner(bogus)).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50"), net.opened)
     }
 }

@@ -39,13 +39,40 @@ data class CompanionSettings(
     val startAtLogin: Boolean = false,
 )
 
+/**
+ * A device on [trustedNetworkId] that answered a re-find connection with its "Allow USB debugging?" prompt.
+ * Background re-finds skip it for [PROMPTED_HOST_TTL_MS] so a foreign device is bothered at most once per
+ * offline episode.
+ */
+data class PromptedHost(val trustedNetworkId: String, val address: String, val atEpochMs: Long) {
+    /** Recorded less than [PROMPTED_HOST_TTL_MS] ago. A timestamp in the future (clock moved back) has expired. */
+    fun isFresh(now: Long): Boolean = now - atEpochMs in 0 until PROMPTED_HOST_TTL_MS
+
+    companion object {
+        const val PROMPTED_HOST_TTL_MS = 24 * 60 * 60 * 1000L
+    }
+}
+
 /** Saved TVs, Trusted Networks and settings. Saving an existing id replaces it. */
 interface CompanionStore {
     suspend fun tvs(): List<SavedTv>
 
-    /** @throws IllegalArgumentException for a blank id or serial (see [SavedTv.requireValid]). */
+    /**
+     * The user's add or edit of a TV. Being a user action, it also clears [promptedHosts].
+     * @throws IllegalArgumentException for a blank id or serial (see [SavedTv.requireValid]).
+     */
     suspend fun saveTv(tv: SavedTv)
+
+    /**
+     * Re-reads TV [id] under the store's lock and saves `transform(current)`. Returns false and saves nothing if
+     * the TV no longer exists. Used by upkeep, so a long check never brings back a removed TV or undoes an edit.
+     * @throws IllegalArgumentException if the result is invalid or changes the id.
+     */
+    suspend fun updateTv(id: String, transform: (SavedTv) -> SavedTv): Boolean
     suspend fun removeTv(id: String)
+
+    suspend fun promptedHosts(): List<PromptedHost>
+    suspend fun savePromptedHosts(hosts: List<PromptedHost>)
 
     suspend fun trustedNetworks(): List<TrustedNetwork>
     suspend fun saveTrustedNetwork(n: TrustedNetwork)

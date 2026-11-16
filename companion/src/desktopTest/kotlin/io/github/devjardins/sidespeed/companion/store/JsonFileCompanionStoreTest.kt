@@ -5,6 +5,8 @@ import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.attribute.PosixFileAttributeView
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,5 +105,47 @@ class JsonFileCompanionStoreTest {
         assertEquals(listOf("a"), s.tvs().map { it.id })
         assertEquals(TvStatus.UNKNOWN, s.tvs().single().status)
         assertEquals(CompanionSettings(intervalMinutes = 60), s.settings())
+    }
+
+    @Test fun updateTvTransformsTheCurrentCopyOnly() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv)
+        s.saveTv(tv.copy(name = "Renamed"))
+        assertTrue(s.updateTv("tv1") { it.copy(status = TvStatus.RUNNING, offlineCount = 0) })
+        val r = JsonFileCompanionStore(dir).tvs().single()
+        assertEquals("Renamed", r.name)
+        assertEquals(TvStatus.RUNNING, r.status)
+    }
+
+    @Test fun updateTvOnRemovedTvDoesNothing() = runBlocking<Unit> {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv)
+        s.removeTv("tv1")
+        assertEquals(false, s.updateTv("tv1") { it.copy(status = TvStatus.RUNNING) })
+        assertEquals(emptyList(), JsonFileCompanionStore(dir).tvs())
+        assertFailsWith<IllegalArgumentException> {
+            s.saveTv(tv)
+            s.updateTv("tv1") { it.copy(serial = "") }
+        }
+        assertEquals("G070VM1234", JsonFileCompanionStore(dir).tvs().single().serial)
+    }
+
+    @Test fun promptedHostsRoundTripAndSaveTvClearsThem() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        val p = listOf(PromptedHost("net1", "192.168.5.23", 1_700_000_000_000L))
+        s.savePromptedHosts(p)
+        assertEquals(p, JsonFileCompanionStore(dir).promptedHosts())
+        s.saveTv(tv)
+        assertEquals(emptyList(), JsonFileCompanionStore(dir).promptedHosts())
+    }
+
+    @Test fun fileAndDirectoryAreOwnerOnly() = runBlocking {
+        val sub = File(dir, "data")
+        JsonFileCompanionStore(sub).saveSettings(CompanionSettings())
+        val f = File(sub, JsonFileCompanionStore.FILE_NAME).toPath()
+        if (Files.getFileAttributeView(f, PosixFileAttributeView::class.java) != null) {
+            assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(f)))
+            assertEquals("rwx------", PosixFilePermissions.toString(Files.getPosixFilePermissions(sub.toPath())))
+        }
     }
 }
