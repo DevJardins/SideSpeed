@@ -27,6 +27,10 @@ import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.DesktopDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
+import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
+import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
+import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
+import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
@@ -66,12 +70,15 @@ fun main() {
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
     val scanner = TcpScanner()
-    val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
+    val tailscale = TailscaleCli()
+    // Desktop only (design decision D1): the tailnet's administrators are trusted to reach the TV.
+    val overlay = OverlayAccess({ tailscale.statusJson()?.let(TailscaleStatus::snapshot) }, DesktopEgressCheck())
+    val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner, overlay) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @OptIn(ExperimentalCoroutinesApi::class)
     // Peers first, so the 4096-probe cap on the sweep can never push a Tailscale peer out.
-    val discovery = Discovery(listOf(TailscalePeersSource(TailscaleCli()::statusJson), SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
-    val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
+    val discovery = Discovery(listOf(TailscalePeersSource(tailscale::statusJson), SweepSource), SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
+    val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope, overlay = overlay)
 
     application {
         val tray = rememberTrayState()
@@ -97,17 +104,28 @@ fun main() {
                 if (!paused) runAndNotify(Trigger.BACKGROUND)
             }
         }
-        // Every 30 s: joining a Trusted Network triggers a check. Nothing is read while paused or before a
-        // Trusted Network exists, so the poll spawns no processes then.
+        // Every 30 s: joining a Trusted Network or a trusted tailnet triggers a check. Nothing is read while
+        // paused or before either exists, so the poll spawns no processes then.
         LaunchedEffect(Unit) {
             var last = fingerprints.current()
+            var lastTailnet: OverlaySnapshot? = null
             while (true) {
                 delay(30_000)
                 if (paused || state.firstRun) continue
                 val now = fingerprints.current()
                 if (now != last) {
-                    if (TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null) runAndNotify(Trigger.NETWORK_JOINED)
                     last = now
+                    if (TrustMatcher.currentTrusted(now, store.trustedNetworks()) != null) {
+                        runAndNotify(Trigger.NETWORK_JOINED)
+                        continue
+                    }
+                }
+                val overlays = store.trustedOverlays()
+                if (overlays.isEmpty()) { lastTailnet = null; continue }
+                val tailnet = overlay.source.snapshot()
+                if (tailnet != lastTailnet) {
+                    lastTailnet = tailnet
+                    if (OverlayTrustMatcher.currentTrusted(tailnet, overlays) != null) runAndNotify(Trigger.NETWORK_JOINED)
                 }
             }
         }
