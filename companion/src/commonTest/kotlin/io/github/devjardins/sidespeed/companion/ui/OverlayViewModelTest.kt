@@ -156,7 +156,7 @@ class OverlayViewModelTest {
         routed.egress = { EgressRoute("en0", listOf(ip("10.9.9.20"))) }
         routed.vm.addTvByAddress("100.101.1.1")
         assertTrue(routed.store.tvs().isEmpty())
-        assertEquals(Copy.NOT_TRUSTED_ERROR, routed.vm.state.value.error)
+        assertEquals(Copy.NOT_TRUSTED_ADD, routed.vm.state.value.error)
         assertTrue(routed.fake.opened.isEmpty())
     }
 
@@ -164,7 +164,7 @@ class OverlayViewModelTest {
         val r = rig(fp = hotel, snapshot = null)
         r.vm.addTvByAddress("100.101.1.1")
         assertTrue(r.store.tvs().isEmpty())
-        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertEquals(Copy.NOT_TRUSTED_ADD, r.vm.state.value.error)
     }
 
     @Test fun theSameSerialOnTheTailnetAndTheHomeNetworkAreTwoTvs() = runTest(UnconfinedTestDispatcher()) {
@@ -212,7 +212,7 @@ class OverlayViewModelTest {
         }
         r.vm.addTvByAddress("100.101.1.1")
         assertTrue(r.store.tvs().isEmpty())
-        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertEquals(Copy.NOT_TRUSTED_ADD, r.vm.state.value.error)
     }
 
     @Test fun aBareTailscaleAddressSaysWhichNetworkKeepsItAlive() = runTest(UnconfinedTestDispatcher()) {
@@ -242,7 +242,7 @@ class OverlayViewModelTest {
         r.egress = { null }
         r.vm.addTvByAddress("100.101.1.1")
         assertTrue(r.store.tvs().isEmpty())
-        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertEquals(Copy.NOT_TRUSTED_ADD, r.vm.state.value.error)
         assertTrue(r.fake.opened.isEmpty())
     }
 

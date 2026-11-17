@@ -220,7 +220,7 @@ class CompanionViewModelTest {
         val r = rig(trusted = true)
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
         r.vm.addTvByAddress("192.168.5.20")
-        assertEquals(Copy.NOT_TRUSTED_ERROR, r.vm.state.value.error)
+        assertEquals(Copy.NOT_TRUSTED_ADD, r.vm.state.value.error)
         assertTrue(r.fake.opened.isEmpty())
     }
 

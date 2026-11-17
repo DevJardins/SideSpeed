@@ -52,6 +52,7 @@ object Copy {
     const val NO_TVS_FOUND = "No TVs found"
     const val TLS_UNSUPPORTED = "needs TLS pairing, not supported yet"
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
+    const val NOT_TRUSTED_ADD = "Join a Trusted Network to add a TV"
     const val NOT_FIRE_TV_NOTE =
         "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts."
     const val ALLOW_STEP = "Tick Always allow on your TV"
@@ -431,7 +432,7 @@ class CompanionViewModel(
         if (binding == null && ip != null && AddressPolicy.isOverlay(ip) &&
             overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
         ) return refresh(error = Copy.SHARED_PEER)
-        val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ERROR) else null
+        val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ADD) else null
         // While on a Trusted Network any private (RFC 1918) or overlay (100.64.0.0/10) address may be tried; public addresses never are.
         if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
         val scopeId = binding?.overlay?.id ?: trusted!!.id
@@ -460,7 +461,7 @@ class CompanionViewModel(
         } else {
             currentTrusted()?.id == scopeId
         }
-        if (!stillHere) return refresh(error = Copy.NOT_TRUSTED_ERROR)
+        if (!stillHere) return refresh(error = Copy.NOT_TRUSTED_ADD)
         if (serial.isBlank()) return refresh(error = Copy.NO_SERIAL)
         // Same TV: same scope, or any LAN entry when this add is a LAN one (a TV moved between Trusted Networks).
         val existing = store.tvs().firstOrNull {
