@@ -39,5 +39,11 @@
   - Plan 1 Tasks 4-5 except away-from-home.
   - Red/blue/green borders.
 - **Lesson:** an old build in the main checkout (/Users/mdez/Developer/SideSpeed, fdf56fe) shared the store and erased tailnet data. Batch 12 prevents this from now on, but builds made before it can't be fixed. Delete stale builds.
-- **Still waiting on the owner:** Plan 1 away-from-home; Plan 11 (push and PR shape, GitHub signing secrets); whether the Android off-Wi-Fi add should get option 2.
+- **Still waiting on the owner:** Plan 1 away-from-home; whether the Android off-Wi-Fi add should get option 2.
 - Declined 2026-11-16: Plan 5 (per-network trust), D4 (subnet-router TVs), D5 (tailnet names in Add).
+
+## Release (2026-11-16)
+- All of M2 went into main as one PR, #2 (feature/m2-discovery-muse -> main), merge commit 28d70ca. feature/m2-companion and feature/m2-companion-rename-network were not pushed separately, because they are contained in it.
+- First CI run 44014220204 green on ubuntu, macos and windows. Keystore decode step ran, and Android platform 37 was no problem on ubuntu.
+- APK signing verified: `app-release.apk` and `companion-android-release.apk` both pass `apksigner verify` (v2, one signer). Cert SHA-256 is 5d153f27…, and it matches the owner's keytool fingerprint.
+- Still open: smoke-test the .msi, .deb and .rpm (Plan 11 Task 7; its Step 5 should now say "Tailnets", not "Trusted tailnets"); the Fire TV setup screen links to a GitHub Releases URL that doesn't exist yet; no Releases page yet, so APKs come from the CI artifacts; CI warns about Node 20 deprecation and setup-java v4 (move to v5).
