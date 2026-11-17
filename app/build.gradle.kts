@@ -44,6 +44,15 @@ android {
             signingConfigs.findByName("release")?.let { signingConfig = it }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
+        // Non-debuggable but debug-key-signed, so ART AOT-compiles it and it installs over a debug
+        // install without an uninstall. Used for on-device runs (baseline-profile generation and the
+        // kill/restart check); never shipped.
+        create("benchmark") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
@@ -71,6 +80,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.tv.material)
     implementation(libs.androidx.datastore.preferences)
+    // Installs the baseline profile at install time (transitively present before; now explicit).
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.libadb.android)
     implementation(libs.sun.security.android)
     implementation(libs.conscrypt.android)
