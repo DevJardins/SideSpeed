@@ -104,7 +104,7 @@ fun HomeScreen(
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.tvs, key = { it.id }) { tv ->
                     val restarting = restartingId == tv.id
-                    SsGlowCard(cardGlow(tv.reach, tv.checkableHere)) {
+                    SsReachCard(cardGlow(tv.reach, tv.checkableHere)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SsStatusDot(cardDot(tv.status, tv.checkableHere), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)

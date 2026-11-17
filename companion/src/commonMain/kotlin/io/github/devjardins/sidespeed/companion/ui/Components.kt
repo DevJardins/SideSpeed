@@ -41,15 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
@@ -127,53 +124,26 @@ fun glowColor(glow: Glow?): Color? = when (glow) {
 }
 
 /**
- * A TV card: the plain [SsCard] border when [glow] is null, else a 2dp border in the glow colour with a soft
- * outer falloff (concentric strokes fading to transparent). Steady on purpose: a pulse would look like an alarm.
+ * A TV card whose border shows how the TV was last reached: a 2dp solid border in the reach colour, like the
+ * text field's focus ring, or the plain [SsCard] border when [glow] is null. Same radius and padding either way,
+ * so a reached card and a plain card line up exactly.
  */
 @Composable
-fun SsGlowCard(glow: Glow?, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun SsReachCard(glow: Glow?, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val color = glowColor(glow)
     if (color == null) {
         SsCard(modifier, content)
         return
     }
     val cardShape = RoundedCornerShape(16.dp)
-    Box(
+    Column(
         modifier.fillMaxWidth()
-            .drawBehind { drawHalo(color) }
-            .padding(HaloSpread)
             .background(Ss.surface, cardShape)
-            .border(1.5.dp, color, cardShape)
+            .border(2.dp, color, cardShape)
             .padding(16.dp),
-    ) {
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
-    }
-}
-
-/** How far the halo reaches outside the card edge. */
-private val HaloSpread = 6.dp
-/** Concentric strokes across the spread; the innermost starts at this alpha and each ring out fades. */
-private const val HaloRings = 3
-private const val HaloStartAlpha = 0.18f
-
-/** Draws [HaloRings] concentric rounded strokes around the inner card, fading outward to transparent. */
-private fun DrawScope.drawHalo(color: Color) {
-    val spreadPx = HaloSpread.toPx()
-    val step = spreadPx / HaloRings
-    val cardW = size.width - 2 * spreadPx
-    val cardH = size.height - 2 * spreadPx
-    val cardRadius = 16.dp.toPx()
-    repeat(HaloRings) { i ->
-        val offset = (i + 0.5f) * step
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(spreadPx - offset, spreadPx - offset),
-            size = Size(cardW + 2 * offset, cardH + 2 * offset),
-            cornerRadius = CornerRadius(cardRadius + offset, cardRadius + offset),
-            style = Stroke(width = step),
-            alpha = HaloStartAlpha * (1 - i / (HaloRings - 1f)),
-        )
-    }
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        content = content,
+    )
 }
 
 /** A round icon-sized hit target with the same press, hover and focus feedback as [SsButton]. */

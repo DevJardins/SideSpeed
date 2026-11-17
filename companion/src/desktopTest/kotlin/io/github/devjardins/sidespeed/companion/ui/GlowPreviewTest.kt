@@ -21,7 +21,7 @@ class GlowPreviewTest {
     @Composable
     private fun PreviewCard(label: String, glow: Glow?, dot: StatusKind, status: String) {
         SsText(label, Ss.caption)
-        SsGlowCard(glow) {
+        SsReachCard(glow) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SsStatusDot(dot)
                 SsText("Living room", Ss.heading, Modifier.weight(1f))
