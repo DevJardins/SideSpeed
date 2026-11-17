@@ -65,7 +65,7 @@ private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All a
 @Composable
 fun AppsScreen(
     vm: AppsViewModel,
-    lastCompile: (String) -> Flow<LastCompile?>,
+    lastCompilesFlow: Flow<Map<String, LastCompile>>,
     icon: IconSource,
     maintenance: StateFlow<MaintenanceState>,
     history: Flow<List<JobRecord>>,
@@ -75,6 +75,8 @@ fun AppsScreen(
     tvAddress: String? = null,
 ) {
     val state by vm.state.collectAsState()
+    // One DataStore collection for every row, instead of one Flow per row.
+    val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     LaunchedEffect(Unit) { vm.load() }
@@ -135,18 +137,21 @@ fun AppsScreen(
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }
                 Tab.HISTORY -> HistoryList(history)
                 else -> {
-                    val apps = if (tab == Tab.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
+                    val apps = remember(state.apps, tab) {
+                        if (tab == Tab.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
+                    }
                     when {
                         state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
                         apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
                         else -> LazyColumn(
+                            modifier = rememberDpadRepeatThrottle(),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
                         ) {
                             items(apps, key = { it.packageName }) { app ->
                                 AppRow(
                                     app,
-                                    lastCompile(app.packageName),
+                                    lastCompiles[app.packageName],
                                     maintenancePill(app.packageName, maintenanceState)
                                         ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
                                     icon,
@@ -173,8 +178,11 @@ fun AppIcon(pkg: String, icon: IconSource, size: androidx.compose.ui.unit.Dp = S
 }
 
 @Composable
-private fun AppRow(app: AppEntry, last: Flow<LastCompile?>, pill: Pill?, icon: IconSource, onClick: () -> Unit) {
-    val lc by last.collectAsState(initial = null)
+private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, onClick: () -> Unit) {
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val secondary = remember(last, app.packageName) {
+        last?.let { "compiled " + dateFormat.format(Date(it.epochMs)) } ?: app.packageName
+    }
     SsRow(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -184,9 +192,6 @@ private fun AppRow(app: AppEntry, last: Flow<LastCompile?>, pill: Pill?, icon: I
             AppIcon(app.packageName, icon)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(app.label, style = SsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val secondary = lc?.let {
-                    "compiled " + DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it.epochMs))
-                } ?: app.packageName
                 Text(secondary, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             pill?.let { StatusPill(it) }
@@ -248,8 +253,9 @@ private fun HistoryList(history: Flow<List<JobRecord>>) {
         Text("Nothing has been optimized automatically yet.", style = SsType.Body, color = SsColors.TextSecondary)
         return
     }
-    val format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+    val format = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     LazyColumn(
+        modifier = rememberDpadRepeatThrottle(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
     ) {

@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
                     !ready -> SetupScreen(setupVm, onReady = { ready = true })
                     app == null -> AppsScreen(
                         appsVm,
-                        lastCompile = (application as SideSpeedApp).container.prefs::lastCompile,
+                        lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
                         icon = icons,
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         history = (application as SideSpeedApp).container.maintenanceStore.history,
