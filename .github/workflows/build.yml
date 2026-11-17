@@ -55,3 +55,57 @@ jobs:
         with:
           name: windows
           path: companion-desktop/build/compose/binaries/main/msi/*.msi
+  # Pushing a tag like v0.2.0 builds everything above, then drafts a GitHub release with
+  # versioned files plus the fixed names that the Downloader code (3503400) and the
+  # sidespeed.app short links fetch from releases/latest/download/<name>.
+  # Release notes come from .github/release-notes/<tag>.md. Publish the draft by hand after checking it.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ubuntu, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      # Certificate SHA-256 of the project signing key; both APKs must carry it.
+      EXPECTED_CERT: 5d153f27c68102ff8245e8eb1c6c0a4d4a11d5e1976685824cecb0ce7108cc0c
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - name: Collect, check and name the release files
+        run: |
+          set -euo pipefail
+          V="${TAG#v}"
+          test -f ".github/release-notes/$TAG.md" || { echo "missing .github/release-notes/$TAG.md"; exit 1; }
+          one() { # exactly one file matching $1 under artifacts/
+            mapfile -t f < <(find artifacts -type f -path "$1")
+            [ "${#f[@]}" -eq 1 ] || { echo "expected one file for $1, got ${#f[@]}"; exit 1; }
+            echo "${f[0]}"
+          }
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          checkapk() {
+            cert=$("$APKSIGNER" verify --print-certs "$1" | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
+            [ "$cert" = "$EXPECTED_CERT" ] || { echo "$1 is not signed with the project key ($cert)"; exit 1; }
+          }
+          mkdir out
+          tv=$(one '*/app/build/outputs/apk/release/*.apk'); checkapk "$tv"
+          ph=$(one '*/companion-android/build/outputs/apk/release/*.apk'); checkapk "$ph"
+          cp "$tv" "out/SideSpeed-$V.apk"
+          cp "$ph" "out/SideSpeed-Companion-$V.apk"
+          cp "$(one '*.dmg')" "out/SideSpeed-Companion-$V-macos-arm64.dmg"
+          cp "$(one '*.msi')" "out/SideSpeed-Companion-$V-windows-x64.msi"
+          cp "$(one '*.deb')" "out/SideSpeed-Companion-$V-linux-amd64.deb"
+          cp "$(one '*.rpm')" "out/SideSpeed-Companion-$V-linux-x86_64.rpm"
+          # Fixed names for releases/latest/download/<name> (Downloader code, sidespeed.app links).
+          cp "out/SideSpeed-$V.apk" out/SideSpeed.apk
+          cp "out/SideSpeed-Companion-$V.apk" out/SideSpeed-Companion.apk
+          cp "out/SideSpeed-Companion-$V-macos-arm64.dmg" out/SideSpeed-Companion-macos-arm64.dmg
+          cp "out/SideSpeed-Companion-$V-windows-x64.msi" out/SideSpeed-Companion-windows-x64.msi
+          cp "out/SideSpeed-Companion-$V-linux-amd64.deb" out/SideSpeed-Companion-linux-amd64.deb
+          cp "out/SideSpeed-Companion-$V-linux-x86_64.rpm" out/SideSpeed-Companion-linux-x86_64.rpm
+          (cd out && sha256sum * > SHA256SUMS.txt)
+          ls -l out
+      - name: Draft the release
+        run: gh release create "$TAG" out/* --draft --verify-tag --title "SideSpeed ${TAG#v}" --notes-file ".github/release-notes/$TAG.md"
