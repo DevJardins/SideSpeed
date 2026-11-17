@@ -13,7 +13,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -44,10 +46,13 @@ fun HomeScreen(
     val now by produceState(System.currentTimeMillis()) {
         while (true) { delay(15_000); value = System.currentTimeMillis() }
     }
-    // The TV whose restart is in flight, and the ones with a finished-restart message (shown briefly).
+    // The TV whose restart is in flight, and the finished-restart messages (shown briefly). The message
+    // timeout lives in [RestartMessageHost], not in the effect below, so ending the in-flight state
+    // can't cancel the clearing the way re-keying this effect did.
     var restartingId by remember { mutableStateOf<String?>(null) }
-    var restartedId by remember { mutableStateOf<String?>(null) }
-    var notCheckedId by remember { mutableStateOf<String?>(null) }
+    val messageScope = rememberCoroutineScope()
+    val messageHost = remember { RestartMessageHost(messageScope) }
+    val messages by messageHost.messages.collectAsState()
     // The TV whose Remove is waiting for a second press, so one stray tap never deletes it.
     var confirmRemoveId by remember { mutableStateOf<String?>(null) }
     val latest by rememberUpdatedState(state)
@@ -56,15 +61,8 @@ fun HomeScreen(
         delay(600)
         snapshotFlow { latest.busy }.first { !it }
         restartingId = null
-        when (latest.lastRestart?.takeIf { it.tvId == id }?.outcome) {
-            RestartOutcome.RESTARTED -> {
-                restartedId = id; delay(2_000); if (restartedId == id) restartedId = null
-            }
-            RestartOutcome.NOT_CHECKED -> {
-                notCheckedId = id; delay(3_000); if (notCheckedId == id) notCheckedId = null
-            }
-            else -> Unit
-        }
+        val outcome = latest.lastRestart?.takeIf { it.tvId == id }?.outcome
+        messageHost.show(id, outcome?.takeIf { it == RestartOutcome.RESTARTED || it == RestartOutcome.NOT_CHECKED })
         onAcknowledgeRestart()
     }
 
@@ -124,8 +122,11 @@ fun HomeScreen(
                         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             SsButton("Restart now", { restartingId = tv.id; onRestart(tv.id) }, enabled = restartingId == null)
                             if (restarting) SsSpinner()
-                            if (restartedId == tv.id) SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
-                            if (notCheckedId == tv.id) SsText(Copy.NOT_CHECKED_HERE, Ss.body.copy(color = Ss.warnText))
+                            when (messages[tv.id]?.outcome) {
+                                RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
+                                RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE, Ss.body.copy(color = Ss.warnText))
+                                else -> Unit
+                            }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
