@@ -70,8 +70,8 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 | Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Helper started from PC, compile verified |
 | onn 4K Pro, Android 14 | Wireless debugging on + "Always allow" (classic connection on port 5555), helper auto-start and compile verified (no PC needed). Pairing with a code works; connecting over the paired TLS link is not yet verified |
 | Other Android TV, Google TV and Fire TV devices | Should work |
-| macOS companion app against the onn 4K Pro | Restart and upkeep verified over the LAN and over Tailscale |
-| Android companion app against the onn 4K Pro | Restart and upkeep verified over the LAN |
+| Android companion app with the Fire TV Cube Gen 3 | First run, add by address, and restarting an out-of-date helper verified over the LAN |
+| macOS companion app with the onn 4K Pro | Adding, checks and card borders verified over the LAN and over Tailscale (the onn starts its own helper) |
 | `.msi`, `.deb` and `.rpm` | Built by CI but not tested yet |
 
 ## Building
