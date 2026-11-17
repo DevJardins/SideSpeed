@@ -53,6 +53,14 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
         }
+        // Same shape as benchmark, but named to match the :baselineprofile module's nonMinifiedRelease
+        // test variant: without this, generation targets the unsigned release APK and cannot install.
+        create("nonMinifiedRelease") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
