@@ -44,3 +44,11 @@ signing.properties
 .env
 .DS_Store
 Thumbs.db
+
+# Planning notes, kept local only
+MUSE_TASK.md
+HANDOFF.md
+SPEC.md
+docs/superpowers/
+docs/spike/
+docs/design/
