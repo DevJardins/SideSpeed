@@ -23,6 +23,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import io.github.devjardins.sidespeed.status.TvAddress
+import io.github.devjardins.sidespeed.net.LanCandidate
+import io.github.devjardins.sidespeed.net.pickLanIpv4
+import android.net.Network
+import android.net.NetworkCapabilities
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
@@ -87,9 +91,23 @@ class AppContainer(context: Context) {
 
     fun wifiIp(): String? = try {
         val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        cm.activeNetwork?.let { cm.getLinkProperties(it) }?.linkAddresses
-            ?.map { it.address }?.filterIsInstance<Inet4Address>()?.firstOrNull()?.hostAddress
+        val active = cm.activeNetwork?.let { candidate(cm, it) }
+        @Suppress("DEPRECATION") // allNetworks is the only synchronous list; a callback-tracked set would add state.
+        val all = cm.allNetworks.mapNotNull { candidate(cm, it) }
+        pickLanIpv4(active, all)
     } catch (_: Exception) {
         null
+    }
+
+    /** Null when the network vanished between calls (no capabilities). */
+    private fun candidate(cm: ConnectivityManager, network: Network): LanCandidate? {
+        val caps = cm.getNetworkCapabilities(network) ?: return null
+        return LanCandidate(
+            isVpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+            isWifiOrEthernet = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
+            ipv4 = cm.getLinkProperties(network)?.linkAddresses
+                ?.map { it.address }?.filterIsInstance<Inet4Address>()?.firstOrNull()?.hostAddress,
+        )
     }
 }
