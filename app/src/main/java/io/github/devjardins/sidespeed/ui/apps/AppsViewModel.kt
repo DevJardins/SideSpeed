@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.apps.sortForPicker
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.maintenance.JobPhase
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
@@ -59,6 +60,15 @@ fun maintenancePill(pkg: String, state: MaintenanceState): Pill? = when {
         JobPhase.RETRY -> Pill("Retry", PillTone.WARN)
         null -> Pill("Optimized", PillTone.OK)
     }
+}
+
+/** The Apps header pill for SideSpeed itself, or null on debuggable builds (ART won't compile those). */
+fun selfOptimizedPill(record: SelfCompile?, versionCode: Long, lastUpdateTime: Long, debuggable: Boolean): Pill? {
+    if (debuggable) return null
+    if (record != null && record.versionCode == versionCode && record.lastUpdateTime == lastUpdateTime) {
+        return Pill("SideSpeed optimized", PillTone.OK)
+    }
+    return Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL)
 }
 
 /** The "Maintenance" line under the Apps header, or null when there is nothing to say. */
