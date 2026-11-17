@@ -1,0 +1,117 @@
+package io.github.devjardins.sidespeed.tools
+
+import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ToolsCommandsTest {
+    private fun commands(helperUp: Boolean = true): Pair<FakeAdbBackend, ToolsCommands> {
+        val fake = FakeAdbBackend()
+        return fake to ToolsCommands(fake) { helperUp }
+    }
+
+    @Test fun refusedMapsToHelperOutdated() = runTest {
+        val (fake, commands) = commands()
+        fake.on("pm trim-caches 999999999999999") { listOf("error: request not allowed") to 126 }
+        assertEquals(ToolResult.HelperOutdated, commands.trimCaches(999_999_999_999_999))
+    }
+
+    @Test fun helperDownShortCircuits() = runTest {
+        val (fake, commands) = commands(helperUp = false)
+        assertEquals(ToolResult.HelperDown, commands.trimCaches(500_000_000))
+        assertEquals(ToolResult.HelperDown, commands.getAnimationScale(AnimationKey.WINDOW))
+        assertEquals(ToolResult.HelperDown, commands.putAnimationScale(AnimationKey.WINDOW, "0.5"))
+        assertEquals(ToolResult.HelperDown, commands.resetCompiled("com.x.y"))
+        assertEquals(ToolResult.HelperDown, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
+        assertEquals(ToolResult.HelperDown, commands.bringBack())
+        assertTrue(fake.commands.isEmpty())
+    }
+
+    @Test fun trimCachesOk() = runTest {
+        val (fake, commands) = commands()
+        fake.on("pm trim-caches 999999999999999") { emptyList<String>() to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.trimCaches(999_999_999_999_999))
+        assertEquals(listOf("pm trim-caches 999999999999999"), fake.commands)
+    }
+
+    @Test fun trimCachesFailed() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("pm trim-caches 500000000") { listOf("Failure") to 1 }
+        }
+        val result = commands.trimCaches(500_000_000)
+        assertTrue(result is ToolResult.Failed)
+    }
+
+    @Test fun getAnimationScaleValue() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("settings get global window_animation_scale") { listOf("0.5") to 0 }
+        }
+        assertEquals(ToolResult.Ok("0.5"), commands.getAnimationScale(AnimationKey.WINDOW))
+    }
+
+    @Test fun getAnimationScaleNullMapsToNull() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("settings get global animator_duration_scale") { listOf("null") to 0 }
+        }
+        assertEquals(ToolResult.Ok(null), commands.getAnimationScale(AnimationKey.ANIMATOR))
+    }
+
+    @Test fun putAnimationScaleOk() = runTest {
+        val (fake, commands) = commands()
+        fake.on("settings put global transition_animation_scale 0.5") { emptyList<String>() to 0 }
+        assertEquals(
+            ToolResult.Ok(Unit),
+            commands.putAnimationScale(AnimationKey.TRANSITION, "0.5"),
+        )
+        assertEquals(listOf("settings put global transition_animation_scale 0.5"), fake.commands)
+    }
+
+    @Test fun resetCompiledSendsVerifyForm() = runTest {
+        val (fake, commands) = commands()
+        fake.on("pm compile -m verify -f com.x.y") { listOf("Success") to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.resetCompiled("com.x.y"))
+        assertEquals(listOf("pm compile -m verify -f com.x.y"), fake.commands)
+    }
+
+    @Test fun launchTimeMsParsesTotalTime() = runTest {
+        val (fake, commands) = commands()
+        fake.on("launch-time com.x.y com.x.y.Main") {
+            listOf("Starting: Intent {}", "TotalTime: 1234") to 0
+        }
+        assertEquals(ToolResult.Ok(1234L), commands.launchTimeMs("com.x.y", "com.x.y.Main"))
+        assertEquals(listOf("launch-time com.x.y com.x.y.Main"), fake.commands)
+    }
+
+    @Test fun launchTimeMsErrorIsFailed() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("launch-time com.x.y com.x.y.Main") {
+                listOf("Error: Activity not started, unable to resolve Intent {}") to 0
+            }
+        }
+        val result = commands.launchTimeMs("com.x.y", "com.x.y.Main")
+        assertTrue(result is ToolResult.Failed)
+    }
+
+    @Test fun launchTimeMsMissingTotalTimeIsFailed() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("launch-time com.x.y com.x.y.Main") { listOf("Starting: Intent {}") to 0 }
+        }
+        assertTrue(commands.launchTimeMs("com.x.y", "com.x.y.Main") is ToolResult.Failed)
+    }
+
+    @Test fun launchTimeMsRefusedIsOutdated() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("launch-time com.x.y com.x.y.Main") { listOf("error: request not allowed") to 126 }
+        }
+        assertEquals(ToolResult.HelperOutdated, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
+    }
+
+    @Test fun bringBackOk() = runTest {
+        val (fake, commands) = commands()
+        fake.on("bring-back") { listOf("Starting: Intent {}") to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.bringBack())
+        assertEquals(listOf("bring-back"), fake.commands)
+    }
+}
