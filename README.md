@@ -2,7 +2,7 @@
 
 <img src="docs/brand/sidespeed-logo-2026.png" alt="SideSpeed logo" width="320">
 
-SideSpeed compiles sideloaded Android TV apps to native code, the way Play Store installs are, and keeps them compiled after updates.
+Sideloaded apps on Android TV and Fire TV skip the compiling that store installs get, so they start and run slower. SideSpeed compiles them to native code ahead of time and keeps them compiled after updates.
 
 ## Install on the TV
 
