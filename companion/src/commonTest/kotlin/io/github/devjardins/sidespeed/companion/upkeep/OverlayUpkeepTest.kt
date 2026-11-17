@@ -8,6 +8,7 @@ import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
@@ -104,6 +105,27 @@ class OverlayUpkeepTest {
         assertFalse(report.gated)
         assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited)
         assertEquals(listOf("100.101.1.1"), net.opened)
+    }
+
+    @Test fun aReachedOverlayTvRecordsTailnetReach() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nA"))
+        val net = Net().also { it.sessions["100.101.1.1"] = running("SER-a") }
+        upkeep(st, net, Snapshots(snap(peer("nA", "100.101.1.1")))).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.REACHED_TAILNET, st.tv("a").reach)
+    }
+
+    @Test fun anUnreachableOverlayTvRecordsUnreachableReach() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nA"))
+        upkeep(st, Net(), Snapshots(snap(peer("nA", "100.101.1.1")))).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.UNREACHABLE, st.tv("a").reach)
+    }
+
+    @Test fun aTvWhosePeerIsGoneRecordsUnreachableReach() = runTest {
+        val st = store(ovTv("a", "100.101.1.1", "nA"))
+        val net = Net().also { it.sessions["100.101.1.1"] = running("SER-a") }
+        upkeep(st, net, Snapshots(snap())).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.UNREACHABLE, st.tv("a").reach)
+        assertTrue(net.opened.isEmpty())
     }
 
     @Test fun aClosedLanGateStillVisitsTailnetTvs() = runTest {

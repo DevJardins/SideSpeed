@@ -151,6 +151,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                     "skipBackgroundUntilUserAction" to t.skipBackgroundUntilUserAction,
                     "isFireTv" to t.isFireTv,
                     "overlayPeerId" to t.overlayPeerId,
+                    "reach" to t.reach?.name,
                 )
             },
             "trustedNetworks" to s.networks.map { n ->
@@ -217,6 +218,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             skipBackgroundUntilUserAction = m["skipBackgroundUntilUserAction"] as? Boolean ?: false,
             isFireTv = m["isFireTv"] as? Boolean ?: true,
             overlayPeerId = (m["overlayPeerId"] as? String)?.takeIf { it.isNotEmpty() },
+            reach = (m["reach"] as? String)?.let { name -> Reach.entries.firstOrNull { it.name == name } },
         )
         return if (tv.id.isBlank() || tv.serial.isBlank()) null else tv
     }

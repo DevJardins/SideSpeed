@@ -6,6 +6,12 @@ import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, UNKNOWN }
 
 /**
+ * How the last check reached a TV: on the home network (a LAN address), over Tailscale (a 100.64.0.0/10
+ * address), or not at all. Null when the TV was never checked.
+ */
+enum class Reach { REACHED_LAN, REACHED_TAILNET, UNREACHABLE }
+
+/**
  * A TV the user added. [serial] is the TV's `ro.serialno` recorded at add time; it is never blank, because the
  * companion sends nothing beyond `getprop ro.serialno` to a device whose serial doesn't match it.
  *
@@ -30,6 +36,8 @@ data class SavedTv(
      * updated once the serial matches); the node may not. Null for a TV on a Trusted Network.
      */
     val overlayPeerId: String? = null,
+    /** How the last check reached this TV; null when it was never checked. */
+    val reach: Reach? = null,
 ) {
     companion object {
         /** @throws IllegalArgumentException if [tv] has a blank id or serial. */

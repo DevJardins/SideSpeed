@@ -5,6 +5,7 @@ import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.PromptedHost
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
@@ -352,6 +353,44 @@ class UpkeepTest {
         val report = upkeep(store, net).runOnce(Trigger.RESTART_NOW)
         assertEquals(mapOf("w" to TvStatus.WRONG_DEVICE, "n" to TvStatus.NOT_INSTALLED), report.visited)
         assertTrue(report.restartedNames.isEmpty())
+    }
+
+    @Test fun aReachedLanTvRecordsLanReach() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = runningTv("SER-a") }
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.REACHED_LAN, store.tv("a").reach)
+    }
+
+    @Test fun aTvWithoutTheHelperInstalledStillCountsAsReached() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("n", "192.168.5.61")), listOf(homeNet))
+        val net = FakeNet().also {
+            it.sessions["192.168.5.61"] = runningTv("SER-n").also { s -> s.outputs[TvCommands.PKG_PATH] = "" }
+        }
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertEquals(TvStatus.NOT_INSTALLED, store.tv("n").status)
+        assertEquals(Reach.REACHED_LAN, store.tv("n").reach)
+    }
+
+    @Test fun anUnreachableTvRecordsUnreachableReach() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        upkeep(store, FakeNet()).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.UNREACHABLE, store.tv("a").reach)
+    }
+
+    @Test fun aRefoundTvRecordsReachAtTheNewAddress() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(offlineCount = 2)), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.77"] = runningTv("SER-a") }
+        upkeep(store, net, FakeScanner(listOf("192.168.5.77"))).runOnce(Trigger.BACKGROUND)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(Reach.REACHED_LAN, store.tv("a").reach)
+    }
+
+    @Test fun aBareTailscaleAddressOnTheHomeNetworkRecordsTailnetReach() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "100.101.1.9")), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["100.101.1.9"] = runningTv("SER-a") }
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertEquals(Reach.REACHED_TAILNET, store.tv("a").reach)
     }
 
     // --- Fix round 1 ---------------------------------------------------------------------------------------

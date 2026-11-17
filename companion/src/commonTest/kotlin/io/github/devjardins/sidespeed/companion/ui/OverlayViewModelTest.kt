@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
@@ -312,5 +313,17 @@ class OverlayViewModelTest {
         r.snapshot = snap(peer("nCUBE", "100.101.1.1"), tailnet = "someone-else@example.com")
         r.vm.refreshNow()
         assertFalse(r.vm.state.value.tvs.single().checkableHere)
+    }
+
+    @Test fun cardsCarryReachOnlyWhereCheckable() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig()
+        r.store.saveTv(
+            SavedTv("o", "Cube", "100.101.1.1", "SER-1", trusted.id, overlayPeerId = "nCUBE", reach = Reach.REACHED_TAILNET),
+        )
+        r.vm.refreshNow()
+        assertEquals(Reach.REACHED_TAILNET, r.vm.state.value.tvs.single().reach)
+        r.snapshot = snap(peer("nCUBE", "100.101.1.1"), tailnet = "someone-else@example.com")
+        r.vm.refreshNow()
+        assertNull(r.vm.state.value.tvs.single().reach)
     }
 }

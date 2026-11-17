@@ -23,6 +23,7 @@ import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
@@ -103,6 +104,8 @@ data class TvCardState(
     val checkedAtEpochMs: Long?,
     val note: String?,
     val scopeNote: String? = null,
+    /** How the last check reached this TV; null when never checked, or when it can't be checked from here. */
+    val reach: Reach? = null,
 )
 
 /** What Tailscale reports on this computer: its tailnet, whether it is trusted, and whether it can reach peers. */
@@ -559,13 +562,15 @@ class CompanionViewModel(
         val saved = tvs.map { it.address }.toSet()
         val cards = ArrayList<TvCardState>(tvs.size)
         for (tv in tvs) {
+            val here = checkableHere(tv, trusted, overlays)
             cards += TvCardState(
                 id = tv.id,
                 name = tv.name,
                 address = tv.address,
                 status = tv.status,
                 statusLabel = Copy.statusLabel(tv.status),
-                checkableHere = checkableHere(tv, trusted, overlays),
+                checkableHere = here,
+                reach = if (here) tv.reach else null,
                 checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = if (tv.isFireTv) null else Copy.NOT_FIRE_TV_NOTE,
                 scopeNote = if (tv.overlayPeerId == null && Ipv4.parse(tv.address)?.let(AddressPolicy::isOverlay) == true)

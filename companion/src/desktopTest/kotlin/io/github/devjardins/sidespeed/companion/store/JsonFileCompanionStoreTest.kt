@@ -64,6 +64,22 @@ class JsonFileCompanionStoreTest {
         assertEquals(listOf("Cabin", "net2"), r.map { it.displayName })
     }
 
+    @Test fun reachRoundTripsAndOldFilesLoadWithNull() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv.copy(reach = Reach.REACHED_TAILNET))
+        s.saveTv(tv.copy(id = "tv2", serial = "S2", reach = null))
+        val r = JsonFileCompanionStore(dir).tvs()
+        assertEquals(Reach.REACHED_TAILNET, r.first { it.id == "tv1" }.reach)
+        assertEquals(null, r.first { it.id == "tv2" }.reach)
+
+        // A store written before reach existed has no key.
+        file.writeText("""{"version":1,"tvs":[{"id":"a","name":"A","address":"1.2.3.4","serial":"S","trustedNetworkId":"n"}],"settings":{}}""")
+        assertEquals(null, JsonFileCompanionStore(dir).tvs().single().reach)
+        // An unknown value reads as null rather than dropping the TV.
+        file.writeText("""{"version":1,"tvs":[{"id":"a","name":"A","address":"1.2.3.4","serial":"S","trustedNetworkId":"n","reach":"REACHED_ORBIT"}],"settings":{}}""")
+        assertEquals(null, JsonFileCompanionStore(dir).tvs().single().reach)
+    }
+
     @Test fun isFireTvRoundTripsAndDefaultsToTrue() = runBlocking {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv.copy(isFireTv = false))

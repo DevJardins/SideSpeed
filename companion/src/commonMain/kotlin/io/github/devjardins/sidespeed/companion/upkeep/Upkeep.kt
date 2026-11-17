@@ -12,6 +12,7 @@ import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.PromptedHost
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
@@ -168,13 +169,13 @@ class Upkeep(
         val address = when (val v = gate.verdict(trusted, tv)) {
             OverlayVerdict.Closed -> return null
             OverlayVerdict.PeerUnavailable -> return Checked(
-                apply(tv.copy(skipBackgroundUntilUserAction = false), Attempt.Unreachable, clock(), restarted),
+                apply(tv.copy(skipBackgroundUntilUserAction = false), Attempt.Unreachable, clock(), restarted, dialled = null),
                 attempted = false,
             )
             is OverlayVerdict.Open -> v.address
         }
         val attempt = attempt(address, tv.serial)
-        val result = apply(tv.copy(skipBackgroundUntilUserAction = false), attempt, clock(), restarted)
+        val result = apply(tv.copy(skipBackgroundUntilUserAction = false), attempt, clock(), restarted, dialled = address)
         val verified = attempt is Attempt.Visited && attempt.result != VisitResult.WrongDevice
         return Checked(if (verified) result.copy(address = address) else result)
     }
@@ -189,6 +190,7 @@ class Upkeep(
         offlineCount = result.offlineCount,
         lastRefindEpochMs = result.lastRefindEpochMs,
         skipBackgroundUntilUserAction = result.skipBackgroundUntilUserAction,
+        reach = result.reach,
         address = if (result.address != before.address && current.address == before.address) result.address else current.address,
     )
 
@@ -196,7 +198,7 @@ class Upkeep(
     private suspend fun check(tv: SavedTv, trusted: TrustedNetwork, restarted: MutableList<String>): Checked {
         val now = clock()
         val first = attempt(tv.address, tv.serial)
-        val afterFirst = apply(tv.copy(skipBackgroundUntilUserAction = false), first, now, restarted)
+        val afterFirst = apply(tv.copy(skipBackgroundUntilUserAction = false), first, now, restarted, dialled = tv.address)
         val addressFailed = first == Attempt.Unreachable ||
             (first is Attempt.Visited && first.result == VisitResult.WrongDevice)
         if (!addressFailed || !refindDue(afterFirst, now)) return Checked(afterFirst)
@@ -210,7 +212,7 @@ class Upkeep(
                 // The serial matched, so the new address is safe to keep even if the visit can't happen now.
                 val moved = scanned.copy(address = r.host)
                 if (!gateOpen(trusted)) return Checked(moved, gateClosed = true)
-                Checked(apply(moved, attempt(r.host, moved.serial), now, restarted))
+                Checked(apply(moved, attempt(r.host, moved.serial), now, restarted, dialled = r.host))
             }
         }
     }
@@ -305,33 +307,50 @@ class Upkeep(
         Attempt.Lost
     }
 
-    private fun apply(tv: SavedTv, a: Attempt, now: Long, restarted: MutableList<String>): SavedTv = when (a) {
-        Attempt.Unreachable, Attempt.Lost -> {
-            val count = tv.offlineCount + 1
-            tv.copy(
-                offlineCount = count,
-                status = if (count >= OFFLINE_AFTER) TvStatus.OFFLINE else tv.status,
-                lastCheckedEpochMs = now,
-            )
-        }
-        Attempt.AuthPending -> tv.copy(
-            status = TvStatus.WAITING_FOR_ALLOW,
-            skipBackgroundUntilUserAction = true,
-            offlineCount = 0,
-            lastCheckedEpochMs = now,
-        )
-        is Attempt.Visited -> if (a.result == VisitResult.WrongDevice) {
-            // Something else answers at this address: count it toward a re-find, but say what we saw.
-            tv.copy(status = TvStatus.WRONG_DEVICE, offlineCount = tv.offlineCount + 1, lastCheckedEpochMs = now)
-        } else {
-            val status = when (a.result) {
-                VisitResult.Running -> TvStatus.RUNNING
-                VisitResult.Started, VisitResult.Restarted -> TvStatus.RUNNING.also { restarted += tv.name }
-                VisitResult.NotInstalled -> TvStatus.NOT_INSTALLED
-                is VisitResult.StartFailed -> TvStatus.START_FAILED
-                VisitResult.WrongDevice -> TvStatus.WRONG_DEVICE
+    /**
+     * How the last check reached the TV: the address actually dialled decides LAN vs tailnet, and an answered
+     * check counts as reached even when SideSpeed isn't installed or the helper isn't running. A lost
+     * connection never got an answer, so it is unreachable.
+     */
+    private fun reachOf(dialled: String?, a: Attempt): Reach = when {
+        a is Attempt.Visited || a == Attempt.AuthPending ->
+            if (dialled != null && Ipv4.parse(dialled)?.let(AddressPolicy::isOverlay) == true) Reach.REACHED_TAILNET
+            else Reach.REACHED_LAN
+        else -> Reach.UNREACHABLE
+    }
+
+    private fun apply(tv: SavedTv, a: Attempt, now: Long, restarted: MutableList<String>, dialled: String?): SavedTv {
+        val reach = reachOf(dialled, a)
+        return when (a) {
+            Attempt.Unreachable, Attempt.Lost -> {
+                val count = tv.offlineCount + 1
+                tv.copy(
+                    offlineCount = count,
+                    status = if (count >= OFFLINE_AFTER) TvStatus.OFFLINE else tv.status,
+                    lastCheckedEpochMs = now,
+                    reach = reach,
+                )
             }
-            tv.copy(status = status, offlineCount = 0, lastCheckedEpochMs = now)
+            Attempt.AuthPending -> tv.copy(
+                status = TvStatus.WAITING_FOR_ALLOW,
+                skipBackgroundUntilUserAction = true,
+                offlineCount = 0,
+                lastCheckedEpochMs = now,
+                reach = reach,
+            )
+            is Attempt.Visited -> if (a.result == VisitResult.WrongDevice) {
+                // Something else answers at this address: count it toward a re-find, but say what we saw.
+                tv.copy(status = TvStatus.WRONG_DEVICE, offlineCount = tv.offlineCount + 1, lastCheckedEpochMs = now, reach = reach)
+            } else {
+                val status = when (a.result) {
+                    VisitResult.Running -> TvStatus.RUNNING
+                    VisitResult.Started, VisitResult.Restarted -> TvStatus.RUNNING.also { restarted += tv.name }
+                    VisitResult.NotInstalled -> TvStatus.NOT_INSTALLED
+                    is VisitResult.StartFailed -> TvStatus.START_FAILED
+                    VisitResult.WrongDevice -> TvStatus.WRONG_DEVICE
+                }
+                tv.copy(status = status, offlineCount = 0, lastCheckedEpochMs = now, reach = reach)
+            }
         }
     }
 

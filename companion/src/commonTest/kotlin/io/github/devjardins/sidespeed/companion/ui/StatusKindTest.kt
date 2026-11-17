@@ -1,8 +1,10 @@
 package io.github.devjardins.sidespeed.companion.ui
 
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class StatusKindTest {
     @Test fun runningIsGood() = assertEquals(StatusKind.GOOD, statusKind(TvStatus.RUNNING))
@@ -24,4 +26,17 @@ class StatusKindTest {
     @Test fun uncheckableRunningIsGrey() = assertEquals(StatusKind.UNKNOWN, cardDot(TvStatus.RUNNING, checkableHere = false))
 
     @Test fun uncheckableNotRunningIsGrey() = assertEquals(StatusKind.UNKNOWN, cardDot(TvStatus.NOT_RUNNING, checkableHere = false))
+
+    @Test fun lanReachGlowsGreen() = assertEquals(Glow.GREEN, cardGlow(Reach.REACHED_LAN, checkableHere = true))
+
+    @Test fun tailnetReachGlowsBlue() = assertEquals(Glow.BLUE, cardGlow(Reach.REACHED_TAILNET, checkableHere = true))
+
+    @Test fun unreachableReachGlowsRed() = assertEquals(Glow.RED, cardGlow(Reach.UNREACHABLE, checkableHere = true))
+
+    @Test fun neverCheckedHasNoGlow() = assertNull(cardGlow(null, checkableHere = true))
+
+    @Test fun uncheckableReachHasNoGlow() {
+        listOf(null, Reach.REACHED_LAN, Reach.REACHED_TAILNET, Reach.UNREACHABLE)
+            .forEach { assertNull(cardGlow(it, checkableHere = false), "$it") }
+    }
 }

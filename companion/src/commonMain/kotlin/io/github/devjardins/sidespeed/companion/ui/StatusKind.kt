@@ -1,6 +1,24 @@
 package io.github.devjardins.sidespeed.companion.ui
 
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+
+/** Which colour a TV card glows: green on the home network, blue over Tailscale, red when unreachable. */
+enum class Glow { GREEN, BLUE, RED }
+
+/**
+ * The glow a TV card shows for how the last check reached it, or null for today's plain border: never
+ * checked, or not checkable from here (the grey last-seen state).
+ */
+fun cardGlow(reach: Reach?, checkableHere: Boolean): Glow? {
+    if (!checkableHere) return null
+    return when (reach) {
+        Reach.REACHED_LAN -> Glow.GREEN
+        Reach.REACHED_TAILNET -> Glow.BLUE
+        Reach.UNREACHABLE -> Glow.RED
+        null -> null
+    }
+}
 
 /** How a TV's status reads at a glance: drives the status dot colour. */
 enum class StatusKind { GOOD, WAITING, BAD, UNKNOWN }
