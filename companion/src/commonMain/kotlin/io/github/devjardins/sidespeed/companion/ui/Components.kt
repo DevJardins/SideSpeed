@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,11 +40,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
@@ -222,21 +225,15 @@ fun SsSpinner(size: Dp = 16.dp) {
     }
 }
 
-/** The app mark: a sage rounded square with a forward chevron. Drawn, so no image resource is needed. */
+/** The app mark: the robot logo, a rounded square, at the size it is called with. */
 @Composable
 fun SsLogoMark(size: Dp) {
-    Canvas(Modifier.size(size)) {
-        val s = this.size.minDimension
-        drawRoundRect(Ss.accent.copy(alpha = 0.2f), size = Size(s, s), cornerRadius = androidx.compose.ui.geometry.CornerRadius(s * 0.28f))
-        val w = s * 0.09f
-        val st = Stroke(w, cap = StrokeCap.Round)
-        for (dx in listOf(0.30f, 0.52f)) {
-            val p = androidx.compose.ui.graphics.Path().apply {
-                moveTo(s * dx, s * 0.30f); lineTo(s * (dx + 0.18f), s * 0.5f); lineTo(s * dx, s * 0.70f)
-            }
-            drawPath(p, Ss.accent, style = st)
-        }
-    }
+    Image(
+        painter = rememberSsLogoPainter(),
+        contentDescription = "SideSpeed",
+        modifier = Modifier.size(size).clip(RoundedCornerShape(percent = 28)),
+        contentScale = ContentScale.Crop,
+    )
 }
 
 /** A small gear-less settings glyph (three sliders) and a back chevron, drawn so there is no icon dependency. */
