@@ -73,6 +73,8 @@ fun AppsScreen(
     autoOptimizeMode: Flow<AutoOptimizeMode>,
     onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
+    onOpenTools: () -> Unit,
+    banner: @Composable () -> Unit = {},
     tvAddress: String? = null,
     selfCompile: Flow<SelfCompile?>,
     selfVersionCode: Long,
@@ -101,6 +103,8 @@ fun AppsScreen(
                     StatusPill(it)
                     Spacer(Modifier.width(8.dp))
                 }
+                SsButton("Tools", onClick = onOpenTools)
+                Spacer(Modifier.width(8.dp))
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
             headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
@@ -142,6 +146,7 @@ fun AppsScreen(
                     Text(autoOptimizeOption(current).description, style = SsType.Caption, color = SsColors.TextSecondary)
                 }
             }
+            banner()
             when (tab) {
                 Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }
                 Tab.HISTORY -> HistoryList(history)
