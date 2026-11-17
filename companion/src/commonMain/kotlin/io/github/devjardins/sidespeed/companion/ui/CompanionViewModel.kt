@@ -64,7 +64,8 @@ object Copy {
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
     const val NOT_TRUSTED_ADD = "Join a Trusted Network to add a TV"
     const val NOT_FIRE_TV_NOTE =
-        "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts."
+        "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
+            "On Google TV the helper is optional; Home shows what's compiling."
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"

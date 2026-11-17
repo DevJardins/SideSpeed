@@ -181,7 +181,8 @@ class CompanionViewModelTest {
         r.vm.addTvByAddress("192.168.5.20")
         assertEquals(1, r.store.tvs().size)
         assertEquals(
-            "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts.",
+            "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
+                "On Google TV the helper is optional; Home shows what's compiling.",
             r.vm.state.value.tvs.single().note,
         )
     }

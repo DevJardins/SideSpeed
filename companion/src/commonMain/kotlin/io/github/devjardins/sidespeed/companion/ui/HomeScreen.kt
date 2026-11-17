@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,7 +43,12 @@ fun HomeScreen(
     onSettings: () -> Unit,
     onRemove: (String) -> Unit = {},
     onAcknowledgeRestart: () -> Unit = {},
+    onVisibleChange: (Boolean) -> Unit = {},
 ) {
+    DisposableEffect(Unit) {
+        onVisibleChange(true)
+        onDispose { onVisibleChange(false) }
+    }
     val now by produceState(System.currentTimeMillis()) {
         while (true) { delay(15_000); value = System.currentTimeMillis() }
     }
@@ -101,7 +107,7 @@ fun HomeScreen(
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 SsCard {
                     SsText("No TVs yet", Ss.heading)
-                    SsText("Add your Fire TV and SideSpeed Companion will keep its helper running.", Ss.caption)
+                    SsText("Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.", Ss.caption)
                     Box(Modifier.padding(top = 8.dp)) { SsButton("Add a TV", onAdd, primary = true) }
                 }
             }
@@ -119,6 +125,7 @@ fun HomeScreen(
                         tv.checkedAtEpochMs?.let { SsText(Copy.checkedAgo(now - it), Ss.caption) }
                         tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
                         tv.scopeNote?.let { SsText(it, Ss.caption) }
+                        TvActivityBlock(tv, now)
                         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             SsButton("Restart now", { restartingId = tv.id; onRestart(tv.id) }, enabled = restartingId == null)
                             if (restarting) SsSpinner()
