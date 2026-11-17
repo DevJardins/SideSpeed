@@ -15,14 +15,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 MASTER = Path(__file__).resolve().parent / "sidespeed-logo-2026.png"
+FONT = Path(__file__).resolve().parent / "fonts" / "Poppins-SemiBold.ttf"
 
 NAVY = (0, 14, 50)  # #000E32: matches the master's corner pixels (0-1,14-16,48-51)
 ROBOT_BOX = (290, 60, 890, 660)  # robot only, no wordmark, no badge (600x600)
-WORD_BOX = (120, 680, 905, 833)  # "SideSpeed" wordmark crop (785x153)
 
 DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
 APP_PREFIXES = [ROOT / "app/src/main/res", ROOT / "companion-android/src/main/res"]
@@ -55,39 +55,30 @@ def clean_robot() -> Image.Image:
     return navy
 
 
-def clean_wordmark() -> Image.Image:
-    """Wordmark crop with the badge erased and the 'p' stem rebuilt.
+GREEN = (142, 244, 24)  # #8EF418: median of the solid 'Speed' pixels in the master
 
-    The gauge badge sits right under the wordmark and its arc, ticks, needle
-    and rocket overlap the 'p' stem (master x 547-567), so a plain crop cannot
-    exclude it. Every bright pixel in the badge zone is erased and inpainted
-    from true background on both sides, then the straight stem is rebuilt from
-    its clean upper rows.
+
+def banner_text(width: int) -> Image.Image:
+    """'Side' in white + 'Speed' in logo green, drawn 4x and downscaled.
+
+    'Speed' starts exactly at the advance width of 'Side' so the two parts
+    stay kerned as one word with no extra gap at the colour change.
     """
-    word = Image.open(MASTER).convert("RGB").crop(WORD_BOX)
-    ox, oy = WORD_BOX[0], WORD_BOX[1]
-    stem = range(547 - ox, 568 - ox)
-    template = {x: word.getpixel((x, 803 - oy)) for x in stem}
-    x0, x1 = 415 - ox, 665 - ox
-    y0, y1 = 816 - oy, WORD_BOX[3] - oy
-    # Rebuilt stem ends at y=829: baseline (793, bottom of S/d/e) plus a
-    # normal descender of ~0.45 * x-height (713->793 = 80px). Painted solid
-    # from the clean template row, so the end is squared off like the top
-    # of the "d" ascender.
-    stem_end = 830 - oy
-    px = word.load()
-
-    for x in range(x0, x1):
-        samples = sorted(
-            px[x, y] for y in range(806 - oy, 814 - oy) if max(px[x, y]) <= 100
-        )
-        bg = samples[len(samples) // 2] if samples else NAVY
-        for y in range(y0, y1):
-            px[x, y] = bg
-    for x in stem:
-        for y in range(814 - oy, stem_end):
-            px[x, y] = template[x]
-    return word
+    scale = 4
+    probe = ImageFont.truetype(str(FONT), 100)
+    left, _, right, _ = probe.getbbox("SideSpeed")
+    font = ImageFont.truetype(str(FONT), round(100 * width * scale / (right - left)))
+    left, top, right, bottom = font.getbbox("SideSpeed")
+    img = Image.new("RGBA", (right - left, bottom - top), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.text((-left, -top), "Side", font=font, fill=(255, 255, 255, 255))
+    draw.text(
+        (-left + draw.textlength("Side", font=font), -top),
+        "Speed",
+        font=font,
+        fill=GREEN + (255,),
+    )
+    return img.resize((width, round(img.size[1] * width / img.size[0])), Image.LANCZOS)
 
 
 def foreground(robot: Image.Image, canvas: int) -> Image.Image:
@@ -101,7 +92,7 @@ def foreground(robot: Image.Image, canvas: int) -> Image.Image:
 
 def main() -> None:
     robot = clean_robot()
-    word = clean_wordmark()
+    word = banner_text(300)
 
     for prefix in APP_PREFIXES:
         for name, scale in DENSITIES.items():
@@ -114,9 +105,7 @@ def main() -> None:
 
     banner = Image.new("RGB", (640, 360), NAVY)
     banner.paste(robot.resize((250, 250), Image.LANCZOS), (36, 55))
-    ww = 300
-    wh = round(ww * word.size[1] / word.size[0])
-    banner.paste(word.resize((ww, wh), Image.LANCZOS), (304, 180 - wh // 2))
+    banner.paste(word, (304, 180 - word.size[1] // 2), word)
     banner.save(ROOT / "app/src/main/res/drawable-xhdpi/banner.png")
 
     icons = ROOT / "companion-desktop/src/main/resources/icons"

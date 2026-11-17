@@ -23,3 +23,10 @@ from it by `docs/brand/make-icons.py`:
 - `companion/src/desktopMain/resources/ss_logo_mark.png` (companion header mark on desktop)
 - `companion/src/androidMain/kotlin/.../ui/SsLogoMarkBytes.kt` (same mark as
   embedded bytes for the companion header on Android)
+
+## Banner typeface
+
+The TV banner wordmark is rendered from `docs/brand/fonts/Poppins-SemiBold.ttf`
+(Poppins SemiBold by Indian Type Foundry, licensed under the SIL Open Font
+License 1.1; see `docs/brand/fonts/OFL.txt`). "Side" is white and "Speed" uses
+the logo green (#8EF418, sampled from the master).
