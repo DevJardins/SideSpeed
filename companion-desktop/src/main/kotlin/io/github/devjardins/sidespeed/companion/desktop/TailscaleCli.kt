@@ -25,15 +25,25 @@ class TailscaleCli(
         // CLI hangs with stdout open, and a file also keeps a chatty stderr from filling a pipe.
         val out = File.createTempFile("te-tailscale", ".json")
         return try {
-            val p = ProcessBuilder(exe, "status", "--json")
+            val pb = ProcessBuilder(exe, "status", "--json")
                 .redirectInput(ProcessBuilder.Redirect.from(File(if (File.separatorChar == '\\') "NUL" else "/dev/null")))
                 .redirectOutput(out)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .start()
+            if (exe == APP_BUNDLE_EXE && pb.environment()["SHLVL"].isNullOrEmpty()) {
+                // The Mac App Store build only speaks CLI when SHLVL is set: a Finder-launched app has no
+                // SHLVL, so the binary prints a GUI error on stdout with exit 0. A shell always sets SHLVL,
+                // which is why the /usr/local/bin/tailscale sh wrapper works under env -i.
+                pb.environment()["SHLVL"] = "1"
+            }
+            val p = pb.start()
             if (!p.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
                 p.destroyForcibly()
                 null
-            } else if (p.exitValue() == 0) out.readText().takeIf { it.isNotBlank() } else null
+            } else if (p.exitValue() == 0) {
+                // The app-bundle binary prints a GUI error on stdout with exit 0 when it misfires; only
+                // JSON can be a status object, so anything else moves on to the next candidate.
+                out.readText().takeIf { it.trimStart().startsWith("{") }
+            } else null
         } catch (_: Exception) {
             null
         } finally {
@@ -42,11 +52,13 @@ class TailscaleCli(
     }
 
     companion object {
+        const val APP_BUNDLE_EXE = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
+
         fun defaultCandidates(): List<String> = listOf(
             "tailscale",
-            "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
-            "/opt/homebrew/bin/tailscale",
             "/usr/local/bin/tailscale",
+            "/opt/homebrew/bin/tailscale",
+            APP_BUNDLE_EXE,
             "/usr/bin/tailscale",
             "C:\\Program Files\\Tailscale\\tailscale.exe",
         )

@@ -13,9 +13,9 @@ import java.io.File
 class TailscaleCliTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    private fun script(body: String): String {
+    private fun script(body: String, name: String = "tailscale"): String {
         assumeTrue(File("/bin/sh").canExecute())
-        val f = tmp.newFile("tailscale")
+        val f = tmp.newFile(name)
         f.writeText("#!/bin/sh\n$body\n")
         f.setExecutable(true)
         return f.absolutePath
@@ -38,5 +38,22 @@ class TailscaleCliTest {
     @Test fun aFailingCliOrMissingBinaryGivesNull() = runBlocking {
         assertNull(TailscaleCli(listOf(script("exit 1")), timeoutSeconds = 5).statusJson())
         assertNull(TailscaleCli(listOf("/nonexistent/tailscale"), timeoutSeconds = 5).statusJson())
+    }
+
+    @Test fun nonJsonExitZeroIsSkippedForNextCandidate() = runBlocking {
+        val bad = script("echo 'The Tailscale GUI failed to start.'", "bad")
+        val good = script("""echo '{"Peer":{}}'""", "good")
+        val cli = TailscaleCli(listOf(bad, good), timeoutSeconds = 5)
+        assertEquals("""{"Peer":{}}""", cli.statusJson()?.trim())
+    }
+
+    @Test fun allNonJsonGivesNull() = runBlocking {
+        val cli = TailscaleCli(listOf(script("echo 'The Tailscale GUI failed to start.'")), timeoutSeconds = 5)
+        assertNull(cli.statusJson())
+    }
+
+    @Test fun jsonWithLeadingWhitespaceIsAccepted() = runBlocking {
+        val cli = TailscaleCli(listOf(script("""echo '   {"Peer":{}}'""")), timeoutSeconds = 5)
+        assertEquals("""{"Peer":{}}""", cli.statusJson()?.trim())
     }
 }
