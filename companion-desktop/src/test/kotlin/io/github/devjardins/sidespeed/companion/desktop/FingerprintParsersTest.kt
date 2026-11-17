@@ -42,8 +42,8 @@ class FingerprintParsersTest {
     }
 
     @Test fun macArp() {
-        val out = "? (192.168.4.1) at 6c:bf:2f:26:4f:12 on en0 ifscope [ethernet]"
-        assertEquals("6c:bf:2f:26:4f:12", FingerprintParsers.gatewayMac(out, "192.168.4.1"))
+        val out = "? (192.168.4.1) at 02:42:ac:11:00:02 on en0 ifscope [ethernet]"
+        assertEquals("02:42:ac:11:00:02", FingerprintParsers.gatewayMac(out, "192.168.4.1"))
         assertEquals("0a:0b:0c:0d:0e:0f", FingerprintParsers.gatewayMac("? (192.168.4.1) at a:b:c:d:e:f on en0", "192.168.4.1"))
         assertNull(FingerprintParsers.gatewayMac("? (192.168.4.1) at (incomplete) on en0 ifscope [ethernet]", "192.168.4.1"))
         assertNull(FingerprintParsers.gatewayMac(out, "192.168.4.10"))
