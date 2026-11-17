@@ -42,6 +42,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Live compile status for `adb shell content query` (the Companion's TV card). Exported but
+            gated by DUMP, which the shell holds and normal apps cannot get; all writes throw. -->
+        <provider
+            android:name=".status.CompileStatusProvider"
+            android:authorities="${applicationId}.status"
+            android:exported="true"
+            android:readPermission="android.permission.DUMP" />
+
         <service
             android:name=".maintenance.MaintenanceService"
             android:exported="false"
