@@ -1,6 +1,6 @@
 # SideSpeed
 
-<img src="docs/brand/sidespeed-logo.webp" alt="SideSpeed logo" width="320">
+<img src="docs/brand/sidespeed-logo-2026.png" alt="SideSpeed logo" width="320">
 
 One-tap speed boost for sideloaded Android TV apps. It compiles them to native code the way Play Store installs are. Automatic recompiling after app updates is planned.
 
