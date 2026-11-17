@@ -4,11 +4,15 @@
 
 Sideloaded apps on Android TV and Fire TV skip the compiling that store installs get, so they start and run slower. SideSpeed compiles them to native code ahead of time and keeps them compiled after updates.
 
+Website and downloads: **[sidespeed.app](https://sidespeed.app)**
+
 ## Install on the TV
 
 The quickest way: install **Downloader** on the TV (from the Amazon Appstore or Google Play), open it and enter the code **3503400**. It downloads the latest SideSpeed APK; choose **Install** (if the TV asks, allow Downloader to install unknown apps). SideSpeed appears on the home screen.
 
-You can also download `SideSpeed-<version>.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
+Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
+
+To update, install the new APK over the old one. Your settings are kept. Updating stops the helper, so start it again afterwards (on Google TV / onn, just open SideSpeed).
 
 ## Setup
 
@@ -34,13 +38,15 @@ The **Auto-optimize** tab on the apps screen keeps groups of apps optimized auto
 
 Anything still in speed-profile or a lower filter is upgraded to speed. The tab also shows a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back.
 
+**SideSpeed optimizes itself too.** After you install or update it, SideSpeed compiles itself to speed the next time you leave the app while the helper is running. The Apps screen shows **SideSpeed optimized** once that is done. The APK also includes a baseline profile, which tells Android which of SideSpeed's own code to compile first.
+
 ## SideSpeed Companion
 
 Companion apps for Android phones and for Windows, macOS and Linux. They start the SideSpeed helper on your Fire TV for you, so you do not need a PC and a terminal each time. Fire TV only; on other TVs SideSpeed handles setup itself.
 
-**Install** from the [Releases page](https://github.com/DevJardins/SideSpeed/releases). The desktop installers are unsigned:
+**Install:** on a phone, open **[sidespeed.app/phone](https://sidespeed.app/phone)**. On a computer, open **[sidespeed.app](https://sidespeed.app)**, which offers the right installer for your system. Every file is also on the [Releases page](https://github.com/DevJardins/SideSpeed/releases). The desktop installers are unsigned:
 
-- **Android:** sideload `SideSpeed-Companion-<version>.apk` onto your phone. It is signed like the TV APK.
+- **Android:** install `SideSpeed-Companion.apk` on your phone. It is signed like the TV APK.
 - **macOS:** open the `.dmg` (Apple silicon) and drag the app to Applications. If macOS says it cannot verify the developer, right-click the app, choose **Open**, then **Open** again.
 - **Windows:** run the `.msi`. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
 - **Linux:** install the `.deb` or the `.rpm`.
@@ -93,6 +99,16 @@ Release builds per module:
 Run the desktop app from source with `./gradlew :companion-desktop:run`.
 
 For signed APKs, copy `keystore.properties.example` to `keystore.properties` and fill it in (or set the `SIDESPEED_*` environment variables). Without a keystore the release APKs stay unsigned.
+
+## Releasing
+
+1. Raise `versionCode` and `versionName` in `app/build.gradle.kts` (and in `companion-android/build.gradle.kts` if the companion changed).
+2. Write the release notes in `.github/release-notes/v<version>.md`.
+3. Merge to `main`, then tag and push: `git tag v<version> && git push origin v<version>`.
+4. CI builds everything and creates a **draft** release. It fails if either APK is not signed with the project key. The draft has versioned files, `SHA256SUMS.txt`, and copies under fixed names: `SideSpeed.apk`, `SideSpeed-Companion.apk`, `SideSpeed-Companion-macos-arm64.dmg`, `-windows-x64.msi`, `-linux-amd64.deb` and `-linux-x86_64.rpm`.
+5. Check the draft, then publish it.
+
+The Downloader code 3503400 and the sidespeed.app links (`/tv`, `/companion.apk`, `/mac`, `/windows`, `/linux`, `/linux-rpm`) fetch `releases/latest/download/<fixed name>`. So every release must include all of these files under exactly these names.
 
 ## License
 
