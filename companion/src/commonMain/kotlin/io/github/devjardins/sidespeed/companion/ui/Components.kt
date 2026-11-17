@@ -143,7 +143,7 @@ fun SsGlowCard(glow: Glow?, modifier: Modifier = Modifier, content: @Composable 
             .drawBehind { drawHalo(color) }
             .padding(HaloSpread)
             .background(Ss.surface, cardShape)
-            .border(2.dp, color, cardShape)
+            .border(1.5.dp, color, cardShape)
             .padding(16.dp),
     ) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
@@ -151,10 +151,10 @@ fun SsGlowCard(glow: Glow?, modifier: Modifier = Modifier, content: @Composable 
 }
 
 /** How far the halo reaches outside the card edge. */
-private val HaloSpread = 10.dp
+private val HaloSpread = 6.dp
 /** Concentric strokes across the spread; the innermost starts at this alpha and each ring out fades. */
-private const val HaloRings = 5
-private const val HaloStartAlpha = 0.35f
+private const val HaloRings = 3
+private const val HaloStartAlpha = 0.18f
 
 /** Draws [HaloRings] concentric rounded strokes around the inner card, fading outward to transparent. */
 private fun DrawScope.drawHalo(color: Color) {
