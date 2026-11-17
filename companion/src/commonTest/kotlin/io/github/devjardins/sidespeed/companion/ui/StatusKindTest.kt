@@ -39,4 +39,11 @@ class StatusKindTest {
         listOf(null, Reach.REACHED_LAN, Reach.REACHED_TAILNET, Reach.UNREACHABLE)
             .forEach { assertNull(cardGlow(it, checkableHere = false), "$it") }
     }
+
+    @Test fun glowMapsToTheThemeColours() {
+        assertEquals(Ss.glowLan, glowColor(Glow.GREEN))
+        assertEquals(Ss.glowTailnet, glowColor(Glow.BLUE))
+        assertEquals(Ss.glowUnreachable, glowColor(Glow.RED))
+        assertNull(glowColor(null))
+    }
 }

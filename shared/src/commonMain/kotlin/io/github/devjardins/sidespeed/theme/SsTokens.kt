@@ -21,6 +21,10 @@ object SsTokens {
     const val DANGER_CARD_BG = 0xFF2E1F22
     const val DANGER_CARD_TEXT = 0xFFE3B1B1
 
+    /** TV card glow accents: vivid by design, so the reach path reads at a glance. Never calm fills. */
+    const val GLOW_LAN = 0xFF8EF418
+    const val GLOW_TAILNET = 0xFF4A90E2
+
     /** Type sizes in sp. */
     const val HEADLINE_SP = 28
     const val TITLE_SP = 20

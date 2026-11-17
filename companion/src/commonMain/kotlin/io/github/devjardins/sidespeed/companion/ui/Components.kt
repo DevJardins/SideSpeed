@@ -115,6 +115,39 @@ fun SsCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() ->
     )
 }
 
+/** The glow colour for a TV card, or null for today's plain border. */
+fun glowColor(glow: Glow?): Color? = when (glow) {
+    Glow.GREEN -> Ss.glowLan
+    Glow.BLUE -> Ss.glowTailnet
+    Glow.RED -> Ss.glowUnreachable
+    null -> null
+}
+
+/**
+ * A TV card: the plain [SsCard] border when [glow] is null, else a 2dp border in the glow colour with a soft
+ * outer halo (a second, wider border at 35% alpha). Steady on purpose: a pulse would look like an alarm.
+ */
+@Composable
+fun SsGlowCard(glow: Glow?, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val color = glowColor(glow)
+    if (color == null) {
+        SsCard(modifier, content)
+        return
+    }
+    val haloShape = RoundedCornerShape(20.dp)
+    val cardShape = RoundedCornerShape(16.dp)
+    Column(
+        modifier.fillMaxWidth()
+            .border(9.dp, color.copy(alpha = 0.35f), haloShape)
+            .padding(9.dp)
+            .background(Ss.surface, cardShape)
+            .border(2.dp, color, cardShape)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        content = content,
+    )
+}
+
 /** A round icon-sized hit target with the same press, hover and focus feedback as [SsButton]. */
 @Composable
 fun SsIconButton(onClick: () -> Unit, contentDescription: String, content: @Composable () -> Unit) {
