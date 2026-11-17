@@ -24,6 +24,7 @@ object SsTokens {
     /** TV card glow accents: vivid by design, so the reach path reads at a glance. Never calm fills. */
     const val GLOW_LAN = 0xFF8EF418
     const val GLOW_TAILNET = 0xFF4A90E2
+    const val GLOW_UNREACHABLE = 0xFFFF4D4D
 
     /** Type sizes in sp. */
     const val HEADLINE_SP = 28

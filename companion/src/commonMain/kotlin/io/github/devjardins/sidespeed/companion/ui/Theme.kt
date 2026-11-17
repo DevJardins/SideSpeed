@@ -29,8 +29,8 @@ object Ss {
     /** TV card glows: SideSpeed green on the home network, Tailscale blue over the tailnet. */
     val glowLan = Color(SsTokens.GLOW_LAN)
     val glowTailnet = Color(SsTokens.GLOW_TAILNET)
-    /** An unreachable card glows the app's existing error red. */
-    val glowUnreachable = dangerText
+    /** An unreachable card glows true red. */
+    val glowUnreachable = Color(SsTokens.GLOW_UNREACHABLE)
 
     /** Phone type scale 24 / 18 / 15 / 13 sp. */
     val title = TextStyle(color = textPrimary, fontSize = 24.sp, fontWeight = FontWeight.Medium)

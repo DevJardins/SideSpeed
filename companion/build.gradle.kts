@@ -43,6 +43,7 @@ kotlin {
 
 // Manual device check (see ManualFireTvCheck): -Psidespeed.tv=<ip>[:port] [-Psidespeed.keyDir=<dir>]
 tasks.withType<Test>().matching { it.name == "desktopTest" }.configureEach {
+    systemProperty("sidespeed.previewDir", layout.buildDirectory.dir("previews").get().asFile.absolutePath)
     val tv = providers.gradleProperty("sidespeed.tv").orNull
     val keyDir = providers.gradleProperty("sidespeed.keyDir").orNull
     if (tv != null) {

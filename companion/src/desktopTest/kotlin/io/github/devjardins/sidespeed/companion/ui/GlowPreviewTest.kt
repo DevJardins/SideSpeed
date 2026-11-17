@@ -45,17 +45,13 @@ class GlowPreviewTest {
         }
         try {
             val png = scene.render().encodeToData(EncodedImageFormat.PNG)!!.bytes
-            val out = File(OUTPUT_PATH)
+            // `sidespeed.previewDir` is set by Gradle; otherwise the test working directory (the module dir).
+            val out = File(System.getProperty("sidespeed.previewDir") ?: "build/previews", "glow.png")
             out.parentFile.mkdirs()
             out.writeBytes(png)
-            assertTrue(out.length() > 0, "preview written to $OUTPUT_PATH")
+            assertTrue(out.length() > 0, "preview written to ${out.path}")
         } finally {
             scene.close()
         }
-    }
-
-    private companion object {
-        const val OUTPUT_PATH =
-            "/private/tmp/claude-501/-Users-mdez-Developer-SideSpeed-muse/6ef48403-4861-47d3-a0ff-a877940ea82/scratchpad/preview-glow.png"
     }
 }
