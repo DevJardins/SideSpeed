@@ -30,6 +30,9 @@ object TvCommands {
     val KILL: String = HelperLaunch.KILL_COMMAND
     val LAUNCH: String = HelperLaunch.command()
 
+    /** Live compile status for the TV card; parsed by `parseActivityRow` in `TvActivity.kt`. */
+    const val STATUS_QUERY = "content query --uri content://io.github.devjardins.sidespeed.status/now"
+
     // Add/scan only.
     const val MANUFACTURER = "getprop ro.product.manufacturer"
     const val MODEL = "getprop ro.product.model"

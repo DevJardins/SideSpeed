@@ -26,11 +26,14 @@ import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.tv.TvActivity
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
+import io.github.devjardins.sidespeed.companion.tv.TvSession
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.open
+import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayVerdict
@@ -40,6 +43,9 @@ import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,6 +115,8 @@ data class TvCardState(
     val scopeNote: String? = null,
     /** How the last check reached this TV; null when never checked, or when it can't be checked from here. */
     val reach: Reach? = null,
+    /** The latest live compile status, while the Home screen polls for it; null when unknown. */
+    val activity: TvActivity? = null,
 )
 
 /** What Tailscale reports on this computer: its tailnet, whether it is trusted, and whether it can reach peers. */
@@ -173,6 +181,13 @@ class CompanionViewModel(
 
     private val _state = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
+    private var homeVisible = false
+    private var foreground = true
+    private var pollJob: Job? = null
+    private val activities = mutableMapOf<String, TvActivity>()
+    private val pollSessions = mutableMapOf<String, TvSession>()
+    private val pollFailures = mutableMapOf<String, Int>()
+    private val parkedTvIds = mutableSetOf<String>()
     private val work = Mutex()
     private var findJob: Job? = null
     private var lastSummary = DiscoverySummary()
@@ -432,6 +447,77 @@ class CompanionViewModel(
         }
     }
 
+    /**
+     * The Home screen appeared (true) or went away (false). Polling runs only while it is visible
+     * and the app is in the foreground (see [setForeground]): one pass over the checkable, running
+     * TVs every [ACTIVITY_POLL_MS], reusing one ADB session per TV. Three consecutive failures park
+     * a TV until the next visit; unparsable output keeps the previous state. This never runs from
+     * background upkeep: upkeep never calls it.
+     */
+    fun setHomeVisible(visible: Boolean) {
+        if (visible) parkedTvIds.clear()
+        if (homeVisible == visible) return
+        homeVisible = visible
+        updatePolling()
+    }
+
+    /** The app moved to the foreground (true) or background (false). */
+    fun setForeground(inForeground: Boolean) {
+        if (foreground == inForeground) return
+        foreground = inForeground
+        updatePolling()
+    }
+
+    private fun updatePolling() {
+        pollJob?.cancel()
+        pollJob = null
+        pollSessions.values.forEach { runCatching { it.close() } }
+        pollSessions.clear()
+        if (!homeVisible || !foreground) return
+        pollJob = scope.launch { pollLoop() }
+    }
+
+    private suspend fun pollLoop() {
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val eligible = _state.value.tvs.filter {
+                it.checkableHere && it.status == TvStatus.RUNNING && it.id !in parkedTvIds
+            }
+            val ids = eligible.map { it.id }.toSet()
+            (pollSessions.keys - ids).forEach { id -> runCatching { pollSessions.remove(id)?.close() } }
+            for (tv in eligible) {
+                currentCoroutineContext().ensureActive()
+                pollOneTv(tv)
+            }
+            delay(ACTIVITY_POLL_MS)
+        }
+    }
+
+    private suspend fun pollOneTv(tv: TvCardState) {
+        try {
+            val session = pollSessions.getOrPut(tv.id) { connector.open(tv.address) }
+            val parsed = parseActivityRow(session.run(TvCommands.STATUS_QUERY))
+            pollFailures.remove(tv.id)
+            if (parsed != null) setActivity(tv.id, parsed)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            runCatching { pollSessions.remove(tv.id)?.close() }
+            val count = (pollFailures[tv.id] ?: 0) + 1
+            if (count >= MAX_ACTIVITY_FAILURES) {
+                pollFailures.remove(tv.id)
+                parkedTvIds += tv.id
+            } else {
+                pollFailures[tv.id] = count
+            }
+        }
+    }
+
+    private fun setActivity(id: String, activity: TvActivity) {
+        activities[id] = activity
+        _state.update { s -> s.copy(tvs = s.tvs.map { if (it.id == id) it.copy(activity = activity) else it }) }
+    }
+
     fun updateSettings(s: CompanionSettings) {
         locked {
             store.saveSettings(s)
@@ -567,6 +653,7 @@ class CompanionViewModel(
             TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
         }
         val tvs = store.tvs()
+        activities.keys.retainAll(tvs.map { it.id }.toSet())
         val saved = tvs.map { it.address }.toSet()
         val cards = ArrayList<TvCardState>(tvs.size)
         for (tv in tvs) {
@@ -578,6 +665,7 @@ class CompanionViewModel(
                 status = tv.status,
                 statusLabel = Copy.statusLabel(tv.status),
                 checkableHere = here,
+                activity = activities[tv.id],
                 reach = if (here) tv.reach else null,
                 checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = if (tv.isFireTv) null else Copy.NOT_FIRE_TV_NOTE,
@@ -613,5 +701,9 @@ class CompanionViewModel(
 
     private companion object {
         var counter = 0
+        /** Home-screen activity polls run this often, one TV at a time, reusing each TV's session. */
+        const val ACTIVITY_POLL_MS = 3_000L
+        /** Consecutive poll failures that park a TV until the next screen visit. */
+        const val MAX_ACTIVITY_FAILURES = 3
     }
 }
