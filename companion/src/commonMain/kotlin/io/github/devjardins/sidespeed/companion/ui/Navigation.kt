@@ -79,8 +79,7 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
-                    vm::renameTrustedNetwork, vm::removeTrustedNetwork,
-                    { vm.trustCurrentOverlay("Tailnet ${state.trustedOverlays.size + 1}") }, vm::removeTrustedOverlay,
+                    vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
                 )
                 Screen.ABOUT -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -96,6 +96,19 @@ internal class OverlayGate(private val access: OverlayAccess) {
         return Binding(overlay, peer).takeIf { leavesThroughTailnet(snapshot, address) }
     }
 
+    /** A non-shared peer that owns [address] on the tailnet Tailscale is signed into now, whether or not it is
+     * trusted yet. Null when the snapshot is missing or unusable, the route would not leave through the tailnet,
+     * or no non-shared peer owns the address. */
+    class CurrentTailnetPeer(val snapshot: OverlaySnapshot, val peer: OverlayPeer)
+
+    suspend fun peerOnCurrentTailnet(address: Ipv4): CurrentTailnetPeer? {
+        if (!AddressPolicy.isOverlay(address)) return null
+        val snapshot = access.source.snapshot() ?: return null
+        if (!snapshot.running || !snapshot.tun) return null
+        val peer = snapshot.peers.firstOrNull { !it.shared && address in it.ips } ?: return null
+        return CurrentTailnetPeer(snapshot, peer).takeIf { leavesThroughTailnet(snapshot, address) }
+    }
+
     private suspend fun leavesThroughTailnet(snapshot: OverlaySnapshot, address: Ipv4): Boolean {
         val route = access.egress.route(address) ?: return false
         return route.addresses.any { it in snapshot.selfIps }

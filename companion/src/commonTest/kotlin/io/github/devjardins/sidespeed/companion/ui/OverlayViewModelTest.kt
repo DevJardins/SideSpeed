@@ -114,6 +114,55 @@ class OverlayViewModelTest {
         assertNull(r.vm.state.value.tailnet)
     }
 
+    @Test fun addingAPeerWithNoTrustedOverlayTrustsTheTailnetAndBinds() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(overlay = false)
+        r.vm.addTvByAddress("100.101.1.1")
+        val overlays = r.store.trustedOverlays()
+        assertEquals(1, overlays.size)
+        assertEquals("Tailnet 1", overlays.single().name)
+        assertEquals("me@example.com", overlays.single().tailnet)
+        assertEquals("nSELF", overlays.single().selfId)
+        val saved = r.store.tvs().single()
+        assertEquals(overlays.single().id, saved.trustedNetworkId)
+        assertEquals("nCUBE", saved.overlayPeerId)
+        assertEquals("100.101.1.1", saved.address)
+    }
+
+    @Test fun aSecondAddOnTheSameTailnetAddsNoOverlay() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(overlay = false)
+        r.vm.addTvByAddress("100.101.1.1")
+        r.vm.acknowledgeAdded()
+        r.vm.addTvByAddress("100.101.1.1")
+        assertEquals(1, r.store.trustedOverlays().size)
+        assertEquals(1, r.store.tvs().size)
+    }
+
+    @Test fun aSharedInPeerIsRefusedAndTrustsNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(overlay = false, snapshot = snap(peer("nCUBE", "100.101.1.1", shared = true)))
+        r.vm.addTvByAddress("100.101.1.1")
+        assertTrue(r.store.tvs().isEmpty())
+        assertTrue(r.store.trustedOverlays().isEmpty())
+        assertEquals(Copy.SHARED_PEER, r.vm.state.value.error)
+    }
+
+    @Test fun aClosedRouteAddsNoOverlay() = runTest(UnconfinedTestDispatcher()) {
+        val routed = rig(fp = hotel, lan = false, overlay = false)
+        routed.egress = { EgressRoute("en0", listOf(ip("10.9.9.20"))) }
+        routed.vm.addTvByAddress("100.101.1.1")
+        assertTrue(routed.store.tvs().isEmpty())
+        assertTrue(routed.store.trustedOverlays().isEmpty())
+        assertEquals(Copy.NOT_TRUSTED_ADD, routed.vm.state.value.error)
+    }
+
+    @Test fun aBareTailscaleAddressWithNoTailscaleStaysOnTheHomeNetwork() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(snapshot = null, overlay = false)
+        r.vm.addTvByAddress("100.101.1.9")
+        val saved = r.store.tvs().single()
+        assertEquals("home", saved.trustedNetworkId)
+        assertNull(saved.overlayPeerId)
+        assertTrue(r.store.trustedOverlays().isEmpty())
+    }
+
     @Test fun aPeerAddressBindsTheTvToTheTailnetEvenAwayFromHome() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(fp = hotel, lan = false)
         r.vm.addTvByAddress("100.101.1.1")

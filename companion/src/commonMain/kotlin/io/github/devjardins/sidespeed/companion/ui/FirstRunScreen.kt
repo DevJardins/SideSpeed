@@ -30,7 +30,7 @@ fun FirstRunScreen(
         if (tailnet != null && tailnet.ready) SsCard { SsText("Tailscale network ${tailnet.name}. Anyone who administers it could reach a TV added through it.", Ss.caption) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (network != null) SsButton("Trust this network", onTrust, primary = true)
-            if (tailnet != null && tailnet.ready) SsButton("Trust this tailnet", onTrustTailnet, primary = network == null)
+            if (tailnet != null && tailnet.ready) SsButton("Use Tailscale", onTrustTailnet, primary = network == null)
             SsButton("Not now", onNotNow)
         }
     }

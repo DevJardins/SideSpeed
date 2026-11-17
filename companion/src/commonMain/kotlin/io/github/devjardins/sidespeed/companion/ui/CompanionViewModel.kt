@@ -16,6 +16,7 @@ import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
+import io.github.devjardins.sidespeed.companion.net.OverlaySnapshot
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
@@ -203,13 +204,19 @@ class CompanionViewModel(
         locked {
             val snapshot = overlay?.source?.snapshot()
             if (snapshot == null || !snapshot.running || !snapshot.tun) return@locked refresh(error = Copy.NO_OVERLAY)
-            val existing = store.trustedOverlays()
-            if (OverlayTrustMatcher.currentTrusted(snapshot, existing) == null) {
-                val id = "overlay-" + clock() + "-" + existing.size
-                val label = name.trim().ifEmpty { "Tailnet ${existing.size + 1}" }
-                store.saveTrustedOverlay(TrustedOverlay(id, label, snapshot.tailnet, snapshot.selfId))
-            }
+            trustSnapshot(snapshot, name)
             refresh()
+        }
+    }
+
+    /** Saves the tailnet [snapshot] reports as trusted, unless it already is. The add path uses this too: the
+     * tailnet the computer is signed into is trusted automatically when a TV is added on it. */
+    private suspend fun trustSnapshot(snapshot: OverlaySnapshot, name: String) {
+        val existing = store.trustedOverlays()
+        if (OverlayTrustMatcher.currentTrusted(snapshot, existing) == null) {
+            val id = "overlay-" + clock() + "-" + existing.size
+            val label = name.trim().ifEmpty { "Tailnet ${existing.size + 1}" }
+            store.saveTrustedOverlay(TrustedOverlay(id, label, snapshot.tailnet, snapshot.selfId))
         }
     }
 
@@ -473,11 +480,19 @@ class CompanionViewModel(
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
         val ip = Ipv4.parse(address)
         // A tailnet peer's address binds the TV to that peer on the trusted tailnet, which also works away from home.
-        val binding = ip?.let { overlayGate?.bindingFor(it, store.trustedOverlays()) }
+        var binding = ip?.let { overlayGate?.bindingFor(it, store.trustedOverlays()) }
         // A node shared in from another tailnet is never trusted, not even through the home network (design section 6).
         if (binding == null && ip != null && AddressPolicy.isOverlay(ip) &&
             overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
         ) return refresh(error = Copy.SHARED_PEER)
+        if (binding == null && ip != null && overlayGate != null) {
+            // Our own tailnet is trusted automatically when a TV is added on it.
+            val current = overlayGate.peerOnCurrentTailnet(ip)
+            if (current != null) {
+                trustSnapshot(current.snapshot, "Tailnet ${store.trustedOverlays().size + 1}")
+                binding = overlayGate.bindingFor(ip, store.trustedOverlays())
+            }
+        }
         val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ADD) else null
         // While on a Trusted Network any private (RFC 1918) or overlay (100.64.0.0/10) address may be tried; public addresses never are.
         if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)

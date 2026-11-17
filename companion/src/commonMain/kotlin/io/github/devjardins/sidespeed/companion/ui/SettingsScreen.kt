@@ -30,7 +30,6 @@ fun SettingsScreen(
     onAddNetwork: () -> Unit,
     onRenameNetwork: (String, String) -> Unit,
     onRemoveNetwork: (String) -> Unit,
-    onTrustTailnet: () -> Unit,
     onRemoveTailnet: (String) -> Unit,
     onAbout: () -> Unit,
     onBack: () -> Unit,
@@ -69,8 +68,8 @@ fun SettingsScreen(
         }
         // Desktop only: Android has no Tailscale source, so `tailnet` is null there and none is ever trusted.
         if (state.tailnet != null || state.trustedOverlays.isNotEmpty()) SsCard {
-            SsText("Trusted tailnets", Ss.heading)
-            SsText("TVs added through a trusted tailnet are kept alive wherever Tailscale is connected. Anyone who administers the tailnet can reach them.", Ss.caption)
+            SsText("Tailnets", Ss.heading)
+            SsText("TVs you add through Tailscale are kept alive wherever Tailscale is connected. Anyone who administers the tailnet can reach them.", Ss.caption)
             state.trustedOverlays.forEach { o ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SsText(o.name + " · " + o.tailnet, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -78,11 +77,7 @@ fun SettingsScreen(
                 }
             }
             val t = state.tailnet
-            if (t == null && state.trustedOverlays.isNotEmpty()) SsText("Tailscale is not connected.", Ss.caption)
-            if (t != null && !t.trusted) {
-                if (t.ready) SsButton("Trust this tailnet (${t.name})", onTrustTailnet, modifier = Modifier.padding(top = 4.dp))
-                else SsText("Tailscale is not connected.", Ss.caption)
-            }
+            if (t == null || !t.ready) SsText("Tailscale is not connected.", Ss.caption)
         }
         SsCard {
             SsText("Notifications", Ss.heading)
