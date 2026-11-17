@@ -39,4 +39,5 @@
   - Plan 1 Tasks 4-5 except away-from-home.
   - Red/blue/green borders.
 - **Lesson:** an old build in the main checkout (/Users/mdez/Developer/SideSpeed, fdf56fe) shared the store and erased tailnet data. Batch 12 prevents this from now on, but builds made before it can't be fixed. Delete stale builds.
-- **Still waiting on the owner:** Plan 1 away-from-home; Plan 5's meaning; D4 and D5 (Plan 2); Plan 11 (push and PR shape, GitHub signing secrets); whether the Android off-Wi-Fi add should get option 2.
+- **Still waiting on the owner:** Plan 1 away-from-home; Plan 11 (push and PR shape, GitHub signing secrets); whether the Android off-Wi-Fi add should get option 2.
+- Declined 2026-11-16: Plan 5 (per-network trust), D4 (subnet-router TVs), D5 (tailnet names in Add).
