@@ -32,6 +32,9 @@ import android.net.NetworkCapabilities
 import java.net.Inet4Address
 import java.net.NetworkInterface
 
+/** SideSpeed's own install identity, read once from the PackageManager. */
+data class SelfBuild(val versionCode: Long, val lastUpdateTime: Long, val debuggable: Boolean)
+
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
@@ -68,26 +71,37 @@ class AppContainer(context: Context) {
         )
     }
 
-    /** Compiles SideSpeed itself to speed once per install/update; call only while in the background. */
-    val selfCompiler: SelfCompiler by lazy {
-        val pkg = appContext.packageName
+    /** SideSpeed's own install identity; shared by [selfCompiler] and the Apps header pill. */
+    val selfBuild: SelfBuild by lazy {
         val info = if (Build.VERSION.SDK_INT >= 33) {
-            appContext.packageManager.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0))
+            appContext.packageManager.getPackageInfo(
+                appContext.packageName,
+                PackageManager.PackageInfoFlags.of(0),
+            )
         } else {
             @Suppress("DEPRECATION")
-            appContext.packageManager.getPackageInfo(pkg, 0)
+            appContext.packageManager.getPackageInfo(appContext.packageName, 0)
         }
-        SelfCompiler(
-            prefs = prefs,
-            runCompile = { name, mode -> compileRunner.run(name, mode) },
-            helperUp = { helper.ping() != null },
-            ownPackage = pkg,
+        SelfBuild(
             versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
                 @Suppress("DEPRECATION")
                 info.versionCode.toLong()
             },
             lastUpdateTime = info.lastUpdateTime,
             debuggable = (info.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        )
+    }
+
+    /** Compiles SideSpeed itself to speed once per install/update; call only while in the background. */
+    val selfCompiler: SelfCompiler by lazy {
+        SelfCompiler(
+            prefs = prefs,
+            runCompile = { name, mode -> compileRunner.run(name, mode) },
+            helperUp = { helper.ping() != null },
+            ownPackage = appContext.packageName,
+            versionCode = selfBuild.versionCode,
+            lastUpdateTime = selfBuild.lastUpdateTime,
+            debuggable = selfBuild.debuggable,
         )
     }
 

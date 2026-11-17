@@ -140,6 +140,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         tvAddress = tvAddress,
+                        selfCompile = (application as SideSpeedApp).container.prefs.selfCompile,
+                        selfVersionCode = (application as SideSpeedApp).container.selfBuild.versionCode,
+                        selfLastUpdateTime = (application as SideSpeedApp).container.selfBuild.lastUpdateTime,
+                        selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running

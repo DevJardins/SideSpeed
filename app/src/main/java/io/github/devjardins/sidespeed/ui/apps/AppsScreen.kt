@@ -45,6 +45,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.JobRecord
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
@@ -73,12 +74,17 @@ fun AppsScreen(
     onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
     tvAddress: String? = null,
+    selfCompile: Flow<SelfCompile?>,
+    selfVersionCode: Long,
+    selfLastUpdateTime: Long,
+    selfDebuggable: Boolean,
 ) {
     val state by vm.state.collectAsState()
     // One DataStore collection for every row, instead of one Flow per row.
     val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
+    val selfRecord by selfCompile.collectAsState(initial = null)
     LaunchedEffect(Unit) { vm.load() }
     var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
@@ -92,6 +98,10 @@ fun AppsScreen(
                 Text("Pick an app to compile", style = SsType.Headline, color = SsColors.TextPrimary)
                 tvAddress?.let { Spacer(Modifier.width(16.dp)); Text(it, style = SsType.Caption, color = SsColors.TextSecondary) }
                 Spacer(Modifier.weight(1f))
+                selfOptimizedPill(selfRecord, selfVersionCode, selfLastUpdateTime, selfDebuggable)?.let {
+                    StatusPill(it)
+                    Spacer(Modifier.width(8.dp))
+                }
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
             maintenanceLine(maintenanceState)?.let {
