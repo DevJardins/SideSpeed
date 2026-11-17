@@ -21,8 +21,8 @@ android {
         applicationId = "io.github.devjardins.sidespeed"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
     }
 
     signingConfigs {
