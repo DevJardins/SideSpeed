@@ -144,7 +144,7 @@ class ConnectionStrategyTest {
         adb.on(HelperLaunch.command()) { launched = true; emptyList<String>() to 0 }
         val r = s.restartHelper()
         assertEquals(Readiness.HelperReady, r)
-        assertEquals(listOf(ConnectionStrategy.KILL_COMMAND, HelperLaunch.command()), adb.commands)
+        assertEquals(listOf(HelperLaunch.KILL_COMMAND, HelperLaunch.command()), adb.commands)
     }
 
     @Test fun stalledLaunchStreamTimesOut() = runTest(timeout = 20.seconds) {
@@ -155,10 +155,10 @@ class ConnectionStrategyTest {
     }
 
     @Test fun stalledKillTimesOutOnRestart() = runTest(timeout = 20.seconds) {
-        val adb = FakeAdbBackend().apply { hangShellFor += ConnectionStrategy.KILL_COMMAND }
+        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.KILL_COMMAND }
         val r = strategy(adb) { HelperPing(1, "/old") }.restartHelper()
         assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
-        assertEquals(listOf(ConnectionStrategy.KILL_COMMAND), adb.commands)
+        assertEquals(listOf(HelperLaunch.KILL_COMMAND), adb.commands)
     }
 
     @Test fun fireOsPcCommandsUseClassicAdb() {
@@ -174,8 +174,8 @@ class ConnectionStrategyTest {
         val launch = HelperLaunch.command()
         val c = pcStartCommands(DeviceKind.FIRE_OS, null, launch, killFirst = true)
         assertEquals(listOf("adb connect <tv-ip>:5555"), c.connect)
-        assertEquals(listOf("adb shell '${ConnectionStrategy.KILL_COMMAND}'", "adb shell '$launch'"), c.run)
-        assertEquals(listOf(ConnectionStrategy.KILL_COMMAND, launch), c.shellPaste)
+        assertEquals(listOf("adb shell '${HelperLaunch.KILL_COMMAND}'", "adb shell '$launch'"), c.run)
+        assertEquals(listOf(HelperLaunch.KILL_COMMAND, launch), c.shellPaste)
     }
 
     @Test fun googleTvPcCommandsUseWirelessDebuggingPorts() {

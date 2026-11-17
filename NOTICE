@@ -30,8 +30,16 @@ HiddenApiBypass (https://github.com/LSPosed/AndroidHiddenApiBypass)
   Copyright (c) LSPosed. Apache License 2.0.
 
 
-Android robot
-  The SideSpeed logo is based on the Android robot, which is reproduced or
-  modified from work created and shared by Google and used according to
-  terms described in the Creative Commons 3.0 Attribution License.
-  https://developer.android.com/distribute/marketing-tools/brand-guidelines
+Kadb (https://github.com/flyfishxu/Kadb)
+  Copyright (c) flyfishxu. Apache License 2.0. ADB client used by SideSpeed Companion.
+
+spake2-java (https://github.com/flyfish233/spake2-java)
+  Copyright (c) Flyfish233. GPL-3.0. Pulled in by Kadb for ADB pairing.
+
+Compose Multiplatform (https://github.com/JetBrains/compose-multiplatform)
+  Copyright (c) JetBrains. Apache License 2.0.
+
+Android robot (https://developer.android.com/distribute/marketing-tools/brand-guidelines)
+  The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
+  The SideSpeed logo and icons are a modified version of the Android robot.
+  License: https://creativecommons.org/licenses/by/3.0/

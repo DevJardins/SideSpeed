@@ -17,3 +17,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "SideSpeed"
 include(":app")
+include(":shared")
+include(":companion")
+include(":companion-android")
+include(":companion-desktop")

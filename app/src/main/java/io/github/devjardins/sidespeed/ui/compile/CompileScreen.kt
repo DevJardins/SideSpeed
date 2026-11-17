@@ -64,6 +64,7 @@ fun CompileScreen(
     icon: IconSource,
     onBack: () -> Unit,
     onCheckHelper: () -> Unit,
+    onKeepOptimized: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val pkg = remember(app) { PackageName.parse(app.packageName) }
@@ -76,7 +77,7 @@ fun CompileScreen(
     // Collapsed on success, expanded on failure; the user can toggle it either way.
     var showLog by remember(result) { mutableStateOf(result != null && !result.success) }
 
-    LaunchedEffect(app.packageName) { vm.reset(); runCatching { startFocus.requestFocus() } }
+    LaunchedEffect(app.packageName) { vm.reset(); pkg?.let { vm.loadKept(it) }; runCatching { startFocus.requestFocus() } }
     LaunchedEffect(state.running) {
         if (state.running) {
             runCatching { logFocus.requestFocus() }
@@ -114,6 +115,7 @@ fun CompileScreen(
                         enabled = pkg != null,
                         modifier = Modifier.focusRequester(startFocus),
                     )
+                    if (pkg != null) KeepToggle(state.kept, pkg, vm, onKeepOptimized)
                 }
                 result.success -> SsCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -142,6 +144,9 @@ fun CompileScreen(
                         enabled = pkg != null,
                         modifier = Modifier.focusRequester(startFocus),
                     )
+                    if (state.offerKeepOptimized && pkg != null) {
+                        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKeepOptimized) })
+                    }
                     SsButton(if (showLog) "Hide log" else "Show log", onClick = { showLog = !showLog })
                     if (result.message == "Connection lost") {
                         SsButton("Check helper", onClick = onCheckHelper)
@@ -153,6 +158,15 @@ fun CompileScreen(
                 LogView(state.log, Modifier.weight(1f).focusRequester(logFocus))
             }
         }
+    }
+}
+
+@Composable
+private fun KeepToggle(kept: Boolean, pkg: PackageName, vm: CompileViewModel, onKept: () -> Unit) {
+    if (kept) {
+        SsButton("✓ Kept optimized (tap to stop)", onClick = { vm.stopKeeping(pkg) })
+    } else {
+        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKept) })
     }
 }
 
