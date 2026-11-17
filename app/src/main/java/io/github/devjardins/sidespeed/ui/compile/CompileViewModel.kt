@@ -9,6 +9,7 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.DexoptParser
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -66,6 +67,8 @@ class CompileViewModel(
     private val store: MaintenanceStore? = null,
     private val launches: LaunchRunner? = null,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val status: CompileStatus? = null,
+    private val helperUp: suspend () -> Boolean = { true },
 ) : ViewModel() {
     private val _state = MutableStateFlow(CompileUiState())
     val state: StateFlow<CompileUiState> = _state.asStateFlow()
@@ -83,18 +86,23 @@ class CompileViewModel(
     }
 
     /** Starts a compile; ignored while one is already running or a launch sequence owns the screen. */
-    fun start(pkg: PackageName, mode: CompileMode) {
+    fun start(pkg: PackageName, mode: CompileMode, label: String) {
         if (_state.value.running || launches?.isBusy() == true) return
         _state.value = CompileUiState(running = true, startedAtMs = clock())
         viewModelScope.launch(dispatcher) {
-            doCompile(pkg, mode)
+            doCompile(pkg, mode, label)
         }
     }
 
-    /** Runs the compile pipeline, updates [_state], and returns the outcome. */
-    private suspend fun doCompile(pkg: PackageName, mode: CompileMode): CompileEvent.Finished {
+    /**
+     * Runs the compile pipeline, updates [_state], and returns the outcome. The single choke point
+     * for every screen-initiated compile (manual, timed, measure): reports exactly one
+     * onStart/onFinish pair per compile here so no path is missed and none double-reports.
+     */
+    private suspend fun doCompile(pkg: PackageName, mode: CompileMode, label: String): CompileEvent.Finished {
         // Sequences reach here without going through start(), so stamp the start here too.
         _state.value = _state.value.copy(startedAtMs = clock())
+        status?.onStart(pkg.value, label, mode.arg)
         var finished: CompileEvent.Finished? = null
         try {
             runner.run(pkg, mode).collect { e ->
@@ -110,6 +118,9 @@ class CompileViewModel(
             finished = CompileEvent.Finished(false, false, e.message ?: "Error")
         }
         val result = finished ?: CompileEvent.Finished(false, false, "Failure")
+        if (result.success) status?.onFinish(pkg.value, label, true)
+        else if (!helperUp()) status?.onHelperLost()
+        else status?.onFinish(pkg.value, label, false)
         val finishedAt = clock()
         var badge: StatusBadge? = null
         if (result.success) {
@@ -204,15 +215,15 @@ class CompileViewModel(
      * applies, otherwise a plain compile. Never runs from background
      * maintenance — only from this screen.
      */
-    fun startMaybeTimed(pkg: PackageName, mode: CompileMode): Job? {
+    fun startMaybeTimed(pkg: PackageName, mode: CompileMode, label: String): Job? {
         val r = launches
         val l = _launch.value
         if (r == null || !l.checked || !l.needsBefore || !l.launchable || l.busy != null) {
-            start(pkg, mode)
+            start(pkg, mode, label)
             return null
         }
         if (_state.value.running) return null
-        return r.startTimed(pkg, mode) { p, m -> doCompile(p, m) }
+        return r.startTimed(pkg, mode) { p, m -> doCompile(p, m, label) }
     }
 
     /**
@@ -221,10 +232,12 @@ class CompileViewModel(
      * the pair. On any failure after the reset the app is recompiled first so
      * it is never left in the reset state.
      */
-    fun measure(pkg: PackageName): Job? {
+    fun measure(pkg: PackageName, label: String): Job? {
         val r = launches ?: return null
         if (_state.value.running || _launch.value.busy != null) return null
-        return r.measure(pkg) { p, m -> doCompile(p, m) }
+        // The resetCompiled step runs through ToolsCommands, not doCompile, so it never
+        // reports; the recompile back reports exactly once via doCompile.
+        return r.measure(pkg) { p, m -> doCompile(p, m, label) }
     }
 
     private fun append(line: String) {

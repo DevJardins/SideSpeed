@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -54,6 +55,7 @@ class MaintenanceEngine(
     private val measuring: () -> String? = { null },
     /** Fires once per helper down→up transition so a pending restore can retry. */
     private val onHelperUp: () -> Unit = {},
+    private val status: CompileStatus? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val retryDelayMs: Long = 30 * 60_000L,
     private val maxRetries: Int = 3,
@@ -197,6 +199,7 @@ class MaintenanceEngine(
         // A launch sequence may have started after this job was taken: never compile under it.
         if (pkg == measuring()) return
         val start = clock()
+        status?.onStart(pkg, app.label, mode.arg)
         var finished: CompileEvent.Finished? = null
         try {
             runCompile(name, mode).collect { if (it is CompileEvent.Finished) finished = it }
@@ -208,6 +211,7 @@ class MaintenanceEngine(
         val result = finished ?: CompileEvent.Finished(false, false, "Failure")
         when {
             result.success -> {
+                status?.onFinish(pkg, app.label, true)
                 // The start time, not the end: an update that lands mid-compile stays newer and gets compiled again.
                 prefs.setLastCompile(pkg, LastCompile(start, mode))
                 synchronized(lock) {
@@ -216,8 +220,12 @@ class MaintenanceEngine(
                 }
                 store.addHistory(JobRecord(pkg, app.label, clock(), true, result.message))
             }
-            !helperUp() -> synchronized(lock) { queue.add(pkg) }
+            !helperUp() -> {
+                status?.onHelperLost()
+                synchronized(lock) { queue.add(pkg) }
+            }
             else -> {
+                status?.onFinish(pkg, app.label, false)
                 val attempts = synchronized(lock) {
                     ((failures[pkg]?.attempts ?: 0) + 1).also { failures[pkg] = Failure(app.lastUpdateTime, it, false) }
                 }
@@ -241,10 +249,12 @@ class MaintenanceEngine(
         }
         // The drain loop calls with false on every pass while up; fire only on the transition.
         if (wasDown && !down) runCatching { onHelperUp() }
+        status?.setHelperDown(down)
         publish()
     }
 
     private fun publish() {
+        status?.setQueueWaiting(synchronized(lock) { queue.size })
         _state.value = synchronized(lock) {
             val phases = LinkedHashMap<String, JobPhase>()
             queue.forEach { phases[it] = JobPhase.WAITING }

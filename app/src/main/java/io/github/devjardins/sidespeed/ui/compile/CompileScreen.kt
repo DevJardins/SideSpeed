@@ -113,7 +113,7 @@ fun CompileScreen(
                 LaunchTimeSection(
                     launch = launch,
                     onCheckedChange = vm::setLaunchChecked,
-                    onMeasure = { if (pkg != null) vm.measure(pkg) },
+                    onMeasure = { if (pkg != null) vm.measure(pkg, app.label) },
                 )
             }
 
@@ -129,7 +129,7 @@ fun CompileScreen(
                     Text(COMPILE_NOTE, style = SsType.Body, color = SsColors.TextBody)
                     SsButton(
                         "Start compile",
-                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode, app.label) },
                         enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
                     )
@@ -163,7 +163,7 @@ fun CompileScreen(
                     )
                     SsButton(
                         "Compile again",
-                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode, app.label) },
                         enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
                     )

@@ -5,6 +5,7 @@ import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.data.SelfCompile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -27,6 +28,7 @@ class SelfCompiler(
     private val versionCode: Long,
     private val lastUpdateTime: Long,
     private val debuggable: Boolean,
+    private val status: CompileStatus? = null,
     private val log: (String) -> Unit = { Log.w(TAG, it) },
 ) {
     suspend fun maybeCompile() {
@@ -47,9 +49,12 @@ class SelfCompiler(
             return
         }
         var success = false
+        status?.onStart(ownPackage, SELF_LABEL, CompileMode.SPEED.arg)
         try {
             runCompile(name, CompileMode.SPEED).collect { if (it is CompileEvent.Finished) success = it.success }
         } catch (_: Exception) {
+            if (!helperUp()) status?.onHelperLost()
+            else status?.onFinish(ownPackage, SELF_LABEL, false)
             return
         }
         if (success) {
@@ -57,10 +62,17 @@ class SelfCompiler(
                 prefs.setSelfCompile(SelfCompile(versionCode, lastUpdateTime))
             } catch (_: Exception) {
             }
+            status?.onFinish(ownPackage, SELF_LABEL, true)
+            status?.setSelfOptimized(true)
+        } else {
+            if (!helperUp()) status?.onHelperLost()
+            else status?.onFinish(ownPackage, SELF_LABEL, false)
         }
     }
 
     companion object {
         private const val TAG = "SideSpeedSelfCompile"
+        /** The provider row label while SideSpeed compiles itself. */
+        const val SELF_LABEL = "SideSpeed"
     }
 }

@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.status.CompileStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -59,6 +60,10 @@ class LaunchRunner(
     private val keepAlive: () -> Unit = {},
     private val clock: () -> Long = System::currentTimeMillis,
     private val runs: Int = 3,
+    /** Live compile status; the timed/measure recompiles report through the caller's UiCompile. */
+    private val status: CompileStatus? = null,
+    private val helperUp: suspend () -> Boolean = { true },
+    private val labelOf: (String) -> String? = { null },
 ) {
     private val _measuring = MutableStateFlow<String?>(null)
 
@@ -331,18 +336,29 @@ class LaunchRunner(
         return true
     }
 
+    /**
+     * Restore-path compile: the resetCompiled step never reaches here, so every
+     * compile here is a real recompile and reports exactly one onStart/onFinish
+     * pair, mirroring the maintenance engine (helper loss reports interrupted).
+     */
     private suspend fun quietCompile(pkg: PackageName, mode: CompileMode): Boolean {
+        val label = labelOf(pkg.value) ?: pkg.value
+        status?.onStart(pkg.value, label, mode.arg)
         var ok = false
         try {
             compile.run(pkg, mode).collect { e -> if (e is CompileEvent.Finished) ok = e.success }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
+            ok = false
+        }
+        if (!ok) {
+            if (!helperUp()) status?.onHelperLost() else status?.onFinish(pkg.value, label, false)
             return false
         }
-        if (!ok) return false
         return try {
             prefs.setLastCompile(pkg.value, LastCompile(clock(), mode))
+            status?.onFinish(pkg.value, label, true)
             true
         } catch (e: CancellationException) {
             throw e
