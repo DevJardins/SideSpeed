@@ -5,7 +5,7 @@
 - Since the last update: Batch 5 (re-find stops at the first match and when the gate closes; a closed LAN gate no longer skips tailnet TVs; no extra desktop run on the first poll; the TV address line follows network changes), `464f7e2` (Android companion fingerprints the Wi-Fi under a VPN), `8fcd08e` (adding off a Trusted Network says add, not find), `fe34b53` (TV Wi-Fi address skips a VPN).
 - Suites green: TV app 295, companion 298, desktop 24 (2 live tests skip), companion-android 15.
 - Probe P1 (owner's phone, Tailscale on, no exit node): the companion missed the Trusted Network with Tailscale on, saw it with it off. Fixed by `464f7e2`; the device check (Plan 4 Task 4) is not done. No exit node exists on the tailnet.
-- Owner's Mac: the desktop store has no trusted tailnet, and the Fire TV Cube at 100.79.202.46 is saved under the Home Network (LAN) with no tailnet device ID, probably from an older build; kept alive only at home. To fix: Settings, Trust this tailnet, then remove and re-add 100.79.202.46.
+- Owner's Mac: the desktop store has no trusted tailnet, and the Fire TV Cube at 100.79.202.46 is saved under the Home Network (LAN) with no tailnet device ID, probably from an older build; kept alive only at home. To fix: remove the 100.79.202.46 card and re-add it; adding a tailnet address now trusts the tailnet automatically.
 
 ## Not verified on a device
 - The `464f7e2` fix and the TV Wi-Fi fix; probe P8; re-find; the mDNS/SSDP/ARP sources; the TV address line; Plan 1 Tasks 4 to 6.
