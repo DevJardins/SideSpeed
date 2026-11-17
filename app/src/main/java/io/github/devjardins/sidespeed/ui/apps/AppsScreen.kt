@@ -144,7 +144,6 @@ fun AppsScreen(
                         state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
                         apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
                         else -> LazyColumn(
-                            modifier = rememberDpadRepeatThrottle(),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
                         ) {
@@ -255,7 +254,6 @@ private fun HistoryList(history: Flow<List<JobRecord>>) {
     }
     val format = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
     LazyColumn(
-        modifier = rememberDpadRepeatThrottle(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
     ) {
