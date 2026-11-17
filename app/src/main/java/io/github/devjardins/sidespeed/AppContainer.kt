@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
@@ -19,6 +20,7 @@ import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +65,29 @@ class AppContainer(context: Context) {
             badges = { statusChecker.badges(it) },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
             ownPackage = appContext.packageName,
+        )
+    }
+
+    /** Compiles SideSpeed itself to speed once per install/update; call only while in the background. */
+    val selfCompiler: SelfCompiler by lazy {
+        val pkg = appContext.packageName
+        val info = if (Build.VERSION.SDK_INT >= 33) {
+            appContext.packageManager.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            appContext.packageManager.getPackageInfo(pkg, 0)
+        }
+        SelfCompiler(
+            prefs = prefs,
+            runCompile = { name, mode -> compileRunner.run(name, mode) },
+            helperUp = { helper.ping() != null },
+            ownPackage = pkg,
+            versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            },
+            lastUpdateTime = info.lastUpdateTime,
+            debuggable = (info.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE != 0,
         )
     }
 
