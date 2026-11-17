@@ -274,8 +274,9 @@ green. Away-from-home on another network not yet run.
 - Android overlay trust (weak: VPN network present, 100.x link address, route covers the TV, socket bound to
   the VPN `Network`; no peer identity).
 - Subnet-routed TVs: bind to the router peer's ID + `PrimaryRoutes` containing the TV's /32's subnet + egress
-  check; refuse when a physical interface's connected subnet overlaps. **Declined 2026-11-16 (D4/D5)**.
-- NetBird adapter; MagicDNS names in manual add (resolve, then classify the result); IPv6 overlay addresses. **Declined 2026-11-16 (D4/D5)**.
+  check; refuse when a physical interface's connected subnet overlaps. **Declined 2026-11-16 (D4)**.
+- MagicDNS names in manual add (resolve, then classify the result). **Declined 2026-11-16 (D5)**.
+- NetBird adapter; IPv6 overlay addresses.
 
 ## 8. Open questions for the owner
 
