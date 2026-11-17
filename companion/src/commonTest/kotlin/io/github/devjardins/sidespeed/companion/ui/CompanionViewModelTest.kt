@@ -14,6 +14,8 @@ import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
@@ -246,6 +248,35 @@ class CompanionViewModelTest {
         r.store.saveTv(r.store.tv("tv-1").copy(id = "tv-2", serial = "OTHER", address = "192.168.5.21"))
         r.fake.opened.clear()
         r.vm.restartNow("tv-1")
+        assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
+    }
+
+    @Test
+    fun restartNowOffTheTrustedNetworkIsNotChecked() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING))
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        r.fake.opened.clear()
+        r.vm.restartNow("tv-1")
+        assertEquals(RestartResult("tv-1", RestartOutcome.NOT_CHECKED), r.vm.state.value.lastRestart)
+        assertTrue(r.fake.opened.isEmpty())
+    }
+
+    @Test
+    fun restartNowThatReachesARunningTvIsRestarted() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home"))
+        r.vm.restartNow("tv-1")
+        assertEquals(RestartResult("tv-1", RestartOutcome.RESTARTED), r.vm.state.value.lastRestart)
+        assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
+    }
+
+    @Test
+    fun restartNowThatReachesAnOfflineTvIsChecked() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.NOT_RUNNING))
+        r.vm.restartNow("tv-1")
+        assertEquals(RestartResult("tv-1", RestartOutcome.CHECKED), r.vm.state.value.lastRestart)
         assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
     }
 

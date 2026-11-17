@@ -33,6 +33,7 @@ import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -64,6 +65,7 @@ object Copy {
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
     const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
+    const val NOT_CHECKED_HERE = "Not checked: not on its network"
 
     fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
 
@@ -78,6 +80,12 @@ object Copy {
         TvStatus.UNKNOWN -> "Not checked yet"
     }
 }
+
+/** How a Restart-now press ended for one TV: reached while running, reached while not running, or never contacted. */
+enum class RestartOutcome { RESTARTED, CHECKED, NOT_CHECKED }
+
+/** The outcome of the latest Restart-now press for [tvId]; cleared when the screen has shown it. */
+data class RestartResult(val tvId: String, val outcome: RestartOutcome)
 
 data class TvCardState(
     val id: String,
@@ -106,6 +114,7 @@ data class CompanionUiState(
     val tvs: List<TvCardState> = emptyList(),
     val settings: CompanionSettings = CompanionSettings(),
     val busy: Boolean = false,
+    val lastRestart: RestartResult? = null,
     val error: String? = null,
     /** Addresses of TVs found by "Find TVs" that aren't saved yet. */
     val found: List<String> = emptyList(),
@@ -387,6 +396,11 @@ class CompanionViewModel(
         }
     }
 
+    /** The restart message has been shown (or there is nothing to show): clear it. */
+    fun acknowledgeRestart() {
+        _state.update { it.copy(lastRestart = null) }
+    }
+
     fun removeTv(id: String) {
         locked {
             store.removeTv(id)
@@ -413,10 +427,25 @@ class CompanionViewModel(
 
     private suspend fun runUpkeep(trigger: Trigger, onlyTvId: String? = null) {
         _state.update { it.copy(busy = true) }
+        var report: UpkeepReport? = null
         try {
-            upkeep.runOnce(trigger, onlyTvId)
+            report = upkeep.runOnce(trigger, onlyTvId)
         } finally {
-            refresh()
+            val finished = report
+            if (onlyTvId == null || finished == null) {
+                // A throw still ends busy, but without a report there is no restart outcome to record.
+                refresh()
+            } else {
+                // The outcome lands in the same state update that ends busy,
+                // so the screen never sees one without the other.
+                val status = finished.visited[onlyTvId]
+                val outcome = when {
+                    status == TvStatus.RUNNING -> RestartOutcome.RESTARTED
+                    status != null -> RestartOutcome.CHECKED
+                    else -> RestartOutcome.NOT_CHECKED
+                }
+                refresh(lastRestart = RestartResult(onlyTvId, outcome), updateLastRestart = true)
+            }
         }
     }
 
@@ -481,7 +510,12 @@ class CompanionViewModel(
         runUpkeep(Trigger.APP_OPEN)
     }
 
-    private suspend fun refresh(error: String? = null, settleBusy: Boolean = true) {
+    private suspend fun refresh(
+        error: String? = null,
+        settleBusy: Boolean = true,
+        lastRestart: RestartResult? = null,
+        updateLastRestart: Boolean = false,
+    ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
         val trusted = TrustMatcher.currentTrusted(fp, networks)
@@ -517,6 +551,7 @@ class CompanionViewModel(
                 tvs = cards,
                 settings = store.settings(),
                 busy = if (settleBusy) false else it.busy,
+                lastRestart = if (updateLastRestart) lastRestart else it.lastRestart,
                 error = error,
                 found = if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
             )
