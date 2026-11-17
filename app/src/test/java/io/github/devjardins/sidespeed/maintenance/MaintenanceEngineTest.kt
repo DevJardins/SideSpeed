@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,6 +45,10 @@ private class FakePrefs : Prefs {
     override suspend fun setPairedTls(v: Boolean) {}
     override fun lastCompile(pkg: String): Flow<LastCompile?> = flow { emit(saved[pkg]) }
     override suspend fun setLastCompile(pkg: String, value: LastCompile) { saved[pkg] = value; writes += pkg to value }
+    override fun lastCompiles(): Flow<Map<String, LastCompile>> = flow { emit(saved.toMap()) }
+    val selfCompileFlow = MutableStateFlow<SelfCompile?>(null)
+    override val selfCompile: Flow<SelfCompile?> = selfCompileFlow
+    override suspend fun setSelfCompile(v: SelfCompile) { selfCompileFlow.value = v }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

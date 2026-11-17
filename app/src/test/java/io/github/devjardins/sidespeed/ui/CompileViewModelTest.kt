@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.ui.compile.CompileUiState
@@ -49,6 +50,9 @@ class CompileViewModelTest {
         override suspend fun setPairedTls(v: Boolean) {}
         override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(saved[pkg])
         override suspend fun setLastCompile(pkg: String, value: LastCompile) { saved[pkg] = value }
+        override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
+        override val selfCompile: Flow<SelfCompile?> = MutableStateFlow(null)
+        override suspend fun setSelfCompile(v: SelfCompile) {}
     }
 
     private fun fake() = FakeAdbBackend().apply {
