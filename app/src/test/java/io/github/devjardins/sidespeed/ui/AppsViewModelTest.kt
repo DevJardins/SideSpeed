@@ -4,6 +4,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.apps.headerCaption
 import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.BadgeSource
@@ -122,6 +123,22 @@ class AppsViewModelTest {
         // Debuggable builds show nothing: ART won't compile them.
         assertNull(selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, true))
         assertNull(selfOptimizedPill(null, 42L, 100L, true))
+    }
+
+    @Test fun headerCaptionCombinations() {
+        assertEquals(
+            "This TV: 192.168.5.140 · 100.79.202.46 · Maintenance: 11 waiting",
+            headerCaption("This TV: 192.168.5.140 · 100.79.202.46", "Maintenance: 11 waiting"),
+        )
+        assertEquals(
+            "This TV: 192.168.5.140",
+            headerCaption("This TV: 192.168.5.140", null),
+        )
+        assertEquals(
+            "Maintenance: 11 waiting",
+            headerCaption(null, "Maintenance: 11 waiting"),
+        )
+        assertNull(headerCaption(null, null))
     }
 
     @Test fun manualEntryValidation() {
