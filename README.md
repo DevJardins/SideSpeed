@@ -6,9 +6,9 @@ Sideloaded apps on Android TV and Fire TV skip the compiling that store installs
 
 ## Install on the TV
 
-Sideload the release APK onto your TV with a file-transfer app (for example LocalSend or Downloader) or with `adb install`. SideSpeed appears on the home screen.
+The quickest way: install **Downloader** on the TV (from the Amazon Appstore or Google Play), open it and enter the code **3503400**. It downloads the latest SideSpeed APK; choose **Install** (if the TV asks, allow Downloader to install unknown apps). SideSpeed appears on the home screen.
 
-Download `SideSpeed-<version>.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases). Release APKs are signed with the project key.
+You can also download `SideSpeed-<version>.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
 ## Setup
 
