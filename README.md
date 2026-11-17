@@ -8,7 +8,7 @@ Sideloaded apps on Android TV and Fire TV skip the compiling that store installs
 
 Sideload the release APK onto your TV with a file-transfer app (for example LocalSend or Downloader) or with `adb install`. SideSpeed appears on the home screen.
 
-APKs come from the `ubuntu` artifact of the GitHub Actions build on `main`. CI signs the release APKs with the project key. There is no Releases page.
+Download `SideSpeed-<version>.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases). Release APKs are signed with the project key.
 
 ## Setup
 
@@ -38,12 +38,12 @@ Anything still in speed-profile or a lower filter is upgraded to speed. The tab 
 
 Companion apps for Android phones and for Windows, macOS and Linux. They start the SideSpeed helper on your Fire TV for you, so you do not need a PC and a terminal each time. Fire TV only; on other TVs SideSpeed handles setup itself.
 
-**Install.** The desktop installers are unsigned:
+**Install** from the [Releases page](https://github.com/DevJardins/SideSpeed/releases). The desktop installers are unsigned:
 
-- **Android:** sideload the companion APK from the `ubuntu` build artifact. It is signed like the TV APK.
-- **macOS:** open the `.dmg` from the `macos` build artifact and drag the app to Applications. If macOS says it cannot verify the developer, right-click the app, choose **Open**, then **Open** again.
-- **Windows:** run the `.msi` from the `windows` build artifact. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
-- **Linux:** install the `.deb` or the `.rpm` from the `ubuntu` build artifact.
+- **Android:** sideload `SideSpeed-Companion-<version>.apk` onto your phone. It is signed like the TV APK.
+- **macOS:** open the `.dmg` (Apple silicon) and drag the app to Applications. If macOS says it cannot verify the developer, right-click the app, choose **Open**, then **Open** again.
+- **Windows:** run the `.msi`. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
+- **Linux:** install the `.deb` or the `.rpm`.
 
 **First use:** open the companion and choose your Trusted Network (**Trust this network**). Then **Add a TV**: type its address or use **Find TVs**, and tick **Always allow** when the TV asks.
 
