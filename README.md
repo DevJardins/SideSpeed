@@ -110,6 +110,10 @@ For signed APKs, copy `keystore.properties.example` to `keystore.properties` and
 
 The Downloader code 3503400 and the sidespeed.app links (`/tv`, `/companion.apk`, `/mac`, `/windows`, `/linux`, `/linux-rpm`) fetch `releases/latest/download/<fixed name>`. So every release must include all of these files under exactly these names.
 
+## Support
+
+SideSpeed is free. If it made your TV faster and you want to say thanks, you can [buy me a coffee on Ko-fi](https://ko-fi.com/devjardins).
+
 ## License
 
 GPLv3, see `LICENSE`. Third-party attributions are in `NOTICE`.
