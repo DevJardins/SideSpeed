@@ -22,7 +22,7 @@ jobs:
             echo "SIDESPEED_KEY_ALIAS=${{ secrets.SIDESPEED_KEY_ALIAS }}" >> "$GITHUB_ENV"
             echo "SIDESPEED_KEY_PASSWORD=${{ secrets.SIDESPEED_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
-      - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
+      - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
       - uses: actions/upload-artifact@v4
         with:
           name: ubuntu
