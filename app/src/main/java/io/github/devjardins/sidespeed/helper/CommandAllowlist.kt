@@ -11,7 +11,18 @@ import io.github.devjardins.sidespeed.compile.PackageName
 object CommandAllowlist {
     const val PING = "ping"
 
-    private val MODES = setOf("speed", "speed-profile")
+    private val MODES = setOf("speed", "speed-profile", "verify")
+
+    private val TRIM_CACHES = Regex("^[0-9]{1,15}$")
+
+    private val ANIMATION_KEYS = setOf(
+        "window_animation_scale",
+        "transition_animation_scale",
+        "animator_duration_scale",
+    )
+
+    /** Narrow decimal form for animation scales: `0`, `0.5`, `1.5`, `10`; refuses `11` and wider. */
+    private val ANIMATION_VALUE = Regex("^(0|[1-9][0-9]?)(\\.[0-9]{1,2})?$")
 
     /** Characters a valid request can contain at all: letters, digits, '.', '_', '-' and single spaces. */
     private val ALLOWED_CHARS = Regex("^[A-Za-z0-9._ -]+$")
@@ -46,6 +57,20 @@ object CommandAllowlist {
                 listOf("/system/bin/dumpsys", "package", "dexopt")
             t.size == 3 && t[0] == "dumpsys" && t[1] == "package" ->
                 pkg(t[2])?.let { listOf("/system/bin/dumpsys", "package", it) }
+            t.size == 3 && t[0] == "pm" && t[1] == "trim-caches" && TRIM_CACHES.matches(t[2]) ->
+                listOf("/system/bin/pm", "trim-caches", t[2])
+            t.size == 4 && t[0] == "settings" && t[1] == "get" && t[2] == "global" && t[3] in ANIMATION_KEYS ->
+                listOf("/system/bin/settings", "get", "global", t[3])
+            t.size == 5 && t[0] == "settings" && t[1] == "put" && t[2] == "global" &&
+                t[3] in ANIMATION_KEYS && animationValue(t[4]) ->
+                listOf("/system/bin/settings", "put", "global", t[3], t[4])
+            t.size == 3 && t[0] == "launch-time" ->
+                launchTime(t[1], t[2])
+            t.size == 1 && t[0] == "bring-back" ->
+                listOf(
+                    "/system/bin/am", "start", "-n",
+                    "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
+                )
             else -> null
         }
     }
@@ -58,4 +83,19 @@ object CommandAllowlist {
 
     /** A validated package name, and only if validation didn't change it (PackageName.parse trims). */
     private fun pkg(raw: String): String? = PackageName.parse(raw)?.value?.takeIf { it == raw }
+
+    /** An animation scale in narrow decimal form, at most 10 (restores non-standard originals like 1.5). */
+    private fun animationValue(raw: String): Boolean =
+        ANIMATION_VALUE.matches(raw) && (raw.toDoubleOrNull() ?: Double.NaN) <= 10.0
+
+    /**
+     * A launch-timing request: validated package + fully-qualified activity class tokens, mapped to
+     * `-n pkg/cls`. The class uses the same rules as a package name (no leading `.`); the app resolves
+     * short names to full ones before sending.
+     */
+    private fun launchTime(pkgRaw: String, clsRaw: String): List<String>? {
+        val p = pkg(pkgRaw) ?: return null
+        val c = pkg(clsRaw) ?: return null
+        return listOf("/system/bin/am", "start", "-W", "-S", "-n", "$p/$c")
+    }
 }
