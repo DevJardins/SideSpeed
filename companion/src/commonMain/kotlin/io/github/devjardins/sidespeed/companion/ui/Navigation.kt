@@ -33,7 +33,7 @@ private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 
 /** Root of the companion UI, shared by the Android and desktop apps. */
 @Composable
-fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "SideSpeed Companion · GPL-3.0") {
+fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.") {
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
     var dismissedFirstRun by remember { mutableStateOf(false) }

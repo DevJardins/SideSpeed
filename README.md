@@ -59,3 +59,6 @@ For a signed APK, copy `keystore.properties.example` to `keystore.properties` an
 
 ## License
 GPLv3, see `LICENSE`. Third-party attributions are in `NOTICE`.
+
+## Logo
+The SideSpeed logo and icons are a modified version of the Android robot. The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License (https://creativecommons.org/licenses/by/3.0/).
