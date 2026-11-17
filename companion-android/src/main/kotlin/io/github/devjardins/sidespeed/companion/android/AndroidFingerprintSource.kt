@@ -3,6 +3,8 @@ package io.github.devjardins.sidespeed.companion.android
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.RouteInfo
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
@@ -16,6 +18,9 @@ data class LinkData(
     val linkAddresses: List<String>,
     val dnsServers: List<String>,
 )
+
+/** One network Android knows about, reduced to what picking the LAN needs. */
+data class NetworkCandidate(val isVpn: Boolean, val isWifiOrEthernet: Boolean, val link: LinkData?)
 
 object FingerprintMapping {
     /**
@@ -35,6 +40,16 @@ object FingerprintMapping {
         return null
     }
 
+    /**
+     * The link to fingerprint. The active network wins unless it is a VPN: with Tailscale (or any VPN) up,
+     * Android reports the VPN as active, and a VPN never maps to a fingerprint, so the Wi-Fi or Ethernet
+     * network underneath is used instead. Mobile data is never picked.
+     */
+    fun pickLan(active: NetworkCandidate?, all: List<NetworkCandidate>): LinkData? {
+        if (active != null && !active.isVpn) return active.link
+        return all.firstOrNull { !it.isVpn && it.isWifiOrEthernet && map(it.link) != null }?.link
+    }
+
     /** "address/prefix" for an IPv4 host address; null for IPv6 or a missing address. */
     fun ipv4Cidr(hostAddress: String?, prefixLength: Int): String? =
         hostAddress?.takeIf { '.' in it && ':' !in it }?.let { "$it/$prefixLength" }
@@ -43,7 +58,23 @@ object FingerprintMapping {
 class AndroidFingerprintSource(context: Context) : FingerprintSource {
     private val cm = context.getSystemService(ConnectivityManager::class.java)
 
-    override suspend fun current(): NetworkFingerprint? = FingerprintMapping.map(linkData(cm.activeNetwork?.let(cm::getLinkProperties)))
+    override suspend fun current(): NetworkFingerprint? {
+        val active = cm.activeNetwork?.let(::candidate)
+        @Suppress("DEPRECATION") // allNetworks is the only synchronous list; a callback-tracked set would add state.
+        val all = cm.allNetworks.mapNotNull(::candidate)
+        return FingerprintMapping.map(FingerprintMapping.pickLan(active, all))
+    }
+
+    /** Null when the network vanished between calls (no capabilities). */
+    private fun candidate(network: Network): NetworkCandidate? {
+        val caps = cm.getNetworkCapabilities(network) ?: return null
+        return NetworkCandidate(
+            isVpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
+            isWifiOrEthernet = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
+            link = linkData(cm.getLinkProperties(network)),
+        )
+    }
 
     companion object {
         fun linkData(lp: LinkProperties?): LinkData? {

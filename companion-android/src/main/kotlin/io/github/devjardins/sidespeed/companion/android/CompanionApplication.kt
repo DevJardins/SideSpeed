@@ -4,6 +4,8 @@ import android.app.Application
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.MdnsSource
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
@@ -76,10 +78,18 @@ class CompanionApplication : Application() {
         val events = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
         appScope.launch {
             var last = graph.fingerprints.current()
-            cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+            fun callback() = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) { events.tryEmit(Unit) }
                 override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) { events.tryEmit(Unit) }
-            })
+                override fun onLost(network: Network) { events.tryEmit(Unit) }
+            }
+            cm.registerDefaultNetworkCallback(callback())
+            // Under a VPN the default network stays the VPN when the Wi-Fi changes, so watch Wi-Fi/Ethernet too.
+            val lan = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                .build()
+            cm.registerNetworkCallback(lan, callback())
             // DNS can be briefly empty right after joining: let it settle before reading the fingerprint.
             events.debounce(3_000).collect {
                 val now = graph.fingerprints.current()
