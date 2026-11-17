@@ -168,7 +168,7 @@ Review checklist for the parallel work:
 - Manual add must exclude Tailscale's reserved blocks (Quad100 serves DNS and HTTP on 100.100.100.100 [2])
   and must not loosen `sweepable` (add a test that `100.64.0.0/16` is not sweepable).
 - Until D1 lands, a 100.x TV should still be saved under the current physical Trusted Network: it will be
-  kept alive only at home. Say so in the UI ("Kept alive while on <network>").
+  kept alive only at home. Say so in the UI ("Kept alive while on <network>"). **Done**: `d4fd954`.
 - The Tailscale host source should take `--json` output through a pure parser (fixture tests), call the CLI
   with a fixed argv and a 5 s timeout like `DesktopFingerprintSource.run`, locate the CLI at fixed paths
   (`/Applications/Tailscale.app/Contents/MacOS/Tailscale`, `C:\Program Files\Tailscale\tailscale.exe`,
@@ -238,19 +238,36 @@ failing test, then the code.
 
 - **T2.1 `TrustedOverlay` + store** (`net/TrustedOverlay.kt`, `store/JsonFileCompanionStore`): round-trip
   test; old stores without the key load unchanged; removing a TrustedOverlay removes its TVs (mirror
-  `removeTrustedNetwork`).
+  `removeTrustedNetwork`). **Done** (`d6528a1`).
 - **T2.2 `OverlayTrustMatcher.matches(snapshot, trusted)`**: table test of 5.1 (each field mismatch false;
-  `TUN:false` false; not Running false).
+  `TUN:false` false; not Running false). **Done** (`d6528a1`).
 - **T2.3 `Gate` interface, `LanGate` (wraps today's `gateOpen`), `OverlayGate`**: tests for each step in
   5.2, including "peer IP changed → verdict carries the new address" and "egress is en0 → closed".
+  **Done** (`d358b4c`, `f1a0c37`; built as `OverlayGate.addressToUse`/`bindingFor`, the LAN gate stays
+  `Upkeep.gateOpen`, no `Gate` interface).
 - **T2.4 `Upkeep` takes a `Gate` per scope**: existing `UpkeepTest` passes with `LanGate`; new tests: an
   overlay TV is never re-found by `Scanner` (fake scanner asserts zero calls); gate closing between two TVs
   stops the run with `gated = true`; moved peer IP updates `address` only after the serial matches.
+  **Done** (`d358b4c`).
 - **T2.5 `SavedTv.overlayPeerId` + `addTv` overlay path** in `CompanionViewModel`: adding 100.x while a
   TrustedOverlay matches binds the peer whose IPs contain it; rejects if no peer has it; "existing by
   serial" becomes "by serial and scope". `FakeTvSession.opened` stays empty in Find tests.
+  **Done** (`f1a0c37`).
 - **T2.6 "Trust this tailnet" UI action** `trustCurrentOverlay(name)` mirroring `trustCurrentNetwork`.
+  **Done** (`7ee79e4`).
 - **T2.7 Tray timers / Autostart** run upkeep when either kind of scope matches; report which one.
+  **Done** (`b79bb73`; banner: `422adb7`).
+
+Owner decision 2026-11-16 (changes D-level behaviour): there is no manual "Trust this tailnet" step.
+Adding a TV on the tailnet the computer is signed into trusts that tailnet automatically (`5aeb35f`).
+Shared-in peers are still refused, and a TV bound to another tailnet is still not trusted. Android is
+unchanged (no Tailscale source). TV cards show how each one was last reached (`d54fa2b`, `fb7a32f`): a
+2dp border in ACCENT for LAN, 0xFF8FAACC for tailnet, 0xFFC98A8A for unreachable, and no border when not
+checkable here.
+
+Device check 2026-11-16 (Mac, Onn at 100.123.103.8): add over the tailnet auto-trusts it; Tailscale off on
+the Mac gives Not checked; Tailscale back gives a blue check; Tailscale off on the Onn gives red; LAN card
+green. Away-from-home on another network not yet run.
 
 ### Phase 3: needs D3/D4/D5 (do not start without the owner)
 
