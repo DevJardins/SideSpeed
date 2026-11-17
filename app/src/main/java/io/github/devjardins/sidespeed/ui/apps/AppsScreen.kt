@@ -96,7 +96,6 @@ fun AppsScreen(
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Pick an app to compile", style = SsType.Headline, color = SsColors.TextPrimary)
-                tvAddress?.let { Spacer(Modifier.width(16.dp)); Text(it, style = SsType.Caption, color = SsColors.TextSecondary) }
                 Spacer(Modifier.weight(1f))
                 selfOptimizedPill(selfRecord, selfVersionCode, selfLastUpdateTime, selfDebuggable)?.let {
                     StatusPill(it)
@@ -104,8 +103,8 @@ fun AppsScreen(
                 }
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
-            maintenanceLine(maintenanceState)?.let {
-                Text(it, style = SsType.Caption, color = SsColors.TextSecondary)
+            headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
+                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Tab.entries.forEach { t ->

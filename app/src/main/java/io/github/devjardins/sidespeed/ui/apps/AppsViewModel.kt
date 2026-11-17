@@ -79,6 +79,21 @@ fun maintenanceLine(state: MaintenanceState): String? = when {
     else -> "Maintenance: up to date"
 }
 
+/**
+ * The second header line: the "This TV: …" caption and the maintenance line joined with " · ".
+ * Shows whichever exists, or null when neither does.
+ */
+fun headerCaption(tvAddress: String?, maintenance: String?): String? {
+    val tv = tvAddress?.takeIf { it.isNotBlank() }
+    val line = maintenance?.takeIf { it.isNotBlank() }
+    return when {
+        tv != null && line != null -> "$tv · $line"
+        tv != null -> tv
+        line != null -> line
+        else -> null
+    }
+}
+
 class AppsViewModel(
     private val source: AppSource,
     private val badgeSource: BadgeSource,
