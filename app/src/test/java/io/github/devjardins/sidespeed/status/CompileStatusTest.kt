@@ -121,6 +121,19 @@ class CompileStatusTest {
         assertEquals(1_800_000L, row.activeStartedMs)
     }
 
+    @Test fun helperLostPersistsAsInterruptedAcrossRestore() {
+        val t = tracker()
+        t.onStart("com.example.app", "Example", "speed")
+        t.onHelperLost()
+        val saved = t.export()
+        val rebooted = tracker()
+        rebooted.restore(saved)
+        val row = rebooted.snapshot()
+        assertEquals(CompilePhase.INTERRUPTED, row.phase)
+        assertEquals("com.example.app", row.activePkg)
+        assertEquals("Example", row.activeLabel)
+    }
+
     @Test fun restoreOfNothingStaysIdle() {
         val t = tracker()
         t.restore(null)

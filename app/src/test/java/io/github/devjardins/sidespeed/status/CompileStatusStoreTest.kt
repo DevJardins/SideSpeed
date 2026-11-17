@@ -14,18 +14,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.nio.file.Files
 
-private class FakeCompileStatusStore : CompileStatusStore {
-    var saved: PersistedCompileStatus? = null
-    var loads = 0
-    override suspend fun load(): PersistedCompileStatus? {
-        loads++
-        return saved
-    }
-    override suspend fun save(value: PersistedCompileStatus?) {
-        saved = value
-    }
-}
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class CompileStatusStoreTest {
     private var now = 1000L

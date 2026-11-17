@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -167,8 +168,9 @@ class LaunchTimeStateTest {
         prefs = prefs,
         dispatcher = dispatcher,
         launches = launches,
+        clock = { 1234L },
         status = status,
-    ) { 1234L }
+    )
 
     /** Flushes the test scheduler and the ViewModel's own dispatcher. */
     private suspend fun kotlinx.coroutines.test.TestScope.settle() {

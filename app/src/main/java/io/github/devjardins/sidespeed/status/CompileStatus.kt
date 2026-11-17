@@ -143,7 +143,10 @@ class CompileStatusTracker(
     }
 
     fun export(): PersistedCompileStatus? = synchronized(lock) {
-        if (current == null && last == null) null else PersistedCompileStatus(current, last)
+        // An interrupted compile is still in progress until the retry starts: persist it as such
+        // so a reboot reports it interrupted instead of dropping it.
+        val pending = current ?: interrupted
+        if (pending == null && last == null) null else PersistedCompileStatus(pending, last)
     }
 
     /** A compile still in progress at shutdown died with the process: report it interrupted. */
