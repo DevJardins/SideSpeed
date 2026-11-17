@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
@@ -19,6 +20,7 @@ import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,6 +31,9 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import java.net.Inet4Address
 import java.net.NetworkInterface
+
+/** SideSpeed's own install identity, read once from the PackageManager. */
+data class SelfBuild(val versionCode: Long, val lastUpdateTime: Long, val debuggable: Boolean)
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -63,6 +68,40 @@ class AppContainer(context: Context) {
             badges = { statusChecker.badges(it) },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
             ownPackage = appContext.packageName,
+        )
+    }
+
+    /** SideSpeed's own install identity; shared by [selfCompiler] and the Apps header pill. */
+    val selfBuild: SelfBuild by lazy {
+        val info = if (Build.VERSION.SDK_INT >= 33) {
+            appContext.packageManager.getPackageInfo(
+                appContext.packageName,
+                PackageManager.PackageInfoFlags.of(0),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+        }
+        SelfBuild(
+            versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            },
+            lastUpdateTime = info.lastUpdateTime,
+            debuggable = (info.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        )
+    }
+
+    /** Compiles SideSpeed itself to speed once per install/update; call only while in the background. */
+    val selfCompiler: SelfCompiler by lazy {
+        SelfCompiler(
+            prefs = prefs,
+            runCompile = { name, mode -> compileRunner.run(name, mode) },
+            helperUp = { helper.ping() != null },
+            ownPackage = appContext.packageName,
+            versionCode = selfBuild.versionCode,
+            lastUpdateTime = selfBuild.lastUpdateTime,
+            debuggable = selfBuild.debuggable,
         )
     }
 

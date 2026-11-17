@@ -10,6 +10,11 @@ class CommandAllowlistTest {
             listOf("/system/bin/pm", "compile", "-m", "speed", "-f", "com.nuvio.tv"),
             CommandAllowlist.toArgv("pm compile -m speed -f com.nuvio.tv"),
         )
+        // The self-compile command for our own package is allowed too.
+        assertEquals(
+            listOf("/system/bin/pm", "compile", "-m", "speed", "-f", "io.github.devjardins.sidespeed"),
+            CommandAllowlist.toArgv("pm compile -m speed -f io.github.devjardins.sidespeed"),
+        )
         assertEquals(
             listOf("/system/bin/pm", "compile", "-m", "speed-profile", "-f", "com.nuvio.tv"),
             CommandAllowlist.toArgv("pm compile -m speed-profile -f com.nuvio.tv"),

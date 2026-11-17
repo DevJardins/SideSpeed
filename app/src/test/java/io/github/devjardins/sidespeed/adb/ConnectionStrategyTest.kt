@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.adb
 
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,6 +30,9 @@ class ConnectionStrategyTest {
         override suspend fun setPairedTls(v: Boolean) { tlsState.value = v }
         override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
         override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
+        override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
+        override val selfCompile: Flow<SelfCompile?> = MutableStateFlow(null)
+        override suspend fun setSelfCompile(v: SelfCompile) {}
     }
 
     private fun strategy(

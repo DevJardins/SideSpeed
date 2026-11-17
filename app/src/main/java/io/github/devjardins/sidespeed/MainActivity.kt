@@ -66,6 +66,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Self-compile only while SideSpeed is in the background: compiling the foreground app may kill it.
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                lifecycleScope.launch {
+                    runCatching { (application as SideSpeedApp).container.selfCompiler.maybeCompile() }
+                }
+            }
+        })
         lifecycleScope.launch {
             if (isArmed((application as SideSpeedApp).container.maintenanceStore)) MaintenanceService.start(applicationContext)
         }
@@ -118,7 +126,7 @@ class MainActivity : ComponentActivity() {
                     !ready -> SetupScreen(setupVm, onReady = { ready = true })
                     app == null -> AppsScreen(
                         appsVm,
-                        lastCompile = (application as SideSpeedApp).container.prefs::lastCompile,
+                        lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
                         icon = icons,
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         history = (application as SideSpeedApp).container.maintenanceStore.history,
@@ -132,6 +140,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         tvAddress = tvAddress,
+                        selfCompile = (application as SideSpeedApp).container.prefs.selfCompile,
+                        selfVersionCode = (application as SideSpeedApp).container.selfBuild.versionCode,
+                        selfLastUpdateTime = (application as SideSpeedApp).container.selfBuild.lastUpdateTime,
+                        selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running

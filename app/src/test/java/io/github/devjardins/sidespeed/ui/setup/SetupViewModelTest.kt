@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.data.SelfCompile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -48,6 +49,9 @@ class SetupViewModelTest {
         override suspend fun setPairedTls(v: Boolean) { tls.value = v }
         override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
         override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
+        override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
+        override val selfCompile: Flow<SelfCompile?> = MutableStateFlow(null)
+        override suspend fun setSelfCompile(v: SelfCompile) {}
     }
 
     /**

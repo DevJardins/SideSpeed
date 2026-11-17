@@ -2,7 +2,9 @@ package io.github.devjardins.sidespeed.ui
 
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
+import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.BadgeSource
 import io.github.devjardins.sidespeed.ui.apps.ManualResult
@@ -94,6 +96,32 @@ class AppsViewModelTest {
         assertEquals(Pill("Checking…", PillTone.NEUTRAL), pillFor(true, null))
         // A reload keeps the known badge instead of flashing "Checking…".
         assertEquals(Pill("speed ✓", PillTone.OK), pillFor(true, StatusBadge.SPEED_OK))
+    }
+
+    @Test fun selfOptimizedPillStates() {
+        // Matching record: SideSpeed itself is optimized.
+        assertEquals(
+            Pill("SideSpeed optimized", PillTone.OK),
+            selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, false),
+        )
+        // No record yet: optimizes itself when left.
+        assertEquals(
+            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
+            selfOptimizedPill(null, 42L, 100L, false),
+        )
+        // Stale record from an older version.
+        assertEquals(
+            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
+            selfOptimizedPill(SelfCompile(41L, 100L), 42L, 100L, false),
+        )
+        // Stale record from an older update of the same version.
+        assertEquals(
+            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
+            selfOptimizedPill(SelfCompile(42L, 99L), 42L, 100L, false),
+        )
+        // Debuggable builds show nothing: ART won't compile them.
+        assertNull(selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, true))
+        assertNull(selfOptimizedPill(null, 42L, 100L, true))
     }
 
     @Test fun manualEntryValidation() {

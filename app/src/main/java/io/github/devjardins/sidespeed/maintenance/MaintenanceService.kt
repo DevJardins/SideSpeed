@@ -112,7 +112,9 @@ class MaintenanceService : Service() {
 
     private fun promote(n: Notification) {
         val type = foregroundServiceType(Build.VERSION.SDK_INT)
-        if (type != null) startForeground(NOTIFICATION_ID, n, type) else startForeground(NOTIFICATION_ID, n)
+        // The 3-arg overload needs API 29; type is non-null only from API 29 up, spelled out for lint.
+        if (Build.VERSION.SDK_INT >= 29 && type != null) startForeground(NOTIFICATION_ID, n, type)
+        else startForeground(NOTIFICATION_ID, n)
     }
 
     private fun notification(text: String): Notification {
