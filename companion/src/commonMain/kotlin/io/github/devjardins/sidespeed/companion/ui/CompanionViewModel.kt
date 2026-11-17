@@ -69,6 +69,9 @@ object Copy {
     const val UNREACHABLE = "Couldn't reach that address on this network"
     const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
     const val NOT_CHECKED_HERE = "Not checked: not on its network"
+    const val OLDER_COPY =
+        "This copy of SideSpeed Companion is older than the one that saved your TVs. " +
+            "Changes won't be saved; open the newest copy instead."
 
     fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
 
@@ -113,6 +116,11 @@ data class TailnetState(val name: String, val trusted: Boolean, val ready: Boole
 
 data class CompanionUiState(
     val loaded: Boolean = false,
+    /**
+     * The store file was saved by a newer copy of the companion: the store is read-only and Home shows
+     * a persistent banner ([Copy.OLDER_COPY]) instead of the edits it drops.
+     */
+    val savedByNewerVersion: Boolean = false,
     /** No Trusted Network chosen yet: the first-run screen shows and nothing touches the network. */
     val firstRun: Boolean = true,
     val currentNetwork: NetworkFingerprint? = null,
@@ -581,6 +589,7 @@ class CompanionViewModel(
         _state.update {
             it.copy(
                 loaded = true,
+                savedByNewerVersion = store.savedByNewerVersion,
                 firstRun = networks.isEmpty() && overlays.isEmpty(),
                 currentNetwork = fp,
                 trustedNetworkName = trusted?.displayName,

@@ -118,7 +118,9 @@ class Upkeep(
         var overlayClosed = false
         var lanClosed = false
         val userAction = trigger == Trigger.APP_OPEN || trigger == Trigger.RESTART_NOW
-        if (userAction && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
+        // A store saved by a newer copy is read-only: upkeep still checks and restarts, but saves nothing.
+        val readOnly = store.savedByNewerVersion
+        if (userAction && !readOnly && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
 
         val scopeIds = setOfNotNull(lan?.id, tailnet?.id)
         val ids = store.tvs().filter { it.trustedNetworkId in scopeIds && (onlyTvId == null || it.id == onlyTvId) }.map { it.id }
@@ -138,7 +140,8 @@ class Upkeep(
                 if (lan == null || !gateOpen(lan)) run { lanClosed = true; null }
                 else check(saved, lan, restarted)
             } ?: continue
-            val stored = store.updateTv(id) { current -> merge(current, saved, checked.tv) }
+            // Read-only: the check still counts as visited, but nothing is written back.
+            val stored = if (readOnly) true else store.updateTv(id) { current -> merge(current, saved, checked.tv) }
             if (stored && checked.attempted) visited[id] = checked.tv.status
             if (checked.gateClosed) {
                 // Only a LAN check reports a closed gate; the overlay branch keeps its own flag.
@@ -293,6 +296,7 @@ class Upkeep(
     }
 
     private suspend fun rememberPrompted(networkId: String, host: String, now: Long) {
+        if (store.savedByNewerVersion) return
         val kept = store.promptedHosts().filter { it.isFresh(now) && !(it.trustedNetworkId == networkId && it.address == host) }
         store.savePromptedHosts(kept + PromptedHost(networkId, host, now))
     }

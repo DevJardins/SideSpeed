@@ -163,6 +163,17 @@ class UpkeepTest {
         assertTrue(fake.closed, "session is closed after the visit")
     }
 
+    @Test fun readOnlyStoreStillChecksButSavesNothing() = runTest {
+        val before = tv("a", "192.168.5.50", name = "Living room")
+        val store = InMemoryCompanionStore(listOf(before), listOf(homeNet), savedByNewerVersion = true)
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = runningTv("SER-a") }
+        val report = upkeep(store, net).runOnce(Trigger.APP_OPEN)
+        assertTrue(net.opened.isNotEmpty(), "upkeep still checks the TV")
+        assertEquals(mapOf("a" to TvStatus.RUNNING), report.visited, "the check still counts as visited")
+        assertEquals(before, store.tv("a"), "a read-only store saves nothing")
+        assertTrue(store.promptedHosts().isEmpty())
+    }
+
     @Test fun threeUnreachableRunsGoOfflineThenRefindByScan() = runTest {
         val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(status = TvStatus.RUNNING)), listOf(homeNet))
         val net = FakeNet()

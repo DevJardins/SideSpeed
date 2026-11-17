@@ -9,6 +9,7 @@ class InMemoryCompanionStore(
     networks: List<TrustedNetwork> = emptyList(),
     overlays: List<TrustedOverlay> = emptyList(),
     private var settings: CompanionSettings = CompanionSettings(),
+    override var savedByNewerVersion: Boolean = false,
 ) : CompanionStore {
     private val tvs = tvs.toMutableList()
     private val networks = networks.toMutableList()

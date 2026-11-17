@@ -69,6 +69,13 @@ fun HomeScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (state.savedByNewerVersion) {
+            SsText(
+                Copy.OLDER_COPY,
+                Ss.body.copy(color = Ss.dangerText),
+                Modifier.fillMaxWidth().background(Ss.dangerBg, RoundedCornerShape(12.dp)).padding(14.dp),
+            )
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SsLogoMark(30.dp)
             SsText("SideSpeed", Ss.title, Modifier.weight(1f))

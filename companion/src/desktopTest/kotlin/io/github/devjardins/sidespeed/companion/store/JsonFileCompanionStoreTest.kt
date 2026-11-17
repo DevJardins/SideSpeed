@@ -12,6 +12,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class JsonFileCompanionStoreTest {
@@ -195,6 +196,73 @@ class JsonFileCompanionStoreTest {
         assertEquals(p, JsonFileCompanionStore(dir).promptedHosts())
         s.saveTv(tv)
         assertEquals(emptyList(), JsonFileCompanionStore(dir).promptedHosts())
+    }
+
+    @Test fun newerFileIsNeverRewrittenAndFlagIsSet() = runBlocking {
+        val original = """{"version":3,"tvs":[{"id":"tv1","name":"TV","address":"192.168.5.50","serial":"S","trustedNetworkId":"net1","status":"RUNNING"}],"trustedNetworks":[],"trustedOverlays":[],"promptedHosts":[],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false}}"""
+        file.writeText(original)
+        val s = JsonFileCompanionStore(dir)
+        assertTrue(s.savedByNewerVersion, "a v3 file sets the newer-data flag")
+        assertEquals(listOf("tv1"), s.tvs().map { it.id }, "a newer file still loads what can be read")
+        s.saveTv(tv.copy(id = "tv2", serial = "S2"))
+        assertFalse(s.updateTv("tv1") { it.copy(name = "Renamed") })
+        s.saveTrustedNetwork(network)
+        s.saveSettings(CompanionSettings(notifications = true))
+        s.removeTv("tv1")
+        assertEquals(listOf("tv1"), s.tvs().map { it.id }, "saves are dropped in memory too")
+        assertEquals(original, file.readText(), "no save may rewrite a newer file")
+        assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") }, "no backup is taken for a newer file")
+    }
+
+    @Test fun olderFileIsBackedUpOnFirstSaveThenWrittenAsV2() = runBlocking {
+        val original = """{"version":1,"tvs":[],"trustedNetworks":[],"settings":{}}"""
+        file.writeText(original)
+        File(dir, "companion.json.v9.bak").writeText("stale")
+        val s = JsonFileCompanionStore(dir)
+        assertFalse(s.savedByNewerVersion)
+        s.saveSettings(CompanionSettings(intervalMinutes = 60))
+        val bak = File(dir, "${JsonFileCompanionStore.FILE_NAME}.v1.bak")
+        assertEquals(original, bak.readText(), "the original v1 file is kept next to the new one")
+        assertEquals(null, dir.listFiles()!!.firstOrNull { it.name.endsWith(".v9.bak") }, "only the most recent backup is kept")
+        val text = file.readText()
+        assertTrue(text.contains("\"version\":2"), "the upgraded file says v2: $text")
+        assertEquals(60, JsonFileCompanionStore(dir).settings().intervalMinutes)
+        s.saveSettings(CompanionSettings(intervalMinutes = 30))
+        assertEquals(original, bak.readText(), "the backup is taken only on the first save")
+        assertEquals(1, dir.listFiles()!!.count { it.name.endsWith(".bak") })
+    }
+
+    @Test fun missingVersionIsTreatedAsV1() = runBlocking {
+        val original = """{"tvs":[],"settings":{}}"""
+        file.writeText(original)
+        val s = JsonFileCompanionStore(dir)
+        assertFalse(s.savedByNewerVersion)
+        s.saveSettings(CompanionSettings())
+        assertEquals(original, File(dir, "${JsonFileCompanionStore.FILE_NAME}.v1.bak").readText())
+        assertTrue(file.readText().contains("\"version\":2"))
+    }
+
+    @Test fun invalidVersionIsTreatedAsV1() = runBlocking {
+        val original = """{"version":"three","tvs":[],"settings":{}}"""
+        file.writeText(original)
+        val s = JsonFileCompanionStore(dir)
+        assertFalse(s.savedByNewerVersion)
+        s.saveSettings(CompanionSettings())
+        assertEquals(original, File(dir, "${JsonFileCompanionStore.FILE_NAME}.v1.bak").readText())
+    }
+
+    @Test fun currentFileRoundTripsWithNoBackup() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv)
+        s.saveSettings(CompanionSettings(intervalMinutes = 60))
+        assertTrue(file.readText().contains("\"version\":2"), "fresh saves say v2")
+        assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") }, "no backup for a current file")
+        val r = JsonFileCompanionStore(dir)
+        assertFalse(r.savedByNewerVersion)
+        assertEquals(tv, r.tvs().single())
+        r.saveSettings(CompanionSettings(intervalMinutes = 30))
+        assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") })
+        assertEquals(30, JsonFileCompanionStore(dir).settings().intervalMinutes)
     }
 
     @Test fun fileAndDirectoryAreOwnerOnly() = runBlocking {

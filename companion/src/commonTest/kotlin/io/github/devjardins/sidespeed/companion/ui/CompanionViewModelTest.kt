@@ -756,4 +756,19 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(false, vm.state.value.busy)
     }
+
+    @Test
+    fun savedByNewerVersionShowsTheOlderCopyBanner() = runTest(UnconfinedTestDispatcher()) {
+        val r = Rig(this, InMemoryCompanionStore(networks = listOf(homeNet), savedByNewerVersion = true), tv(), home)
+        runCurrent()
+        assertTrue(r.vm.state.value.savedByNewerVersion, "the banner shows when the flag is set")
+        assertEquals(
+            "This copy of SideSpeed Companion is older than the one that saved your TVs. " +
+                "Changes won't be saved; open the newest copy instead.",
+            Copy.OLDER_COPY,
+        )
+        val plain = rig(trusted = true)
+        runCurrent()
+        assertEquals(false, plain.vm.state.value.savedByNewerVersion, "no banner for a current file")
+    }
 }

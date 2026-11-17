@@ -4,6 +4,7 @@ import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -24,6 +25,13 @@ import java.nio.file.StandardCopyOption
  *
  * The file and its directory are owner-only (POSIX 0600 / 0700; best effort on Windows, whose per-user app-data
  * ACL already restricts access), and the temp file is fsynced before the rename.
+ *
+ * Versioning: the file carries a `version` number. A file saved by a newer copy (a greater version than
+ * [VERSION]) loads what can be read but puts the store in a read-only "newer data" mode: every save is a
+ * no-op that leaves the file byte-for-byte unchanged, and [savedByNewerVersion] is true so the UI can say
+ * so. A file saved by an older copy (a lower version) is copied to `companion.json.v<old>.bak` next to the
+ * file on the first save — keeping only the most recent backup — and then written at [VERSION]. A missing
+ * or invalid `version` reads as 1.
  */
 class JsonFileCompanionStore(private val dir: File) : CompanionStore {
     private data class State(
@@ -37,6 +45,19 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
     private val mutex = Mutex()
     private var state: State? = null
     private var loadedCorrupt = false
+    private var loadedFromFile = false
+    private var loadedVersion: Long = VERSION.toLong()
+    private var backupDone = false
+    @Volatile private var readOnlyNewer = false
+
+    override val savedByNewerVersion: Boolean
+        get() {
+            // The flag must answer even before the first read, so load synchronously here when nothing
+            // has been read yet; later reads reuse the cached state. Internal saves use [readOnlyNewer]
+            // directly and never take this path while holding [mutex].
+            if (state == null) runBlocking { mutex.withLock { loaded() } }
+            return readOnlyNewer
+        }
 
     private val file get() = File(dir, FILE_NAME)
 
@@ -52,11 +73,15 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     override suspend fun updateTv(id: String, transform: (SavedTv) -> SavedTv): Boolean = mutex.withLock {
         val current = loaded()
+        // Read-only "newer data" mode: report that nothing was saved and leave the file untouched.
+        if (readOnlyNewer) return@withLock false
         val old = current.tvs.firstOrNull { it.id == id } ?: return@withLock false
         val new = transform(old)
         require(new.id == id) { "updateTv cannot change the id" }
         SavedTv.requireValid(new)
+        backupIfNeeded()
         commit(current.copy(tvs = current.tvs.upsert(new) { x -> x.id }))
+        loadedVersion = VERSION.toLong()
         true
     }
 
@@ -82,7 +107,14 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     private suspend fun <T> read(pick: (State) -> T): T = mutex.withLock { pick(loaded()) }
 
-    private suspend fun update(change: (State) -> State) = mutex.withLock { commit(change(loaded())) }
+    private suspend fun update(change: (State) -> State) = mutex.withLock {
+        val current = loaded()
+        // Read-only "newer data" mode: drop the change so the file stays byte-for-byte unchanged.
+        if (readOnlyNewer) return@withLock
+        backupIfNeeded()
+        commit(change(current))
+        loadedVersion = VERSION.toLong()
+    }
 
     /** Caller holds [mutex]. */
     private suspend fun commit(next: State) {
@@ -94,9 +126,17 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     private fun load(): State {
         val f = file
-        if (!f.exists()) return State()
+        if (!f.exists()) {
+            loadedFromFile = false
+            loadedVersion = VERSION.toLong()
+            return State()
+        }
+        loadedFromFile = true
         return try {
-            decode(MiniJson.parse(f.readText(Charsets.UTF_8))) ?: throw MiniJson.Malformed("Not a store object")
+            val root = MiniJson.parse(f.readText(Charsets.UTF_8))
+            loadedVersion = (root as? Map<*, *>)?.fileVersion() ?: 1L
+            readOnlyNewer = loadedVersion > VERSION
+            decode(root) ?: throw MiniJson.Malformed("Not a store object")
         } catch (e: MiniJson.Malformed) {
             loadedCorrupt = true
             State()
@@ -105,6 +145,32 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             loadedCorrupt = true
             State()
         }
+    }
+
+    /** A missing, non-integer or out-of-range `version` reads as 1, the original schema. */
+    private fun Map<*, *>.fileVersion(): Long {
+        val v = this["version"] as? Long ?: return 1L
+        return if (v < 1L) 1L else v
+    }
+
+    /**
+     * Caller holds [mutex]. Before the first save that upgrades an older file, copies the original
+     * file to `companion.json.v<old>.bak` next to it, deleting any other versioned backup so only the
+     * most recent one is kept. Corrupt or unreadable files keep their `.corrupt` handling instead.
+     */
+    private fun backupIfNeeded() {
+        if (backupDone || loadedCorrupt || !loadedFromFile || loadedVersion >= VERSION) return
+        val bakName = "$FILE_NAME.v$loadedVersion.bak"
+        dir.listFiles { f -> f.isFile && f.name.startsWith("$FILE_NAME.v") && f.name.endsWith(".bak") && f.name != bakName }
+            ?.forEach { it.delete() }
+        if (!file.exists()) {
+            backupDone = true
+            return
+        }
+        val bak = File(dir, bakName)
+        Files.copy(file.toPath(), bak.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        OwnerOnly.restrict(bak, directory = false)
+        backupDone = true
     }
 
     private fun writeAtomically(text: String) {
@@ -257,6 +323,13 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
 
     companion object {
         const val FILE_NAME = "companion.json"
-        private const val VERSION = 1
+
+        /**
+         * The schema version this build writes. Bump it whenever a saved field is added or a saved
+         * field's meaning changes, so older builds go read-only instead of dropping what they don't
+         * know. History: v1 was the original schema; v2 added `trustedOverlays`, the TV's
+         * `overlayPeerId` binding, and `reach`.
+         */
+        private const val VERSION = 2
     }
 }

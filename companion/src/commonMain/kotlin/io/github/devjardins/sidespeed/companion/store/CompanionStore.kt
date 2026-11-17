@@ -71,6 +71,14 @@ data class PromptedHost(val trustedNetworkId: String, val address: String, val a
 
 /** Saved TVs, Trusted Networks and settings. Saving an existing id replaces it. */
 interface CompanionStore {
+    /**
+     * True when the loaded file was saved by a newer copy of the companion (its `version` is greater
+     * than the version this build writes). The store is then read-only: every save is a no-op that
+     * leaves the file byte-for-byte unchanged, so an older build can never overwrite what a newer one
+     * saved. The UI shows a persistent banner (see `Copy.OLDER_COPY`) instead of the edits it drops.
+     */
+    val savedByNewerVersion: Boolean
+
     suspend fun tvs(): List<SavedTv>
 
     /**
