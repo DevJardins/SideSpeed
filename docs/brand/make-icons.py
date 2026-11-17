@@ -22,7 +22,7 @@ MASTER = Path(__file__).resolve().parent / "sidespeed-logo-2026.png"
 
 NAVY = (0, 14, 50)  # #000E32: matches the master's corner pixels (0-1,14-16,48-51)
 ROBOT_BOX = (290, 60, 890, 660)  # robot only, no wordmark, no badge (600x600)
-WORD_BOX = (120, 680, 905, 902)  # "SideSpeed" wordmark crop (785x222)
+WORD_BOX = (120, 680, 905, 833)  # "SideSpeed" wordmark crop (785x153)
 
 DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
 APP_PREFIXES = [ROOT / "app/src/main/res", ROOT / "companion-android/src/main/res"]
@@ -69,7 +69,12 @@ def clean_wordmark() -> Image.Image:
     stem = range(547 - ox, 568 - ox)
     template = {x: word.getpixel((x, 803 - oy)) for x in stem}
     x0, x1 = 415 - ox, 665 - ox
-    y0, y1 = 816 - oy, 902 - oy
+    y0, y1 = 816 - oy, WORD_BOX[3] - oy
+    # Rebuilt stem ends at y=829: baseline (793, bottom of S/d/e) plus a
+    # normal descender of ~0.45 * x-height (713->793 = 80px). Painted solid
+    # from the clean template row, so the end is squared off like the top
+    # of the "d" ascender.
+    stem_end = 830 - oy
     px = word.load()
 
     for x in range(x0, x1):
@@ -80,7 +85,7 @@ def clean_wordmark() -> Image.Image:
         for y in range(y0, y1):
             px[x, y] = bg
     for x in stem:
-        for y in range(814 - oy, 901 - oy):
+        for y in range(814 - oy, stem_end):
             px[x, y] = template[x]
     return word
 
@@ -109,7 +114,9 @@ def main() -> None:
 
     banner = Image.new("RGB", (640, 360), NAVY)
     banner.paste(robot.resize((250, 250), Image.LANCZOS), (36, 55))
-    banner.paste(word.resize((300, 85), Image.LANCZOS), (304, 137))
+    ww = 300
+    wh = round(ww * word.size[1] / word.size[0])
+    banner.paste(word.resize((ww, wh), Image.LANCZOS), (304, 180 - wh // 2))
     banner.save(ROOT / "app/src/main/res/drawable-xhdpi/banner.png")
 
     icons = ROOT / "companion-desktop/src/main/resources/icons"
