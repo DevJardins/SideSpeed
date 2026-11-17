@@ -31,6 +31,7 @@ import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.open
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
+import io.github.devjardins.sidespeed.companion.upkeep.OverlayVerdict
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
@@ -69,6 +70,9 @@ object Copy {
 
     fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
 
+    /** A saved status shown where the TV can't be checked from here: it may be stale. */
+    fun lastSeen(label: String): String = "Last seen: $label"
+
     fun statusLabel(s: TvStatus): String = when (s) {
         TvStatus.RUNNING -> "Helper running"
         TvStatus.NOT_RUNNING -> "Not running"
@@ -93,6 +97,8 @@ data class TvCardState(
     val address: String,
     val status: TvStatus,
     val statusLabel: String,
+    /** Whether upkeep could contact this TV right now; when false the card shows the saved status as last-seen. */
+    val checkableHere: Boolean,
     val checkedAtEpochMs: Long?,
     val note: String?,
     val scopeNote: String? = null,
@@ -452,6 +458,17 @@ class CompanionViewModel(
     private suspend fun currentTrusted(): TrustedNetwork? =
         TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
 
+    /**
+     * Whether upkeep could contact [tv] right now: a LAN TV when the current Trusted Network is the one it is
+     * saved under; a tailnet TV when the overlay gate upkeep checks before a visit would let it through.
+     */
+    private suspend fun checkableHere(tv: SavedTv, trusted: TrustedNetwork?, overlays: List<TrustedOverlay>): Boolean {
+        if (tv.overlayPeerId == null) return trusted?.id == tv.trustedNetworkId
+        val gate = overlayGate ?: return false
+        val bound = overlays.firstOrNull { it.id == tv.trustedNetworkId } ?: return false
+        return gate.verdict(bound, tv) is OverlayVerdict.Open
+    }
+
     private suspend fun addTv(address: String) {
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
         val ip = Ipv4.parse(address)
@@ -525,13 +542,15 @@ class CompanionViewModel(
         }
         val tvs = store.tvs()
         val saved = tvs.map { it.address }.toSet()
-        val cards = tvs.map { tv ->
-            TvCardState(
+        val cards = ArrayList<TvCardState>(tvs.size)
+        for (tv in tvs) {
+            cards += TvCardState(
                 id = tv.id,
                 name = tv.name,
                 address = tv.address,
                 status = tv.status,
                 statusLabel = Copy.statusLabel(tv.status),
+                checkableHere = checkableHere(tv, trusted, overlays),
                 checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = if (tv.isFireTv) null else Copy.NOT_FIRE_TV_NOTE,
                 scopeNote = if (tv.overlayPeerId == null && Ipv4.parse(tv.address)?.let(AddressPolicy::isOverlay) == true)

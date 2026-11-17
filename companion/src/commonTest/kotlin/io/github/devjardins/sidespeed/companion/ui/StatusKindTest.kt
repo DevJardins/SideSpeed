@@ -18,4 +18,10 @@ class StatusKindTest {
         TvStatus.entries.filter { it != TvStatus.RUNNING }
             .forEach { assertEquals(false, statusKind(it) == StatusKind.GOOD, it.name) }
     }
+
+    @Test fun checkableRunningIsGood() = assertEquals(StatusKind.GOOD, cardDot(TvStatus.RUNNING, checkableHere = true))
+
+    @Test fun uncheckableRunningIsGrey() = assertEquals(StatusKind.UNKNOWN, cardDot(TvStatus.RUNNING, checkableHere = false))
+
+    @Test fun uncheckableNotRunningIsGrey() = assertEquals(StatusKind.UNKNOWN, cardDot(TvStatus.NOT_RUNNING, checkableHere = false))
 }

@@ -254,4 +254,14 @@ class OverlayViewModelTest {
         assertEquals(listOf("l"), r.store.tvs().map { it.id })
         assertTrue(r.store.trustedOverlays().isEmpty())
     }
+
+    @Test fun aTailnetTvIsCheckableWhileTheTailnetIsTrusted() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig()
+        r.store.saveTv(SavedTv("o", "Cube", "100.101.1.1", "SER-1", trusted.id, overlayPeerId = "nCUBE"))
+        r.vm.refreshNow()
+        assertTrue(r.vm.state.value.tvs.single().checkableHere)
+        r.snapshot = snap(peer("nCUBE", "100.101.1.1"), tailnet = "someone-else@example.com")
+        r.vm.refreshNow()
+        assertFalse(r.vm.state.value.tvs.single().checkableHere)
+    }
 }

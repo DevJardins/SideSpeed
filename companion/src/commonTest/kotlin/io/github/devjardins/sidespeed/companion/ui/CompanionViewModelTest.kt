@@ -281,6 +281,17 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun aTvOnAnotherNetworkIsNotCheckableHere() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home"))
+        r.vm.refreshNow()
+        assertEquals(true, r.vm.state.value.tvs.single().checkableHere)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        r.vm.refreshNow()
+        assertEquals(false, r.vm.state.value.tvs.single().checkableHere)
+    }
+
+    @Test
     fun removingOneTvKeepsTheOtherTvsAndTheNetwork() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         r.vm.addTvByAddress("192.168.5.20")

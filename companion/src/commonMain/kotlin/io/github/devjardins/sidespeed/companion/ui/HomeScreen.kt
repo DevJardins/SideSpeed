@@ -106,11 +106,11 @@ fun HomeScreen(
                     val restarting = restartingId == tv.id
                     SsCard {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            SsStatusDot(statusKind(tv.status), pulsing = restarting)
+                            SsStatusDot(cardDot(tv.status, tv.checkableHere), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         SsText(tv.address, Ss.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        SsText(if (restarting) "Restarting…" else tv.statusLabel)
+                        SsText(if (restarting) "Restarting…" else if (tv.checkableHere) tv.statusLabel else Copy.lastSeen(tv.statusLabel))
                         tv.checkedAtEpochMs?.let { SsText(Copy.checkedAgo(now - it), Ss.caption) }
                         tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
                         tv.scopeNote?.let { SsText(it, Ss.caption) }
