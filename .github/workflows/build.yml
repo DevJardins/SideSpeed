@@ -1,6 +1,9 @@
 name: build
 on:
+  # Branch pushes are covered by their pull request; main and release tags run on push.
   push:
+    branches: [main]
+    tags: ['v*']
   pull_request:
 jobs:
   ubuntu:
@@ -32,6 +35,8 @@ jobs:
             companion-desktop/build/compose/binaries/main/deb/*.deb
             companion-desktop/build/compose/binaries/main/rpm/*.rpm
   macos:
+    # Installer builds are slow; pull requests only run the Linux build and tests.
+    if: github.event_name == 'push'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +49,8 @@ jobs:
           name: macos
           path: companion-desktop/build/compose/binaries/main/dmg/*.dmg
   windows:
+    # Installer builds are slow; pull requests only run the Linux build and tests.
+    if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
