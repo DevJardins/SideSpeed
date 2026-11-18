@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import io.github.devjardins.sidespeed.ui.theme.bleed
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -86,13 +86,13 @@ fun SetupScreen(vm: SetupViewModel, onReady: () -> Unit) {
 
     SsScreen {
         // The scroll clips to the column bounds, which would cut the first/last
-        // focusable's focus ring and scale: pad the scroll content and pull the
-        // column out by the same amount, so resting edges stay aligned.
+        // focusable's focus ring and scale: bleed the column out symmetrically and
+        // pad the scroll content by the same amount, so resting edges stay aligned.
         val scrollInset = 8.dp
         Column(
             Modifier
                 .fillMaxWidth()
-                .offset(y = -scrollInset)
+                .bleed(vertical = scrollInset)
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = scrollInset),
             verticalArrangement = Arrangement.spacedBy(12.dp),
