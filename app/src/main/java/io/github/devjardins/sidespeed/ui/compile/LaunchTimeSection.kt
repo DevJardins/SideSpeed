@@ -123,7 +123,7 @@ fun LaunchTimeSection(
                     modifier = Modifier.focusRequester(measureFocus),
                 )
                 Text(
-                    "Opens the app on screen twice. About a minute.",
+                    "Opens the app on screen twice. Takes a few minutes for large apps.",
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )

@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Self-compile only while SideSpeed is in the background: compiling the foreground app may kill it.
+        // During a launch sequence (Measure / timed compile) it stays pending and runs on the next leave.
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 lifecycleScope.launch {

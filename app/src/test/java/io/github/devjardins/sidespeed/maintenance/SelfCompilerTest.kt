@@ -11,13 +11,16 @@ import io.github.devjardins.sidespeed.status.CompilePhase
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
 import io.github.devjardins.sidespeed.status.SelfState
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,6 +53,7 @@ class SelfCompilerTest {
         calls: MutableList<Pair<String, CompileMode>> = mutableListOf(),
         logs: MutableList<String> = mutableListOf(),
         status: CompileStatus? = null,
+        measuring: () -> String? = { null },
     ) = SelfCompiler(
         prefs = prefs,
         runCompile = { pkg, mode -> calls += pkg.value to mode; script(pkg.value) },
@@ -60,6 +64,7 @@ class SelfCompilerTest {
         debuggable = debuggable,
         status = status,
         log = { logs += it },
+        measuring = measuring,
     )
 
     private fun success(): Flow<CompileEvent> = flow {
@@ -192,5 +197,47 @@ class SelfCompilerTest {
         c.maybeCompile()
         runCurrent()
         assertEquals(CompilePhase.INTERRUPTED, status.snapshot().phase)
+    }
+
+    @Test fun defersWhileLaunchSequenceRunningAndRunsOnNextLeave() = runTest {
+        val prefs = FakeSelfCompilePrefs()
+        val calls = mutableListOf<Pair<String, CompileMode>>()
+        val logs = mutableListOf<String>()
+        var measuring: String? = "com.nuvio.tv"
+        val c = compiler(prefs, calls = calls, logs = logs, measuring = { measuring })
+        // A leave during a launch sequence (SideSpeed backgrounded by the timed launch) must not compile.
+        c.maybeCompile()
+        assertTrue(calls.isEmpty())
+        assertNull(prefs.selfCompileFlow.value)
+        assertEquals(listOf("self-compile deferred: launch sequence running"), logs)
+        // The next normal leave after the sequence ends compiles and records.
+        measuring = null
+        c.maybeCompile()
+        assertEquals(listOf(own to CompileMode.SPEED), calls)
+        assertEquals(SelfCompile(7L, 4242L), prefs.selfCompileFlow.value)
+    }
+
+    @Test fun awaitIdleWaitsForRunningCompile() = runTest {
+        val prefs = FakeSelfCompilePrefs()
+        val release = CompletableDeferred<Unit>()
+        val entered = CompletableDeferred<Unit>()
+        val c = compiler(prefs, script = {
+            flow {
+                entered.complete(Unit)
+                release.await()
+                emit(CompileEvent.Finished(true, false, "Success"))
+            }
+        })
+        val job = backgroundScope.launch { c.maybeCompile() }
+        entered.await()
+        var idle = false
+        val waiter = backgroundScope.launch { c.awaitIdle(); idle = true }
+        runCurrent()
+        assertFalse("awaitIdle must wait while the self-compile is running", idle)
+        release.complete(Unit)
+        job.join()
+        waiter.join()
+        assertTrue(idle)
+        assertEquals(SelfCompile(7L, 4242L), prefs.selfCompileFlow.value)
     }
 }
