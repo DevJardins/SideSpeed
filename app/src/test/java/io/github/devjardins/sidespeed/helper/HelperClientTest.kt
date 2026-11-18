@@ -65,7 +65,9 @@ class HelperClientTest {
                 s.soTimeout = SERVER_READ_TIMEOUT_MS
                 thread(isDaemon = true) {
                     s.use {
-                        val req = it.getInputStream().bufferedReader().readLine() ?: return@use
+                        // Byte-by-byte like HelperServer.readRequestLine, so a request with a body
+                        // (install-self) leaves the body bytes in the stream for the handler.
+                        val req = readLineBytes(it.getInputStream()) ?: return@use
                         requests += req
                         handler(req, it)
                     }
@@ -108,6 +110,16 @@ class HelperClientTest {
     )
 
     private fun writePort(text: String = "47310\n") = portFile.writeText(text)
+
+    private fun readLineBytes(input: java.io.InputStream): String? {
+        val sb = StringBuilder()
+        while (true) {
+            val b = input.read()
+            if (b == -1) return sb.toString().ifEmpty { null }
+            if (b == '\n'.code) return sb.toString()
+            sb.append(b.toChar())
+        }
+    }
 
     @Test fun pingParsesPong() = runBlocking {
         writePort()
@@ -353,6 +365,54 @@ class HelperClientTest {
         val first = withTimeout(5_000) { c.shell("dumpsys package dexopt").onEach { }.first() }
         assertEquals(ShellEvent.Line("first line"), first)
         assertTrue("client socket not closed", closed.await(5, TimeUnit.SECONDS))
+    }
+
+    @Test fun install_self_sends_header_and_exact_bytes() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello-world".toByteArray())
+        val gotHeader = ArrayList<String>()
+        val gotBody = ArrayList<Byte>()
+        handler = { req, s ->
+            gotHeader += req
+            val size = req.removePrefix("install-self ").toInt()
+            val body = ByteArray(size)
+            var off = 0
+            while (off < size) {
+                val n = s.getInputStream().read(body, off, size - off)
+                if (n < 0) break
+                off += n
+            }
+            gotBody += body.toList()
+            reply(s, "Success", "__END__:0")
+        }
+        assertEquals(InstallOutcome.Started, c.installSelf(apk))
+        assertEquals(listOf("install-self 11"), gotHeader.toList())
+        assertEquals("hello-world", gotBody.toByteArray().toString(Charsets.UTF_8))
+    }
+
+    @Test fun install_self_reports_failed_on_nonzero_end() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        handler = { req, s ->
+            val size = req.removePrefix("install-self ").toInt()
+            s.getInputStream().readNBytes(size)
+            reply(s, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]", "__END__:1")
+        }
+        assertEquals(
+            InstallOutcome.Failed(1, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]"),
+            c.installSelf(apk),
+        )
+    }
+
+    @Test fun install_self_helper_down_when_no_port() = runBlocking {
+        writePort("47310")
+        assertEquals(InstallOutcome.HelperDown, client().installSelf(tmp.newFile("a.apk")))
     }
 
     private companion object {

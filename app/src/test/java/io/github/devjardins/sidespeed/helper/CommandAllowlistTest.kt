@@ -203,6 +203,34 @@ class CommandAllowlistTest {
         ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
     }
 
+    @Test fun install_self_size_parses_bounds() {
+        assertEquals(1L, CommandAllowlist.installSelfSize("install-self 1"))
+        assertEquals(67108864L, CommandAllowlist.installSelfSize("install-self 67108864"))
+        listOf(
+            "install-self 0",
+            "install-self 67108865",
+            "install-self 01",
+            "install-self -1",
+            "install-self",
+            "install-self 1 2",
+            "install-self 1 ",
+            "install-self +1",
+            "install-self 0x10",
+        ).forEach { assertNull(it, CommandAllowlist.installSelfSize(it)) }
+    }
+
+    @Test fun to_argv_never_maps_install_self() {
+        assertNull(CommandAllowlist.toArgv("install-self 5"))
+        assertNull(CommandAllowlist.toArgv("install-self 67108864"))
+        assertEquals(
+            listOf(
+                "/system/bin/cmd", "package", "install", "-r",
+                "--pkg", "io.github.devjardins.sidespeed", "-S", "5",
+            ),
+            CommandAllowlist.installSelfArgv(5),
+        )
+    }
+
     @Test fun bringBackForm() {
         assertEquals(
             listOf(

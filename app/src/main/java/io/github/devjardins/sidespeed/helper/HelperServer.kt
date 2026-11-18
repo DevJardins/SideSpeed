@@ -35,6 +35,15 @@ internal class HelperServer(
     private val log: (String) -> Unit,
     private val maxConnections: Int = MAX_CONNECTIONS,
     private val requestTimeoutMs: Int = REQUEST_TIMEOUT_MS,
+    private val installRunner: (
+        argv: List<String>,
+        stdin: InputStream,
+        size: Long,
+        onLine: (String) -> Unit,
+    ) -> Int = { _, _, _, _ -> HelperProtocol.EXIT_HELPER_ERROR },
+    private val bringBack: () -> Int = { 0 },
+    private val installGate: InstallGate = InstallGate(),
+    private val bodyTimeoutMs: Int = BODY_TIMEOUT_MS,
 ) {
     private val slots = Semaphore(maxConnections)
 
@@ -117,6 +126,11 @@ internal class HelperServer(
             out.end(0)
             return
         }
+        val installSize = CommandAllowlist.installSelfSize(request)
+        if (installSize != null) {
+            handleInstallSelf(socket, uid, out, installSize)
+            return
+        }
         val argv = CommandAllowlist.toArgv(request)
         if (argv == null) {
             log("REFUSED request from uid=$uid: '$request'")
@@ -135,6 +149,49 @@ internal class HelperServer(
         }
         out.end(exit)
         log("uid=$uid finished $argv exit=$exit in ${System.currentTimeMillis() - start} ms")
+    }
+
+    /**
+     * Runs `install-self <size>`: streams exactly [size] bytes from the socket into [installRunner]
+     * (never more), then runs [bringBack] only when the install exited 0 with every byte delivered.
+     * The runner keeps going after the client disconnects (the app is killed by its own update), and a
+     * short body is a failure: no bring-back, non-zero exit. Runs under [installGate] so apk-watch
+     * cannot exit the helper mid-install.
+     */
+    private fun handleInstallSelf(socket: Socket, uid: Int, out: Out, size: Long) {
+        log("uid=$uid run install-self size=$size")
+        val start = System.currentTimeMillis()
+        // Bound a stalled body: without this the socket keeps soTimeout=0 (set for compiles),
+        // and a client that stops mid-body would hold InstallGate and a slot forever. A timeout
+        // surfaces as SocketTimeoutException (an IOException), i.e. a short body: the install is
+        // destroyed and bring-back is skipped.
+        socket.soTimeout = bodyTimeoutMs
+        installGate.begin()
+        try {
+            val stdin = CappedInputStream(socket.getInputStream(), size)
+            val exit = try {
+                installRunner(CommandAllowlist.installSelfArgv(size), stdin, size, out::line)
+            } catch (t: Throwable) {
+                log("uid=$uid install-self failed: ${t::class.java.simpleName}: ${t.message}")
+                out.line("error: helper could not run the install: ${t.message}")
+                HelperProtocol.EXIT_HELPER_ERROR
+            }
+            val delivered = stdin.total >= size
+            val finalExit = if (exit == 0 && !delivered) HelperProtocol.EXIT_HELPER_ERROR else exit
+            if (finalExit == 0) {
+                try {
+                    bringBack()
+                } catch (t: Throwable) {
+                    log("uid=$uid bring-back failed: ${t::class.java.simpleName}: ${t.message}")
+                }
+            } else {
+                log("uid=$uid install-self not installed: exit=$exit delivered=$delivered/$size")
+            }
+            out.end(finalExit)
+            log("uid=$uid finished install-self size=$size exit=$finalExit in ${System.currentTimeMillis() - start} ms")
+        } finally {
+            installGate.end()
+        }
     }
 
     /** Writes response lines; once the client is gone further writes are dropped (the command still completes). */
@@ -159,6 +216,7 @@ internal class HelperServer(
     companion object {
         const val MAX_CONNECTIONS = 4
         const val REQUEST_TIMEOUT_MS = 10_000
+        const val BODY_TIMEOUT_MS = 30_000
 
         /**
          * Reads one request line byte by byte, so nothing past it is consumed. Returns null for an empty request,
@@ -193,5 +251,46 @@ internal class HelperServer(
         private fun closeQuietly(s: Socket) = try { s.close() } catch (_: Throwable) {}
 
         private fun sleepQuietly(ms: Long) = try { Thread.sleep(ms) } catch (_: InterruptedException) {}
+    }
+}
+
+/**
+ * Tracks in-flight `install-self` runs. HelperMain's apk-watch calls [awaitIdle] before exiting,
+ * so an APK change during an install waits for bring-back instead of killing it.
+ */
+internal class InstallGate {
+    private var active = 0
+
+    @Synchronized fun begin() {
+        active++
+    }
+
+    @Synchronized fun end() {
+        if (active > 0) active--
+        (this as Object).notifyAll()
+    }
+
+    @Synchronized fun awaitIdle() {
+        while (active > 0) (this as Object).wait()
+    }
+}
+
+/** An [InputStream] view yielding at most [cap] bytes, counting what was read in [total]. */
+internal class CappedInputStream(private val inner: InputStream, private val cap: Long) : InputStream() {
+    var total = 0L
+        private set
+
+    override fun read(): Int {
+        if (total >= cap) return -1
+        val b = inner.read()
+        if (b >= 0) total++
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (total >= cap) return -1
+        val n = inner.read(b, off, minOf(len.toLong(), cap - total).toInt())
+        if (n > 0) total += n
+        return n
     }
 }

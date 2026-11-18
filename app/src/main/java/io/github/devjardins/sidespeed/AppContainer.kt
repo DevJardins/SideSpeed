@@ -19,8 +19,16 @@ import io.github.devjardins.sidespeed.tools.Cleanup
 import io.github.devjardins.sidespeed.tools.DataStoreToolsStore
 import io.github.devjardins.sidespeed.tools.DeviceInfo
 import io.github.devjardins.sidespeed.tools.LaunchRunner
+import io.github.devjardins.sidespeed.maintenance.JobPhase
+import io.github.devjardins.sidespeed.update.FallbackInstaller
 import io.github.devjardins.sidespeed.tools.ToolsCommands
 import io.github.devjardins.sidespeed.tools.ToolsStore
+import io.github.devjardins.sidespeed.update.SelfUpdater
+import io.github.devjardins.sidespeed.update.UpdateDownload
+import io.github.devjardins.sidespeed.update.installedSignerSha256
+import io.github.devjardins.sidespeed.update.readApkFacts
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -73,6 +81,40 @@ class AppContainer(context: Context) {
 
     /** Free-up-space actions; automatic cleanup runs from [MaintenanceService]. */
     val cleanup: Cleanup by lazy { Cleanup(toolsCommands, deviceInfo, toolsStore) }
+
+    /**
+     * True while the TV is busy with something an update must not interrupt: a compile, a
+     * launch-time measurement, a maintenance job, or a cleanup run. Gates the banner's Update now.
+     */
+    val updateBusy: Flow<Boolean> by lazy {
+        combine(
+            compileStatus.active,
+            launchRunner.measuring,
+            maintenance.state,
+            cleanup.running,
+        ) { compiling, measuring, maintenanceState, cleaning ->
+            compiling || measuring != null ||
+                maintenanceState.phases.values.any { it == JobPhase.RUNNING } ||
+                cleaning
+        }
+    }
+
+    /** In-app self-update: silently through the helper, or the system installer when it is down. */
+    val selfUpdater: SelfUpdater by lazy {
+        val fallback = FallbackInstaller(appContext)
+        SelfUpdater(
+            download = UpdateDownload(UpdateDownload::httpOpen),
+            readApkFacts = { readApkFacts(appContext.packageManager, it) },
+            installed = {
+                selfBuild.versionCode to installedSignerSha256(appContext.packageManager, appContext.packageName)
+            },
+            helperUp = { helper.ping() != null },
+            helperInstall = { helper.installSelf(it) },
+            fallbackInstall = { fallback.install(it) },
+            cacheDir = appContext.cacheDir,
+            busy = updateBusy,
+        )
+    }
 
     val deviceInfo: DeviceInfo by lazy { AndroidDeviceInfo(appContext) }
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }

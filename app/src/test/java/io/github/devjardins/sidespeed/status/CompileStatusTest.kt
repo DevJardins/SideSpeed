@@ -1,7 +1,9 @@
 package io.github.devjardins.sidespeed.status
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CompileStatusTest {
@@ -194,5 +196,29 @@ class CompileStatusTest {
         t.onStart("com.example.app", "Example", "speed")
         t.onHelperLost()
         assertEquals("2000000", t.snapshot().toWireMap().toMap()["started_ms"])
+    }
+
+    @Test fun isActive_true_only_while_a_compile_runs() {
+        val t = tracker()
+        assertFalse(t.isActive())
+        t.onStart("com.example.app", "Example", "speed")
+        assertTrue(t.isActive())
+        t.onHelperLost()
+        assertFalse(t.isActive())
+        t.onStart("com.example.app", "Example", "speed")
+        t.onFinish("com.example.app", "Example", true)
+        assertFalse(t.isActive())
+    }
+
+    @Test fun glue_active_flow_tracks_running_compile() {
+        val status = CompileStatus(
+            FakeCompileStatusStore(), "0.2.1", false,
+            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined),
+        )
+        assertFalse(status.active.value)
+        status.onStart("com.example.app", "Example", "speed")
+        assertTrue(status.active.value)
+        status.onFinish("com.example.app", "Example", true)
+        assertFalse(status.active.value)
     }
 }

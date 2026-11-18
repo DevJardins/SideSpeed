@@ -1,11 +1,11 @@
 package io.github.devjardins.sidespeed.ui.apps
 
+import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -25,7 +27,10 @@ import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.update.SelfUpdater
+import io.github.devjardins.sidespeed.update.UpdateUiState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /**
@@ -33,7 +38,13 @@ import kotlinx.coroutines.launch
  * banner only when a newer release is known and the user hasn't dismissed that version.
  */
 @Composable
-fun UpdateBannerSlot(check: UpdateCheck, store: ToolsStore, currentVersion: String) {
+fun UpdateBannerSlot(
+    check: UpdateCheck,
+    store: ToolsStore,
+    currentVersion: String,
+    selfUpdater: SelfUpdater,
+    busy: Flow<Boolean>,
+) {
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) { check.checkIfDue() }
     }
@@ -48,16 +59,46 @@ fun UpdateBannerSlot(check: UpdateCheck, store: ToolsStore, currentVersion: Stri
         if (debuggable) "9.9.9" else latest
     }
     if (shouldShowBanner(effectiveLatest, dismissed, currentVersion)) {
-        val version = effectiveLatest!!
-        UpdateBanner(latest = displayVersion(version), onDismiss = {
-            scope.launch { store.setUpdateDismissedVersion(version) }
-        })
+        val tag = effectiveLatest!!
+        val updateState by selfUpdater.state.collectAsState()
+        val isBusy by busy.collectAsState(initial = false)
+        UpdateBanner(
+            latest = displayVersion(tag),
+            state = updateState,
+            updateEnabled = updateState == UpdateUiState.Available && !isBusy,
+            showBusyCaption = updateState == UpdateUiState.Busy ||
+                (updateState == UpdateUiState.Available && isBusy),
+            onUpdate = { selfUpdater.start(tag) },
+            onDismiss = {
+                scope.launch { store.setUpdateDismissedVersion(tag) }
+            },
+            onCancel = { selfUpdater.cancel() },
+            onRetry = { selfUpdater.start(tag) },
+        )
     }
 }
 
-/** "SideSpeed X is out" banner. No download here: Downloader is the only install path. */
+/** "SideSpeed X is out" banner with in-app update. */
 @Composable
-fun UpdateBanner(latest: String, onDismiss: () -> Unit) {
+fun UpdateBanner(
+    latest: String,
+    state: UpdateUiState,
+    updateEnabled: Boolean,
+    showBusyCaption: Boolean,
+    onUpdate: () -> Unit,
+    onDismiss: () -> Unit,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    // Dismiss keeps the initial focus, as before: starting an update is never one press away.
+    val dismissFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        try {
+            dismissFocus.requestFocus()
+        } catch (_: IllegalStateException) {
+            // Not yet attached; the next focus pass lands on Dismiss first anyway.
+        }
+    }
     SsCard(Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -66,17 +107,54 @@ fun UpdateBanner(latest: String, onDismiss: () -> Unit) {
         ) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "SideSpeed $latest is out",
+                    when (state) {
+                        is UpdateUiState.Downloading -> "Downloading… ${state.percent}%"
+                        is UpdateUiState.Installing -> "Installing… SideSpeed will close and reopen."
+                        else -> "SideSpeed $latest is out"
+                    },
                     style = SsType.Body,
                     color = SsColors.TextPrimary,
                 )
+                if (state is UpdateUiState.Failed) {
+                    Text(
+                        state.reason,
+                        style = SsType.Caption,
+                        color = SsColors.TextSecondary,
+                    )
+                }
+                if (showBusyCaption) {
+                    Text(
+                        "Available when the current job finishes.",
+                        style = SsType.Caption,
+                        color = SsColors.TextSecondary,
+                    )
+                }
                 Text(
                     "In Downloader, enter 3503400, or go to sidespeed.app/tv.",
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
-            SsButton("Dismiss", onClick = onDismiss)
+            when (state) {
+                is UpdateUiState.Available -> {
+                    SsButton("Update now", onClick = onUpdate, enabled = updateEnabled)
+                    SsButton("Dismiss", onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
+                }
+                is UpdateUiState.Busy -> {
+                    SsButton("Update now", onClick = onUpdate, enabled = false)
+                    SsButton("Dismiss", onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
+                }
+                is UpdateUiState.Downloading -> {
+                    SsButton("Cancel", onClick = onCancel)
+                }
+                is UpdateUiState.Installing -> {
+                    // Nothing to press: the app closes and reopens on its own.
+                }
+                is UpdateUiState.Failed -> {
+                    SsButton("Retry", onClick = onRetry)
+                    SsButton("Dismiss", onClick = onDismiss)
+                }
+            }
         }
     }
 }

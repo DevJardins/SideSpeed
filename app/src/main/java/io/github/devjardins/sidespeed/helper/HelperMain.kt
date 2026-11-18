@@ -76,6 +76,8 @@ object HelperMain {
         log("startup: listening on 127.0.0.1:$port")
         writePortFile(port)
 
+        val installGate = InstallGate()
+
         thread(name = "apk-watch", isDaemon = true) {
             while (true) {
                 try {
@@ -88,6 +90,8 @@ object HelperMain {
                         else -> null
                     }
                     if (reason != null) {
+                        log("self-exit: $reason; waiting for any in-flight install")
+                        installGate.awaitIdle()
                         log("self-exit: $reason")
                         try { server.close() } catch (_: Throwable) {}
                         deletePortFileIfOurs(port)
@@ -105,6 +109,9 @@ object HelperMain {
             callerUid = { socket -> callerUid(socket, port) },
             pong = { HelperProtocol.pong(Process.myUid(), apk) },
             runner = ::runArgv,
+            installRunner = ::runInstall,
+            bringBack = { runArgv(CommandAllowlist.toArgv("bring-back")!!, {}) },
+            installGate = installGate,
             writeAck = ::writeAckFile,
             log = ::log,
         ).serve()
@@ -160,6 +167,62 @@ object HelperMain {
             p.inputStream.bufferedReader().useLines { lines -> lines.forEach(onLine) }
             val code = p.waitFor()
             done = true
+            return code
+        } finally {
+            if (!done) {
+                p.destroy()
+                try {
+                    p.waitFor()
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            }
+        }
+    }
+
+    /**
+     * Runs an `install-self` argv, feeding exactly [size] bytes from [stdin] into the `cmd` process
+     * stdin, while its merged output is pumped to [onLine] on a side thread (so a chatty `cmd`
+     * cannot deadlock the copy). A short body (EOF or error before [size] bytes) destroys the
+     * install and returns [HelperProtocol.EXIT_HELPER_ERROR]; the caller then skips bring-back.
+     */
+    private fun runInstall(
+        argv: List<String>,
+        stdin: java.io.InputStream,
+        size: Long,
+        onLine: (String) -> Unit,
+    ): Int {
+        val p = ProcessBuilder(argv).redirectErrorStream(true).start()
+        val pump = thread(isDaemon = true) {
+            try {
+                p.inputStream.bufferedReader().useLines { lines -> lines.forEach(onLine) }
+            } catch (_: Throwable) {
+                // The install's output is best-effort; the exit code is what matters.
+            }
+        }
+        var done = false
+        try {
+            try {
+                p.outputStream.use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    var remaining = size
+                    while (remaining > 0) {
+                        val n = stdin.read(buf, 0, minOf(buf.size.toLong(), remaining).toInt())
+                        if (n < 0) {
+                            log("install-self: short body, killing the install")
+                            return HelperProtocol.EXIT_HELPER_ERROR
+                        }
+                        out.write(buf, 0, n)
+                        remaining -= n
+                    }
+                }
+            } catch (e: java.io.IOException) {
+                log("install-self: body stream failed (${e.message}), killing the install")
+                return HelperProtocol.EXIT_HELPER_ERROR
+            }
+            val code = p.waitFor()
+            done = true
+            pump.join(10_000)
             return code
         } finally {
             if (!done) {

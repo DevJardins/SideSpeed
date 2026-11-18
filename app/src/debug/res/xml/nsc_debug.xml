@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug E2E only: allow cleartext to the emulator host loopback that serves the fake
+     release (see Task 7). Release builds have no networkSecurityConfig override, so they
+     stay https-only, and releaseAssetUrl additionally rejects non-https bases outside debug. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
