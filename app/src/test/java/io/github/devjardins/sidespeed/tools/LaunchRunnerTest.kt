@@ -45,7 +45,7 @@ class LaunchRunnerTest {
         override suspend fun setSelfCompile(v: SelfCompile) {}
     }
 
-    private class FakeToolsStore : ToolsStore {
+    private class FakeToolsStore(val events: MutableList<String> = mutableListOf()) : ToolsStore {
         override val cleanupThreshold: Flow<CleanupThreshold> = MutableStateFlow(CleanupThreshold.OFF)
         override suspend fun setCleanupThreshold(t: CleanupThreshold) {}
         override val lastCleanup: Flow<CleanupRecord?> = MutableStateFlow(null)
@@ -62,7 +62,12 @@ class LaunchRunnerTest {
         override suspend fun setAnimationOriginals(o: AnimationOriginals?) {}
         val pending = MutableStateFlow<RestorePending?>(null)
         override val restorePending: Flow<RestorePending?> = pending
-        override suspend fun setRestorePending(r: RestorePending?) { pending.value = r }
+        var failWrites = false
+        override suspend fun setRestorePending(r: RestorePending?) {
+            events += if (r == null) "pending-clear" else "pending-write"
+            if (failWrites) throw RuntimeException("disk")
+            pending.value = r
+        }
         override val updateDismissedVersion: Flow<String?> = MutableStateFlow(null)
         override suspend fun setUpdateDismissedVersion(v: String) {}
         override val updateLastCheckMs: Flow<Long> = MutableStateFlow(0L)
@@ -70,12 +75,16 @@ class LaunchRunnerTest {
         override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
     }
 
-    private class ScriptRunner(val handler: (String, Int) -> Pair<List<String>, Int>) : CommandRunner {
+    private class ScriptRunner(
+        val handler: (String, Int) -> Pair<List<String>, Int>,
+        val events: MutableList<String> = mutableListOf(),
+    ) : CommandRunner {
         val commands = mutableListOf<String>()
         val hangs = mutableSetOf<String>()
         private val counts = mutableMapOf<String, Int>()
         override fun shell(command: String): Flow<ShellEvent> = flow {
             commands += command
+            events += command
             if (command in hangs) awaitCancellation()
             val n = counts.getOrDefault(command, 0).also { counts[command] = it + 1 }
             val (lines, exit) = handler(command, n)
@@ -90,7 +99,7 @@ class LaunchRunnerTest {
         "TotalTime: $ms",
     )
 
-    private fun fullScript(): ScriptRunner = ScriptRunner { command, n ->
+    private fun fullScript(): ScriptRunner = ScriptRunner(handler = { command, n ->
         when {
             command == launchCmd && n < 3 -> totalTime(1900) to 0
             command == launchCmd -> totalTime(1100) to 0
@@ -99,7 +108,7 @@ class LaunchRunnerTest {
             command == "bring-back" -> emptyList<String>() to 0
             else -> emptyList<String>() to 127
         }
-    }
+    })
 
     private suspend fun uiCompile(runner: CommandRunner, pkg: PackageName, mode: CompileMode): CompileEvent.Finished {
         var fin: CompileEvent.Finished? = null
@@ -109,7 +118,7 @@ class LaunchRunnerTest {
 
     private fun runner(
         script: ScriptRunner,
-        store: FakeToolsStore = FakeToolsStore(),
+        store: ToolsStore = FakeToolsStore(),
         prefs: FakePrefs = FakePrefs(),
         scope: CoroutineScope,
     ) = LaunchRunner(
@@ -151,7 +160,7 @@ class LaunchRunnerTest {
     }
 
     @Test fun failedRestoreKeepsPendingRecord() = runTest(timeout = 10.seconds) {
-        val script = ScriptRunner { command, n ->
+        val script = ScriptRunner(handler = { command, n ->
             when {
                 command == launchCmd && n < 3 -> totalTime(1900) to 0
                 command == launchCmd -> totalTime(1100) to 0
@@ -159,7 +168,7 @@ class LaunchRunnerTest {
                 command == speedCmd -> listOf("Failure") to 1
                 else -> emptyList<String>() to 0
             }
-        }
+        })
         val store = FakeToolsStore()
         val r = runner(script, store, scope = backgroundScope)
         r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
@@ -179,7 +188,7 @@ class LaunchRunnerTest {
     }
 
     @Test fun restorerKeepsPendingWhenHelperDown() = runTest(timeout = 10.seconds) {
-        val script = ScriptRunner { _, _ -> listOf("Failure") to 1 }
+        val script = ScriptRunner(handler = { _, _ -> listOf("Failure") to 1 })
         val store = FakeToolsStore()
         store.setRestorePending(RestorePending("com.nuvio.tv", CompileMode.SPEED, 7))
         val r = runner(script, store, scope = backgroundScope)
@@ -208,12 +217,12 @@ class LaunchRunnerTest {
     }
 
     @Test fun resetFailureAbortsWithoutPending() = runTest(timeout = 10.seconds) {
-        val script = ScriptRunner { command, _ ->
+        val script = ScriptRunner(handler = { command, _ ->
             when (command) {
                 resetCmd -> listOf("Failure") to 1
                 else -> emptyList<String>() to 0
             }
-        }
+        })
         val store = FakeToolsStore()
         val r = runner(script, store, scope = backgroundScope)
         r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
@@ -221,5 +230,84 @@ class LaunchRunnerTest {
         assertNull(store.pending.value)
         assertTrue(store.saved.isEmpty())
         assertTrue(r.progress.value["com.nuvio.tv"]?.error != null)
+    }
+
+    @Test fun pendingIsWrittenBeforeReset() = runTest(timeout = 10.seconds) {
+        val events = mutableListOf<String>()
+        val script = ScriptRunner({ command, n ->
+            when {
+                command == launchCmd && n < 3 -> totalTime(1900) to 0
+                command == launchCmd -> totalTime(1100) to 0
+                command == resetCmd -> listOf("Success") to 0
+                command == speedCmd -> listOf("Success") to 0
+                else -> emptyList<String>() to 0
+            }
+        }, events)
+        val store = FakeToolsStore(events)
+        val r = runner(script, store, scope = backgroundScope)
+        r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
+        val writeIdx = events.indexOf("pending-write")
+        val resetIdx = events.indexOf(resetCmd)
+        assertTrue("pending must land before reset runs", writeIdx >= 0 && writeIdx < resetIdx)
+    }
+
+    @Test fun resetFailureClearsPendingWithoutRecompile() = runTest(timeout = 10.seconds) {
+        val events = mutableListOf<String>()
+        val script = ScriptRunner({ command, _ ->
+            when (command) {
+                resetCmd -> listOf("Failure") to 1
+                else -> emptyList<String>() to 0
+            }
+        }, events)
+        val store = FakeToolsStore(events)
+        val r = runner(script, store, scope = backgroundScope)
+        r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
+        assertEquals(listOf("pending-write", resetCmd, "pending-clear"), events)
+        assertNull(store.pending.value)
+        assertTrue(speedCmd !in script.commands)
+    }
+
+    @Test fun cancelWithMissingRecordRestoresFromMemory() = runTest(timeout = 10.seconds) {
+        val script = fullScript().apply { hangs += launchCmd }
+        val store = FakeToolsStore().apply {
+            // The store never holds the record: the finally must fall back to memory.
+            pending.value = null
+        }
+        val dropping = object : ToolsStore by store {
+            override suspend fun setRestorePending(r: RestorePending?) {}
+            override val restorePending: Flow<RestorePending?> = MutableStateFlow(null)
+        }
+        val r = runner(script, dropping, scope = backgroundScope)
+        val job = r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!
+        runCurrent()
+        job.cancel()
+        runCurrent()
+        assertTrue("cancelled sequence must still recompile", speedCmd in script.commands)
+        assertNull(store.pending.value)
+    }
+
+    @Test fun pendingWriteFailureStillMeasures() = runTest(timeout = 10.seconds) {
+        val script = fullScript()
+        val store = FakeToolsStore().apply { failWrites = true }
+        val r = runner(script, store, scope = backgroundScope)
+        r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
+        assertEquals(1, store.saved.size)
+        assertTrue(speedCmd in script.commands)
+    }
+
+    @Test fun clearWriteFailureKeepsPendingForRetry() = runTest(timeout = 10.seconds) {
+        val script = fullScript()
+        val store = FakeToolsStore()
+        val clearing = object : ToolsStore by store {
+            override suspend fun setRestorePending(r: RestorePending?) {
+                if (r == null) throw RuntimeException("disk")
+                store.pending.value = r
+            }
+            override val restorePending: Flow<RestorePending?> = store.pending
+        }
+        val r = runner(script, clearing, scope = backgroundScope)
+        r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
+        assertEquals(1, store.saved.size)
+        assertEquals(RestorePending("com.nuvio.tv", CompileMode.SPEED, 7), store.pending.value)
     }
 }

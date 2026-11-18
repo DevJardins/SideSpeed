@@ -103,14 +103,10 @@ class LaunchRunner(
         keepAlive()
         return scope.launch {
             var failMsg: String? = null
-            var cancelled = false
             try {
                 failMsg = runTimed(pkg, mode, uiCompile)
-            } catch (e: CancellationException) {
-                cancelled = true
-                throw e
             } finally {
-                withContext(NonCancellable) { finishSequence(pkg.value, failMsg, cancelled) }
+                withContext(NonCancellable) { finishSequence(pkg.value, failMsg) }
             }
         }
     }
@@ -120,20 +116,27 @@ class LaunchRunner(
      * (speed when unknown), time again, store. Null when busy. On any failure
      * after the reset the app is recompiled first (or left pending for retry).
      */
+    /**
+     * In-memory restore state for the in-flight sequence, so the finally below
+     * still recompiles when the store record is missing (failed write or read).
+     * Only the sequence holding [_measuring] touches these; [finishSequence]
+     * always consumes them. Survives coroutine cancellation, unlike locals.
+     */
+    private var inFlightMemMode: CompileMode? = null
+    private var inFlightRecompiled = false
+
     fun measure(pkg: PackageName, uiCompile: UiCompile): Job? {
         if (!_measuring.compareAndSet(null, pkg.value)) return null
         setBusy(pkg.value, "Resetting…")
         keepAlive()
+        inFlightMemMode = null
+        inFlightRecompiled = false
         return scope.launch {
             var failMsg: String? = null
-            var cancelled = false
             try {
                 failMsg = runMeasure(pkg, uiCompile)
-            } catch (e: CancellationException) {
-                cancelled = true
-                throw e
             } finally {
-                withContext(NonCancellable) { finishSequence(pkg.value, failMsg, cancelled) }
+                withContext(NonCancellable) { finishSequence(pkg.value, failMsg) }
             }
         }
     }
@@ -194,6 +197,12 @@ class LaunchRunner(
         }
     }
 
+    /**
+     * Returns the failure message, or null when the result was stored. The outer
+     * finally restores from the in-memory mode ([inFlightMemMode]) and the store
+     * record; [inFlightRecompiled] marks a landed recompile so a leftover record
+     * from a failed clear is left for the restorer instead of recompiling again.
+     */
     private suspend fun runMeasure(pkg: PackageName, uiCompile: UiCompile): String? {
         try {
             val d = describe(pkg.value)
@@ -201,12 +210,24 @@ class LaunchRunner(
             val ver = d.version ?: return "Couldn't read this app's version"
             val mode = previousMode(pkg.value)
             val timer = LaunchTimer(commands, runs)
+            // Write-ahead: persist BEFORE reset so a crash/cancel in the gap still
+            // restores. Best effort: if the write itself fails, the in-memory mode
+            // below still restores after reset.
+            try {
+                store.setRestorePending(RestorePending(pkg.value, mode, ver.versionCode))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+            }
             setBusy(pkg.value, "Resetting…")
             when (val reset = commands.resetCompiled(pkg.value)) {
                 is ToolResult.Ok -> {}
-                else -> return timingMessage(reset)
+                else -> {
+                    clearPendingQuietly()
+                    return timingMessage(reset)
+                }
             }
-            store.setRestorePending(RestorePending(pkg.value, mode, ver.versionCode))
+            inFlightMemMode = mode
             setBusy(pkg.value, "Timing launch…")
             val before = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
@@ -216,8 +237,11 @@ class LaunchRunner(
             val result = uiCompile(pkg, mode)
             // The screen shows the compile failure; the outer finally restores.
             if (!result.success) return null
-            // Successful recompile: the app is no longer pending.
-            store.setRestorePending(null)
+            // Successful recompile: the app is no longer pending. A record left by
+            // a failed clear stays for the restorer; inFlightRecompiled suppresses
+            // a redundant immediate recompile.
+            clearPendingQuietly()
+            inFlightRecompiled = true
             setBusy(pkg.value, "Timing launch again…")
             val after = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
@@ -238,8 +262,20 @@ class LaunchRunner(
         }
     }
 
-    private suspend fun finishSequence(pkg: String, failMsg: String?, cancelled: Boolean) {
-        val restored = restoreIfPending(pkg)
+    private suspend fun finishSequence(pkg: String, failMsg: String?) {
+        val memMode = inFlightMemMode
+        val recompiled = inFlightRecompiled
+        inFlightMemMode = null
+        inFlightRecompiled = false
+        if (recompiled) {
+            // The recompile landed; never restore here. A pending record means the
+            // post-success clear failed — it stays for the restorer. Surface only
+            // a save error, if any.
+            setProgress(pkg, failMsg?.let { LaunchProgress(error = it) })
+            _measuring.compareAndSet(pkg, null)
+            return
+        }
+        val restored = restoreIfPending(pkg, memMode)
         val error = when {
             restored && failMsg == null -> null
             restored -> failMsg
@@ -250,17 +286,28 @@ class LaunchRunner(
         _measuring.compareAndSet(pkg, null)
     }
 
-    /** Recompiles [pkg]'s pending record when it is still ours; true when nothing is left to do. */
-    private suspend fun restoreIfPending(pkg: String): Boolean {
-        val pending = try {
+    /**
+     * Recompiles [pkg]'s pending record when it is still ours; true when nothing
+     * is left to do. Falls back to [memMode] when the store record is missing
+     * (failed write or unreadable store) after a successful reset.
+     */
+    private suspend fun restoreIfPending(pkg: String, memMode: CompileMode?): Boolean {
+        val stored = try {
             store.restorePending.first()
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            return false
+            null
         }
-        if (pending == null || pending.pkg != pkg) return true
-        return restoreRecord(pending)
+        if (stored != null && stored.pkg != pkg) return true
+        val mode = memMode ?: stored?.mode ?: return true
+        val name = PackageName.parse(pkg) ?: run {
+            clearPendingQuietly()
+            return true
+        }
+        if (!quietCompile(name, mode)) return false
+        clearPendingQuietly()
+        return true
     }
 
     private suspend fun restoreRecord(pending: RestorePending): Boolean {
