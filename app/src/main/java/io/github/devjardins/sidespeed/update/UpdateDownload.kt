@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.update
 
 import io.github.devjardins.sidespeed.BuildConfig
+import io.github.devjardins.sidespeed.helper.CommandAllowlist
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -9,7 +10,6 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-const val MAX_APK_BYTES = 67_108_664L
 private const val MAX_REDIRECTS = 5
 private const val TAG_RE = "^v?[0-9]+(\\.[0-9]+){1,3}$"
 
@@ -52,7 +52,7 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
     suspend fun downloadTo(
         url: String,
         dest: File,
-        maxBytes: Long = MAX_APK_BYTES,
+        maxBytes: Long = CommandAllowlist.MAX_INSTALL_BYTES,
         onProgress: (Int) -> Unit = {},
     ): Result<File> {
         val part = File(dest.path + ".tmp")
