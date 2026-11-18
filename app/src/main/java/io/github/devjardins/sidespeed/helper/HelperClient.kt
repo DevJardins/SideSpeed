@@ -24,6 +24,13 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 import java.security.SecureRandom
 
+/** The outcome of streaming an update to the helper: every byte written, a failed install, or no helper. */
+sealed interface InstallOutcome {
+    object Started : InstallOutcome
+    data class Failed(val exit: Int, val lastLine: String?) : InstallOutcome
+    object HelperDown : InstallOutcome
+}
+
 /** A verified helper's answer to `ping`. */
 data class HelperPing(val version: Int, val apkPath: String) {
     /** False when the helper runs code from another APK than [expectedApkPath] (ours was updated): restart it. */
@@ -125,6 +132,57 @@ class HelperClient(
         val port = verifiedPort ?: throw AdbConnectionLost("helper not verified")
         val exit = exchange(port, command, readTimeoutMs = 0) { emit(ShellEvent.Line(it)) }
         emit(ShellEvent.Exit(exit))
+    }
+
+    /**
+     * Streams [apk] to the verified helper as `install-self <size>` + raw bytes. Returns [Started]
+     * once every byte is written: the app expects to be killed by its own update shortly afterwards,
+     * so END is not required for success (a broken connection after a full write still counts). An
+     * `END<n>` with n≠0 that does arrive is [Failed] with the last output line. [HelperDown] when the
+     * helper was never verified or the connect itself fails.
+     */
+    @OptIn(InternalCoroutinesApi::class)
+    suspend fun installSelf(apk: File): InstallOutcome = withContext(Dispatchers.IO) {
+        val port = verifiedPort ?: return@withContext InstallOutcome.HelperDown
+        val size = apk.length()
+        if (size <= 0) {
+            return@withContext InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file")
+        }
+        val socket = try {
+            runInterruptible { connect(port) }
+        } catch (_: IOException) {
+            if (verifiedPort == port) verifiedPort = null
+            return@withContext InstallOutcome.HelperDown
+        }
+        val onCancel = currentCoroutineContext().job
+            .invokeOnCompletion(onCancelling = true, invokeImmediately = true) { closeQuietly(socket) }
+        try {
+            socket.soTimeout = 0 // the install can take ~30 s, so no read timeout after the body
+            val out = socket.getOutputStream()
+            out.write("install-self $size\n".toByteArray(Charsets.US_ASCII))
+            apk.inputStream().use { it.copyTo(out) }
+            out.flush()
+            val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
+            var last: String? = null
+            while (true) {
+                val line = try {
+                    reader.readLine()
+                } catch (e: IOException) {
+                    currentCoroutineContext().ensureActive()
+                    break
+                } ?: break
+                val end = HelperProtocol.parseEnd(line)
+                if (end != null) {
+                    return@withContext if (end == 0) InstallOutcome.Started
+                    else InstallOutcome.Failed(end, last)
+                }
+                last = line
+            }
+            InstallOutcome.Started
+        } finally {
+            onCancel.dispose()
+            closeQuietly(socket)
+        }
     }
 
     /** Port from [portFile], if it holds a port of the helper's range. */
