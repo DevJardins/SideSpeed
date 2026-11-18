@@ -71,6 +71,9 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
     }
     fun failure(message: String = "Failure"): Flow<CompileEvent> = flow { emit(CompileEvent.Finished(false, true, message)) }
 
+    var measuring: String? = null
+    var helperUpCalls = 0
+
     val engine = MaintenanceEngine(
         source, store, prefs,
         runCompile = { pkg, mode -> calls += pkg.value to mode; script(pkg.value) },
@@ -79,6 +82,8 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
         clock = { now },
+        measuring = { measuring },
+        onHelperUp = { helperUpCalls++ },
     )
     val phases get() = engine.state.value.phases
 }
@@ -240,6 +245,32 @@ class MaintenanceEngineTest {
         advanceTimeBy(30_000); runCurrent()
         assertEquals(1, h.calls.size)
         assertFalse(h.engine.state.value.helperDown)
+    }
+
+    @Test fun measuredPackageIsSkippedUntilSequenceEnds() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 500)
+        h.store.setMaintained("a.a", true)
+        h.measuring = "a.a"
+        runCurrent()
+        assertTrue(h.calls.isEmpty())
+        h.measuring = null
+        h.engine.scan()
+        runCurrent()
+        assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
+    }
+
+    @Test fun helperUpTransitionFiresHookOnce() = runTest {
+        val h = Harness(this)
+        h.up = false
+        h.source.put("a.a")
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertEquals(0, h.helperUpCalls)
+        h.up = true
+        advanceTimeBy(30_000); runCurrent()
+        assertEquals(1, h.helperUpCalls)
+        assertEquals(1, h.calls.size)
     }
 
     @Test fun helperDyingMidCompileRequeuesWithoutUsingARetry() = runTest {

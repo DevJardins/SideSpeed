@@ -28,4 +28,12 @@ class ArmingTest {
     @Test fun serviceNeededWhenBothArmedAndCleanupOn() {
         assertTrue(isServiceNeeded(AutoOptimizeMode.ALL, setOf("com.x.y"), CleanupThreshold.GB_1))
     }
+
+    @Test fun serviceNeededWhileMeasuringEvenIfNothingElse() {
+        assertTrue(isServiceNeeded(AutoOptimizeMode.SELECTED, emptySet(), CleanupThreshold.OFF, measuring = true))
+    }
+
+    @Test fun serviceNotNeededWhenNotMeasuring() {
+        assertFalse(isServiceNeeded(AutoOptimizeMode.SELECTED, emptySet(), CleanupThreshold.OFF, measuring = false))
+    }
 }

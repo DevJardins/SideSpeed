@@ -50,6 +50,10 @@ class MaintenanceEngine(
     private val badges: suspend (Collection<String>) -> Map<String, StatusBadge> = { emptyMap() },
     private val scope: CoroutineScope,
     private val ownPackage: String,
+    /** Package with an in-flight launch measurement; never compiled or queued while set. */
+    private val measuring: () -> String? = { null },
+    /** Fires once per helper down→up transition so a pending restore can retry. */
+    private val onHelperUp: () -> Unit = {},
     private val clock: () -> Long = System::currentTimeMillis,
     private val retryDelayMs: Long = 30 * 60_000L,
     private val maxRetries: Int = 3,
@@ -114,7 +118,9 @@ class MaintenanceEngine(
             AutoOptimizeMode.SIDELOADED -> source.list().filter { it.isSideloaded }
             AutoOptimizeMode.ALL -> source.list().filter { !it.isSystem }
         }
-        val set: List<AppEntry> = (tickedApps + covered).filter { it.packageName != ownPackage }.distinctBy { it.packageName }
+        val skip = measuring()
+        val set: List<AppEntry> = (tickedApps + covered).filter { it.packageName != ownPackage && it.packageName != skip }
+            .distinctBy { it.packageName }
         val names = set.map { it.packageName }.toSet()
         synchronized(lock) {
             maintainedNow = names
@@ -151,6 +157,12 @@ class MaintenanceEngine(
     private suspend fun drain() {
         while (true) {
             val pkg = synchronized(lock) { queue.firstOrNull() } ?: return
+            // A launch sequence owns this package right now: drop it (its own
+            // recompile is the maintenance), a later scan re-adds it if stale.
+            if (pkg == measuring()) {
+                synchronized(lock) { queue.remove(pkg) }
+                continue
+            }
             if (!helperUp()) {
                 setHelperDown(true)
                 delay(helperPollMs)
@@ -215,7 +227,13 @@ class MaintenanceEngine(
     }
 
     private fun setHelperDown(down: Boolean) {
-        synchronized(lock) { helperDown = down }
+        val wasDown = synchronized(lock) {
+            val was = helperDown
+            helperDown = down
+            was
+        }
+        // The drain loop calls with false on every pass while up; fire only on the transition.
+        if (wasDown && !down) runCatching { onHelperUp() }
         publish()
     }
 
