@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import io.github.devjardins.sidespeed.ui.theme.bleed
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,8 +44,17 @@ fun ToolsScreen(
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
     SsScreen {
+        // The scroll clips to the column bounds, which would cut the first and last
+        // focusables' 2dp focus ring and focus scale: bleed the column out
+        // symmetrically and pad the scroll content by the same amount, so resting
+        // edges stay aligned.
+        val scrollInset = 8.dp
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            Modifier
+                .fillMaxSize()
+                .bleed(horizontal = scrollInset, vertical = scrollInset)
+                .verticalScroll(rememberScrollState())
+                .padding(scrollInset),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

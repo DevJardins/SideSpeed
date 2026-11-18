@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import io.github.devjardins.sidespeed.ui.theme.bleed
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -119,11 +120,18 @@ fun AppsScreen(
             // Five buttons plus the Mode group no longer fit a 1080p row at the default
             // padding, and narrower layouts (Fire TV Cube) fit even less: tighten the tab
             // buttons to the Mode buttons' padding and let the row scroll when it must.
+            // The scroll clips to the row bounds, which would cut the end buttons' 2dp
+            // focus ring and 1.03x focus scale: bleed the row out symmetrically and pad
+            // the scroll content by the same amount, so resting edges stay aligned.
             val tabButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+            val tabRowInset = 8.dp
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .bleed(horizontal = tabRowInset)
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = tabRowInset),
             ) {
                 Tab.entries.forEach { t ->
                     SsButton(

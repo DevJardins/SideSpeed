@@ -23,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
@@ -37,6 +39,32 @@ import androidx.tv.material3.Text
 val CardShape = RoundedCornerShape(12.dp)
 val ButtonShape = RoundedCornerShape(10.dp)
 val PillShape = RoundedCornerShape(50)
+
+/**
+ * Lets a scrollable container's clipped content breathe: measures the child with constraints
+ * widened by [horizontal]/[vertical] on each side and places it at the negative inset, so the
+ * scrollable's clip gains a symmetric margin around the content. Reports the unwidened size so
+ * the parent positions this node exactly as before; pair with matching inner padding so resting
+ * content keeps exactly its original bounds on every edge.
+ */
+fun Modifier.bleed(horizontal: Dp = 0.dp, vertical: Dp = 0.dp): Modifier = layout { measurable, constraints ->
+    val horizontalPx = horizontal.roundToPx()
+    val verticalPx = vertical.roundToPx()
+    val placeable = measurable.measure(
+        Constraints(
+            minWidth = constraints.minWidth,
+            maxWidth = if (constraints.hasBoundedWidth) constraints.maxWidth + horizontalPx * 2 else Constraints.Infinity,
+            minHeight = constraints.minHeight,
+            maxHeight = if (constraints.hasBoundedHeight) constraints.maxHeight + verticalPx * 2 else Constraints.Infinity,
+        ),
+    )
+    layout(
+        (placeable.width - horizontalPx * 2).coerceAtLeast(0),
+        (placeable.height - verticalPx * 2).coerceAtLeast(0),
+    ) {
+        placeable.place(-horizontalPx, -verticalPx)
+    }
+}
 
 private val focusRing @Composable get() = Border(BorderStroke(SsDimens.FocusRing, SsColors.Accent), shape = ButtonShape)
 
