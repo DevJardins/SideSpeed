@@ -21,7 +21,7 @@ fun packageEventTarget(action: String?, dataSchemeSpecificPart: String?, ownPack
     }
 }
 
-/** Restarts the service after boot, but only for users who turned the feature on. */
+/** Restarts the service after boot, but only for users who turned a feature on. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
@@ -29,7 +29,7 @@ class BootReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                if (isArmed(container.maintenanceStore)) MaintenanceService.start(context.applicationContext)
+                if (isServiceNeeded(container.maintenanceStore, container.toolsStore)) MaintenanceService.start(context.applicationContext)
             } finally {
                 pending.finish()
             }

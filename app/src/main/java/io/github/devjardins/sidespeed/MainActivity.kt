@@ -23,13 +23,14 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
 import androidx.lifecycle.lifecycleScope
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
-import io.github.devjardins.sidespeed.maintenance.isArmed
+import io.github.devjardins.sidespeed.maintenance.isServiceNeeded
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.tools.SpaceCard
 import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
@@ -77,7 +78,8 @@ class MainActivity : ComponentActivity() {
             }
         })
         lifecycleScope.launch {
-            if (isArmed((application as SideSpeedApp).container.maintenanceStore)) MaintenanceService.start(applicationContext)
+            val c = (application as SideSpeedApp).container
+            if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
         }
         setContent {
             val icons = (application as SideSpeedApp).container.appIcons
@@ -130,7 +132,19 @@ class MainActivity : ComponentActivity() {
                     showTools && app == null -> ToolsScreen(
                         // Wave 1 replaces each placeholder with its own card, one line each.
                         health = { ToolsPlaceholder("Box health") },
-                        space = { ToolsPlaceholder("Free up space") },
+                        space = {
+                            val c = (application as SideSpeedApp).container
+                            SpaceCard(
+                                store = c.toolsStore,
+                                deviceInfo = c.deviceInfo,
+                                cleanup = c.cleanup,
+                                onThresholdChanged = {
+                                    lifecycleScope.launch {
+                                        if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
+                                    }
+                                },
+                            )
+                        },
                         animations = { ToolsPlaceholder("Animations") },
                         onBack = { showTools = false },
                     )
@@ -143,9 +157,9 @@ class MainActivity : ComponentActivity() {
                         autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
                         onAutoOptimizeMode = { chosen ->
                             lifecycleScope.launch {
-                                val store = (application as SideSpeedApp).container.maintenanceStore
-                                store.setMode(chosen)
-                                if (isArmed(store)) MaintenanceService.start(applicationContext)
+                                val c = (application as SideSpeedApp).container
+                                c.maintenanceStore.setMode(chosen)
+                                if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
                             }
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
