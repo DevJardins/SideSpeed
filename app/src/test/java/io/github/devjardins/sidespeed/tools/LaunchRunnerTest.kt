@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -121,12 +122,14 @@ class LaunchRunnerTest {
         store: ToolsStore = FakeToolsStore(),
         prefs: FakePrefs = FakePrefs(),
         scope: CoroutineScope,
+        awaitEngineIdle: suspend (String) -> Unit = {},
     ) = LaunchRunner(
         commands = ToolsCommands(script) { true },
         store = store,
         prefs = prefs,
         compile = CompileRunner(script),
         scope = scope,
+        awaitEngineIdle = awaitEngineIdle,
         launchActivityOf = { "com.nuvio.tv.Main" },
         versionOf = { PkgVersion(7, 100) },
     )
@@ -194,6 +197,29 @@ class LaunchRunnerTest {
         val r = runner(script, store, scope = backgroundScope)
         r.restorePending()
         assertEquals(RestorePending("com.nuvio.tv", CompileMode.SPEED, 7), store.pending.value)
+    }
+
+    @Test fun measureWaitsForEngineBeforeReset() = runTest(timeout = 10.seconds) {
+        val script = fullScript()
+        val store = FakeToolsStore()
+        val gate = CompletableDeferred<Unit>()
+        var waitedFor: String? = null
+        val r = runner(script, store, scope = backgroundScope, awaitEngineIdle = { pkg ->
+            waitedFor = pkg
+            gate.await()
+        })
+        var finished = false
+        val job = r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!
+        runCurrent()
+        assertEquals("com.nuvio.tv", waitedFor)
+        assertEquals("Waiting for SideSpeed to finish optimizing this app…", r.progress.value["com.nuvio.tv"]?.busy)
+        assertTrue("no reset while the engine is busy", resetCmd !in script.commands)
+        gate.complete(Unit)
+        job.join()
+        finished = true
+        assertTrue(finished)
+        assertEquals(1, store.saved.size)
+        assertNull(r.progress.value["com.nuvio.tv"])
     }
 
     @Test fun restorerIsNoOpWithoutPending() = runTest(timeout = 10.seconds) {

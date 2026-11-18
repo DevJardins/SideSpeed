@@ -90,6 +90,7 @@ class AppContainer(context: Context) {
             prefs = prefs,
             compile = compileRunner,
             scope = appScope,
+            awaitEngineIdle = { pkg -> maintenance.awaitNotRunning(pkg) },
             launchActivityOf = installedApps::launchActivity,
             versionOf = installedApps::versionOf,
             keepAlive = { MaintenanceService.start(appContext) },

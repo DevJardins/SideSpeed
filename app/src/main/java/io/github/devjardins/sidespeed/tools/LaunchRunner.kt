@@ -53,6 +53,7 @@ class LaunchRunner(
     private val prefs: Prefs,
     private val compile: CompileRunner,
     private val scope: CoroutineScope,
+    private val awaitEngineIdle: suspend (String) -> Unit,
     private val launchActivityOf: (String) -> String? = { null },
     private val versionOf: (String) -> PkgVersion? = { null },
     private val keepAlive: () -> Unit = {},
@@ -210,6 +211,16 @@ class LaunchRunner(
             val ver = d.version ?: return "Couldn't read this app's version"
             val mode = previousMode(pkg.value)
             val timer = LaunchTimer(commands, runs)
+            // Wait out any in-flight maintenance compile first: the engine skips
+            // newly measured packages, but one already running must finish.
+            setBusy(pkg.value, "Waiting for SideSpeed to finish optimizing this app…")
+            try {
+                awaitEngineIdle(pkg.value)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return "Couldn't start the measurement"
+            }
             // Write-ahead: persist BEFORE reset so a crash/cancel in the gap still
             // restores. Best effort: if the write itself fails, the in-memory mode
             // below still restores after reset.

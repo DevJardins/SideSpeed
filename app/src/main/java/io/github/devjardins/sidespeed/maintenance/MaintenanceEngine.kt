@@ -90,6 +90,11 @@ class MaintenanceEngine(
         scope.launch { doScan() }
     }
 
+    /** Suspends until no maintenance compile is running for [pkg]. */
+    suspend fun awaitNotRunning(pkg: String) {
+        state.first { it.phases[pkg] != JobPhase.RUNNING }
+    }
+
     /** Manual retry: forgets earlier failures of [pkg] and enqueues it if stale. */
     fun retry(pkg: String) {
         synchronized(lock) {
@@ -189,6 +194,8 @@ class MaintenanceEngine(
         val app = source.find(pkg) ?: run { store.setMaintained(pkg, false); return }
         val name = PackageName.parse(pkg) ?: return
         val mode = prefs.lastCompile(pkg).first()?.mode ?: CompileMode.SPEED
+        // A launch sequence may have started after this job was taken: never compile under it.
+        if (pkg == measuring()) return
         val start = clock()
         var finished: CompileEvent.Finished? = null
         try {

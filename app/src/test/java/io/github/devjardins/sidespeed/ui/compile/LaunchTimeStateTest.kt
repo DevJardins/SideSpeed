@@ -137,6 +137,7 @@ class LaunchTimeStateTest {
         prefs = prefs,
         compile = CompileRunner(script),
         scope = scope,
+        awaitEngineIdle = {},
         launchActivityOf = { "com.nuvio.tv.Main" },
         versionOf = { PkgVersion(7, 100) },
     )
@@ -233,6 +234,7 @@ class LaunchTimeStateTest {
             prefs = FakePrefs(),
             compile = CompileRunner(script),
             scope = backgroundScope,
+            awaitEngineIdle = {},
             launchActivityOf = { null },
             versionOf = { PkgVersion(7, 100) },
         )

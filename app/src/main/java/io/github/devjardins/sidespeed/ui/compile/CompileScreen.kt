@@ -174,7 +174,11 @@ fun CompileScreen(
                             enabled = !launchBusy,
                         )
                     }
-                    SsButton(if (showLog) "Hide log" else "Show log", onClick = { showLog = !showLog })
+                    SsButton(
+                        if (showLog) "Hide log" else "Show log",
+                        onClick = { showLog = !showLog },
+                        enabled = !launchBusy,
+                    )
                     if (result.message == "Connection lost") {
                         SsButton("Check helper", onClick = onCheckHelper, enabled = !launchBusy)
                     }
