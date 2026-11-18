@@ -23,6 +23,7 @@ android {
         targetSdk = 36
         versionCode = 4
         versionName = "0.4.0"
+        buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
     }
 
     signingConfigs {
@@ -39,6 +40,12 @@ android {
     }
 
     buildTypes {
+        // Debug serves updates from -PupdateBaseUrl (the emulator E2E); release is always GitHub.
+        debug {
+            val base = (findProperty("updateBaseUrl") as String?)?.takeIf { it.isNotBlank() }
+                ?: "https://github.com/DevJardins/SideSpeed/releases/download"
+            buildConfigField("String", "UPDATE_BASE_URL", "\"$base\"")
+        }
         release {
             isMinifyEnabled = true
             signingConfigs.findByName("release")?.let { signingConfig = it }
@@ -70,6 +77,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

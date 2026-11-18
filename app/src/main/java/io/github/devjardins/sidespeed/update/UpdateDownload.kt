@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.update
 
+import io.github.devjardins.sidespeed.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -11,14 +12,37 @@ import java.net.URL
 const val MAX_APK_BYTES = 67_108_664L
 private const val MAX_REDIRECTS = 5
 private const val TAG_RE = "^v?[0-9]+(\\.[0-9]+){1,3}$"
-private const val RELEASE_BASE = "https://github.com/DevJardins/SideSpeed/releases/download"
 
-/** Release asset URL, or null when [tag] is not a plain version tag. */
-fun releaseAssetUrl(tag: String, asset: String, baseUrl: String = RELEASE_BASE): String? {
+/**
+ * Release asset URL, or null when [tag] is not a plain version tag. Plain http is never allowed,
+ * except the debug test hook: `http://10.0.2.2` (the emulator's host loopback) in debug builds.
+ */
+fun releaseAssetUrl(
+    tag: String,
+    asset: String,
+    baseUrl: String = BuildConfig.UPDATE_BASE_URL,
+): String? {
     if (!Regex(TAG_RE).matches(tag)) return null
     if (asset.isEmpty() || '/' in asset || asset == "." || asset == "..") return null
-    return "$baseUrl/$tag/$asset"
+    val base = baseUrl.trimEnd('/')
+    if (base.startsWith("https://")) return "$base/$tag/$asset"
+    if (isDebugHttpUrl(base)) return "$base/$tag/$asset"
+    return null
 }
+
+/**
+ * Debug builds only: plain http whose host is the emulator host loopback (host-matched, so no
+ * suffix tricks). Applies to bases and to full URLs, since the host parse drops any path.
+ */
+private fun isDebugHttpUrl(url: String): Boolean {
+    if (!BuildConfig.DEBUG) return false
+    if (!url.startsWith("http://")) return false
+    return url.removePrefix("http://").substringBefore('/').substringBefore(':') == "10.0.2.2"
+}
+
+/** Final-URL gate for downloads: https, or the debug emulator-host hook. */
+private fun isAllowedFinalUrl(url: String): Boolean =
+    url.startsWith("https://") || isDebugHttpUrl(url)
 
 /** Downloads release files over HTTPS with redirect, cap and cleanup handling. */
 class UpdateDownload(private val open: (url: String) -> Opened) {
@@ -42,7 +66,7 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
         } catch (e: Exception) {
             return fail(e)
         }
-        if (!opened.finalUrl.startsWith("https://")) {
+        if (!isAllowedFinalUrl(opened.finalUrl)) {
             opened.body.close()
             return fail(IllegalStateException("Non-https final URL: ${opened.finalUrl}"))
         }
@@ -97,7 +121,7 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
         } catch (e: Exception) {
             return Result.failure(e)
         }
-        if (!opened.finalUrl.startsWith("https://")) {
+        if (!isAllowedFinalUrl(opened.finalUrl)) {
             opened.body.close()
             return Result.failure(IllegalStateException("Non-https final URL: ${opened.finalUrl}"))
         }
@@ -135,7 +159,9 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
         fun httpOpen(url: String): Opened {
             var current = url
             repeat(MAX_REDIRECTS + 1) {
-                if (!current.startsWith("https://")) throw IllegalStateException("Non-https URL: $current")
+                if (!isAllowedFinalUrl(current)) {
+                    throw IllegalStateException("Non-https URL: $current")
+                }
                 val conn = URL(current).openConnection() as HttpURLConnection
                 conn.instanceFollowRedirects = false
                 conn.connectTimeout = 15_000

@@ -26,6 +26,17 @@ class UpdateDownloadTest {
         assertEquals(null, releaseAssetUrl("latest", "SideSpeed.apk"))
     }
 
+    @Test fun debug_http_base_allowed_only_for_emulator_host() {
+        // Unit tests run the debug variant, so the debug hook is active here.
+        assertEquals(
+            "http://10.0.2.2:8000/v0.5.0/SideSpeed.apk",
+            releaseAssetUrl("v0.5.0", "SideSpeed.apk", "http://10.0.2.2:8000"),
+        )
+        assertEquals(null, releaseAssetUrl("v0.5.0", "SideSpeed.apk", "http://evil.example:8000"))
+        assertEquals(null, releaseAssetUrl("v0.5.0", "SideSpeed.apk", "http://10.0.2.2.evil.example:8000"))
+        assertEquals(null, releaseAssetUrl("v0.5.0", "SideSpeed.apk", "http://10.0.2.2.evil.example:8000/v0.5.0"))
+    }
+
     private fun bytes(n: Int): ByteArray = ByteArray(n) { (it % 251).toByte() }
 
     @Test fun download_writes_file_and_reports_progress_to_100() = runBlocking {
