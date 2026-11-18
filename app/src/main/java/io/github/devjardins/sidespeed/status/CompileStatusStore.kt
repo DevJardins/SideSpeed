@@ -9,6 +9,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -104,6 +107,11 @@ class CompileStatus(
         }
     }
 
+    private val _active = MutableStateFlow(false)
+
+    /** True while a compile is running; driven by the same reporters as [snapshot]. */
+    val active: StateFlow<Boolean> = _active.asStateFlow()
+
     fun onStart(pkg: String, label: String, mode: String) = mutate { onStart(pkg, label, mode) }
     fun onFinish(pkg: String, label: String, ok: Boolean) = mutate { onFinish(pkg, label, ok) }
     fun onHelperLost() = mutate { onHelperLost() }
@@ -114,6 +122,12 @@ class CompileStatus(
     suspend fun snapshot(): StatusRow = mutex.withLock { tracker.snapshot() }
 
     private fun mutate(block: CompileStatusTracker.() -> Unit) {
-        scope.launch { mutex.withLock { tracker.block(); store.save(tracker.export()) } }
+        scope.launch {
+            mutex.withLock {
+                tracker.block()
+                _active.value = tracker.isActive()
+                store.save(tracker.export())
+            }
+        }
     }
 }

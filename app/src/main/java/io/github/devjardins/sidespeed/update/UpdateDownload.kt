@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.update
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.io.File
@@ -80,6 +81,10 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
                 return fail(IllegalStateException("Could not move download into place"))
             }
             Result.success(dest)
+        } catch (e: CancellationException) {
+            part.delete()
+            dest.delete()
+            throw e
         } catch (e: Exception) {
             fail(e)
         }
@@ -115,6 +120,8 @@ class UpdateDownload(private val open: (url: String) -> Opened) {
                 }
                 Result.success(out.toString())
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

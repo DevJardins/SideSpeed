@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -173,5 +174,32 @@ class CleanupTest {
         val record = cleanup.maybeAuto()
         assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper to use this"), record)
         assertEquals(record, store.lastFlow.value)
+    }
+
+    @Test fun running_true_during_clean_and_false_after() {
+        val entered = java.util.concurrent.CountDownLatch(1)
+        val release = java.util.concurrent.CountDownLatch(1)
+        val blockingDevice = object : DeviceInfo {
+            override fun storage(): StorageInfo {
+                entered.countDown()
+                release.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                return StorageInfo(5_200_000_000L, 8_000_000_000L)
+            }
+            override fun memory(): MemoryInfo = MemoryInfo(availBytes = 0, totalBytes = 0)
+            override fun summary(): DeviceSummary = DeviceSummary(model = "", androidVersion = "", sdk = 0)
+        }
+        val fake = FakeAdbBackend()
+        val commands = ToolsCommands(fake) { true }
+        val cleanup = Cleanup(commands, blockingDevice, FakeToolsStore(threshold = CleanupThreshold.OFF)) { atMs }
+        fake.on("pm trim-caches 999999999999999") { emptyList<String>() to 0 }
+        assertFalse(cleanup.running.value)
+        val t = kotlin.concurrent.thread {
+            kotlinx.coroutines.runBlocking { cleanup.cleanNow() }
+        }
+        assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        assertTrue(cleanup.running.value)
+        release.countDown()
+        t.join(5_000)
+        assertFalse(cleanup.running.value)
     }
 }

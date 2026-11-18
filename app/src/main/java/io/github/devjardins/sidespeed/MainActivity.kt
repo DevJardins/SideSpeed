@@ -207,18 +207,20 @@ class MainActivity : ComponentActivity() {
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         onOpenTools = { showTools = true },
                         banner = {
-                            val tools = (application as SideSpeedApp).container.toolsStore
+                            val container = (application as SideSpeedApp).container
                             UpdateBannerSlot(
                                 remember(currentVersion) {
                                     UpdateCheck(
                                         githubReleaseFetch(),
-                                        tools,
+                                        container.toolsStore,
                                         System::currentTimeMillis,
                                         currentVersion,
                                     )
                                 },
-                                tools,
+                                container.toolsStore,
                                 currentVersion,
+                                container.selfUpdater,
+                                container.updateBusy,
                             )
                         },
                         tvAddress = tvAddress,

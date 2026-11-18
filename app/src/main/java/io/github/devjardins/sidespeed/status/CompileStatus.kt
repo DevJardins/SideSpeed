@@ -121,6 +121,9 @@ class CompileStatusTracker(
 
     fun setSelfOptimized(optimized: Boolean) = synchronized(lock) { selfOptimized = optimized }
 
+    /** True while a compile is running (not merely interrupted and awaiting retry). */
+    fun isActive(): Boolean = synchronized(lock) { current != null }
+
     fun snapshot(): StatusRow = synchronized(lock) {
         val active = current ?: interrupted
         val phase = when {

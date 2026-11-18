@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.tools
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 
 /**
@@ -12,8 +15,22 @@ class Cleanup(
     private val store: ToolsStore,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    private val _running = MutableStateFlow(false)
+
+    /** True while a cleanup run is in flight. */
+    val running: StateFlow<Boolean> = _running.asStateFlow()
+
+    private suspend fun <T> tracked(block: suspend () -> T): T {
+        _running.value = true
+        try {
+            return block()
+        } finally {
+            _running.value = false
+        }
+    }
+
     /** Clears all caches the helper can and records freed = free-after − free-before (clamped ≥ 0). */
-    suspend fun cleanNow(): CleanupRecord {
+    suspend fun cleanNow(): CleanupRecord = tracked {
         val before = deviceInfo.storage().freeBytes
         val record = when (val result = commands.trimCaches(CLEAN_NOW_TARGET_BYTES)) {
             is ToolResult.Ok -> {
@@ -25,7 +42,7 @@ class Cleanup(
             is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
         }
         store.setLastCleanup(record)
-        return record
+        record
     }
 
     /**
@@ -36,17 +53,19 @@ class Cleanup(
         val thresholdBytes = store.cleanupThreshold.first().bytes ?: return null
         val before = deviceInfo.storage().freeBytes
         if (before >= thresholdBytes) return null
-        val record = when (val result = commands.trimCaches(thresholdBytes)) {
-            is ToolResult.Ok -> {
-                val after = deviceInfo.storage().freeBytes
-                CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
+        return tracked {
+            val record = when (val result = commands.trimCaches(thresholdBytes)) {
+                is ToolResult.Ok -> {
+                    val after = deviceInfo.storage().freeBytes
+                    CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
+                }
+                is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
+                is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
+                is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
             }
-            is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
-            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
-            is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
+            store.setLastCleanup(record)
+            record
         }
-        store.setLastCleanup(record)
-        return record
     }
 
     companion object {
