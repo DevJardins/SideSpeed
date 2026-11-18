@@ -43,8 +43,9 @@ fun foregroundServiceType(sdk: Int): Int? = when {
 }
 
 /**
- * Keeps the process alive and owns the triggers: start, package added/replaced, and a 6-hourly rescan.
- * Set changes are watched by the engine itself. Runs only while [isArmed]; stops itself otherwise.
+ * Keeps the process alive and owns the triggers: start, package added/replaced, and a 6-hourly rescan
+ * (which also runs one automatic-cleanup pass). Set changes are watched by the engine itself. Runs only
+ * while [isServiceNeeded]; stops itself otherwise.
  */
 class MaintenanceService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
@@ -85,10 +86,15 @@ class MaintenanceService : Service() {
         }
 
         scope.launch {
-            combine(engine.state, container.maintenanceStore.maintained, container.maintenanceStore.mode) { s, t, m ->
-                s to isArmed(m, t)
-            }.collect { (state, armed) ->
-                if (!armed) {
+            combine(
+                engine.state,
+                container.maintenanceStore.maintained,
+                container.maintenanceStore.mode,
+                container.toolsStore.cleanupThreshold,
+            ) { s, t, m, th ->
+                s to isServiceNeeded(m, t, th)
+            }.collect { (state, needed) ->
+                if (!needed) {
                     stopSelf()
                 } else {
                     getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(notificationText(state)))
@@ -96,8 +102,10 @@ class MaintenanceService : Service() {
             }
         }
         scope.launch {
+            val cleanup = container.cleanup
             while (true) {
                 engine.scan()
+                runCatching { cleanup.maybeAuto() }
                 delay(6.hours)
             }
         }
