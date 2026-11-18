@@ -19,8 +19,8 @@ import io.github.devjardins.sidespeed.tools.Cleanup
 import io.github.devjardins.sidespeed.tools.DataStoreToolsStore
 import io.github.devjardins.sidespeed.tools.DeviceInfo
 import io.github.devjardins.sidespeed.tools.LaunchRunner
-import io.github.devjardins.sidespeed.helper.InstallOutcome
 import io.github.devjardins.sidespeed.maintenance.JobPhase
+import io.github.devjardins.sidespeed.update.FallbackInstaller
 import io.github.devjardins.sidespeed.tools.ToolsCommands
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.update.SelfUpdater
@@ -99,8 +99,9 @@ class AppContainer(context: Context) {
         }
     }
 
-    /** In-app self-update; the Task 6 fallback replaces [fallbackInstall] with the system installer. */
+    /** In-app self-update: silently through the helper, or the system installer when it is down. */
     val selfUpdater: SelfUpdater by lazy {
+        val fallback = FallbackInstaller(appContext)
         SelfUpdater(
             download = UpdateDownload(UpdateDownload::httpOpen),
             readApkFacts = { readApkFacts(appContext.packageManager, it) },
@@ -109,7 +110,7 @@ class AppContainer(context: Context) {
             },
             helperUp = { helper.ping() != null },
             helperInstall = { helper.installSelf(it) },
-            fallbackInstall = { InstallOutcome.Failed(0, null) },
+            fallbackInstall = { fallback.install(it) },
             cacheDir = appContext.cacheDir,
             busy = updateBusy,
         )
