@@ -43,6 +43,7 @@ internal class HelperServer(
     ) -> Int = { _, _, _, _ -> HelperProtocol.EXIT_HELPER_ERROR },
     private val bringBack: () -> Int = { 0 },
     private val installGate: InstallGate = InstallGate(),
+    private val bodyTimeoutMs: Int = BODY_TIMEOUT_MS,
 ) {
     private val slots = Semaphore(maxConnections)
 
@@ -160,6 +161,11 @@ internal class HelperServer(
     private fun handleInstallSelf(socket: Socket, uid: Int, out: Out, size: Long) {
         log("uid=$uid run install-self size=$size")
         val start = System.currentTimeMillis()
+        // Bound a stalled body: without this the socket keeps soTimeout=0 (set for compiles),
+        // and a client that stops mid-body would hold InstallGate and a slot forever. A timeout
+        // surfaces as SocketTimeoutException (an IOException), i.e. a short body: the install is
+        // destroyed and bring-back is skipped.
+        socket.soTimeout = bodyTimeoutMs
         installGate.begin()
         try {
             val stdin = CappedInputStream(socket.getInputStream(), size)
@@ -210,6 +216,7 @@ internal class HelperServer(
     companion object {
         const val MAX_CONNECTIONS = 4
         const val REQUEST_TIMEOUT_MS = 10_000
+        const val BODY_TIMEOUT_MS = 30_000
 
         /**
          * Reads one request line byte by byte, so nothing past it is consumed. Returns null for an empty request,

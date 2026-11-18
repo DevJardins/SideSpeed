@@ -13,6 +13,7 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
+import java.net.SocketTimeoutException
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -48,6 +49,7 @@ class HelperServerTest {
             { _, _, _, _ -> HelperProtocol.EXIT_HELPER_ERROR },
         bringBack: () -> Int = { bringBackCalls.incrementAndGet(); 0 },
         installGate: InstallGate = InstallGate(),
+        bodyTimeoutMs: Int = HelperServer.BODY_TIMEOUT_MS,
     ) {
         val s = HelperServer(
             server = server,
@@ -64,6 +66,7 @@ class HelperServerTest {
             installRunner = installRunner,
             bringBack = bringBack,
             installGate = installGate,
+            bodyTimeoutMs = bodyTimeoutMs,
             writeAck = writeAck,
             log = { logs += it },
             maxConnections = maxConnections,
@@ -284,6 +287,37 @@ class HelperServerTest {
         val deadline = System.currentTimeMillis() + 5_000
         while (bringBackCalls.get() == 0 && System.currentTimeMillis() < deadline) Thread.sleep(50)
         assertEquals(1, bringBackCalls.get())
+    }
+
+    @Test fun install_self_stalled_body_times_out_and_releases_gate() {
+        val gate = InstallGate()
+        var runnerSaw: Throwable? = null
+        start(
+            installRunner = { _, stdin, _, _ ->
+                try {
+                    stdin.readBytes()
+                } catch (t: Throwable) {
+                    runnerSaw = t
+                    throw t
+                }
+                0
+            },
+            installGate = gate,
+            bodyTimeoutMs = 300,
+        )
+        val lines = Socket(loopback, server.localPort).use { c ->
+            c.soTimeout = 5_000
+            c.getOutputStream().write("install-self 5\nhe".toByteArray())
+            c.getOutputStream().flush()
+            // Stay open but send nothing more: the server must time out the body.
+            c.getInputStream().bufferedReader().readLines()
+        }
+        assertTrue(runnerSaw is SocketTimeoutException)
+        assertEquals("__END__:125", lines.last())
+        assertEquals(0, bringBackCalls.get())
+        val waiter = thread { gate.awaitIdle() }
+        waiter.join(5_000)
+        assertFalse(waiter.isAlive)
     }
 
     @Test fun install_gate_defers_await_idle_until_end() {
