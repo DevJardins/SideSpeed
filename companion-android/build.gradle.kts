@@ -50,6 +50,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    packaging {
+        // bcprov/bcpkix/bcutil-jdk18on 1.85 jars each carry META-INF/LICENSE.md.
+        resources {
+            excludes += "META-INF/LICENSE.md"
+        }
+    }
 }
 
 kotlin {
@@ -65,5 +72,18 @@ dependencies {
     implementation(libs.jb.compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.work.runtime)
+
+    constraints {
+        implementation(libs.bouncycastle.bcprov.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+        implementation(libs.bouncycastle.bcpkix.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+        implementation(libs.bouncycastle.bcutil.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+    }
+
     testImplementation(libs.junit)
 }

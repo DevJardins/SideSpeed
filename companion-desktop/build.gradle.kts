@@ -24,6 +24,19 @@ dependencies {
     implementation(libs.jb.compose.foundation)
     implementation(libs.jb.compose.ui)
     implementation(libs.kotlinx.coroutines.core)
+
+    constraints {
+        implementation(libs.bouncycastle.bcprov.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+        implementation(libs.bouncycastle.bcpkix.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+        implementation(libs.bouncycastle.bcutil.jdk18on) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+    }
+
     testImplementation(libs.junit)
 }
 

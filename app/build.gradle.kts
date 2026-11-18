@@ -95,6 +95,12 @@ dependencies {
     implementation(libs.conscrypt.android)
     implementation(libs.hiddenapibypass)
 
+    constraints {
+        implementation(libs.bouncycastle.bcprov.jdk15to18) {
+            because("CVE fix: force BouncyCastle 1.85")
+        }
+    }
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
