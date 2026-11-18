@@ -5,6 +5,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -35,7 +37,7 @@ class SelfUpdaterTest {
         helperUp: Boolean = true,
         helperResult: InstallOutcome = InstallOutcome.Started,
         fallbackResult: InstallOutcome = InstallOutcome.Started,
-        busy: Boolean = false,
+        busyFlow: Flow<Boolean>? = null,
         open: ((url: String) -> UpdateDownload.Opened)? = null,
         throttleMs: Long = 0,
         helperCalls: MutableList<File> = mutableListOf(),
@@ -66,7 +68,7 @@ class SelfUpdaterTest {
                 fallbackResult
             },
             cacheDir = tmp.root,
-            busy = flowOf(busy),
+            busy = busyFlow ?: flowOf(false),
             scope = scope,
         )
     }
@@ -80,9 +82,21 @@ class SelfUpdaterTest {
     private suspend fun SelfUpdater.awaitState(predicate: (UpdateUiState) -> Boolean): UpdateUiState =
         withTimeout(5_000) { state.first(predicate) }
 
+    @Test fun busy_clears_to_available_when_job_ends() = runBlocking {
+        val busy = MutableStateFlow(true)
+        val u = updater(busyFlow = busy)
+        u.start("v0.5.0")
+        assertEquals(UpdateUiState.Busy, u.awaitState { it == UpdateUiState.Busy })
+        busy.value = false
+        u.awaitState { it == UpdateUiState.Available }
+        u.start("v0.5.0")
+        u.awaitState { it is UpdateUiState.Installing }
+        Unit
+    }
+
     @Test fun busy_true_shows_busy_and_start_is_noop() = runBlocking {
         val helperCalls = mutableListOf<File>()
-        val u = updater(busy = true, helperCalls = helperCalls)
+        val u = updater(busyFlow = flowOf(true), helperCalls = helperCalls)
         u.start("v0.5.0")
         assertEquals(UpdateUiState.Busy, u.awaitState { it == UpdateUiState.Busy })
         assertTrue(helperCalls.isEmpty())
@@ -126,6 +140,21 @@ class SelfUpdaterTest {
         u.start("v0.5.0")
         u.awaitState { it is UpdateUiState.Installing }
         assertTrue(helperCalls.isEmpty())
+        assertEquals(1, fallbackCalls.size)
+    }
+
+    @Test fun helper_down_after_ping_falls_back() = runBlocking {
+        val helperCalls = Collections.synchronizedList(mutableListOf<File>())
+        val fallbackCalls = Collections.synchronizedList(mutableListOf<File>())
+        val u = updater(
+            helperUp = true,
+            helperResult = InstallOutcome.HelperDown,
+            helperCalls = helperCalls,
+            fallbackCalls = fallbackCalls,
+        )
+        u.start("v0.5.0")
+        u.awaitState { it is UpdateUiState.Installing }
+        assertEquals(1, helperCalls.size)
         assertEquals(1, fallbackCalls.size)
     }
 

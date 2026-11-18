@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -49,6 +50,22 @@ class SelfUpdater(
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
 
     private var job: Job? = null
+
+    init {
+        // Busy is derived from the busy flow, never sticky: it only ever flips Available<->Busy,
+        // so an ended job returns the banner to Available and Update now works again.
+        scope.launch {
+            busy.collect { b ->
+                _state.update { cur ->
+                    when {
+                        b && cur == UpdateUiState.Available -> UpdateUiState.Busy
+                        !b && cur == UpdateUiState.Busy -> UpdateUiState.Available
+                        else -> cur
+                    }
+                }
+            }
+        }
+    }
 
     /** Starts the update for release [tag], unless one is already running or the TV is busy. */
     @Synchronized
@@ -103,9 +120,11 @@ class SelfUpdater(
         }
         _state.value = UpdateUiState.Installing
         val outcome = if (helperUp()) helperInstall(apk) else fallbackInstall(apk)
-        when (outcome) {
+        // The helper can die between the ping and the stream; fall back instead of failing.
+        val final = if (outcome is InstallOutcome.HelperDown) fallbackInstall(apk) else outcome
+        when (final) {
             is InstallOutcome.Started -> deleteUpdateFiles() // the app is replaced from here on
-            is InstallOutcome.Failed -> return fail(outcome.lastLine ?: "Install failed.")
+            is InstallOutcome.Failed -> return fail(final.lastLine ?: "Install failed.")
             is InstallOutcome.HelperDown -> return fail("Helper not running.")
         }
     }
