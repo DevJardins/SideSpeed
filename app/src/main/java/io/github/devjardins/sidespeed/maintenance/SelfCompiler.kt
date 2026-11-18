@@ -9,6 +9,8 @@ import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.data.SelfCompile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Compiles SideSpeed itself to speed, once per install/update.
@@ -30,13 +32,32 @@ class SelfCompiler(
     private val debuggable: Boolean,
     private val status: CompileStatus? = null,
     private val log: (String) -> Unit = { Log.w(TAG, it) },
+    /** Package with an in-flight launch sequence; never compile while set (it would skew its timings). */
+    private val measuring: () -> String? = { null },
 ) {
+    private val compileLock = Mutex()
+
+    /** Suspends until no self-compile is running; launch sequences await this before their before-timing. */
+    suspend fun awaitIdle() {
+        compileLock.withLock { }
+    }
+
     suspend fun maybeCompile() {
         // ART will not AOT-compile a debuggable build; compiling it would only reach verify.
         if (debuggable) {
             log("self-compile skipped: debuggable build")
             return
         }
+        // A launch sequence owns the device right now: stay pending and run on
+        // the next normal leave after it ends (its before-timing must see no competition).
+        if (measuring() != null) {
+            log("self-compile deferred: launch sequence running")
+            return
+        }
+        compileLock.withLock { compileOnce() }
+    }
+
+    private suspend fun compileOnce() {
         val done = try {
             prefs.selfCompile.first()
         } catch (_: Exception) {

@@ -55,6 +55,8 @@ class LaunchRunner(
     private val compile: CompileRunner,
     private val scope: CoroutineScope,
     private val awaitEngineIdle: suspend (String) -> Unit,
+    /** Suspends until no self-compile is running; awaited before every before-timing. */
+    private val awaitSelfIdle: suspend () -> Unit = {},
     private val launchActivityOf: (String) -> String? = { null },
     private val versionOf: (String) -> PkgVersion? = { null },
     private val keepAlive: () -> Unit = {},
@@ -174,6 +176,16 @@ class LaunchRunner(
             val cls = d.cls ?: return "This app can't be opened from SideSpeed"
             val ver = d.version ?: return "Couldn't read this app's version"
             val timer = LaunchTimer(commands, runs)
+            // A self-compile started on an earlier leave must finish first:
+            // it compiles SideSpeed itself and would skew the before number.
+            setBusy(pkg.value, "Waiting for SideSpeed to finish optimizing itself…")
+            try {
+                awaitSelfIdle()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return "Couldn't start the measurement"
+            }
             setBusy(pkg.value, "Timing launch before…")
             val before = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
@@ -218,9 +230,12 @@ class LaunchRunner(
             val timer = LaunchTimer(commands, runs)
             // Wait out any in-flight maintenance compile first: the engine skips
             // newly measured packages, but one already running must finish.
+            // A self-compile started on an earlier leave must finish too: it
+            // compiles SideSpeed itself and would skew the before number.
             setBusy(pkg.value, "Waiting for SideSpeed to finish optimizing this app…")
             try {
                 awaitEngineIdle(pkg.value)
+                awaitSelfIdle()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

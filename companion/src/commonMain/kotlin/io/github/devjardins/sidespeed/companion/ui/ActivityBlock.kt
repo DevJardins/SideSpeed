@@ -54,6 +54,7 @@ fun TvActivityBlock(tv: TvCardState, nowMs: Long) {
     if (!tv.checkableHere || tv.status != TvStatus.RUNNING) return
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.fillMaxWidth().padding(top = 2.dp).height(1.dp).background(Ss.textPrimary.copy(alpha = 0.08f)))
+        if (a.phase != ActivityPhase.NEEDS_UPDATE && a.self != SelfState.DEBUG) SelfRow(a)
         when (a.phase) {
             ActivityPhase.NEEDS_UPDATE ->
                 SsText("Update SideSpeed on the TV to see live compiles.", Ss.caption)
@@ -63,7 +64,6 @@ fun TvActivityBlock(tv: TvCardState, nowMs: Long) {
             ActivityPhase.IDLE -> IdleRow(a, nowMs)
             ActivityPhase.UNAVAILABLE -> Unit
         }
-        if (a.phase != ActivityPhase.NEEDS_UPDATE && a.self != SelfState.DEBUG) SelfRow(a)
     }
 }
 

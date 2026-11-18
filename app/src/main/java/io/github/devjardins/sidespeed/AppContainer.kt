@@ -115,6 +115,7 @@ class AppContainer(context: Context) {
             compile = compileRunner,
             scope = appScope,
             awaitEngineIdle = { pkg -> maintenance.awaitNotRunning(pkg) },
+            awaitSelfIdle = { selfCompiler.awaitIdle() },
             launchActivityOf = installedApps::launchActivity,
             versionOf = installedApps::versionOf,
             keepAlive = { MaintenanceService.start(appContext) },
@@ -163,7 +164,11 @@ class AppContainer(context: Context) {
         )
     }
 
-    /** Compiles SideSpeed itself to speed once per install/update; call only while in the background. */
+    /**
+     * Compiles SideSpeed itself to speed once per install/update; call only while in the background.
+     * Stays pending while a launch sequence is busy ([launchRunner] measuring non-null) and runs on
+     * the next normal leave after it ends.
+     */
     val selfCompiler: SelfCompiler by lazy {
         SelfCompiler(
             prefs = prefs,
@@ -174,6 +179,7 @@ class AppContainer(context: Context) {
             lastUpdateTime = selfBuild.lastUpdateTime,
             debuggable = selfBuild.debuggable,
             status = compileStatus,
+            measuring = { launchRunner.measuring.value },
         )
     }
 

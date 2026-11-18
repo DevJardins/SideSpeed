@@ -123,6 +123,7 @@ class LaunchRunnerTest {
         prefs: FakePrefs = FakePrefs(),
         scope: CoroutineScope,
         awaitEngineIdle: suspend (String) -> Unit = {},
+        awaitSelfIdle: suspend () -> Unit = {},
     ) = LaunchRunner(
         commands = ToolsCommands(script) { true },
         store = store,
@@ -130,6 +131,7 @@ class LaunchRunnerTest {
         compile = CompileRunner(script),
         scope = scope,
         awaitEngineIdle = awaitEngineIdle,
+        awaitSelfIdle = awaitSelfIdle,
         launchActivityOf = { "com.nuvio.tv.Main" },
         versionOf = { PkgVersion(7, 100) },
     )
@@ -218,6 +220,45 @@ class LaunchRunnerTest {
         job.join()
         finished = true
         assertTrue(finished)
+        assertEquals(1, store.saved.size)
+        assertNull(r.progress.value["com.nuvio.tv"])
+    }
+
+    @Test fun measureWaitsForSelfCompileBeforeTiming() = runTest(timeout = 10.seconds) {
+        val script = fullScript()
+        val store = FakeToolsStore()
+        val gate = CompletableDeferred<Unit>()
+        var waited = false
+        val r = runner(script, store, scope = backgroundScope, awaitSelfIdle = {
+            waited = true
+            gate.await()
+        })
+        val job = r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!
+        runCurrent()
+        assertTrue("before-timing must wait for the self-compile", waited)
+        assertTrue("no launch timing while SideSpeed compiles itself", launchCmd !in script.commands)
+        assertTrue("no reset while SideSpeed compiles itself", resetCmd !in script.commands)
+        gate.complete(Unit)
+        job.join()
+        assertEquals(1, store.saved.size)
+        assertNull(r.progress.value["com.nuvio.tv"])
+    }
+
+    @Test fun timedStartWaitsForSelfCompileBeforeTiming() = runTest(timeout = 10.seconds) {
+        val script = fullScript()
+        val store = FakeToolsStore()
+        val gate = CompletableDeferred<Unit>()
+        var waited = false
+        val r = runner(script, store, scope = backgroundScope, awaitSelfIdle = {
+            waited = true
+            gate.await()
+        })
+        val job = r.startTimed(pkg, CompileMode.SPEED) { p, m -> uiCompile(script, p, m) }!!
+        runCurrent()
+        assertTrue("before-timing must wait for the self-compile", waited)
+        assertTrue("no launch timing while SideSpeed compiles itself", launchCmd !in script.commands)
+        gate.complete(Unit)
+        job.join()
         assertEquals(1, store.saved.size)
         assertNull(r.progress.value["com.nuvio.tv"])
     }
