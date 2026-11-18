@@ -76,6 +76,21 @@ class UpdateVerifyTest {
         }
     }
 
+    @Test fun verify_rejects_empty_signer_sets() {
+        val hash = "d".repeat(64)
+        val pkg = "io.github.devjardins.sidespeed"
+        val signer = setOf("e".repeat(64))
+        val cases = listOf(
+            "both empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, emptySet()),
+            "apk empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, signer),
+            "installed empty (lookup failed)" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, signer), 4, emptySet()),
+        )
+        for ((name, result) in cases) {
+            assertTrue(name, result is VerifyResult.Rejected)
+            assertTrue(name, (result as VerifyResult.Rejected).reason.isNotEmpty())
+        }
+    }
+
     @Test fun sha256_hex_matches_file_bytes() {
         val f: File = tmp.newFile("a.bin")
         f.writeBytes("hello".toByteArray())

@@ -49,6 +49,9 @@ fun verifyUpdate(
     if (apk == null) return VerifyResult.Rejected("Could not read the downloaded APK.")
     if (apk.packageName != PACKAGE) return VerifyResult.Rejected("Wrong package: ${apk.packageName}.")
     if (apk.versionCode <= installedVersionCode) return VerifyResult.Rejected("Not newer than the installed version.")
+    if (apk.signerSha256.isEmpty() || installedSignerSha256.isEmpty()) {
+        return VerifyResult.Rejected("Signer unknown: refusing the update.")
+    }
     if (apk.signerSha256 != installedSignerSha256) return VerifyResult.Rejected("Signer does not match the installed app.")
     return VerifyResult.Ok
 }
