@@ -71,6 +71,9 @@ class LaunchRunner(
 
     fun progressFor(pkg: String): Flow<LaunchProgress?> = progress.map { it[pkg] }
 
+    /** Stored launch results for one package; the screen observes it so a finished sequence refreshes. */
+    fun storedResults(pkg: String): Flow<LaunchResult?> = store.launchResult(pkg)
+
     /** Resolution + stored result for the Compile screen; failures degrade to the disabled section. */
     suspend fun describe(pkg: String): LaunchPkg = try {
         val stored = store.launchResult(pkg).first()

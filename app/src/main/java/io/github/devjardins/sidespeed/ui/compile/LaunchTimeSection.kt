@@ -70,9 +70,19 @@ fun LaunchTimeSection(
     modifier: Modifier = Modifier,
 ) {
     val busyFocus = remember { FocusRequester() }
+    val measureFocus = remember { FocusRequester() }
     var busyFocused by remember { mutableStateOf(false) }
+    var wasBusy by remember { mutableStateOf(false) }
     LaunchedEffect(launch.busy) {
-        if (launch.busy != null) runCatching { busyFocus.requestFocus() }
+        if (launch.busy != null) {
+            wasBusy = true
+            // One frame later: the just-disabled buttons release D-pad focus first.
+            kotlinx.coroutines.delay(200)
+            runCatching { busyFocus.requestFocus() }
+        } else if (wasBusy) {
+            wasBusy = false
+            runCatching { measureFocus.requestFocus() }
+        }
     }
     SsCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -106,7 +116,12 @@ fun LaunchTimeSection(
                 )
             }
             if (launch.launchable) {
-                SsButton("Measure now", onClick = onMeasure, enabled = launch.busy == null)
+                SsButton(
+                    "Measure now",
+                    onClick = onMeasure,
+                    enabled = launch.busy == null,
+                    modifier = Modifier.focusRequester(measureFocus),
+                )
                 Text(
                     "Opens the app on screen twice. About a minute.",
                     style = SsType.Caption,
@@ -121,8 +136,8 @@ fun LaunchTimeSection(
                         .onFocusChanged { busyFocused = it.hasFocus }
                         .background(if (busyFocused) SsColors.Raised else SsColors.Surface, CardShape)
                         .border(SsDimens.FocusRing, if (busyFocused) SsColors.Accent else SsColors.Surface, CardShape)
-                        .focusable()
                         .focusRequester(busyFocus)
+                        .focusable()
                         .padding(12.dp),
                 ) {
                     SsSpinner(24.dp)

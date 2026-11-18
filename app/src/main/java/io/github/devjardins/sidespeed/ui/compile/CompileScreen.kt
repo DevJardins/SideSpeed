@@ -93,7 +93,8 @@ fun CompileScreen(
             }
         }
     }
-    LaunchedEffect(result) { if (result != null) runCatching { backFocus.requestFocus() } }
+    // Not while a launch sequence is busy: the busy indicator owns D-pad focus until it ends.
+    LaunchedEffect(result) { if (result != null && launch.busy == null) runCatching { backFocus.requestFocus() } }
 
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -93,6 +93,8 @@ class CompileViewModel(
 
     /** Runs the compile pipeline, updates [_state], and returns the outcome. */
     private suspend fun doCompile(pkg: PackageName, mode: CompileMode): CompileEvent.Finished {
+        // Sequences reach here without going through start(), so stamp the start here too.
+        _state.value = _state.value.copy(startedAtMs = clock())
         var finished: CompileEvent.Finished? = null
         try {
             runner.run(pkg, mode).collect { e ->

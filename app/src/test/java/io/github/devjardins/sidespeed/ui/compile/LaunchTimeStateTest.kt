@@ -183,6 +183,8 @@ class LaunchTimeStateTest {
         assertTrue(!v.launch.value.needsBefore)
         assertNull(v.launch.value.busy)
         assertNull(v.launch.value.error)
+        // The sequence compile stamps its own start: the shown duration is the compile, not epoch time.
+        assertEquals(0L, v.state.value.durationSeconds)
     }
 
     @Test fun measureFailureAfterResetStillRecompiles() = runTest(timeout = 10.seconds) {
