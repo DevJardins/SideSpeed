@@ -19,6 +19,7 @@ import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.tools.AnimationLevel
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.ToolResult
+import io.github.devjardins.sidespeed.tools.matchLevel
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -37,10 +38,14 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        val current = animations.current().values.toSet()
+    suspend fun refreshSelection() {
+        val current = animations.current().values.toList()
         unreadable = current.all { it == null }
-        selected = AnimationLevel.entries.firstOrNull { level -> current.all { it == level.value } }
+        selected = matchLevel(current)
+    }
+
+    LaunchedEffect(Unit) {
+        refreshSelection()
     }
 
     fun message(result: ToolResult<Unit>): String? = when (result) {
@@ -74,21 +79,21 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AnimationLevel.entries.forEach { level ->
-                    val label = when (level) {
+                    val base = when (level) {
                         AnimationLevel.NORMAL -> "Normal (1×)"
                         AnimationLevel.FASTER -> "Faster (0.5×)"
                         AnimationLevel.OFF -> "Off"
                     }
+                    // Same ✓-prefix convention as the Apps mode buttons: focus must never
+                    // hide which option is active.
+                    val label = if (selected == level) "✓ $base" else base
                     SsButton(
                         label,
                         onClick = {
                             busy = true
                             scope.launch {
                                 status = message(animations.apply(level))
-                                if (status == null) {
-                                    selected = level
-                                    unreadable = false
-                                }
+                                if (status == null) refreshSelection()
                                 busy = false
                             }
                         },
@@ -98,13 +103,18 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
                 }
             }
             if (originals != null) {
+                Text(
+                    "Restores the values from before SideSpeed changed them.",
+                    style = SsType.Caption,
+                    color = SsColors.TextSecondary,
+                )
                 SsButton(
                     "Restore original",
                     onClick = {
                         busy = true
                         scope.launch {
                             status = message(animations.restore())
-                            if (status == null) selected = null
+                            if (status == null) refreshSelection()
                             busy = false
                         }
                     },

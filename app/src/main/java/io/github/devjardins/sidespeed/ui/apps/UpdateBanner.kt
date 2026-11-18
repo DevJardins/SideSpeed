@@ -5,17 +5,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.tools.UpdateCheck
+import io.github.devjardins.sidespeed.tools.displayVersion
 import io.github.devjardins.sidespeed.tools.shouldShowBanner
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -36,9 +40,16 @@ fun UpdateBannerSlot(check: UpdateCheck, store: ToolsStore, currentVersion: Stri
     val latest by store.updateLatestVersion.collectAsState(initial = null)
     val dismissed by store.updateDismissedVersion.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
-    if (shouldShowBanner(latest, dismissed, currentVersion)) {
-        val version = latest!!
-        UpdateBanner(latest = version, onDismiss = {
+    // Debug builds show the banner on demand so the notice can be verified on a TV/emulator
+    // without waiting for a real release. Release builds only show a genuinely newer version.
+    val context = LocalContext.current
+    val effectiveLatest = remember(latest) {
+        val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        if (debuggable) "9.9.9" else latest
+    }
+    if (shouldShowBanner(effectiveLatest, dismissed, currentVersion)) {
+        val version = effectiveLatest!!
+        UpdateBanner(latest = displayVersion(version), onDismiss = {
             scope.launch { store.setUpdateDismissedVersion(version) }
         })
     }
