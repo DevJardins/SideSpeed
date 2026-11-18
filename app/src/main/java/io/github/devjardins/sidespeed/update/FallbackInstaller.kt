@@ -55,10 +55,14 @@ class FallbackInstaller(private val context: Context) {
                         session.fsync(out)
                     }
                 }
+                // FLAG_MUTABLE on API 31+: commit() fills EXTRA_STATUS/EXTRA_INTENT into this
+                // sender (immutable senders cannot be filled, and throw on targetSdk 35+).
+                // The intent stays explicit to our own non-exported receiver, so nothing else
+                // can intercept or forge it. FLAG_MUTABLE is an inlined constant, safe on older APIs.
                 val status = Intent(context, InstallStatusReceiver::class.java).let {
                     PendingIntent.getBroadcast(
                         context, sessionId, it,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
                     )
                 }
                 session.commit(status.intentSender)
