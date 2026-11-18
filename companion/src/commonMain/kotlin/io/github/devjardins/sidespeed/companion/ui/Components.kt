@@ -246,12 +246,12 @@ fun SsStatusDot(kind: StatusKind, pulsing: Boolean = false) {
 
 /** A small rotating arc for work in progress. */
 @Composable
-fun SsSpinner(size: Dp = 16.dp) {
+fun SsSpinner(size: Dp = 16.dp, stroke: Dp? = null) {
     val t = rememberInfiniteTransition(label = "spin")
     val angle by t.animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing)), label = "angle")
     val colour = Ss.accent
     Canvas(Modifier.size(size).rotate(angle)) {
-        val w = this.size.minDimension * 0.14f
+        val w = stroke?.toPx() ?: this.size.minDimension * 0.14f
         drawArc(colour, 0f, 270f, false, topLeft = Offset(w / 2, w / 2), size = Size(this.size.width - w, this.size.height - w), style = Stroke(w, cap = StrokeCap.Round))
     }
 }

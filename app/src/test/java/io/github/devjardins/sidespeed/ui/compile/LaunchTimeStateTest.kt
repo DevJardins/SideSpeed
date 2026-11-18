@@ -10,6 +10,9 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.status.CompileStatus
+import io.github.devjardins.sidespeed.status.CompileStatusStore
+import io.github.devjardins.sidespeed.status.PersistedCompileStatus
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.tools.AnimationOriginals
 import io.github.devjardins.sidespeed.tools.CleanupRecord
@@ -25,9 +28,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -131,6 +136,7 @@ class LaunchTimeStateTest {
         store: FakeToolsStore,
         prefs: FakePrefs = FakePrefs(),
         scope: CoroutineScope,
+        status: CompileStatus? = null,
     ) = LaunchRunner(
         commands = ToolsCommands(script) { true },
         store = store,
@@ -140,6 +146,8 @@ class LaunchTimeStateTest {
         awaitEngineIdle = {},
         launchActivityOf = { "com.nuvio.tv.Main" },
         versionOf = { PkgVersion(7, 100) },
+        status = status,
+        labelOf = { "Nuvio" },
     )
 
     private suspend fun uiCollect(script: ScriptRunner, pkg: PackageName, mode: CompileMode): CompileEvent.Finished {
@@ -153,13 +161,16 @@ class LaunchTimeStateTest {
         store: FakeToolsStore,
         prefs: FakePrefs = FakePrefs(),
         launches: LaunchRunner,
+        status: CompileStatus? = null,
     ) = CompileViewModel(
         runner = CompileRunner(script),
         checker = StatusChecker(script),
         prefs = prefs,
         dispatcher = dispatcher,
         launches = launches,
-    ) { 1234L }
+        clock = { 1234L },
+        status = status,
+    )
 
     /** Flushes the test scheduler and the ViewModel's own dispatcher. */
     private suspend fun kotlinx.coroutines.test.TestScope.settle() {
@@ -176,7 +187,7 @@ class LaunchTimeStateTest {
         val r = runnerFor(script, store, scope = backgroundScope)
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
-        v.measure(pkg)!!.join(); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle()
         assertEquals(1, store.saved.size)
         assertEquals(1900L, store.saved.single().beforeMs)
         assertEquals(1100L, store.saved.single().afterMs)
@@ -201,7 +212,7 @@ class LaunchTimeStateTest {
         val r = runnerFor(script, store, scope = backgroundScope)
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
-        v.measure(pkg)!!.join(); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle()
         assertTrue("recompile must run after a failed timing", speedCmd in script.commands)
         assertTrue(store.saved.isEmpty())
         assertEquals("Couldn't time this app", v.launch.value.error)
@@ -219,7 +230,7 @@ class LaunchTimeStateTest {
         val r = runnerFor(script, store, scope = backgroundScope)
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
-        v.measure(pkg)!!.join(); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle()
         // The reset may have run on-device despite the failure, so the runner
         // recompiles instead of assuming nothing changed.
         assertTrue(speedCmd in script.commands)
@@ -244,7 +255,7 @@ class LaunchTimeStateTest {
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
         assertTrue(!v.launch.value.launchable)
-        v.measure(pkg)!!.join(); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle()
         assertTrue(script.commands.isEmpty())
         assertEquals("This app can't be opened from SideSpeed", v.launch.value.error)
     }
@@ -265,7 +276,7 @@ class LaunchTimeStateTest {
         val r = runnerFor(script, store, prefs, backgroundScope)
         val v = vm(script, store, prefs, r)
         v.loadLaunch("com.nuvio.tv"); settle()
-        v.measure(pkg)!!.join(); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle()
         assertTrue(profileCmd in script.commands)
         assertTrue(speedCmd !in script.commands)
     }
@@ -278,7 +289,7 @@ class LaunchTimeStateTest {
         runCurrent()
         assertTrue(r.isBusy())
         val v = vm(script, store, launches = r)
-        v.start(pkg, CompileMode.SPEED); settle()
+        v.start(pkg, CompileMode.SPEED, "Nuvio"); settle()
         assertNull(v.state.value.result)
         assertTrue(v.state.value.log.isEmpty())
         job.cancel(); settle()
@@ -309,7 +320,7 @@ class LaunchTimeStateTest {
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
         assertTrue(v.launch.value.needsBefore)
-        v.startMaybeTimed(pkg, CompileMode.SPEED)!!.join()
+        v.startMaybeTimed(pkg, CompileMode.SPEED, "Nuvio")!!.join()
         settle()
         assertEquals(1, store.saved.size)
         assertEquals(1900L, store.saved.single().beforeMs)
@@ -326,7 +337,7 @@ class LaunchTimeStateTest {
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
         assertTrue(!v.launch.value.needsBefore)
-        assertNull(v.startMaybeTimed(pkg, CompileMode.SPEED))
+        assertNull(v.startMaybeTimed(pkg, CompileMode.SPEED, "Nuvio"))
         settle()
         assertTrue(launchCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
@@ -345,11 +356,89 @@ class LaunchTimeStateTest {
         val r = runnerFor(script, store, scope = backgroundScope)
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
-        v.startMaybeTimed(pkg, CompileMode.SPEED)!!.join()
+        v.startMaybeTimed(pkg, CompileMode.SPEED, "Nuvio")!!.join()
         settle()
         assertTrue(speedCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
         assertEquals("Couldn't time this app", v.launch.value.error)
+    }
+
+    // Compile-status reporting through the sequences: one onStart/onFinish pair
+    // per compile, and the measure reset step never reports.
+
+    private class RecordingStatusStore : CompileStatusStore {
+        val saves = mutableListOf<PersistedCompileStatus?>()
+        var current: PersistedCompileStatus? = null
+        override suspend fun load(): PersistedCompileStatus? = current
+        override suspend fun save(value: PersistedCompileStatus?) {
+            current = value
+            saves += value
+        }
+    }
+
+    private fun TestScope.reportingStatus(store: RecordingStatusStore) =
+        CompileStatus(store, "0.2.1", false, { false }, { 1234L }, backgroundScope)
+
+    private fun assertSingleCompileReported(store: RecordingStatusStore) {
+        // Exactly one onStart save (current set, no last yet) and one onFinish save.
+        assertEquals(2, store.saves.size)
+        val started = store.saves[0]
+        assertEquals("com.nuvio.tv", started?.current?.pkg)
+        assertEquals("Nuvio", started?.current?.label)
+        assertEquals(CompileMode.SPEED.arg, started?.current?.mode)
+        assertNull(started?.last)
+        val finished = store.saves[1]
+        assertNull(finished?.current)
+        assertEquals("com.nuvio.tv", finished?.last?.pkg)
+        assertEquals("Nuvio", finished?.last?.label)
+        assertTrue(finished?.last?.ok == true)
+        assertTrue(store.saves.none { it?.current?.mode == "verify" })
+    }
+
+    @Test fun measureReportsExactlyOneCompileAndResetDoesNotReport() = runTest(timeout = 10.seconds) {
+        val script = fullSequenceRunner()
+        val store = FakeToolsStore()
+        val statusStore = RecordingStatusStore()
+        val status = reportingStatus(statusStore)
+        val r = runnerFor(script, store, scope = backgroundScope, status = status)
+        val v = vm(script, store, launches = r, status = status)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.measure(pkg, "Nuvio")!!.join(); settle(); runCurrent()
+        assertTrue("the reset step must still run", resetCmd in script.commands)
+        assertSingleCompileReported(statusStore)
+        assertTrue(v.state.value.result?.success == true)
+    }
+
+    @Test fun timedCompileReportsExactlyOneCompile() = runTest(timeout = 10.seconds) {
+        val script = fullSequenceRunner()
+        val store = FakeToolsStore()
+        val statusStore = RecordingStatusStore()
+        val status = reportingStatus(statusStore)
+        val r = runnerFor(script, store, scope = backgroundScope, status = status)
+        val v = vm(script, store, launches = r, status = status)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        assertTrue(v.launch.value.needsBefore)
+        v.startMaybeTimed(pkg, CompileMode.SPEED, "Nuvio")!!.join(); settle(); runCurrent()
+        assertSingleCompileReported(statusStore)
+        assertTrue(v.state.value.result?.success == true)
+    }
+
+    @Test fun restorePendingRecompileReportsAndClears() = runTest(timeout = 10.seconds) {
+        val script = ScriptRunner { command, _ ->
+            when (command) {
+                speedCmd -> listOf("Success") to 0
+                else -> emptyList<String>() to 0
+            }
+        }
+        val store = FakeToolsStore()
+        store.setRestorePending(RestorePending("com.nuvio.tv", CompileMode.SPEED, 7))
+        val statusStore = RecordingStatusStore()
+        val status = reportingStatus(statusStore)
+        val r = runnerFor(script, store, scope = backgroundScope, status = status)
+        r.restorePending(); settle(); runCurrent()
+        assertTrue(speedCmd in script.commands)
+        assertNull(store.restorePending.first())
+        assertSingleCompileReported(statusStore)
     }
 
     // Pure display formatting.

@@ -6,10 +6,16 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.status.CompileLast
+import io.github.devjardins.sidespeed.status.CompilePhase
+import io.github.devjardins.sidespeed.status.CompileStatus
+import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
+import io.github.devjardins.sidespeed.status.SelfState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -43,6 +49,7 @@ class SelfCompilerTest {
         script: (String) -> Flow<CompileEvent> = { success() },
         calls: MutableList<Pair<String, CompileMode>> = mutableListOf(),
         logs: MutableList<String> = mutableListOf(),
+        status: CompileStatus? = null,
     ) = SelfCompiler(
         prefs = prefs,
         runCompile = { pkg, mode -> calls += pkg.value to mode; script(pkg.value) },
@@ -51,6 +58,7 @@ class SelfCompilerTest {
         versionCode = versionCode,
         lastUpdateTime = lastUpdateTime,
         debuggable = debuggable,
+        status = status,
         log = { logs += it },
     )
 
@@ -133,5 +141,56 @@ class SelfCompilerTest {
         compiler(prefs, calls = calls, script = { error("helper died") }).maybeCompile()
         assertEquals(1, calls.size)
         assertNull(prefs.selfCompileFlow.value)
+    }
+
+    @Test fun successIsReportedWithSelfOptimized() = runTest {
+        val prefs = FakeSelfCompilePrefs()
+        val store = FakeCompileStatusStore()
+        val status = CompileStatus(store, "0.2.1", false, { false }, { 1000L }, backgroundScope)
+        runCurrent()
+        compiler(prefs, status = status).maybeCompile()
+        runCurrent()
+        assertEquals(SelfCompile(7L, 4242L), prefs.selfCompileFlow.value)
+        assertEquals(CompileLast(own, "SideSpeed", true, 1000L), store.saved?.last)
+        assertEquals(SelfState.OPTIMIZED, status.snapshot().self)
+    }
+
+    @Test fun failureIsReportedAsFailedResult() = runTest {
+        val prefs = FakeSelfCompilePrefs()
+        val store = FakeCompileStatusStore()
+        val status = CompileStatus(store, "0.2.1", false, { false }, { 1000L }, backgroundScope)
+        runCurrent()
+        compiler(prefs, status = status, script = {
+            flow { emit(CompileEvent.Finished(false, true, "Failure")) }
+        }).maybeCompile()
+        runCurrent()
+        assertNull(prefs.selfCompileFlow.value)
+        assertEquals(CompileLast(own, "SideSpeed", false, 1000L), store.saved?.last)
+    }
+
+    @Test fun failureWhileHelperIsDownIsReportedAsInterrupted() = runTest {
+        val prefs = FakeSelfCompilePrefs()
+        val store = FakeCompileStatusStore()
+        val status = CompileStatus(store, "0.2.1", false, { false }, { 1000L }, backgroundScope)
+        runCurrent()
+        var up = true
+        val c = SelfCompiler(
+            prefs = prefs,
+            runCompile = { _, _ ->
+                flow {
+                    up = false
+                    emit(CompileEvent.Finished(false, true, "Failure"))
+                }
+            },
+            helperUp = { up },
+            ownPackage = own,
+            versionCode = 7L,
+            lastUpdateTime = 4242L,
+            debuggable = false,
+            status = status,
+        )
+        c.maybeCompile()
+        runCurrent()
+        assertEquals(CompilePhase.INTERRUPTED, status.snapshot().phase)
     }
 }

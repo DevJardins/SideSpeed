@@ -16,6 +16,7 @@ import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.tv.ActivityPhase
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
@@ -180,7 +181,8 @@ class CompanionViewModelTest {
         r.vm.addTvByAddress("192.168.5.20")
         assertEquals(1, r.store.tvs().size)
         assertEquals(
-            "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts.",
+            "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
+                "On Google TV the helper is optional; Home shows what's compiling.",
             r.vm.state.value.tvs.single().note,
         )
     }
@@ -770,5 +772,137 @@ class CompanionViewModelTest {
         val plain = rig(trusted = true)
         runCurrent()
         assertEquals(false, plain.vm.state.value.savedByNewerVersion, "no banner for a current file")
+    }
+
+    private val compilingRow =
+        "Row: 0 v=1, state=compiling, pkg=com.example.app, label=Example%2C Inc, mode=speed, " +
+            "started_ms=1731000000000, queue=2, last_pkg=com.example.other, last_label=Other, " +
+            "last_result=ok, last_ms=1730999000000, self=optimized, version=0.2.1"
+
+    private suspend fun TestScope.activityRig(
+        trusted: Boolean = true,
+        status: TvStatus = TvStatus.RUNNING,
+        statusRow: String? = compilingRow,
+    ): Rig {
+        val fake = tv()
+        if (statusRow != null) fake.outputs[TvCommands.STATUS_QUERY] = statusRow
+        val r = Rig(this, InMemoryCompanionStore(networks = if (trusted) listOf(homeNet) else emptyList()), fake, home)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = status))
+        r.vm.refreshNow()
+        runCurrent()
+        return r
+    }
+
+    @Test
+    fun homeVisiblePollsARunningCheckableTv() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        val card = r.vm.state.value.tvs.single()
+        assertEquals(ActivityPhase.COMPILING, card.activity?.phase)
+        assertEquals("Example, Inc", card.activity?.label)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun pollsReuseOneSessionPerTv() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        advanceTimeBy(15_000)
+        assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
+        assertTrue(r.fake.sent.count { it == TvCommands.STATUS_QUERY } >= 4)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun hiddenHomeAndBackgroundStopPolling() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        val polled = r.fake.sent.count { it == TvCommands.STATUS_QUERY }
+        assertTrue(polled >= 1)
+        r.vm.setHomeVisible(false)
+        advanceTimeBy(30_000)
+        assertEquals(polled, r.fake.sent.count { it == TvCommands.STATUS_QUERY })
+    }
+
+    @Test
+    fun backgroundedAppStopsPollingUntilForeground() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        r.vm.setForeground(false)
+        advanceTimeBy(30_000)
+        val polled = r.fake.sent.count { it == TvCommands.STATUS_QUERY }
+        r.vm.setForeground(true)
+        advanceTimeBy(3_001)
+        assertTrue(r.fake.sent.count { it == TvCommands.STATUS_QUERY } > polled)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun tvsThatAreNotRunningOrCheckableAreNotPolled() = runTest(UnconfinedTestDispatcher()) {
+        val idle = activityRig(status = TvStatus.NOT_RUNNING)
+        idle.vm.setHomeVisible(true)
+        advanceTimeBy(10_000)
+        assertTrue(idle.fake.sent.none { it == TvCommands.STATUS_QUERY })
+        assertNull(idle.vm.state.value.tvs.single().activity)
+
+        val away = activityRig()
+        away.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        away.vm.refreshNow()
+        runCurrent()
+        away.vm.setHomeVisible(true)
+        advanceTimeBy(10_000)
+        assertTrue(away.fake.sent.none { it == TvCommands.STATUS_QUERY })
+        idle.vm.setHomeVisible(false)
+        away.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun threeConsecutiveFailuresParkUntilTheNextVisit() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.fake.loseConnectionOn = TvCommands.STATUS_QUERY
+        r.vm.setHomeVisible(true)
+        advanceTimeBy(3_001)
+        advanceTimeBy(3_000)
+        advanceTimeBy(3_000)
+        val attempts = r.fake.sent.count { it == TvCommands.STATUS_QUERY }
+        assertEquals(3, attempts)
+        advanceTimeBy(30_000)
+        assertEquals(3, r.fake.sent.count { it == TvCommands.STATUS_QUERY })
+        r.vm.setHomeVisible(false)
+        r.vm.setHomeVisible(true)
+        advanceTimeBy(3_001)
+        assertTrue(r.fake.sent.count { it == TvCommands.STATUS_QUERY } > 3)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun unparsableOutputKeepsThePreviousState() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig(statusRow = "garbage without a row")
+        r.vm.setHomeVisible(true)
+        advanceTimeBy(10_000)
+        assertNull(r.vm.state.value.tvs.single().activity)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun aRefreshKeepsTheLatestActivity() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        assertNotNull(r.vm.state.value.tvs.single().activity)
+        r.vm.refreshNow()
+        runCurrent()
+        assertEquals(ActivityPhase.COMPILING, r.vm.state.value.tvs.single().activity?.phase)
+        r.vm.setHomeVisible(false)
+        runCurrent()
     }
 }

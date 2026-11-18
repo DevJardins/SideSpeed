@@ -8,6 +8,10 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.status.CompileLast
+import io.github.devjardins.sidespeed.status.CompilePhase
+import io.github.devjardins.sidespeed.status.CompileStatus
+import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
 import io.github.devjardins.sidespeed.status.StatusBadge
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -54,7 +58,7 @@ private class FakePrefs : Prefs {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
+private class Harness(testScope: TestScope, failingHistory: Boolean = false, statusStore: FakeCompileStatusStore? = null) {
     val badges = mutableMapOf<String, StatusBadge>()
     var badgesFail = false
     val source = FakeSource()
@@ -77,6 +81,9 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
     var helperUpCalls = 0
     var helperUpGate: CompletableDeferred<Unit>? = null
     var helperUpInvocations = 0
+    val status = statusStore?.let {
+        CompileStatus(it, "0.2.1", false, { false }, { now }, testScope.backgroundScope)
+    }
 
     val engine = MaintenanceEngine(
         source, store, prefs,
@@ -85,6 +92,7 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
         badges = { pkgs -> if (badgesFail) error("dumpsys failed") else badges.filterKeys { it in pkgs } },
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
+        status = status,
         clock = { now },
         measuring = { measuring },
         onHelperUp = { helperUpCalls++ },
@@ -505,5 +513,49 @@ class MaintenanceEngineTest {
         h.engine.scan()
         runCurrent()
         assertEquals(listOf("a.a"), h.calls.map { it.first })
+    }
+
+    @Test fun finishedCompileIsReportedToStatus() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        h.source.put("a.a", updated = 500)
+        h.prefs.saved["a.a"] = LastCompile(100, CompileMode.SPEED)
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
+        runCurrent()
+        val saved = statusStore.saved
+        assertNull(saved?.current)
+        assertEquals(CompileLast("a.a", "A.A", true, h.now), saved?.last)
+        assertEquals(CompilePhase.IDLE, h.status!!.snapshot().phase)
+    }
+
+    @Test fun helperLossDuringCompileIsReportedAsInterrupted() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        h.script = { h.up = false; h.failure("boom") }
+        h.source.put("a.a", updated = 500)
+        h.prefs.saved["a.a"] = LastCompile(100, CompileMode.SPEED)
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        runCurrent()
+        val row = h.status!!.snapshot()
+        assertEquals(CompilePhase.INTERRUPTED, row.phase)
+        assertEquals("a.a", row.activePkg)
+        assertEquals("A.A", row.activeLabel)
+    }
+
+    @Test fun helperDownWithQueueIsReportedAsWaitingHelper() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        h.up = false
+        h.source.put("a.a", updated = 500)
+        h.prefs.saved["a.a"] = LastCompile(100, CompileMode.SPEED)
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        runCurrent()
+        val row = h.status!!.snapshot()
+        assertEquals(CompilePhase.WAITING_HELPER, row.phase)
+        assertEquals(1, row.queueWaiting)
     }
 }

@@ -29,7 +29,10 @@ import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.SelfCompiler
+import io.github.devjardins.sidespeed.status.CompileStatus
+import io.github.devjardins.sidespeed.status.DataStoreCompileStatusStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -42,7 +45,7 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 
 /** SideSpeed's own install identity, read once from the PackageManager. */
-data class SelfBuild(val versionCode: Long, val lastUpdateTime: Long, val debuggable: Boolean)
+data class SelfBuild(val versionCode: Long, val lastUpdateTime: Long, val debuggable: Boolean, val versionName: String)
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -79,9 +82,30 @@ class AppContainer(context: Context) {
     /** Container-level scope: outlives screens and ViewModels, so launch sequences survive them. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> })
 
+    /** What SideSpeed is compiling right now, for the shell-only status provider. */
+    val compileStatus: CompileStatus by lazy {
+        CompileStatus(
+            store = DataStoreCompileStatusStore(appContext),
+            version = selfBuild.versionName,
+            debuggable = selfBuild.debuggable,
+            loadSelfOptimized = {
+                try {
+                    prefs.selfCompile.first()?.let {
+                        it.versionCode == selfBuild.versionCode && it.lastUpdateTime == selfBuild.lastUpdateTime
+                    } ?: false
+                } catch (_: Exception) {
+                    false
+                }
+            },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
+        )
+    }
+
     /**
      * Launch-timing sequences. Created on first use; its retry also runs from
-     * app start, the maintenance loop, and helper-up.
+     * app start, the maintenance loop, and helper-up. Its own compiles
+     * (restore path) report to [compileStatus]; timed/measure recompiles
+     * report through the Compile screen's [doCompile][io.github.devjardins.sidespeed.ui.compile.CompileViewModel].
      */
     val launchRunner: LaunchRunner by lazy {
         LaunchRunner(
@@ -94,6 +118,9 @@ class AppContainer(context: Context) {
             launchActivityOf = installedApps::launchActivity,
             versionOf = installedApps::versionOf,
             keepAlive = { MaintenanceService.start(appContext) },
+            status = compileStatus,
+            helperUp = { helper.ping() != null },
+            labelOf = { pkg -> runCatching { installedApps.find(pkg)?.label }.getOrNull() },
         )
     }
 
@@ -110,6 +137,7 @@ class AppContainer(context: Context) {
             ownPackage = appContext.packageName,
             measuring = { launchRunner.measuring.value },
             onHelperUp = { appScope.launch { launchRunner.restorePending() } },
+            status = compileStatus,
         )
     }
 
@@ -131,6 +159,7 @@ class AppContainer(context: Context) {
             },
             lastUpdateTime = info.lastUpdateTime,
             debuggable = (info.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+            versionName = info.versionName ?: "",
         )
     }
 
@@ -144,6 +173,7 @@ class AppContainer(context: Context) {
             versionCode = selfBuild.versionCode,
             lastUpdateTime = selfBuild.lastUpdateTime,
             debuggable = selfBuild.debuggable,
+            status = compileStatus,
         )
     }
 

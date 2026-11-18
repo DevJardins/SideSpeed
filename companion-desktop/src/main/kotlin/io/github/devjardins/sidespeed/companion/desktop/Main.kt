@@ -126,6 +126,8 @@ fun main() {
         }
 
         LaunchedEffect(Unit) { vm.onOpen() }
+        // The activity poller runs only with a visible window: closing it to the tray pauses polls.
+        LaunchedEffect(windowVisible) { vm.setForeground(windowVisible) }
         // Check every intervalMinutes, unless paused. Keyed on the interval, so a change restarts the wait.
         LaunchedEffect(state.settings.intervalMinutes) {
             while (true) {

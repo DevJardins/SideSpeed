@@ -48,7 +48,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        vm.setForeground(true)
         if (skipNextOpen) skipNextOpen = false else vm.onOpen()
+    }
+
+    override fun onStop() {
+        vm.setForeground(false)
+        super.onStop()
     }
 
     private var skipNextOpen = false

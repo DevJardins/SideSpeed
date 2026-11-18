@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
                     c.compileRunner, c.statusChecker, c.prefs,
                     store = c.maintenanceStore,
                     launches = c.launchRunner,
+                    status = c.compileStatus, helperUp = { c.helper.ping() != null },
                 ) as T
         })[CompileViewModel::class.java]
     }
