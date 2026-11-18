@@ -35,6 +35,8 @@ private class FakeToolsStore(threshold: CleanupThreshold = CleanupThreshold.OFF)
     override suspend fun setLaunchResult(r: LaunchResult) { launches[r.pkg] = r }
     override val animationOriginals: Flow<AnimationOriginals?> = flowOf(null)
     override suspend fun setAnimationOriginals(o: AnimationOriginals?) {}
+    override val restorePending: Flow<RestorePending?> = flowOf(null)
+    override suspend fun setRestorePending(r: RestorePending?) {}
     override val updateDismissedVersion: Flow<String?> = flowOf(null)
     override suspend fun setUpdateDismissedVersion(v: String) {}
     override val updateLastCheckMs: Flow<Long> = flowOf(0L)

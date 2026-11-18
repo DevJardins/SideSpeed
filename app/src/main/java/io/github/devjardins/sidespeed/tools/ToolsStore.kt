@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import io.github.devjardins.sidespeed.compile.CompileMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -30,6 +31,13 @@ data class LaunchResult(
 
 data class AnimationOriginals(val window: String?, val transition: String?, val animator: String?)
 
+/**
+ * An app left in `verify` by an interrupted launch measurement: recompile it
+ * to [mode] on the next start, service loop, or helper-up. [versionCode] is
+ * provenance (which install was reset), not a match key.
+ */
+data class RestorePending(val pkg: String, val mode: CompileMode, val versionCode: Long)
+
 interface ToolsStore {
     val cleanupThreshold: Flow<CleanupThreshold>
     suspend fun setCleanupThreshold(t: CleanupThreshold)
@@ -40,6 +48,8 @@ interface ToolsStore {
     suspend fun setLaunchResult(r: LaunchResult)
     val animationOriginals: Flow<AnimationOriginals?>
     suspend fun setAnimationOriginals(o: AnimationOriginals?)
+    val restorePending: Flow<RestorePending?>
+    suspend fun setRestorePending(r: RestorePending?)
     val updateDismissedVersion: Flow<String?>
     suspend fun setUpdateDismissedVersion(v: String)
     val updateLastCheckMs: Flow<Long>
@@ -74,6 +84,19 @@ internal fun parseLaunchResult(pkg: String, raw: String?): LaunchResult? {
     )
 }
 
+/** `"<pkg>|<mode-arg>|<versionCode>"`; unknown modes decode as null. */
+internal fun encodeRestorePending(r: RestorePending): String =
+    "${r.pkg}|${r.mode.arg}|${r.versionCode}"
+
+internal fun parseRestorePending(raw: String?): RestorePending? {
+    val parts = raw?.split("|", limit = 3)?.takeIf { it.size == 3 } ?: return null
+    return RestorePending(
+        pkg = parts[0].takeIf { it.isNotEmpty() } ?: return null,
+        mode = CompileMode.entries.firstOrNull { it.arg == parts[1] } ?: return null,
+        versionCode = parts[2].toLongOrNull() ?: return null,
+    )
+}
+
 /** `"<window>|<transition>|<animator>"`; empty fields decode as null. */
 internal fun encodeAnimationOriginals(o: AnimationOriginals): String =
     "${o.window.orEmpty()}|${o.transition.orEmpty()}|${o.animator.orEmpty()}"
@@ -96,6 +119,7 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     constructor(context: Context) : this(context.applicationContext.toolsDataStore)
 
     private val thresholdKey = stringPreferencesKey("cleanup_threshold")
+    private val restorePendingKey = stringPreferencesKey("restore_pending")
     private val lastCleanupKey = stringPreferencesKey("last_cleanup")
     private val originalsKey = stringPreferencesKey("animation_originals")
     private val dismissedKey = stringPreferencesKey("update_dismissed_version")
@@ -147,6 +171,16 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     override suspend fun setAnimationOriginals(o: AnimationOriginals?) {
         store.edit {
             if (o == null) it.remove(originalsKey) else it[originalsKey] = encodeAnimationOriginals(o)
+        }
+    }
+
+    override val restorePending: Flow<RestorePending?> = store.data.map { prefs ->
+        prefs[restorePendingKey]?.let(::parseRestorePending)
+    }
+
+    override suspend fun setRestorePending(r: RestorePending?) {
+        store.edit {
+            if (r == null) it.remove(restorePendingKey) else it[restorePendingKey] = encodeRestorePending(r)
         }
     }
 

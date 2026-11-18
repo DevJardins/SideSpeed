@@ -14,6 +14,7 @@ import io.github.devjardins.sidespeed.tools.AnimationOriginals
 import io.github.devjardins.sidespeed.tools.CleanupRecord
 import io.github.devjardins.sidespeed.tools.CleanupThreshold as ToolsCleanupThreshold
 import io.github.devjardins.sidespeed.tools.LaunchResult
+import io.github.devjardins.sidespeed.tools.RestorePending
 import io.github.devjardins.sidespeed.tools.ToolResult
 import io.github.devjardins.sidespeed.tools.ToolsCommands
 import io.github.devjardins.sidespeed.tools.ToolsStore
@@ -77,6 +78,9 @@ class LaunchTimeStateTest {
         }
         override val animationOriginals: Flow<AnimationOriginals?> = MutableStateFlow(null)
         override suspend fun setAnimationOriginals(o: AnimationOriginals?) {}
+        private val pending = MutableStateFlow<RestorePending?>(null)
+        override val restorePending: Flow<RestorePending?> = pending
+        override suspend fun setRestorePending(r: RestorePending?) { pending.value = r }
         override val updateDismissedVersion: Flow<String?> = MutableStateFlow(null)
         override suspend fun setUpdateDismissedVersion(v: String) {}
         override val updateLastCheckMs: Flow<Long> = MutableStateFlow(0L)

@@ -1,0 +1,322 @@
+package io.github.devjardins.sidespeed.tools
+
+import io.github.devjardins.sidespeed.apps.PkgVersion
+import io.github.devjardins.sidespeed.compile.CompileEvent
+import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileRunner
+import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.data.LastCompile
+import io.github.devjardins.sidespeed.data.Prefs
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/** Runs the device compile with screen updates; provided by the Compile screen. */
+typealias UiCompile = suspend (PackageName, CompileMode) -> CompileEvent.Finished
+
+/** Per-package launch state the Compile screen observes: in-flight busy label or sticky error. */
+data class LaunchProgress(val busy: String? = null, val error: String? = null)
+
+/** What the Compile screen shows for a package: resolution, stored result, whether a before run is needed. */
+data class LaunchPkg(
+    val launchable: Boolean,
+    val cls: String?,
+    val version: PkgVersion?,
+    val stored: LaunchResult?,
+    val stale: Boolean,
+    val needsBefore: Boolean,
+)
+
+private const val RESTORE_ERROR = "The app was left reset; SideSpeed will recompile it."
+
+/**
+ * Owns launch-timing sequences in a container-level scope, so Back, screen or
+ * ViewModel teardown, and cancellation never strand an app in `verify`:
+ * after `resetCompiled` a [RestorePending] record is persisted and the post-reset
+ * restore runs in `try/finally` under [NonCancellable]. The record is cleared
+ * only after a successful recompile; a [restorePending] retry runs on app
+ * start, the maintenance loop, and helper-up. Single-flight: one sequence at a
+ * time; extra starts return null. Never runs from background maintenance.
+ */
+class LaunchRunner(
+    private val commands: ToolsCommands,
+    private val store: ToolsStore,
+    private val prefs: Prefs,
+    private val compile: CompileRunner,
+    private val scope: CoroutineScope,
+    private val launchActivityOf: (String) -> String? = { null },
+    private val versionOf: (String) -> PkgVersion? = { null },
+    private val keepAlive: () -> Unit = {},
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val runs: Int = 3,
+) {
+    private val _measuring = MutableStateFlow<String?>(null)
+
+    /** Package with an in-flight launch sequence, or null. Drives the service hold and the engine skip. */
+    val measuring: StateFlow<String?> = _measuring.asStateFlow()
+
+    private val _progress = MutableStateFlow<Map<String, LaunchProgress>>(emptyMap())
+    val progress: StateFlow<Map<String, LaunchProgress>> = _progress.asStateFlow()
+
+    fun isBusy(): Boolean = _measuring.value != null
+
+    fun progressFor(pkg: String): Flow<LaunchProgress?> = progress.map { it[pkg] }
+
+    /** Resolution + stored result for the Compile screen; failures degrade to the disabled section. */
+    suspend fun describe(pkg: String): LaunchPkg = try {
+        val stored = store.launchResult(pkg).first()
+        val cls = launchActivityOf(pkg)
+        val ver = versionOf(pkg)
+        val needs = if (ver == null) stored == null else needsBeforeMeasure(stored, ver.versionCode, ver.lastUpdateTime)
+        val stale = stored != null && ver != null &&
+            (stored.versionCode != ver.versionCode || stored.lastUpdateTime != ver.lastUpdateTime)
+        LaunchPkg(cls != null, cls, ver, stored, stale, needs)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        LaunchPkg(launchable = false, cls = null, version = null, stored = null, stale = false, needsBefore = false)
+    }
+
+    fun clearError(pkg: String) {
+        _progress.value = _progress.value.let { cur -> if (cur[pkg]?.busy == null) cur - pkg else cur }
+    }
+
+    /**
+     * Option A: time before, compile, time after, store. The checkbox gating
+     * lives with the caller; null means another sequence is running.
+     */
+    fun startTimed(pkg: PackageName, mode: CompileMode, uiCompile: UiCompile): Job? {
+        if (!_measuring.compareAndSet(null, pkg.value)) return null
+        setBusy(pkg.value, "Timing launch before…")
+        keepAlive()
+        return scope.launch {
+            var failMsg: String? = null
+            var cancelled = false
+            try {
+                failMsg = runTimed(pkg, mode, uiCompile)
+            } catch (e: CancellationException) {
+                cancelled = true
+                throw e
+            } finally {
+                withContext(NonCancellable) { finishSequence(pkg.value, failMsg, cancelled) }
+            }
+        }
+    }
+
+    /**
+     * Option B: reset to verify, time, recompile to the app's previous mode
+     * (speed when unknown), time again, store. Null when busy. On any failure
+     * after the reset the app is recompiled first (or left pending for retry).
+     */
+    fun measure(pkg: PackageName, uiCompile: UiCompile): Job? {
+        if (!_measuring.compareAndSet(null, pkg.value)) return null
+        setBusy(pkg.value, "Resetting…")
+        keepAlive()
+        return scope.launch {
+            var failMsg: String? = null
+            var cancelled = false
+            try {
+                failMsg = runMeasure(pkg, uiCompile)
+            } catch (e: CancellationException) {
+                cancelled = true
+                throw e
+            } finally {
+                withContext(NonCancellable) { finishSequence(pkg.value, failMsg, cancelled) }
+            }
+        }
+    }
+
+    /**
+     * Recompiles a pending record, if any. No-op when a sequence is running
+     * (its finally owns the restore) and when there is nothing pending.
+     * Never throws except on scope cancellation.
+     */
+    suspend fun restorePending() {
+        try {
+            val pending = store.restorePending.first() ?: return
+            if (!_measuring.compareAndSet(null, pending.pkg)) return
+            try {
+                if (restoreRecord(pending)) setProgress(pending.pkg, null)
+                else setProgress(pending.pkg, LaunchProgress(error = RESTORE_ERROR))
+            } finally {
+                _measuring.compareAndSet(pending.pkg, null)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    private suspend fun runTimed(pkg: PackageName, mode: CompileMode, uiCompile: UiCompile): String? {
+        try {
+            val d = describe(pkg.value)
+            val cls = d.cls ?: return "This app can't be opened from SideSpeed"
+            val ver = d.version ?: return "Couldn't read this app's version"
+            val timer = LaunchTimer(commands, runs)
+            setBusy(pkg.value, "Timing launch before…")
+            val before = when (val r = timer.medianMs(pkg.value, cls)) {
+                is ToolResult.Ok -> r.value
+                else -> return timingMessage(r)
+            }
+            setBusy(pkg.value, "Compiling…")
+            val result = uiCompile(pkg, mode)
+            // The screen shows the compile failure; no reset ran, so nothing to restore.
+            if (!result.success) return null
+            setBusy(pkg.value, "Timing launch after…")
+            val after = when (val r = timer.medianMs(pkg.value, cls)) {
+                is ToolResult.Ok -> r.value
+                else -> return timingMessage(r)
+            }
+            return try {
+                store.setLaunchResult(LaunchResult(pkg.value, ver.versionCode, ver.lastUpdateTime, before, after, clock()))
+                null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                "Couldn't save the result"
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return e.message ?: "Couldn't measure this app"
+        }
+    }
+
+    private suspend fun runMeasure(pkg: PackageName, uiCompile: UiCompile): String? {
+        try {
+            val d = describe(pkg.value)
+            val cls = d.cls ?: return "This app can't be opened from SideSpeed"
+            val ver = d.version ?: return "Couldn't read this app's version"
+            val mode = previousMode(pkg.value)
+            val timer = LaunchTimer(commands, runs)
+            setBusy(pkg.value, "Resetting…")
+            when (val reset = commands.resetCompiled(pkg.value)) {
+                is ToolResult.Ok -> {}
+                else -> return timingMessage(reset)
+            }
+            store.setRestorePending(RestorePending(pkg.value, mode, ver.versionCode))
+            setBusy(pkg.value, "Timing launch…")
+            val before = when (val r = timer.medianMs(pkg.value, cls)) {
+                is ToolResult.Ok -> r.value
+                else -> return timingMessage(r)
+            }
+            setBusy(pkg.value, "Compiling…")
+            val result = uiCompile(pkg, mode)
+            // The screen shows the compile failure; the outer finally restores.
+            if (!result.success) return null
+            // Successful recompile: the app is no longer pending.
+            store.setRestorePending(null)
+            setBusy(pkg.value, "Timing launch again…")
+            val after = when (val r = timer.medianMs(pkg.value, cls)) {
+                is ToolResult.Ok -> r.value
+                else -> return timingMessage(r)
+            }
+            return try {
+                store.setLaunchResult(LaunchResult(pkg.value, ver.versionCode, ver.lastUpdateTime, before, after, clock()))
+                null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                "Couldn't save the result"
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return e.message ?: "Couldn't measure this app"
+        }
+    }
+
+    private suspend fun finishSequence(pkg: String, failMsg: String?, cancelled: Boolean) {
+        val restored = restoreIfPending(pkg)
+        val error = when {
+            restored && failMsg == null -> null
+            restored -> failMsg
+            failMsg == null -> RESTORE_ERROR
+            else -> "$failMsg $RESTORE_ERROR"
+        }
+        setProgress(pkg, error?.let { LaunchProgress(error = it) })
+        _measuring.compareAndSet(pkg, null)
+    }
+
+    /** Recompiles [pkg]'s pending record when it is still ours; true when nothing is left to do. */
+    private suspend fun restoreIfPending(pkg: String): Boolean {
+        val pending = try {
+            store.restorePending.first()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return false
+        }
+        if (pending == null || pending.pkg != pkg) return true
+        return restoreRecord(pending)
+    }
+
+    private suspend fun restoreRecord(pending: RestorePending): Boolean {
+        val name = PackageName.parse(pending.pkg) ?: run {
+            clearPendingQuietly()
+            return true
+        }
+        if (!quietCompile(name, pending.mode)) return false
+        clearPendingQuietly()
+        return true
+    }
+
+    private suspend fun quietCompile(pkg: PackageName, mode: CompileMode): Boolean {
+        var ok = false
+        try {
+            compile.run(pkg, mode).collect { e -> if (e is CompileEvent.Finished) ok = e.success }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return false
+        }
+        if (!ok) return false
+        return try {
+            prefs.setLastCompile(pkg.value, LastCompile(clock(), mode))
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private suspend fun previousMode(pkg: String): CompileMode = try {
+        prefs.lastCompile(pkg).first()?.mode
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    } ?: CompileMode.SPEED
+
+    private suspend fun clearPendingQuietly() {
+        try {
+            store.setRestorePending(null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun setProgress(pkg: String, p: LaunchProgress?) {
+        _progress.value = if (p == null) _progress.value - pkg else _progress.value + (pkg to p)
+    }
+
+    private fun setBusy(pkg: String, label: String) = setProgress(pkg, LaunchProgress(busy = label))
+
+    private fun timingMessage(r: ToolResult<*>): String = when (r) {
+        is ToolResult.Ok -> "Couldn't time this app"
+        is ToolResult.HelperDown -> "Helper not running"
+        is ToolResult.HelperOutdated -> "Restart the helper to use this"
+        is ToolResult.Failed -> "Couldn't time this app"
+    }
+}

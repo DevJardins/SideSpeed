@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.compile.CompileMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -47,6 +48,18 @@ class ToolsStoreTest {
 
         val empty = AnimationOriginals(window = null, transition = null, animator = null)
         assertEquals(empty, parseAnimationOriginals(encodeAnimationOriginals(empty)))
+    }
+
+    @Test fun restorePendingRoundTrip() {
+        val full = RestorePending(pkg = "com.x.y", mode = CompileMode.SPEED, versionCode = 12)
+        assertEquals(full, parseRestorePending(encodeRestorePending(full)))
+    }
+
+    @Test fun restorePendingMalformedIsNull() {
+        assertNull(parseRestorePending(null))
+        assertNull(parseRestorePending(""))
+        assertNull(parseRestorePending("com.x.y|speed"))
+        assertNull(parseRestorePending("com.x.y|warp|12"))
     }
 
     @Test fun cleanupThresholdBytes() {
