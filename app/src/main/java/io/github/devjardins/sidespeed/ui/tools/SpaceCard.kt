@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.tv.material3.Text
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import io.github.devjardins.sidespeed.tools.DeviceInfo
 import io.github.devjardins.sidespeed.tools.StorageInfo
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.tools.formatBytes
+import io.github.devjardins.sidespeed.tools.shortLabel
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -33,15 +33,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-private fun thresholdLabel(t: CleanupThreshold): String = when (t) {
-    CleanupThreshold.OFF -> "Off"
-    CleanupThreshold.MB_500 -> "500 MB"
-    CleanupThreshold.GB_1 -> "1 GB"
-    CleanupThreshold.GB_2 -> "2 GB"
-}
 
 private fun lastCleanupLine(atMs: Long, freedBytes: Long?, skipped: String?): String {
     val time = SimpleDateFormat("EEE HH:mm", Locale.getDefault()).format(Date(atMs))
@@ -65,7 +59,10 @@ fun SpaceCard(
     val scope = rememberCoroutineScope()
     var storage by remember { mutableStateOf<StorageInfo?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
-    var cleaning by rememberSaveable { mutableStateOf(false) }
+    // Plain remember: after a process recreation no trim is running, so the button must not stay "cleaning".
+    var cleaning by remember { mutableStateOf(false) }
+    // Button feedback: the freed amount (or skip reason) for a few seconds after a run.
+    var flash by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(refresh) {
         storage = withContext(Dispatchers.IO) { runCatching { deviceInfo.storage() }.getOrNull() }
     }
@@ -78,17 +75,28 @@ fun SpaceCard(
                 color = SsColors.TextSecondary,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Never disabled while running: extra presses are ignored and focus stays on the button.
                 SsButton(
-                    "Clean up now",
+                    when {
+                        cleaning -> "Cleaning…"
+                        flash != null -> flash!!
+                        else -> "Clean up now"
+                    },
                     onClick = {
+                        if (cleaning) return@SsButton
                         scope.launch {
                             cleaning = true
-                            runCatching { cleanup.cleanNow() }
+                            flash = null
+                            val record = runCatching { cleanup.cleanNow() }.getOrNull()
                             refresh++
+                            flash = record?.let { r ->
+                                if (r.skipped != null) r.skipped else "Freed ${formatBytes(r.freedBytes ?: 0)}"
+                            }
                             cleaning = false
+                            delay(4_000)
+                            flash = null
                         }
                     },
-                    enabled = !cleaning,
                 )
                 if (cleaning) SsSpinner()
             }
@@ -96,7 +104,7 @@ fun SpaceCard(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CleanupThreshold.entries.forEach { t ->
                     SsButton(
-                        thresholdLabel(t),
+                        t.shortLabel(),
                         onClick = {
                             scope.launch {
                                 store.setCleanupThreshold(t)
