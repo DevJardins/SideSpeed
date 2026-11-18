@@ -25,7 +25,6 @@ import java.util.Collections
 class SelfUpdaterTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val signer = setOf("e".repeat(64))
     private val apkFacts = ApkFacts("io.github.devjardins.sidespeed", 5, signer)
 
@@ -41,6 +40,7 @@ class SelfUpdaterTest {
         throttleMs: Long = 0,
         helperCalls: MutableList<File> = mutableListOf(),
         fallbackCalls: MutableList<File> = mutableListOf(),
+        scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
     ): SelfUpdater {
         val bytes = apkBytes
         val dl = UpdateDownload(open = open ?: { url ->
@@ -94,7 +94,7 @@ class SelfUpdaterTest {
         val helperCalls = Collections.synchronizedList(mutableListOf<File>())
         val sequenceDone = kotlinx.coroutines.CompletableDeferred<Unit>()
         val u = updater(apkBytes = content, throttleMs = 10, helperCalls = helperCalls)
-        val collect = scope.launch {
+        val collect = launch {
             u.state.collect { s ->
                 seen += s
                 val i = seen.indexOfFirst { it is UpdateUiState.Downloading }
@@ -155,7 +155,6 @@ class SelfUpdaterTest {
         u.clearStaleFiles()
         val left = dir.listFiles()?.toList() ?: emptyList()
         assertTrue("expected empty update dir, found $left", left.isEmpty())
-        scope.cancel()
     }
 
     /** Finite body with a per-chunk delay, so state progression is observable mid-download. */
