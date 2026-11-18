@@ -26,4 +26,12 @@ dependencies {
     implementation(libs.androidx.benchmark.macro.junit4)
     implementation(libs.androidx.test.uiautomator)
     implementation(libs.androidx.test.ext.junit)
+
+    constraints {
+        // Dependabot (CVE-2026-63126): benchmark-traceprocessor pulls
+        // wire-runtime 6.4.0; force the patched 6.4.5.
+        implementation(libs.build.wire.runtime) {
+            because("Dependabot: wire-runtime <= 6.4.4, patched in 6.4.5")
+        }
+    }
 }

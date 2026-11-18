@@ -9,10 +9,10 @@ jobs:
   ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       # Signs the release APKs when the secrets exist; forks and PRs without them get unsigned APKs.
       - name: Decode release keystore
         env:
@@ -26,7 +26,7 @@ jobs:
             echo "SIDESPEED_KEY_PASSWORD=${{ secrets.SIDESPEED_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
       - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ubuntu
           path: |
@@ -39,12 +39,12 @@ jobs:
     if: github.event_name == 'push'
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew :companion-desktop:packageDmg
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos
           path: companion-desktop/build/compose/binaries/main/dmg/*.dmg
@@ -53,12 +53,12 @@ jobs:
     if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew :companion-desktop:packageMsi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: companion-desktop/build/compose/binaries/main/msi/*.msi
@@ -78,8 +78,8 @@ jobs:
       # Certificate SHA-256 of the project signing key; both APKs must carry it.
       EXPECTED_CERT: 5d153f27c68102ff8245e8eb1c6c0a4d4a11d5e1976685824cecb0ce7108cc0c
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with: { path: artifacts }
       - name: Collect, check and name the release files
         run: |
