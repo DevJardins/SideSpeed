@@ -12,7 +12,9 @@ The quickest way: install **Downloader** on the TV (from the Amazon Appstore or 
 
 Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
-To update, install the new APK over the old one. Your settings are kept. Updating stops the helper, so start it again afterwards (on Google TV / onn, just open SideSpeed).
+To update, install the new APK over the old one. Your settings are kept. Updating stops the helper, so start it again afterwards (on Google TV / onn, just open SideSpeed). SideSpeed shows a notice on the Apps screen when a newer version is out; it never downloads or installs anything by itself.
+
+Fire TV Sticks that run Vega OS (instead of Fire OS) are not supported: they cannot run Android apps.
 
 ## Setup
 
@@ -40,9 +42,19 @@ Anything still in speed-profile or a lower filter is upgraded to speed. The tab 
 
 **SideSpeed optimizes itself too.** After you install or update it, SideSpeed compiles itself to speed the next time you leave the app while the helper is running. The Apps screen shows **SideSpeed optimized** once that is done. The APK also includes a baseline profile, which tells Android which of SideSpeed's own code to compile first.
 
+## Tools
+
+The **Tools** button on the Apps screen opens three cards:
+
+- **Box health:** device name, Android version, memory, storage and whether the helper is running.
+- **Free up space:** shows free and total storage. **Clean up now** clears app caches (apps keep their data but may download artwork again). **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free: while the helper runs, SideSpeed checks every few hours and clears only as much cache as it needs. It never runs on a timer. Off by default.
+- **Faster animations:** Normal, Faster or Off for Android's window, transition and animator scales. Menus and screen changes move faster; apps do not load faster. **Restore original** puts back the values you had before.
+
+**Launch time.** On an app's compile screen, SideSpeed can time how long the app takes to open before and after compiling (it opens the app briefly, three times each side, and shows the median), for example `1.9 s → 1.1 s (42% faster)`. **Measure** re-checks any app: it resets the app's compiled code, times it, compiles it back and times it again. The result is kept per app version; after an update it is marked as from an older version.
+
 ## SideSpeed Companion
 
-Companion apps for Android phones and for Windows, macOS and Linux. They start the SideSpeed helper on your Fire TV for you, so you do not need a PC and a terminal each time. Fire TV only; on other TVs SideSpeed handles setup itself.
+Companion apps for Android phones and for Windows, macOS and Linux. They start the SideSpeed helper on your Fire TV for you, so you do not need a PC and a terminal each time. On Google TV and other Android TVs, SideSpeed handles setup itself; you can still add those TVs to see what they are compiling.
 
 **Install:** on a phone, open **[sidespeed.app/phone](https://sidespeed.app/phone)**. On a computer, open **[sidespeed.app](https://sidespeed.app)**, which offers the right installer for your system. Every file is also on the [Releases page](https://github.com/DevJardins/SideSpeed/releases). The desktop installers are unsigned:
 
@@ -56,6 +68,8 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 **Trusted Networks:** you choose which networks the companion may act on. On any other network it does nothing and sends nothing. It needs no location permission; a network is recognised by its gateway, subnet and DNS settings.
 
 **Tailscale (desktop only).** Adding a TV by its Tailscale address trusts your own tailnet automatically, and the TV is kept alive wherever Tailscale is connected. TVs shared in from another tailnet are refused. **Settings > Tailnets** lists your tailnets, and removing a tailnet removes its TVs. Anyone who administers the tailnet can reach the TV. The Android companion has no Tailscale support.
+
+**Live status:** while the companion's home screen is open, each TV card shows what SideSpeed is compiling right now, how many apps are waiting, and the last result. The TV needs SideSpeed 0.4.0 or later.
 
 **TV card borders** show how the last check reached the TV: green on the home network, blue over Tailscale, red when it could not be reached. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
 
