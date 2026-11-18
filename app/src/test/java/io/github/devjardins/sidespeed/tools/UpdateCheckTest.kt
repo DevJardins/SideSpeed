@@ -29,6 +29,8 @@ class FakeUpdateStore : ToolsStore {
     override suspend fun setLaunchResult(r: LaunchResult) { launches.value += r.pkg to r }
     override val animationOriginals: Flow<AnimationOriginals?> = originals
     override suspend fun setAnimationOriginals(o: AnimationOriginals?) { originals.value = o }
+    override val restorePending: Flow<RestorePending?> = MutableStateFlow(null)
+    override suspend fun setRestorePending(r: RestorePending?) {}
     override val updateDismissedVersion: Flow<String?> = dismissed
     override suspend fun setUpdateDismissedVersion(v: String) { dismissed.value = v }
     override val updateLastCheckMs: Flow<Long> = lastCheck

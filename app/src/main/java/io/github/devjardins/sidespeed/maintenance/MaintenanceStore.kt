@@ -35,9 +35,17 @@ fun resolveMode(stored: String?, legacyAll: Boolean?): AutoOptimizeMode =
 /** True when anything is maintained: a ticked app, or a mode that covers apps by itself. The service runs only then. */
 fun isArmed(mode: AutoOptimizeMode, ticked: Set<String>): Boolean = mode != AutoOptimizeMode.SELECTED || ticked.isNotEmpty()
 
-/** True when the service must stay running: compile maintenance armed, or automatic cleanup set. */
-fun isServiceNeeded(mode: AutoOptimizeMode, ticked: Set<String>, threshold: CleanupThreshold): Boolean =
-    isArmed(mode, ticked) || threshold != CleanupThreshold.OFF
+/**
+ * True when the service must stay running: compile maintenance armed, automatic
+ * cleanup set, or a launch measurement in flight ([measuring]). The service
+ * stops itself again once the sequence ends.
+ */
+fun isServiceNeeded(
+    mode: AutoOptimizeMode,
+    ticked: Set<String>,
+    threshold: CleanupThreshold,
+    measuring: Boolean = false,
+): Boolean = isArmed(mode, ticked) || threshold != CleanupThreshold.OFF || measuring
 
 interface MaintenanceStore {
     /** Packages the user ticked. */
@@ -79,5 +87,5 @@ class DataStoreMaintenanceStore(private val store: DataStore<Preferences>) : Mai
 
 suspend fun isArmed(store: MaintenanceStore): Boolean = isArmed(store.mode.first(), store.maintained.first())
 
-suspend fun isServiceNeeded(maintenance: MaintenanceStore, tools: ToolsStore): Boolean =
-    isServiceNeeded(maintenance.mode.first(), maintenance.maintained.first(), tools.cleanupThreshold.first())
+suspend fun isServiceNeeded(maintenance: MaintenanceStore, tools: ToolsStore, measuring: Boolean = false): Boolean =
+    isServiceNeeded(maintenance.mode.first(), maintenance.maintained.first(), tools.cleanupThreshold.first(), measuring)

@@ -140,7 +140,9 @@ class CompileViewModelTest {
         }
         v.start(pkg, CompileMode.SPEED); dispatcher.scheduler.advanceUntilIdle()
         val s = v.state.value
-        assertEquals(10_000L, s.startedAtMs)
+        // Re-stamped when the compile run begins (start() stamps 10_000 first); sequences
+        // only get the run stamp, so the shown duration is the compile, not wall time.
+        assertEquals(99_000L, s.startedAtMs)
         assertTrue(s.finishedAtMs > s.startedAtMs)
         assertEquals((s.finishedAtMs - s.startedAtMs) / 1000, s.durationSeconds)
     }

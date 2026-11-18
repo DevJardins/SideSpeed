@@ -67,6 +67,7 @@ fun CompileScreen(
     onKeepOptimized: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
+    val launch by vm.launch.collectAsState()
     val pkg = remember(app) { PackageName.parse(app.packageName) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val result = state.result
@@ -77,7 +78,12 @@ fun CompileScreen(
     // Collapsed on success, expanded on failure; the user can toggle it either way.
     var showLog by remember(result) { mutableStateOf(result != null && !result.success) }
 
-    LaunchedEffect(app.packageName) { vm.reset(); pkg?.let { vm.loadKept(it) }; runCatching { startFocus.requestFocus() } }
+    LaunchedEffect(app.packageName) {
+        vm.reset()
+        pkg?.let { vm.loadKept(it) }
+        vm.loadLaunch(app.packageName)
+        runCatching { startFocus.requestFocus() }
+    }
     LaunchedEffect(state.running) {
         if (state.running) {
             runCatching { logFocus.requestFocus() }
@@ -87,7 +93,8 @@ fun CompileScreen(
             }
         }
     }
-    LaunchedEffect(result) { if (result != null) runCatching { backFocus.requestFocus() } }
+    // Not while a launch sequence is busy: the busy indicator owns D-pad focus until it ends.
+    LaunchedEffect(result) { if (result != null && launch.busy == null) runCatching { backFocus.requestFocus() } }
 
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -97,6 +104,17 @@ fun CompileScreen(
                     Text(app.label, style = SsType.Headline, color = SsColors.TextPrimary)
                     Text("${app.packageName} · ${mode.arg}", style = SsType.Caption, color = SsColors.TextSecondary)
                 }
+            }
+
+            // While a launch sequence is busy every action below is disabled and
+            // Back is blocked (MainActivity): the runner owns the screen until it finishes.
+            val launchBusy = launch.busy != null
+            if (launch.launchable || launch.stored != null) {
+                LaunchTimeSection(
+                    launch = launch,
+                    onCheckedChange = vm::setLaunchChecked,
+                    onMeasure = { if (pkg != null) vm.measure(pkg) },
+                )
             }
 
             when {
@@ -111,11 +129,11 @@ fun CompileScreen(
                     Text(COMPILE_NOTE, style = SsType.Body, color = SsColors.TextBody)
                     SsButton(
                         "Start compile",
-                        onClick = { if (pkg != null) vm.start(pkg, mode) },
-                        enabled = pkg != null,
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
+                        enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
                     )
-                    if (pkg != null) KeepToggle(state.kept, pkg, vm, onKeepOptimized)
+                    if (pkg != null) KeepToggle(state.kept, pkg, vm, onKeepOptimized, enabled = !launchBusy)
                 }
                 result.success -> SsCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -137,19 +155,32 @@ fun CompileScreen(
 
             if (result != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SsButton("Back to apps", onClick = onBack, modifier = Modifier.focusRequester(backFocus))
+                    SsButton(
+                        "Back to apps",
+                        onClick = onBack,
+                        enabled = !launchBusy,
+                        modifier = Modifier.focusRequester(backFocus),
+                    )
                     SsButton(
                         "Compile again",
-                        onClick = { if (pkg != null) vm.start(pkg, mode) },
-                        enabled = pkg != null,
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
+                        enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
                     )
                     if (state.offerKeepOptimized && pkg != null) {
-                        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKeepOptimized) })
+                        SsButton(
+                            "Keep this app optimized",
+                            onClick = { vm.keepOptimized(pkg, onKeepOptimized) },
+                            enabled = !launchBusy,
+                        )
                     }
-                    SsButton(if (showLog) "Hide log" else "Show log", onClick = { showLog = !showLog })
+                    SsButton(
+                        if (showLog) "Hide log" else "Show log",
+                        onClick = { showLog = !showLog },
+                        enabled = !launchBusy,
+                    )
                     if (result.message == "Connection lost") {
-                        SsButton("Check helper", onClick = onCheckHelper)
+                        SsButton("Check helper", onClick = onCheckHelper, enabled = !launchBusy)
                     }
                 }
             }
@@ -162,11 +193,11 @@ fun CompileScreen(
 }
 
 @Composable
-private fun KeepToggle(kept: Boolean, pkg: PackageName, vm: CompileViewModel, onKept: () -> Unit) {
+private fun KeepToggle(kept: Boolean, pkg: PackageName, vm: CompileViewModel, onKept: () -> Unit, enabled: Boolean = true) {
     if (kept) {
-        SsButton("✓ Kept optimized (tap to stop)", onClick = { vm.stopKeeping(pkg) })
+        SsButton("✓ Kept optimized (tap to stop)", onClick = { vm.stopKeeping(pkg) }, enabled = enabled)
     } else {
-        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKept) })
+        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKept) }, enabled = enabled)
     }
 }
 

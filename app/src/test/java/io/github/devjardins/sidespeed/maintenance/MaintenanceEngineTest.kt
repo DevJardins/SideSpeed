@@ -16,10 +16,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -71,14 +73,21 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false) {
     }
     fun failure(message: String = "Failure"): Flow<CompileEvent> = flow { emit(CompileEvent.Finished(false, true, message)) }
 
+    var measuring: String? = null
+    var helperUpCalls = 0
+    var helperUpGate: CompletableDeferred<Unit>? = null
+    var helperUpInvocations = 0
+
     val engine = MaintenanceEngine(
         source, store, prefs,
         runCompile = { pkg, mode -> calls += pkg.value to mode; script(pkg.value) },
-        helperUp = { up },
+        helperUp = { helperUpInvocations++; helperUpGate?.await(); up },
         badges = { pkgs -> if (badgesFail) error("dumpsys failed") else badges.filterKeys { it in pkgs } },
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
         clock = { now },
+        measuring = { measuring },
+        onHelperUp = { helperUpCalls++ },
     )
     val phases get() = engine.state.value.phases
 }
@@ -240,6 +249,58 @@ class MaintenanceEngineTest {
         advanceTimeBy(30_000); runCurrent()
         assertEquals(1, h.calls.size)
         assertFalse(h.engine.state.value.helperDown)
+    }
+
+    @Test fun measuredPackageIsSkippedUntilSequenceEnds() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 500)
+        h.store.setMaintained("a.a", true)
+        h.measuring = "a.a"
+        runCurrent()
+        assertTrue(h.calls.isEmpty())
+        h.measuring = null
+        h.engine.scan()
+        runCurrent()
+        assertEquals(listOf("a.a" to CompileMode.SPEED), h.calls)
+    }
+
+    @Test fun helperUpTransitionFiresHookOnce() = runTest {
+        val h = Harness(this)
+        h.up = false
+        h.source.put("a.a")
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertEquals(0, h.helperUpCalls)
+        h.up = true
+        advanceTimeBy(30_000); runCurrent()
+        assertEquals(1, h.helperUpCalls)
+        assertEquals(1, h.calls.size)
+    }
+
+    @Test fun runJobSkipsMeasuredPkgAtCompileTime() = runTest {
+        val h = Harness(this)
+        h.source.put("a.a", updated = 500)
+        h.store.setMaintained("a.a", true)
+        h.helperUpGate = CompletableDeferred()
+        runCurrent()
+        // Queued and parked in the helper check, before the take: nothing compiled yet.
+        assertEquals(JobPhase.WAITING, h.phases["a.a"])
+        assertTrue("drain must reach the helper check", h.helperUpInvocations > 0)
+        assertTrue(h.calls.isEmpty())
+        h.measuring = "a.a"
+        h.helperUpGate?.complete(Unit)
+        h.helperUpGate = null
+        advanceTimeBy(1000)
+        runCurrent()
+        assertTrue("measured package must not compile", h.calls.isEmpty())
+        // The drain must have progressed past the take (not still parked) and
+        // left nothing running: a vacuous pass would still show WAITING.
+        assertNull(h.engine.state.value.phases["a.a"])
+    }
+
+    @Test fun awaitNotRunningReturnsWhenIdle() = runTest {
+        val h = Harness(this)
+        h.engine.awaitNotRunning("a.a")
     }
 
     @Test fun helperDyingMidCompileRequeuesWithoutUsingARetry() = runTest {

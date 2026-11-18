@@ -7,6 +7,10 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
+import io.github.devjardins.sidespeed.compile.PackageName
+
+/** Installed version identity used to match a stored launch-time result. */
+data class PkgVersion(val versionCode: Long, val lastUpdateTime: Long)
 
 class InstalledApps(context: Context) : AppSource {
     private val ownPackage = context.packageName
@@ -50,12 +54,53 @@ class InstalledApps(context: Context) : AppSource {
 
     private fun queryLaunchable(category: String): List<ResolveInfo> {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(category)
-        return if (Build.VERSION.SDK_INT >= 33) {
+        return query(intent)
+    }
+
+    private fun query(intent: Intent): List<ResolveInfo> =
+        if (Build.VERSION.SDK_INT >= 33) {
             pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
         } else {
             @Suppress("DEPRECATION")
             pm.queryIntentActivities(intent, 0)
         }
+
+    /** Installed version identity for launch-result matching, or null when the package is gone. */
+    fun versionOf(pkg: String): PkgVersion? {
+        val info = packageInfo(pkg) ?: return null
+        val versionCode = if (Build.VERSION.SDK_INT >= 28) {
+            info.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode.toLong()
+        }
+        return PkgVersion(versionCode, info.lastUpdateTime)
+    }
+
+    /**
+     * Fully-qualified launch activity class for [pkg], leanback first then
+     * normal launcher, or null when SideSpeed cannot open the app. Short names
+     * (`".Main"`, `"Main"`) are resolved against the package; anything that is
+     * not a valid dotted class name is rejected so the helper allowlist holds.
+     */
+    fun launchActivity(pkg: String): String? {
+        for (category in listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)) {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(category).setPackage(pkg)
+            val matches = try {
+                query(intent)
+            } catch (_: Exception) {
+                continue
+            }
+            val name = matches.firstOrNull { it.activityInfo?.packageName == pkg }?.activityInfo?.name
+                ?: continue
+            val qualified = when {
+                name.startsWith(".") -> pkg + name
+                "." !in name -> "$pkg.$name"
+                else -> name
+            }
+            PackageName.parse(qualified)?.let { return it.value }
+        }
+        return null
     }
 
     private fun packageInfo(pkg: String): PackageInfo? = try {
