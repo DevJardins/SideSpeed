@@ -106,7 +106,7 @@ class CleanupTest {
         val (fake, _, store, cleanup) = fixture()
         fake.on("pm trim-caches 999999999999999") { listOf("error: request not allowed") to 126 }
         val record = cleanup.cleanNow()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper to use this"), record)
         assertEquals(record, store.lastFlow.value)
     }
 
@@ -169,7 +169,7 @@ class CleanupTest {
         )
         fake.on("pm trim-caches 500000000") { listOf("error: request not allowed") to 126 }
         val record = cleanup.maybeAuto()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper to use this"), record)
         assertEquals(record, store.lastFlow.value)
     }
 }

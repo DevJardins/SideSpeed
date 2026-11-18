@@ -21,7 +21,7 @@ class Cleanup(
                 CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
             }
             is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
-            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper")
+            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
             is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
         }
         store.setLastCleanup(record)
@@ -42,7 +42,7 @@ class Cleanup(
                 CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
             }
             is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
-            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper")
+            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
             is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
         }
         store.setLastCleanup(record)
@@ -53,4 +53,12 @@ class Cleanup(
         /** Very large target: clears all caches the helper can. */
         const val CLEAN_NOW_TARGET_BYTES = 999_999_999_999_999L
     }
+}
+
+/** Short choice label, e.g. "1 GB": shared by the SpaceCard row and the service notification. */
+internal fun CleanupThreshold.shortLabel(): String = when (this) {
+    CleanupThreshold.OFF -> "Off"
+    CleanupThreshold.MB_500 -> "500 MB"
+    CleanupThreshold.GB_1 -> "1 GB"
+    CleanupThreshold.GB_2 -> "2 GB"
 }

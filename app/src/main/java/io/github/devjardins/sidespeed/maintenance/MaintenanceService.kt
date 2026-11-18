@@ -13,6 +13,8 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.content.ContextCompat
 import io.github.devjardins.sidespeed.SideSpeedApp
+import io.github.devjardins.sidespeed.tools.CleanupThreshold
+import io.github.devjardins.sidespeed.tools.shortLabel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,13 +25,18 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
 
-/** Notification text for the current engine state. */
-fun notificationText(state: MaintenanceState): String = when {
+/**
+ * Notification text for the current engine state. [armed] is compile maintenance (a ticked app or a
+ * covering mode); cleanup-only runs show the threshold. When both are on, the compile text wins.
+ */
+fun notificationText(state: MaintenanceState, armed: Boolean, threshold: CleanupThreshold): String = when {
     state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
     state.queueLength > 0 -> "Optimizing apps (${state.queueLength} left)"
-    state.maintained.isEmpty() -> "Watching for apps to optimize"
-    state.maintained.size == 1 -> "Keeping 1 app optimized"
-    else -> "Keeping ${state.maintained.size} apps optimized"
+    armed && state.maintained.isEmpty() -> "Watching for apps to optimize"
+    armed && state.maintained.size == 1 -> "Keeping 1 app optimized"
+    armed -> "Keeping ${state.maintained.size} apps optimized"
+    threshold == CleanupThreshold.OFF -> "Watching for apps to optimize"
+    else -> "Keeping free space above ${threshold.shortLabel()}"
 }
 
 /**
@@ -60,11 +67,16 @@ class MaintenanceService : Service() {
         val container = (application as SideSpeedApp).container
         val engine = container.maintenance
         try {
-            promote(notification(notificationText(engine.state.value)))
+            val initial = engine.state.value
+            promote(notification(notificationText(initial, initial.maintained.isNotEmpty(), CleanupThreshold.OFF)))
         } catch (_: Exception) {
-            // The platform refused the foreground start (boot or background restrictions): run engine-only.
+            // The platform refused the foreground start (boot or background restrictions): run one
+            // engine + cleanup pass without the loop, then stop.
             engine.scan()
-            stopSelf()
+            scope.launch {
+                runCatching { container.cleanup.maybeAuto() }
+                stopSelf()
+            }
             return START_NOT_STICKY
         }
 
@@ -92,12 +104,14 @@ class MaintenanceService : Service() {
                 container.maintenanceStore.mode,
                 container.toolsStore.cleanupThreshold,
             ) { s, t, m, th ->
-                s to isServiceNeeded(m, t, th)
-            }.collect { (state, needed) ->
-                if (!needed) {
+                val armed = isArmed(m, t)
+                val needed = armed || th != CleanupThreshold.OFF
+                needed to if (needed) notificationText(s, armed, th) else null
+            }.collect { (needed, text) ->
+                if (!needed || text == null) {
                     stopSelf()
                 } else {
-                    getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(notificationText(state)))
+                    getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text))
                 }
             }
         }
