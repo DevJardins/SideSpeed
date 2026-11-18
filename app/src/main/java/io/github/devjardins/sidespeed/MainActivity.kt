@@ -69,7 +69,15 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                CompileViewModel(c.compileRunner, c.statusChecker, c.prefs, store = c.maintenanceStore) as T
+                CompileViewModel(
+                    c.compileRunner, c.statusChecker, c.prefs,
+                    store = c.maintenanceStore,
+                    tools = c.toolsCommands,
+                    toolsStore = c.toolsStore,
+                    launchActivityOf = c.installedApps::launchActivity,
+                    versionOf = c.installedApps::versionOf,
+                    keepAlive = { MaintenanceService.start(applicationContext) },
+                ) as T
         })[CompileViewModel::class.java]
     }
 

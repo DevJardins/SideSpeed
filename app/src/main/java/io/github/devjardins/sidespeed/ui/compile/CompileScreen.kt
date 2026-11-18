@@ -67,6 +67,7 @@ fun CompileScreen(
     onKeepOptimized: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
+    val launch by vm.launch.collectAsState()
     val pkg = remember(app) { PackageName.parse(app.packageName) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val result = state.result
@@ -77,7 +78,12 @@ fun CompileScreen(
     // Collapsed on success, expanded on failure; the user can toggle it either way.
     var showLog by remember(result) { mutableStateOf(result != null && !result.success) }
 
-    LaunchedEffect(app.packageName) { vm.reset(); pkg?.let { vm.loadKept(it) }; runCatching { startFocus.requestFocus() } }
+    LaunchedEffect(app.packageName) {
+        vm.reset()
+        pkg?.let { vm.loadKept(it) }
+        vm.loadLaunch(app.packageName)
+        runCatching { startFocus.requestFocus() }
+    }
     LaunchedEffect(state.running) {
         if (state.running) {
             runCatching { logFocus.requestFocus() }
@@ -99,6 +105,14 @@ fun CompileScreen(
                 }
             }
 
+            if (launch.launchable || launch.stored != null) {
+                LaunchTimeSection(
+                    launch = launch,
+                    onCheckedChange = vm::setLaunchChecked,
+                    onMeasure = { if (pkg != null) vm.measure(pkg) },
+                )
+            }
+
             when {
                 state.running -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -111,7 +125,7 @@ fun CompileScreen(
                     Text(COMPILE_NOTE, style = SsType.Body, color = SsColors.TextBody)
                     SsButton(
                         "Start compile",
-                        onClick = { if (pkg != null) vm.start(pkg, mode) },
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
                         enabled = pkg != null,
                         modifier = Modifier.focusRequester(startFocus),
                     )
@@ -140,7 +154,7 @@ fun CompileScreen(
                     SsButton("Back to apps", onClick = onBack, modifier = Modifier.focusRequester(backFocus))
                     SsButton(
                         "Compile again",
-                        onClick = { if (pkg != null) vm.start(pkg, mode) },
+                        onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode) },
                         enabled = pkg != null,
                         modifier = Modifier.focusRequester(startFocus),
                     )
