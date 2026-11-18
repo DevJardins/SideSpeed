@@ -30,6 +30,8 @@ import kotlinx.coroutines.withContext
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
+import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
 import io.github.devjardins.sidespeed.ui.setup.SetupScreen
@@ -84,6 +86,7 @@ class MainActivity : ComponentActivity() {
                 // through Setup (a fast ping when the helper is alive).
                 var ready by remember { mutableStateOf(false) }
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+                var showTools by rememberSaveable { mutableStateOf(false) }
                 var selectedMode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
                 var selected by remember { mutableStateOf<AppEntry?>(null) }
                 val app = selected ?: selectedPkg?.let { p -> remember(p) { appsVm.manualEntryApp(p) } }
@@ -124,6 +127,13 @@ class MainActivity : ComponentActivity() {
                 }
                 when {
                     !ready -> SetupScreen(setupVm, onReady = { ready = true })
+                    showTools && app == null -> ToolsScreen(
+                        // Wave 1 replaces each placeholder with its own card, one line each.
+                        health = { ToolsPlaceholder("Box health") },
+                        space = { ToolsPlaceholder("Free up space") },
+                        animations = { ToolsPlaceholder("Animations") },
+                        onBack = { showTools = false },
+                    )
                     app == null -> AppsScreen(
                         appsVm,
                         lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
@@ -139,6 +149,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
+                        onOpenTools = { showTools = true },
                         tvAddress = tvAddress,
                         selfCompile = (application as SideSpeedApp).container.prefs.selfCompile,
                         selfVersionCode = (application as SideSpeedApp).container.selfBuild.versionCode,

@@ -14,6 +14,11 @@ import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperClient
 import io.github.devjardins.sidespeed.apps.AppIcons
 import io.github.devjardins.sidespeed.apps.InstalledApps
+import io.github.devjardins.sidespeed.tools.AndroidDeviceInfo
+import io.github.devjardins.sidespeed.tools.DataStoreToolsStore
+import io.github.devjardins.sidespeed.tools.DeviceInfo
+import io.github.devjardins.sidespeed.tools.ToolsCommands
+import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -53,6 +58,13 @@ class AppContainer(context: Context) {
 
     /** Only use after Setup reports the helper ready. */
     val compileRunner: CompileRunner by lazy { CompileRunner(helper) }
+
+    val toolsStore: ToolsStore by lazy { DataStoreToolsStore(appContext) }
+
+    /** Only use after Setup reports the helper ready. */
+    val toolsCommands: ToolsCommands by lazy { ToolsCommands(helper) { helper.ping() != null } }
+
+    val deviceInfo: DeviceInfo by lazy { AndroidDeviceInfo(appContext) }
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }
 
     val maintenanceStore: MaintenanceStore by lazy { DataStoreMaintenanceStore(appContext) }

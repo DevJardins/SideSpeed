@@ -129,4 +129,88 @@ class CommandAllowlistTest {
         val pkg = "com." + "a".repeat(600)
         assertNull(CommandAllowlist.toArgv("dumpsys package $pkg"))
     }
+
+    @Test fun trimCachesForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "trim-caches", "1000000000"),
+            CommandAllowlist.toArgv("pm trim-caches 1000000000"),
+        )
+        assertEquals(
+            listOf("/system/bin/pm", "trim-caches", "5"),
+            CommandAllowlist.toArgv("pm trim-caches 5"),
+        )
+        listOf(
+            "pm trim-caches 1G",
+            "pm trim-caches -1",
+            "pm trim-caches",
+            "pm trim-caches 1234567890123456",
+            "pm trim-caches 100 extra",
+            "pm trim-caches 1.5",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
+    @Test fun settingsForms() {
+        assertEquals(
+            listOf("/system/bin/settings", "get", "global", "window_animation_scale"),
+            CommandAllowlist.toArgv("settings get global window_animation_scale"),
+        )
+        assertEquals(
+            listOf("/system/bin/settings", "put", "global", "window_animation_scale", "0.5"),
+            CommandAllowlist.toArgv("settings put global window_animation_scale 0.5"),
+        )
+        assertEquals(
+            listOf("/system/bin/settings", "put", "global", "transition_animation_scale", "1.5"),
+            CommandAllowlist.toArgv("settings put global transition_animation_scale 1.5"),
+        )
+        assertEquals(
+            listOf("/system/bin/settings", "put", "global", "animator_duration_scale", "10"),
+            CommandAllowlist.toArgv("settings put global animator_duration_scale 10"),
+        )
+        listOf(
+            "settings put global window_animation_scale 11",
+            "settings put global window_animation_scale 10.01",
+            "settings put global adb_enabled 0",
+            "settings put secure android_id 1",
+            "settings get global adb_enabled",
+            "settings get secure android_id",
+            "settings put global window_animation_scale",
+            "settings put global window_animation_scale 0.5 extra",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
+    @Test fun verifyCompileForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "compile", "-m", "verify", "-f", "com.nuvio.tv"),
+            CommandAllowlist.toArgv("pm compile -m verify -f com.nuvio.tv"),
+        )
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "compile", "-m", "verify", "-f", "com.nuvio.tv"),
+            CommandAllowlist.toArgv("cmd package compile -m verify -f com.nuvio.tv"),
+        )
+    }
+
+    @Test fun launchTimeForm() {
+        assertEquals(
+            listOf("/system/bin/am", "start", "-W", "-S", "-n", "com.x.y/com.x.y.Main"),
+            CommandAllowlist.toArgv("launch-time com.x.y com.x.y.Main"),
+        )
+        listOf(
+            "launch-time com.x.y ../evil",
+            "launch-time com.x.y",
+            "launch-time com.x.y com.x.y.Main extra",
+            "launch-time nodots com.x.y.Main",
+            "launch-time com.x.y .Main",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
+    @Test fun bringBackForm() {
+        assertEquals(
+            listOf(
+                "/system/bin/am", "start", "-n",
+                "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
+            ),
+            CommandAllowlist.toArgv("bring-back"),
+        )
+        assertNull(CommandAllowlist.toArgv("bring-back extra"))
+    }
 }
