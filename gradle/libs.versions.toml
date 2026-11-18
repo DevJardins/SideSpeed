@@ -19,7 +19,17 @@ junit = "4.13.2"
 coroutines = "1.11.0"
 kadb = "2.1.4"
 bouncycastle = "1.85"
-workmanager = "2.11.0"
+# Patched floor for the Gradle plugin/build classpath (bcpkix alert fixes at 1.84).
+bouncycastlePkixBuild = "1.84"
+# Floors for transitive Gradle plugin/build-classpath deps (Dependabot alerts filed
+# against settings.gradle.kts). Kept separate from shipped-code versions on purpose.
+guavaBuild = "33.7.2-jre"
+wireRuntimeBuild = "6.4.5"
+jose4jBuild = "0.9.6"
+jdom2Build = "2.0.6.1"
+commonsLang3Build = "3.18.0"
+httpclientBuild = "4.5.13"
+workmanager = "2.11.2"
 composeMultiplatform = "1.12.2"
 
 [libraries]
@@ -48,6 +58,16 @@ bouncycastle-bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", 
 bouncycastle-bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcutil-jdk18on = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastle" }
+# Build/plugin classpath floors for Dependabot alerts (settings.gradle.kts manifest).
+build-guava = { module = "com.google.guava:guava", version.ref = "guavaBuild" }
+build-bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+build-bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastlePkixBuild" }
+build-bcutil-jdk18on = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastlePkixBuild" }
+build-wire-runtime = { module = "com.squareup.wire:wire-runtime", version.ref = "wireRuntimeBuild" }
+build-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4jBuild" }
+build-jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2Build" }
+build-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3Build" }
+build-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclientBuild" }
 jb-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 jb-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 jb-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
