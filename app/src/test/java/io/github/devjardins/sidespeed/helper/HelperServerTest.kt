@@ -28,6 +28,7 @@ class HelperServerTest {
     private val server = ServerSocket(0, 16, loopback)
     private val logs: MutableList<String> = Collections.synchronizedList(mutableListOf())
     private val ran: MutableList<List<String>> = Collections.synchronizedList(mutableListOf())
+    private val bringBackCalls = AtomicInteger()
     private val acks: MutableList<String> = Collections.synchronizedList(mutableListOf())
 
     @After fun tearDown() = server.close()
@@ -43,6 +44,10 @@ class HelperServerTest {
             onLine("Success")
             0
         },
+        installRunner: (List<String>, java.io.InputStream, Long, (String) -> Unit) -> Int =
+            { _, _, _, _ -> HelperProtocol.EXIT_HELPER_ERROR },
+        bringBack: () -> Int = { bringBackCalls.incrementAndGet(); 0 },
+        installGate: InstallGate = InstallGate(),
     ) {
         val s = HelperServer(
             server = server,
@@ -56,6 +61,9 @@ class HelperServerTest {
             },
             pong = { HelperProtocol.pong(2000, "/data/app/x/base.apk") },
             runner = runner,
+            installRunner = installRunner,
+            bringBack = bringBack,
+            installGate = installGate,
             writeAck = writeAck,
             log = { logs += it },
             maxConnections = maxConnections,
@@ -209,6 +217,96 @@ class HelperServerTest {
         assertNull(HelperServer.readRequestLine(ByteArrayInputStream("a\tb\n".toByteArray())))
         assertEquals("x".repeat(512), HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(512).toByteArray())))
         assertNull(HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(513).toByteArray())))
+    }
+
+    @Test fun server_install_self_streams_exact_bytes_then_brings_back() {
+        val received = java.io.ByteArrayOutputStream()
+        var seenArgv: List<String>? = null
+        var seenSize = -1L
+        start(
+            installRunner = { argv, stdin, size, onLine ->
+                seenArgv = argv
+                seenSize = size
+                stdin.copyTo(received)
+                onLine("Success")
+                0
+            },
+        )
+        val lines = exchange("install-self 5\nhelloXYZ")
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "install", "-r",
+                "--pkg", "io.github.devjardins.sidespeed", "-S", "5"),
+            seenArgv,
+        )
+        assertEquals(5L, seenSize)
+        assertEquals("hello", received.toByteArray().toString(Charsets.UTF_8))
+        assertEquals(1, bringBackCalls.get())
+        assertEquals("__END__:0", lines.last())
+    }
+
+    @Test fun server_install_self_short_body_kills_and_skips_bring_back() {
+        var gotBytes = -1
+        start(
+            installRunner = { _, stdin, _, _ ->
+                gotBytes = stdin.readBytes().size
+                HelperProtocol.EXIT_HELPER_ERROR
+            },
+        )
+        val lines = Socket(loopback, server.localPort).use { c ->
+            c.soTimeout = 5_000
+            c.getOutputStream().write("install-self 5\nhel".toByteArray())
+            c.getOutputStream().flush()
+            c.shutdownOutput()
+            c.getInputStream().bufferedReader().readLines()
+        }
+        assertEquals(3, gotBytes)
+        assertEquals("__END__:125", lines.last())
+        assertEquals(0, bringBackCalls.get())
+    }
+
+    @Test fun server_install_self_continues_after_client_disconnect() {
+        val finished = CountDownLatch(1)
+        var received = byteArrayOf()
+        start(
+            installRunner = { _, stdin, _, _ ->
+                received = stdin.readBytes()
+                Thread.sleep(200) // install still running while the client is long gone
+                finished.countDown()
+                0
+            },
+        )
+        Socket(loopback, server.localPort).use { c ->
+            c.getOutputStream().write("install-self 5\nhello".toByteArray())
+            c.getOutputStream().flush()
+        }
+        assertTrue(finished.await(5, TimeUnit.SECONDS))
+        assertEquals("hello", received.toString(Charsets.UTF_8))
+        val deadline = System.currentTimeMillis() + 5_000
+        while (bringBackCalls.get() == 0 && System.currentTimeMillis() < deadline) Thread.sleep(50)
+        assertEquals(1, bringBackCalls.get())
+    }
+
+    @Test fun install_gate_defers_await_idle_until_end() {
+        val gate = InstallGate()
+        gate.begin()
+        var released = false
+        val t = thread { gate.awaitIdle(); released = true }
+        Thread.sleep(300)
+        assertFalse(released)
+        gate.end()
+        t.join(5_000)
+        assertTrue(released)
+    }
+
+    @Test fun server_install_self_refused_for_wrong_uid() {
+        var invoked = false
+        start(
+            uid = 2000,
+            installRunner = { _, _, _, _ -> invoked = true; 0 },
+        )
+        assertEquals(emptyList<String>(), exchange("install-self 5\nhello"))
+        assertFalse(invoked)
+        assertEquals(0, bringBackCalls.get())
     }
 
     @Test fun loopbackCheck() {

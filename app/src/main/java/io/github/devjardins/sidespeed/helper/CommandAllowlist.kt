@@ -11,6 +11,14 @@ import io.github.devjardins.sidespeed.compile.PackageName
 object CommandAllowlist {
     const val PING = "ping"
 
+    /** The only package `install-self` may ever install. */
+    const val INSTALL_SELF_PACKAGE = "io.github.devjardins.sidespeed"
+
+    /** Byte cap for `install-self`, matching the 64 MiB download cap. */
+    const val MAX_INSTALL_BYTES = 67_108_864L
+
+    private val INSTALL_SELF_SIZE_DIGITS = Regex("^[0-9]{1,8}$")
+
     private val MODES = setOf("speed", "speed-profile", "verify")
 
     private val TRIM_CACHES = Regex("^[0-9]{1,15}$")
@@ -41,6 +49,27 @@ object CommandAllowlist {
         if (!command.startsWith("$PING ")) return null
         return command.substring(PING.length + 1).takeIf { NONCE.matches(it) }
     }
+
+    /**
+     * The byte count of an `install-self <size>` request (1..[MAX_INSTALL_BYTES]), or null.
+     * Rejects 0, over-cap, leading zeros, signs, non-digits, overflow and extra tokens. A plain
+     * runner can never execute it: [toArgv] stays null for `install-self`.
+     */
+    fun installSelfSize(command: String): Long? {
+        if (!command.startsWith("install-self ")) return null
+        val num = command.removePrefix("install-self ")
+        if (!INSTALL_SELF_SIZE_DIGITS.matches(num)) return null
+        if (num.length > 1 && num.startsWith("0")) return null
+        val size = num.toLongOrNull() ?: return null
+        if (size < 1 || size > MAX_INSTALL_BYTES) return null
+        return size
+    }
+
+    /** Fixed argv for an `install-self` of [size] bytes; [size] is the only variable token. */
+    fun installSelfArgv(size: Long): List<String> = listOf(
+        "/system/bin/cmd", "package", "install", "-r",
+        "--pkg", INSTALL_SELF_PACKAGE, "-S", size.toString(),
+    )
 
     /** Maps a requested command line to a fixed argv, or null if not allowed. `ping` returns null: see [isPing]. */
     fun toArgv(command: String): List<String>? {
