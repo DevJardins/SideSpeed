@@ -103,9 +103,10 @@ class MaintenanceService : Service() {
                 container.maintenanceStore.maintained,
                 container.maintenanceStore.mode,
                 container.toolsStore.cleanupThreshold,
-            ) { s, t, m, th ->
+                container.launchRunner.measuring,
+            ) { s, t, m, th, meas ->
                 val armed = isArmed(m, t)
-                val needed = armed || th != CleanupThreshold.OFF
+                val needed = isServiceNeeded(m, t, th, measuring = meas != null)
                 needed to if (needed) notificationText(s, armed, th) else null
             }.collect { (needed, text) ->
                 if (!needed || text == null) {
@@ -117,9 +118,11 @@ class MaintenanceService : Service() {
         }
         scope.launch {
             val cleanup = container.cleanup
+            val launches = container.launchRunner
             while (true) {
                 engine.scan()
                 runCatching { cleanup.maybeAuto() }
+                runCatching { launches.restorePending() }
                 delay(6.hours)
             }
         }

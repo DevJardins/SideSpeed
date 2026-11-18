@@ -104,7 +104,7 @@ fun SpaceCard(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 CleanupThreshold.entries.forEach { t ->
                     SsButton(
-                        t.shortLabel(),
+                        (if (t == threshold) "✓ " else "") + t.shortLabel(),
                         onClick = {
                             scope.launch {
                                 store.setCleanupThreshold(t)

@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.ui.compile
 import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.apps.PkgVersion
+import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.compile.PackageName
@@ -14,12 +15,14 @@ import io.github.devjardins.sidespeed.tools.AnimationOriginals
 import io.github.devjardins.sidespeed.tools.CleanupRecord
 import io.github.devjardins.sidespeed.tools.CleanupThreshold as ToolsCleanupThreshold
 import io.github.devjardins.sidespeed.tools.LaunchResult
+import io.github.devjardins.sidespeed.tools.LaunchRunner
 import io.github.devjardins.sidespeed.tools.RestorePending
-import io.github.devjardins.sidespeed.tools.ToolResult
 import io.github.devjardins.sidespeed.tools.ToolsCommands
 import io.github.devjardins.sidespeed.tools.ToolsStore
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
@@ -27,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -91,9 +95,11 @@ class LaunchTimeStateTest {
     /** Stateful scripted runner: handler sees (command, per-command call index). */
     private class ScriptRunner(val handler: (String, Int) -> Pair<List<String>, Int>) : CommandRunner {
         val commands = mutableListOf<String>()
+        val hangs = mutableSetOf<String>()
         private val counts = mutableMapOf<String, Int>()
         override fun shell(command: String): Flow<ShellEvent> = flow {
             commands += command
+            if (command in hangs) awaitCancellation()
             val n = counts.getOrDefault(command, 0).also { counts[command] = it + 1 }
             val (lines, exit) = handler(command, n)
             lines.forEach { emit(ShellEvent.Line(it)) }
@@ -120,47 +126,67 @@ class LaunchTimeStateTest {
         }
     }
 
-    private fun vm(
-        runner: CommandRunner,
+    private fun runnerFor(
+        script: ScriptRunner,
+        store: FakeToolsStore,
         prefs: FakePrefs = FakePrefs(),
-        store: FakeToolsStore = FakeToolsStore(),
-        launchActivity: String? = "com.nuvio.tv.Main",
-        version: PkgVersion? = PkgVersion(7, 100),
-    ) = CompileViewModel(
-        runner = CompileRunner(runner),
-        checker = StatusChecker(runner),
+        scope: CoroutineScope,
+    ) = LaunchRunner(
+        commands = ToolsCommands(script) { true },
+        store = store,
         prefs = prefs,
-        dispatcher = dispatcher,
-        tools = ToolsCommands(runner) { true },
-        toolsStore = store,
-        launchActivityOf = { launchActivity },
-        versionOf = { version },
+        compile = CompileRunner(script),
+        scope = scope,
+        launchActivityOf = { "com.nuvio.tv.Main" },
+        versionOf = { PkgVersion(7, 100) },
     )
 
-    // Option B: Measure.
+    private suspend fun uiCollect(script: ScriptRunner, pkg: PackageName, mode: CompileMode): CompileEvent.Finished {
+        var fin: CompileEvent.Finished? = null
+        CompileRunner(script).run(pkg, mode).collect { if (it is CompileEvent.Finished) fin = it }
+        return fin!!
+    }
 
-    @Test fun measureResetsMeasuresCompilesAndStores() = runTest(timeout = 10.seconds) {
-        val runner = fullSequenceRunner()
+    private fun vm(
+        script: ScriptRunner,
+        store: FakeToolsStore,
+        prefs: FakePrefs = FakePrefs(),
+        launches: LaunchRunner,
+    ) = CompileViewModel(
+        runner = CompileRunner(script),
+        checker = StatusChecker(script),
+        prefs = prefs,
+        dispatcher = dispatcher,
+        launches = launches,
+    ) { 1234L }
+
+    /** Flushes the test scheduler and the ViewModel's own dispatcher. */
+    private suspend fun kotlinx.coroutines.test.TestScope.settle() {
+        advanceUntilIdle()
+        dispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
+    }
+
+    // Option B through the container-level runner.
+
+    @Test fun measureStoresBeforeAndAfterAndRefreshesScreen() = runTest(timeout = 10.seconds) {
+        val script = fullSequenceRunner()
         val store = FakeToolsStore()
-        val v = vm(runner, store = store)
-        v.measure(pkg); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.measure(pkg)!!.join(); settle()
         assertEquals(1, store.saved.size)
-        val r = store.saved.single()
-        assertEquals("com.nuvio.tv", r.pkg)
-        assertEquals(7L, r.versionCode)
-        assertEquals(100L, r.lastUpdateTime)
-        assertEquals(1900L, r.beforeMs)
-        assertEquals(1100L, r.afterMs)
-        val cmds = runner.commands
-        assertTrue(cmds.first() == resetCmd)
-        assertTrue(cmds.indexOf(speedCmd) > cmds.indexOf(resetCmd))
-        assertEquals(6, cmds.count { it == launchCmd })
-        assertNull(v.launch.value.error)
+        assertEquals(1900L, store.saved.single().beforeMs)
+        assertEquals(1100L, store.saved.single().afterMs)
+        assertEquals(store.saved.single(), v.launch.value.stored)
+        assertTrue(!v.launch.value.needsBefore)
         assertNull(v.launch.value.busy)
+        assertNull(v.launch.value.error)
     }
 
     @Test fun measureFailureAfterResetStillRecompiles() = runTest(timeout = 10.seconds) {
-        val runner = ScriptRunner { command, _ ->
+        val script = ScriptRunner { command, _ ->
             when (command) {
                 resetCmd -> listOf("Success") to 0
                 launchCmd -> listOf("Error: Activity not started, unable to resolve Intent") to 0
@@ -169,40 +195,56 @@ class LaunchTimeStateTest {
             }
         }
         val store = FakeToolsStore()
-        val v = vm(runner, store = store)
-        v.measure(pkg); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue("recompile must run after a failed timing", speedCmd in runner.commands)
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.measure(pkg)!!.join(); settle()
+        assertTrue("recompile must run after a failed timing", speedCmd in script.commands)
         assertTrue(store.saved.isEmpty())
         assertEquals("Couldn't time this app", v.launch.value.error)
     }
 
     @Test fun measureResetFailureAbortsWithoutCompile() = runTest(timeout = 10.seconds) {
-        val runner = ScriptRunner { command, _ ->
+        val script = ScriptRunner { command, _ ->
             when (command) {
                 resetCmd -> listOf("Failure") to 1
                 else -> emptyList<String>() to 0
             }
         }
         val store = FakeToolsStore()
-        val v = vm(runner, store = store)
-        v.measure(pkg); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(speedCmd !in runner.commands)
-        assertTrue(launchCmd !in runner.commands)
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.measure(pkg)!!.join(); settle()
+        assertTrue(speedCmd !in script.commands)
+        assertTrue(launchCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
         assertTrue(v.launch.value.error != null)
     }
 
     @Test fun measureWithoutLaunchActivitySetsError() = runTest(timeout = 10.seconds) {
-        val runner = fullSequenceRunner()
-        val v = vm(runner, launchActivity = null)
-        v.measure(pkg); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(runner.commands.isEmpty())
+        val script = fullSequenceRunner()
+        val store = FakeToolsStore()
+        val r = LaunchRunner(
+            commands = ToolsCommands(script) { true },
+            store = store,
+            prefs = FakePrefs(),
+            compile = CompileRunner(script),
+            scope = backgroundScope,
+            launchActivityOf = { null },
+            versionOf = { PkgVersion(7, 100) },
+        )
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        assertTrue(!v.launch.value.launchable)
+        v.measure(pkg)!!.join(); settle()
+        assertTrue(script.commands.isEmpty())
         assertEquals("This app can't be opened from SideSpeed", v.launch.value.error)
     }
 
     @Test fun measureUsesPreviousCompileMode() = runTest(timeout = 10.seconds) {
         val profileCmd = "pm compile -m speed-profile -f com.nuvio.tv"
-        val runner = ScriptRunner { command, n ->
+        val script = ScriptRunner { command, n ->
             when {
                 command == launchCmd && n < 3 -> totalTime(1900) to 0
                 command == launchCmd -> totalTime(1100) to 0
@@ -211,22 +253,57 @@ class LaunchTimeStateTest {
                 else -> emptyList<String>() to 0
             }
         }
-        val v = vm(runner, prefs = FakePrefs(CompileMode.SPEED_PROFILE))
-        v.measure(pkg); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(profileCmd in runner.commands)
-        assertTrue(speedCmd !in runner.commands)
+        val prefs = FakePrefs(CompileMode.SPEED_PROFILE)
+        val store = FakeToolsStore()
+        val r = runnerFor(script, store, prefs, backgroundScope)
+        val v = vm(script, store, prefs, r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.measure(pkg)!!.join(); settle()
+        assertTrue(profileCmd in script.commands)
+        assertTrue(speedCmd !in script.commands)
     }
 
-    // Option A: checkbox compile.
+    @Test fun startIgnoredWhileRunnerBusy() = runTest(timeout = 10.seconds) {
+        val script = fullSequenceRunner().apply { hangs += launchCmd }
+        val store = FakeToolsStore()
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val job = r.measure(pkg) { p, m -> uiCollect(script, p, m) }!!
+        runCurrent()
+        assertTrue(r.isBusy())
+        val v = vm(script, store, launches = r)
+        v.start(pkg, CompileMode.SPEED); settle()
+        assertNull(v.state.value.result)
+        assertTrue(v.state.value.log.isEmpty())
+        job.cancel(); settle()
+    }
+
+    @Test fun loadLaunchShowsBusyWithoutClobbering() = runTest(timeout = 10.seconds) {
+        val script = fullSequenceRunner().apply { hangs += launchCmd }
+        val store = FakeToolsStore()
+        store.seed(LaunchResult("com.nuvio.tv", 7, 100, 1900, 1100, 1))
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val job = r.measure(pkg) { p, m -> uiCollect(script, p, m) }!!
+        runCurrent()
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        assertTrue(v.launch.value.busy != null)
+        assertTrue(v.launch.value.launchable)
+        assertEquals(1900L, v.launch.value.stored?.beforeMs)
+        assertTrue(!v.launch.value.needsBefore)
+        job.cancel(); settle()
+    }
+
+    // Option A through the container-level runner.
 
     @Test fun startMaybeTimedMeasuresBeforeAndAfter() = runTest(timeout = 10.seconds) {
-        val runner = fullSequenceRunner()
+        val script = fullSequenceRunner()
         val store = FakeToolsStore()
-        val v = vm(runner, store = store)
-        v.loadLaunch("com.nuvio.tv"); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
         assertTrue(v.launch.value.needsBefore)
-        v.startMaybeTimed(pkg, CompileMode.SPEED)
-        advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
+        v.startMaybeTimed(pkg, CompileMode.SPEED)!!.join()
+        settle()
         assertEquals(1, store.saved.size)
         assertEquals(1900L, store.saved.single().beforeMs)
         assertEquals(1100L, store.saved.single().afterMs)
@@ -234,22 +311,23 @@ class LaunchTimeStateTest {
     }
 
     @Test fun startMaybeTimedWithoutNeedCompilesNormally() = runTest(timeout = 10.seconds) {
-        val runner = fullSequenceRunner()
+        val script = fullSequenceRunner()
         val store = FakeToolsStore().apply {
             seed(LaunchResult("com.nuvio.tv", 7, 100, 1900, 1100, 1))
         }
-        val v = vm(runner, store = store)
-        v.loadLaunch("com.nuvio.tv"); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
         assertTrue(!v.launch.value.needsBefore)
-        v.startMaybeTimed(pkg, CompileMode.SPEED)
-        advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(launchCmd !in runner.commands)
+        assertNull(v.startMaybeTimed(pkg, CompileMode.SPEED))
+        settle()
+        assertTrue(launchCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
         assertTrue(v.state.value.result?.success == true)
     }
 
     @Test fun timedBeforeFailureSkipsCompile() = runTest(timeout = 10.seconds) {
-        val runner = ScriptRunner { command, _ ->
+        val script = ScriptRunner { command, _ ->
             when (command) {
                 launchCmd -> listOf("Error: Activity not started") to 0
                 speedCmd -> listOf("Success") to 0
@@ -257,11 +335,12 @@ class LaunchTimeStateTest {
             }
         }
         val store = FakeToolsStore()
-        val v = vm(runner, store = store)
-        v.loadLaunch("com.nuvio.tv"); advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        v.startMaybeTimed(pkg, CompileMode.SPEED)
-        advanceUntilIdle(); dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(speedCmd !in runner.commands)
+        val r = runnerFor(script, store, scope = backgroundScope)
+        val v = vm(script, store, launches = r)
+        v.loadLaunch("com.nuvio.tv"); settle()
+        v.startMaybeTimed(pkg, CompileMode.SPEED)!!.join()
+        settle()
+        assertTrue(speedCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
         assertEquals("Couldn't time this app", v.launch.value.error)
     }
@@ -285,6 +364,17 @@ class LaunchTimeStateTest {
 
     @Test fun formatLaunchResultNoFaster() {
         assertEquals("Launch: 1.0 s → 1.2 s (no faster)", formatLaunchResult(1000, 1200, false))
+    }
+
+    @Test fun formatLaunchResultAboutTheSame() {
+        assertEquals("Launch: 0.5 s → 0.5 s (about the same)", formatLaunchResult(505, 500, false))
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 1000, false))
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 951, false))
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 950, false))
+    }
+
+    @Test fun formatLaunchResultBoundaryStillFaster() {
+        assertEquals("Launch: 2.0 s → 1.9 s (5% faster)", formatLaunchResult(2000, 1900, false))
     }
 
     @Test fun formatLaunchMsOneDecimal() {

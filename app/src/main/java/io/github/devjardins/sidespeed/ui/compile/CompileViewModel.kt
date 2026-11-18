@@ -2,7 +2,6 @@ package io.github.devjardins.sidespeed.ui.compile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.devjardins.sidespeed.apps.PkgVersion
 import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.CompileRunner
@@ -14,13 +13,11 @@ import io.github.devjardins.sidespeed.status.DexoptParser
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.tools.LaunchResult
-import io.github.devjardins.sidespeed.tools.LaunchTimer
-import io.github.devjardins.sidespeed.tools.ToolResult
-import io.github.devjardins.sidespeed.tools.ToolsCommands
-import io.github.devjardins.sidespeed.tools.ToolsStore
+import io.github.devjardins.sidespeed.tools.LaunchRunner
 import io.github.devjardins.sidespeed.tools.needsBeforeMeasure
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,13 +64,7 @@ class CompileViewModel(
     private val prefs: Prefs,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val store: MaintenanceStore? = null,
-    private val tools: ToolsCommands? = null,
-    private val toolsStore: ToolsStore? = null,
-    private val launchRuns: Int = 3,
-    private val launchActivityOf: (String) -> String? = { null },
-    private val versionOf: (String) -> PkgVersion? = { null },
-    /** Keeps the process alive while the measured app is on screen (foreground service). */
-    private val keepAlive: () -> Unit = {},
+    private val launches: LaunchRunner? = null,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     private val _state = MutableStateFlow(CompileUiState())
@@ -82,15 +73,18 @@ class CompileViewModel(
     private val _launch = MutableStateFlow(LaunchUiState())
     val launch: StateFlow<LaunchUiState> = _launch.asStateFlow()
 
+    private var progressJob: Job? = null
+    private var storedJob: Job? = null
+
     /** Clears the previous run's output (called when a package is opened); ignored while a compile is running. */
     fun reset() {
         if (_state.value.running) return
         _state.value = CompileUiState()
     }
 
-    /** Starts a compile; ignored while one is already running. */
+    /** Starts a compile; ignored while one is already running or a launch sequence owns the screen. */
     fun start(pkg: PackageName, mode: CompileMode) {
-        if (_state.value.running) return
+        if (_state.value.running || launches?.isBusy() == true) return
         _state.value = CompileUiState(running = true, startedAtMs = clock())
         viewModelScope.launch(dispatcher) {
             doCompile(pkg, mode)
@@ -145,21 +139,6 @@ class CompileViewModel(
         return result
     }
 
-    /**
-     * Recompiles quietly (no state or log changes) to restore the app after a
-     * failed measurement. Best effort: failures are swallowed by the caller,
-     * which already reports the original timing error.
-     */
-    private suspend fun restoreCompile(pkg: PackageName, mode: CompileMode) {
-        try {
-            runner.run(pkg, mode).collect { }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            // Swallowed: the caller reports the timing failure, not the restore.
-        }
-    }
-
     /** Ticks [pkg] so the maintenance engine keeps it compiled, then calls [onStored]; no-op without a store. */
     fun keepOptimized(pkg: PackageName, onStored: () -> Unit = {}) {
         val s = store ?: return
@@ -194,23 +173,23 @@ class CompileViewModel(
      * after [reset] when a package is opened.
      */
     fun loadLaunch(pkg: String) {
-        if (tools == null) return
-        viewModelScope.launch(dispatcher) {
-            val cls = launchActivityOf(pkg)
-            val ver = versionOf(pkg)
-            val stored = try {
-                toolsStore?.launchResult(pkg)?.first()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
+        val r = launches ?: return
+        progressJob?.cancel()
+        progressJob = viewModelScope.launch(dispatcher) {
+            r.progressFor(pkg).collect { p -> _launch.value = _launch.value.copy(busy = p?.busy, error = p?.error) }
+        }
+        storedJob?.cancel()
+        storedJob = viewModelScope.launch(dispatcher) {
+            val d = r.describe(pkg)
+            r.storedResults(pkg).collect { stored ->
+                val stale = stored != null && d.version != null &&
+                    (stored.versionCode != d.version.versionCode || stored.lastUpdateTime != d.version.lastUpdateTime)
+                val needs = if (d.version == null) stored == null
+                else needsBeforeMeasure(stored, d.version.versionCode, d.version.lastUpdateTime)
+                _launch.value = _launch.value.copy(
+                    launchable = d.launchable, stored = stored, stale = stale, needsBefore = needs, checked = true,
+                )
             }
-            val needs = if (ver == null) stored == null else needsBeforeMeasure(stored, ver.versionCode, ver.lastUpdateTime)
-            val stale = stored != null && ver != null &&
-                (stored.versionCode != ver.versionCode || stored.lastUpdateTime != ver.lastUpdateTime)
-            _launch.value = LaunchUiState(
-                launchable = cls != null, stored = stored, stale = stale, needsBefore = needs, checked = true,
-            )
         }
     }
 
@@ -218,47 +197,20 @@ class CompileViewModel(
         _launch.value = _launch.value.copy(checked = v)
     }
 
-    fun clearLaunchError() {
-        _launch.value = _launch.value.copy(error = null)
-    }
-
     /**
      * The Start-compile button path: times before and after when the checkbox
      * applies, otherwise a plain compile. Never runs from background
      * maintenance — only from this screen.
      */
-    fun startMaybeTimed(pkg: PackageName, mode: CompileMode) {
+    fun startMaybeTimed(pkg: PackageName, mode: CompileMode): Job? {
+        val r = launches
         val l = _launch.value
-        if (!l.checked || !l.needsBefore || !l.launchable || tools == null) {
+        if (r == null || !l.checked || !l.needsBefore || !l.launchable || l.busy != null) {
             start(pkg, mode)
-            return
+            return null
         }
-        if (_state.value.running || l.busy != null) return
-        val cls = launchActivityOf(pkg.value) ?: return
-        val ver = versionOf(pkg.value)
-        viewModelScope.launch(dispatcher) {
-            val timer = LaunchTimer(tools, launchRuns)
-            keepAlive()
-            setBusy("Timing launch before…")
-            val before = when (val r = timer.medianMs(pkg.value, cls)) {
-                is ToolResult.Ok -> r.value
-                else -> return@launch failTiming(timingError(r))
-            }
-            setBusy("Compiling…")
-            _state.value = CompileUiState(running = true, startedAtMs = clock())
-            val result = doCompile(pkg, mode)
-            if (!result.success) {
-                setBusy(null)
-                return@launch
-            }
-            setBusy("Timing launch after…")
-            val after = when (val r = timer.medianMs(pkg.value, cls)) {
-                is ToolResult.Ok -> r.value
-                else -> return@launch failTiming(timingError(r))
-            }
-            if (ver != null) storeLaunch(pkg.value, ver, before, after)
-            setBusy(null)
-        }
+        if (_state.value.running) return null
+        return r.startTimed(pkg, mode) { p, m -> doCompile(p, m) }
     }
 
     /**
@@ -267,83 +219,10 @@ class CompileViewModel(
      * the pair. On any failure after the reset the app is recompiled first so
      * it is never left in the reset state.
      */
-    fun measure(pkg: PackageName) {
-        if (_state.value.running || _launch.value.busy != null) return
-        val t = tools ?: return
-        viewModelScope.launch(dispatcher) {
-            val cls = launchActivityOf(pkg.value) ?: run {
-                failTiming("This app can't be opened from SideSpeed")
-                return@launch
-            }
-            val ver = versionOf(pkg.value) ?: run {
-                failTiming("Couldn't read this app's version")
-                return@launch
-            }
-            val mode = try {
-                prefs.lastCompile(pkg.value).first()?.mode
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
-            } ?: CompileMode.SPEED
-            val timer = LaunchTimer(t, launchRuns)
-            keepAlive()
-            setBusy("Resetting…")
-            when (val reset = t.resetCompiled(pkg.value)) {
-                is ToolResult.Ok -> {}
-                else -> return@launch failTiming(timingError(reset))
-            }
-            setBusy("Timing launch…")
-            val before = when (val r = timer.medianMs(pkg.value, cls)) {
-                is ToolResult.Ok -> r.value
-                else -> {
-                    restoreCompile(pkg, mode)
-                    return@launch failTiming(timingError(r))
-                }
-            }
-            setBusy("Compiling…")
-            _state.value = CompileUiState(running = true, startedAtMs = clock())
-            val result = doCompile(pkg, mode)
-            if (!result.success) {
-                setBusy(null)
-                return@launch
-            }
-            setBusy("Timing launch again…")
-            val after = when (val r = timer.medianMs(pkg.value, cls)) {
-                is ToolResult.Ok -> r.value
-                else -> return@launch failTiming(timingError(r))
-            }
-            storeLaunch(pkg.value, ver, before, after)
-            setBusy(null)
-        }
-    }
-
-    private suspend fun storeLaunch(pkg: String, ver: PkgVersion, before: Long, after: Long) {
-        val r = LaunchResult(pkg, ver.versionCode, ver.lastUpdateTime, before, after, clock())
-        try {
-            toolsStore?.setLaunchResult(r)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            failTiming("Couldn't save the result")
-            return
-        }
-        _launch.value = _launch.value.copy(stored = r, stale = false, needsBefore = false)
-    }
-
-    private fun setBusy(label: String?) {
-        _launch.value = _launch.value.copy(busy = label, error = if (label != null) null else _launch.value.error)
-    }
-
-    private fun failTiming(message: String) {
-        _launch.value = _launch.value.copy(busy = null, error = message)
-    }
-
-    private fun timingError(r: ToolResult<*>): String = when (r) {
-        is ToolResult.Ok -> "Couldn't time this app"
-        is ToolResult.HelperDown -> "Helper not running"
-        is ToolResult.HelperOutdated -> "Restart the helper to use this"
-        is ToolResult.Failed -> "Couldn't time this app"
+    fun measure(pkg: PackageName): Job? {
+        val r = launches ?: return null
+        if (_state.value.running || _launch.value.busy != null) return null
+        return r.measure(pkg) { p, m -> doCompile(p, m) }
     }
 
     private fun append(line: String) {

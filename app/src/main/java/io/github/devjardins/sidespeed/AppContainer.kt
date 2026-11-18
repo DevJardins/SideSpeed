@@ -18,6 +18,7 @@ import io.github.devjardins.sidespeed.tools.AndroidDeviceInfo
 import io.github.devjardins.sidespeed.tools.Cleanup
 import io.github.devjardins.sidespeed.tools.DataStoreToolsStore
 import io.github.devjardins.sidespeed.tools.DeviceInfo
+import io.github.devjardins.sidespeed.tools.LaunchRunner
 import io.github.devjardins.sidespeed.tools.ToolsCommands
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
@@ -25,11 +26,13 @@ import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
+import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.net.LanCandidate
 import io.github.devjardins.sidespeed.net.pickLanIpv4
@@ -73,6 +76,26 @@ class AppContainer(context: Context) {
 
     val maintenanceStore: MaintenanceStore by lazy { DataStoreMaintenanceStore(appContext) }
 
+    /** Container-level scope: outlives screens and ViewModels, so launch sequences survive them. */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> })
+
+    /**
+     * Launch-timing sequences. Created on first use; its retry also runs from
+     * app start, the maintenance loop, and helper-up.
+     */
+    val launchRunner: LaunchRunner by lazy {
+        LaunchRunner(
+            commands = toolsCommands,
+            store = toolsStore,
+            prefs = prefs,
+            compile = compileRunner,
+            scope = appScope,
+            launchActivityOf = installedApps::launchActivity,
+            versionOf = installedApps::versionOf,
+            keepAlive = { MaintenanceService.start(appContext) },
+        )
+    }
+
     /** Keeps maintained apps compiled; created on first use, which starts its scanning. */
     val maintenance: MaintenanceEngine by lazy {
         MaintenanceEngine(
@@ -84,6 +107,8 @@ class AppContainer(context: Context) {
             badges = { statusChecker.badges(it) },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
             ownPackage = appContext.packageName,
+            measuring = { launchRunner.measuring.value },
+            onHelperUp = { appScope.launch { launchRunner.restorePending() } },
         )
     }
 

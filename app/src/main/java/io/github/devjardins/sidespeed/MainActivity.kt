@@ -72,11 +72,7 @@ class MainActivity : ComponentActivity() {
                 CompileViewModel(
                     c.compileRunner, c.statusChecker, c.prefs,
                     store = c.maintenanceStore,
-                    tools = c.toolsCommands,
-                    toolsStore = c.toolsStore,
-                    launchActivityOf = c.installedApps::launchActivity,
-                    versionOf = c.installedApps::versionOf,
-                    keepAlive = { MaintenanceService.start(applicationContext) },
+                    launches = c.launchRunner,
                 ) as T
         })[CompileViewModel::class.java]
     }
@@ -94,6 +90,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val c = (application as SideSpeedApp).container
             if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
+            // Retry a launch restore left pending by an interrupted measurement (no-op when none).
+            runCatching { c.launchRunner.restorePending() }
         }
         setContent {
             val icons = (application as SideSpeedApp).container.appIcons
@@ -156,7 +154,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 when {
-                    !ready -> SetupScreen(setupVm, onReady = { ready = true })
+                    !ready -> SetupScreen(setupVm, onReady = {
+                        ready = true
+                        // The helper is up now: retry a pending launch restore.
+                        lifecycleScope.launch {
+                            runCatching { (application as SideSpeedApp).container.launchRunner.restorePending() }
+                        }
+                    })
                     showTools && app == null -> ToolsScreen(
                         // Worker A owns space; worker C owns health + animations.
                         health = {
@@ -223,7 +227,10 @@ class MainActivity : ComponentActivity() {
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running
-                        val back = { if (!running) { selected = null; selectedPkg = null } }
+                        // Blocked while a launch sequence is busy: leaving would hide its
+                        // progress and invite a second sequence (the runner restores regardless).
+                        val launchBusy = compileVm.launch.collectAsState().value.busy != null
+                        val back = { if (!running && !launchBusy) { selected = null; selectedPkg = null } }
                         BackHandler { back() }
                         CompileScreen(
                             compileVm, app, selectedMode,

@@ -1,18 +1,31 @@
 package io.github.devjardins.sidespeed.ui.compile
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
+import io.github.devjardins.sidespeed.ui.theme.SsDimens
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
 import java.util.Locale
@@ -23,16 +36,22 @@ fun formatLaunchMs(ms: Long): String = "%.1f s".format(Locale.US, ms / 1000.0)
 
 /**
  * "Launch: 1.9 s → 1.1 s (42% faster)", "Launch: 1.1 s" when there is no
- * before measurement, "(no faster)" when the app did not get quicker, and a
- * "from an older version" suffix when the app updated since the timing.
+ * before measurement, "(about the same)" when the difference is under 5%,
+ * "(no faster)" when the app got 5%+ slower, and a "from an older version"
+ * suffix when the app updated since the timing.
  */
 fun formatLaunchResult(beforeMs: Long?, afterMs: Long, stale: Boolean): String {
     val base = if (beforeMs == null) {
         "Launch: ${formatLaunchMs(afterMs)}"
     } else {
-        val pct = ((beforeMs - afterMs) * 100.0 / beforeMs).roundToInt()
-        val faster = if (pct <= 0) "no faster" else "$pct% faster"
-        "Launch: ${formatLaunchMs(beforeMs)} → ${formatLaunchMs(afterMs)} ($faster)"
+        val pct = if (beforeMs > 0) (beforeMs - afterMs) * 100.0 / beforeMs else 0.0
+        val verdict = when {
+            formatLaunchMs(beforeMs) == formatLaunchMs(afterMs) -> "about the same"
+            pct >= 5.0 -> "${pct.roundToInt()}% faster"
+            pct <= -5.0 -> "no faster"
+            else -> "about the same"
+        }
+        "Launch: ${formatLaunchMs(beforeMs)} → ${formatLaunchMs(afterMs)} ($verdict)"
     }
     return if (stale) "$base · from an older version" else base
 }
@@ -40,7 +59,8 @@ fun formatLaunchResult(beforeMs: Long?, afterMs: Long, stale: Boolean): String {
 /**
  * Launch-time before/after on the Compile screen. Option A (checkbox +
  * Start compile) appears only when there is no result for the installed
- * version; option B (Measure) always re-runs and replaces the result.
+ * version; option B (Measure) always re-runs and replaces the result. While a
+ * sequence is busy every action is disabled and the busy row takes D-pad focus.
  */
 @Composable
 fun LaunchTimeSection(
@@ -49,6 +69,11 @@ fun LaunchTimeSection(
     onMeasure: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val busyFocus = remember { FocusRequester() }
+    var busyFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(launch.busy) {
+        if (launch.busy != null) runCatching { busyFocus.requestFocus() }
+    }
     SsCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Launch time", style = SsType.Title, color = SsColors.TextPrimary)
@@ -72,6 +97,7 @@ fun LaunchTimeSection(
                 SsButton(
                     if (launch.checked) "✓ Time the launch before and after" else "Time the launch before and after",
                     onClick = { onCheckedChange(!launch.checked) },
+                    enabled = launch.busy == null,
                 )
                 Text(
                     "Opens the app on screen while timing.",
@@ -91,6 +117,13 @@ fun LaunchTimeSection(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .onFocusChanged { busyFocused = it.hasFocus }
+                        .background(if (busyFocused) SsColors.Raised else SsColors.Surface, CardShape)
+                        .border(SsDimens.FocusRing, if (busyFocused) SsColors.Accent else SsColors.Surface, CardShape)
+                        .focusable()
+                        .focusRequester(busyFocus)
+                        .padding(12.dp),
                 ) {
                     SsSpinner(24.dp)
                     Text(launch.busy, style = SsType.Body, color = SsColors.TextBody)
