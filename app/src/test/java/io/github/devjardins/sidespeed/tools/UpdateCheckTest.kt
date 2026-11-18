@@ -109,13 +109,22 @@ class UpdateCheckTest {
     @Test fun fetchFailureIsSilent() = runTest {
         val store = FakeUpdateStore()
         store.setUpdateCheck(0L, "0.4.0")
+        val now = 25 * 60 * 60 * 1000L
         val check = UpdateCheck(
             fetch = { throw java.io.IOException("offline") },
             store = store,
-            clock = { 25 * 60 * 60 * 1000L },
+            clock = { now },
             currentVersion = "0.4.0",
         )
         check.checkIfDue() // must not throw
+        // No retry storm: the attempt still advances the last-check time, keeping the old latest.
+        assertEquals(now, store.updateLastCheckMs.first())
+        assertEquals("0.4.0", store.updateLatestVersion.first())
+    }
+
+    @Test fun displayVersionStripsVPrefix() {
+        assertEquals("0.5.0", displayVersion("v0.5.0"))
+        assertEquals("0.5.0", displayVersion("0.5.0"))
     }
 
     @Test fun bannerHiddenWhenDismissed() {

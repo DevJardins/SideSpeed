@@ -15,6 +15,9 @@ private val TAG_NAME = Regex("\"tag_name\"\\s*:\\s*\"([^\"]*)\"")
 fun parseLatestTag(json: String): String? =
     TAG_NAME.find(json)?.groupValues?.get(1)?.takeIf { it.isNotEmpty() }
 
+/** Display form of a release tag: the `v` prefix is just packaging. */
+fun displayVersion(tag: String): String = tag.removePrefix("v").removePrefix("V")
+
 /**
  * Numeric dotted comparison. A leading `v` and any `-suffix`/`+suffix` (e.g. `-beta`) are ignored;
  * a version with no numeric segments compares equal to everything (garbage never triggers a notice).
