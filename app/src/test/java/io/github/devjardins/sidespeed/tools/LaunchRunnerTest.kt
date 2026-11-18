@@ -242,7 +242,7 @@ class LaunchRunnerTest {
         assertTrue(!r.isBusy())
     }
 
-    @Test fun resetFailureAbortsWithoutPending() = runTest(timeout = 10.seconds) {
+    @Test fun resetAndRestoreFailureKeepsPending() = runTest(timeout = 10.seconds) {
         val script = ScriptRunner(handler = { command, _ ->
             when (command) {
                 resetCmd -> listOf("Failure") to 1
@@ -252,8 +252,9 @@ class LaunchRunnerTest {
         val store = FakeToolsStore()
         val r = runner(script, store, scope = backgroundScope)
         r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
-        assertTrue(speedCmd !in script.commands)
-        assertNull(store.pending.value)
+        // Restore was attempted (the reset may have run) but also failed: retry later.
+        assertTrue(speedCmd in script.commands)
+        assertEquals(RestorePending("com.nuvio.tv", CompileMode.SPEED, 7), store.pending.value)
         assertTrue(store.saved.isEmpty())
         assertTrue(r.progress.value["com.nuvio.tv"]?.error != null)
     }
@@ -277,20 +278,25 @@ class LaunchRunnerTest {
         assertTrue("pending must land before reset runs", writeIdx >= 0 && writeIdx < resetIdx)
     }
 
-    @Test fun resetFailureClearsPendingWithoutRecompile() = runTest(timeout = 10.seconds) {
+    @Test fun resetFailureKeepsPendingAndRestores() = runTest(timeout = 10.seconds) {
         val events = mutableListOf<String>()
         val script = ScriptRunner({ command, _ ->
             when (command) {
                 resetCmd -> listOf("Failure") to 1
+                speedCmd -> listOf("Success") to 0
                 else -> emptyList<String>() to 0
             }
         }, events)
         val store = FakeToolsStore(events)
         val r = runner(script, store, scope = backgroundScope)
         r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!.join()
-        assertEquals(listOf("pending-write", resetCmd, "pending-clear"), events)
+        // The reset may have run on-device despite the failure (e.g. HelperDown
+        // after a mid-command disconnect), so the pending record stays and the
+        // finally recompiles; a never-reset app is harmlessly recompiled.
+        assertEquals(listOf("pending-write", resetCmd, speedCmd, "pending-clear"), events)
         assertNull(store.pending.value)
-        assertTrue(speedCmd !in script.commands)
+        assertTrue(store.saved.isEmpty())
+        assertTrue(r.progress.value["com.nuvio.tv"]?.error != null)
     }
 
     @Test fun cancelWithMissingRecordRestoresFromMemory() = runTest(timeout = 10.seconds) {

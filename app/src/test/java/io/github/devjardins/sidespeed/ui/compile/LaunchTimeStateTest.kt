@@ -207,10 +207,11 @@ class LaunchTimeStateTest {
         assertEquals("Couldn't time this app", v.launch.value.error)
     }
 
-    @Test fun measureResetFailureAbortsWithoutCompile() = runTest(timeout = 10.seconds) {
+    @Test fun measureResetFailureRestores() = runTest(timeout = 10.seconds) {
         val script = ScriptRunner { command, _ ->
             when (command) {
                 resetCmd -> listOf("Failure") to 1
+                speedCmd -> listOf("Success") to 0
                 else -> emptyList<String>() to 0
             }
         }
@@ -219,7 +220,9 @@ class LaunchTimeStateTest {
         val v = vm(script, store, launches = r)
         v.loadLaunch("com.nuvio.tv"); settle()
         v.measure(pkg)!!.join(); settle()
-        assertTrue(speedCmd !in script.commands)
+        // The reset may have run on-device despite the failure, so the runner
+        // recompiles instead of assuming nothing changed.
+        assertTrue(speedCmd in script.commands)
         assertTrue(launchCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
         assertTrue(v.launch.value.error != null)

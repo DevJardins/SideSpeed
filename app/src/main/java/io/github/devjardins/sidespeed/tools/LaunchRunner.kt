@@ -230,15 +230,15 @@ class LaunchRunner(
                 throw e
             } catch (_: Exception) {
             }
+            // Set before the reset: a HelperDown (e.g. mid-command AdbConnectionLost)
+            // may mean the reset already ran on the device, so the finally must
+            // restore. Never clear here; recompiling a never-reset app is harmless.
+            inFlightMemMode = mode
             setBusy(pkg.value, "Resetting…")
             when (val reset = commands.resetCompiled(pkg.value)) {
                 is ToolResult.Ok -> {}
-                else -> {
-                    clearPendingQuietly()
-                    return timingMessage(reset)
-                }
+                else -> return timingMessage(reset)
             }
-            inFlightMemMode = mode
             setBusy(pkg.value, "Timing launch…")
             val before = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
