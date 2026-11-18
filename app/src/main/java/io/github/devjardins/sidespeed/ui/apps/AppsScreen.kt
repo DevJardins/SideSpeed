@@ -4,7 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -97,29 +99,46 @@ fun AppsScreen(
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Pick an app to compile", style = SsType.Headline, color = SsColors.TextPrimary)
+                Text(
+                    "Pick an app to compile",
+                    style = SsType.Headline,
+                    color = SsColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Spacer(Modifier.weight(1f))
                 selfOptimizedPill(selfRecord, selfVersionCode, selfLastUpdateTime, selfDebuggable)?.let {
                     StatusPill(it)
                     Spacer(Modifier.width(8.dp))
                 }
-                SsButton("Tools", onClick = onOpenTools)
-                Spacer(Modifier.width(8.dp))
                 SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
             headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
                 Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Five buttons plus the Mode group no longer fit a 1080p row at the default
+            // padding, and narrower layouts (Fire TV Cube) fit even less: tighten the tab
+            // buttons to the Mode buttons' padding and let the row scroll when it must.
+            val tabButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
                 Tab.entries.forEach { t ->
                     SsButton(
-                        t.label,
                         onClick = { tab = t },
                         selected = t == tab,
+                        contentPadding = tabButtonPadding,
                         modifier = if (t == tab) Modifier.focusRequester(tabFocus) else Modifier,
-                    )
+                    ) {
+                        Text(t.label, style = SsType.Body)
+                    }
                 }
-                Spacer(Modifier.width(24.dp))
+                SsButton(onClick = onOpenTools, contentPadding = tabButtonPadding) {
+                    Text("Tools", style = SsType.Body)
+                }
+                Spacer(Modifier.width(16.dp))
                 Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)
                 CompileMode.entries.forEach { m ->
                     SsButton(
