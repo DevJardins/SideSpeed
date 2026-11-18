@@ -28,8 +28,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.devjardins.sidespeed.status.TvAddress
+import io.github.devjardins.sidespeed.tools.Animations
+import io.github.devjardins.sidespeed.tools.UpdateCheck
+import io.github.devjardins.sidespeed.tools.githubReleaseFetch
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
+import io.github.devjardins.sidespeed.ui.tools.AnimationsCard
+import io.github.devjardins.sidespeed.ui.tools.HealthCardSlot
 import io.github.devjardins.sidespeed.ui.tools.SpaceCard
 import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
@@ -89,6 +95,20 @@ class MainActivity : ComponentActivity() {
                 var ready by remember { mutableStateOf(false) }
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showTools by rememberSaveable { mutableStateOf(false) }
+                // Shown in the update banner and compared against the latest GitHub tag.
+                val currentVersion = remember {
+                    runCatching {
+                        val info = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                            packageManager.getPackageInfo(
+                                packageName,
+                                android.content.pm.PackageManager.PackageInfoFlags.of(0),
+                            )
+                        } else {
+                            @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, 0)
+                        }
+                        info.versionName
+                    }.getOrNull() ?: "0.0.0"
+                }
                 var selectedMode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
                 var selected by remember { mutableStateOf<AppEntry?>(null) }
                 val app = selected ?: selectedPkg?.let { p -> remember(p) { appsVm.manualEntryApp(p) } }
@@ -130,8 +150,13 @@ class MainActivity : ComponentActivity() {
                 when {
                     !ready -> SetupScreen(setupVm, onReady = { ready = true })
                     showTools && app == null -> ToolsScreen(
-                        // Wave 1 replaces each placeholder with its own card, one line each.
-                        health = { ToolsPlaceholder("Box health") },
+                        // Worker A owns space; worker C owns health + animations.
+                        health = {
+                            HealthCardSlot(
+                                (application as SideSpeedApp).container.deviceInfo,
+                                { (application as SideSpeedApp).container.helper.ping() != null },
+                            )
+                        },
                         space = {
                             val c = (application as SideSpeedApp).container
                             SpaceCard(
@@ -145,7 +170,10 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         },
-                        animations = { ToolsPlaceholder("Animations") },
+                        animations = {
+                            val tools = (application as SideSpeedApp).container
+                            AnimationsCard(Animations(tools.toolsCommands, tools.toolsStore), tools.toolsStore)
+                        },
                         onBack = { showTools = false },
                     )
                     app == null -> AppsScreen(
@@ -164,6 +192,21 @@ class MainActivity : ComponentActivity() {
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         onOpenTools = { showTools = true },
+                        banner = {
+                            val tools = (application as SideSpeedApp).container.toolsStore
+                            UpdateBannerSlot(
+                                remember(currentVersion) {
+                                    UpdateCheck(
+                                        githubReleaseFetch(),
+                                        tools,
+                                        System::currentTimeMillis,
+                                        currentVersion,
+                                    )
+                                },
+                                tools,
+                                currentVersion,
+                            )
+                        },
                         tvAddress = tvAddress,
                         selfCompile = (application as SideSpeedApp).container.prefs.selfCompile,
                         selfVersionCode = (application as SideSpeedApp).container.selfBuild.versionCode,
