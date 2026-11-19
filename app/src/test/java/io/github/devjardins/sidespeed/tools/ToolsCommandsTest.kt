@@ -12,10 +12,18 @@ class ToolsCommandsTest {
         return fake to ToolsCommands(fake) { helperUp }
     }
 
-    @Test fun refusedMapsToHelperOutdated() = runTest {
+    @Test fun refusedMapsToRefused() = runTest {
         val (fake, commands) = commands()
         fake.on("pm trim-caches 999999999999999") { listOf("error: request not allowed") to 126 }
-        assertEquals(ToolResult.HelperOutdated, commands.trimCaches(999_999_999_999_999))
+        assertEquals(ToolResult.Refused, commands.trimCaches(999_999_999_999_999))
+    }
+
+    @Test fun refusedPutIsRefusedNotOutdated() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("settings put global window_animation_scale 0.5") { listOf("error: request not allowed") to 126 }
+        }
+        // An allowlist refusal must not tell the user to restart the helper.
+        assertEquals(ToolResult.Refused, commands.putAnimationScale(AnimationKey.WINDOW, "0.5"))
     }
 
     @Test fun helperDownShortCircuits() = runTest {
@@ -101,11 +109,11 @@ class ToolsCommandsTest {
         assertTrue(commands.launchTimeMs("com.x.y", "com.x.y.Main") is ToolResult.Failed)
     }
 
-    @Test fun launchTimeMsRefusedIsOutdated() = runTest {
+    @Test fun launchTimeMsRefusedIsRefused() = runTest {
         val (_, commands) = commands().also { (fake, _) ->
             fake.on("launch-time com.x.y com.x.y.Main") { listOf("error: request not allowed") to 126 }
         }
-        assertEquals(ToolResult.HelperOutdated, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
+        assertEquals(ToolResult.Refused, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
     }
 
     @Test fun bringBackOk() = runTest {

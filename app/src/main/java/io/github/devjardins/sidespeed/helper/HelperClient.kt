@@ -24,9 +24,17 @@ import java.net.Socket
 import java.net.SocketTimeoutException
 import java.security.SecureRandom
 
-/** The outcome of streaming an update to the helper: every byte written, a failed install, or no helper. */
+/** The outcome of streaming an update to the helper: END:0, a cut stream, a failed install, or no helper. */
 sealed interface InstallOutcome {
+    /** The helper answered `__END__:0` after the full body. Confirm the install landed (see SelfUpdater). */
     object Started : InstallOutcome
+
+    /**
+     * Every byte was written but the connection closed with no `__END__`: an impostor may have
+     * read the body and closed, or the real install may have killed us too slowly to observe.
+     * Never success on its own: the caller must confirm via the installed version first.
+     */
+    object Disconnected : InstallOutcome
     data class Failed(val exit: Int, val lastLine: String?) : InstallOutcome
     object HelperDown : InstallOutcome
 }
@@ -55,6 +63,7 @@ data class HelperPing(val version: Int, val apkPath: String) {
  * Identity: the port file can be stale (helper killed, reboot), letting another app bind that port and fake
  * replies. [ping] therefore sends a fresh random nonce and only trusts the reply if the helper wrote that nonce
  * to [ackFile], which apps cannot write. [shell] only talks to the port verified by the last successful [ping].
+ * [installSelf] re-proves the verified port with a fresh nonce immediately before streaming.
  * Residual risk: if the helper dies between [ping] and [shell], another app could take the port in between.
  *
  * Retries (after each of [retryDelaysMs]) only cover immediate refusals: a refused connect, or a connection
@@ -93,6 +102,16 @@ class HelperClient(
     /** One verification round: the port and its pong, or null. Never touches [verifiedPort] itself. */
     private suspend fun verify(): Pair<Int, HelperPing>? {
         val port = readPort() ?: return null
+        return verifyPort(port)?.let { port to it }
+    }
+
+    /**
+     * One verification round against a known [port]: fresh nonce, pong, and ack-file proof.
+     * Used by [verify], and by [installSelf] to re-prove the helper on the already verified
+     * port immediately before streaming, so a dead helper plus a stale-port impostor cannot
+     * receive the APK. Never touches [verifiedPort] itself.
+     */
+    private suspend fun verifyPort(port: Int): HelperPing? {
         val nonce = newNonce()
         val lines = mutableListOf<String>()
         val exit = try {
@@ -124,7 +143,7 @@ class HelperClient(
             log("helper protocol v=${pong.version}, expected v=$HELPER_PROTOCOL_VERSION")
             return null
         }
-        return port to pong
+        return pong
     }
 
     /** Runs [command] on the verified helper: Lines, then Exit. Throws [AdbConnectionLost] if unverified or cut off. */
@@ -135,15 +154,25 @@ class HelperClient(
     }
 
     /**
-     * Streams [apk] to the verified helper as `install-self <size>` + raw bytes. Returns [Started]
-     * once every byte is written: the app expects to be killed by its own update shortly afterwards,
-     * so END is not required for success (a broken connection after a full write still counts). An
-     * `END<n>` with n≠0 that does arrive is [Failed] with the last output line. [HelperDown] when the
-     * helper was never verified or the connect itself fails.
+     * Streams [apk] to the verified helper as `install-self <size>` + raw bytes. Immediately
+     * before streaming, the helper is re-proved on the verified port with a fresh nonce/ack
+     * round; a failed re-proof is [HelperDown] and nothing is streamed. `__END__:0` after the
+     * full body is [Started]. A close with no `__END__` after the full body is [Disconnected],
+     * never success: the caller must confirm via the installed version (an impostor reads the
+     * body and closes the same way a real install dying with us does). An `END<n>` with n≠0
+     * that does arrive is [Failed] with the last output line. [HelperDown] when the helper was
+     * never verified, fails re-proof, or the connect itself fails.
      */
     @OptIn(InternalCoroutinesApi::class)
     suspend fun installSelf(apk: File): InstallOutcome = withContext(Dispatchers.IO) {
         val port = verifiedPort ?: return@withContext InstallOutcome.HelperDown
+        // The helper may have died since [ping]; another app could hold the port now.
+        // Re-proof uses the shared ack file, so hold the ping lock across it like [ping] does.
+        val proven = pingLock.withLock { verifyPort(port) }
+        if (proven == null) {
+            if (verifiedPort == port) verifiedPort = null
+            return@withContext InstallOutcome.HelperDown
+        }
         val size = apk.length()
         if (size <= 0) {
             return@withContext InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file")
@@ -178,7 +207,9 @@ class HelperClient(
                 }
                 last = line
             }
-            InstallOutcome.Started
+            // Full body written but no __END__: the helper never confirmed. An impostor closes
+            // exactly this way, so this is not success: the caller confirms via the version.
+            InstallOutcome.Disconnected
         } finally {
             onCancel.dispose()
             closeQuietly(socket)

@@ -166,9 +166,20 @@ class CommandAllowlistTest {
             listOf("/system/bin/settings", "put", "global", "animator_duration_scale", "10"),
             CommandAllowlist.toArgv("settings put global animator_duration_scale 10"),
         )
+        // Restore path: any value `settings get` can plausibly return must pass `put`.
+        listOf("0.333", "12", "1.5", "0.000001", "11", "10.01", "100", "0", "1").forEach { value ->
+            assertEquals(
+                listOf("/system/bin/settings", "put", "global", "window_animation_scale", value),
+                CommandAllowlist.toArgv("settings put global window_animation_scale $value"),
+            )
+        }
         listOf(
-            "settings put global window_animation_scale 11",
-            "settings put global window_animation_scale 10.01",
+            "settings put global window_animation_scale -1",
+            "settings put global window_animation_scale 1e3",
+            "settings put global window_animation_scale 1.2.3",
+            "settings put global window_animation_scale  1",
+            "settings put global window_animation_scale 101",
+            "settings put global window_animation_scale 1.0000001",
             "settings put global adb_enabled 0",
             "settings put secure android_id 1",
             "settings get global adb_enabled",

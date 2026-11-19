@@ -39,6 +39,7 @@ class Cleanup(
             }
             is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
             is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
+            is ToolResult.Refused -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper refused the command")
             is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
         }
         store.setLastCleanup(record)
@@ -61,6 +62,7 @@ class Cleanup(
                 }
                 is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
                 is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
+            is ToolResult.Refused -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper refused the command")
                 is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
             }
             store.setLastCleanup(record)

@@ -30,8 +30,12 @@ object CommandAllowlist {
         "animator_duration_scale",
     )
 
-    /** Narrow decimal form for animation scales: `0`, `0.5`, `1.5`, `10`; refuses `11` and wider. */
-    private val ANIMATION_VALUE = Regex("^(0|[1-9][0-9]?)(\\.[0-9]{1,2})?$")
+    /**
+     * Decimal form for animation scales, wide enough for anything `settings get` can return:
+     * non-negative, up to 6 fractional digits, at most 100. Still digits and one dot only:
+     * no signs, exponents or spaces (leading/trailing/repeated spaces already fail tokenising).
+     */
+    private val ANIMATION_VALUE = Regex("^(0|[1-9][0-9]{0,2})(\\.[0-9]{1,6})?$")
 
     /**
      * Characters a valid request can contain at all: letters, digits, '.', '_', '-', '$' and single
@@ -118,9 +122,9 @@ object CommandAllowlist {
     /** A validated package name, and only if validation didn't change it (PackageName.parse trims). */
     private fun pkg(raw: String): String? = PackageName.parse(raw)?.value?.takeIf { it == raw }
 
-    /** An animation scale in narrow decimal form, at most 10 (restores non-standard originals like 1.5). */
+    /** An animation scale in decimal form, at most 100 (restores non-standard originals like 0.333). */
     private fun animationValue(raw: String): Boolean =
-        ANIMATION_VALUE.matches(raw) && (raw.toDoubleOrNull() ?: Double.NaN) <= 10.0
+        ANIMATION_VALUE.matches(raw) && (raw.toDoubleOrNull() ?: Double.NaN) <= 100.0
 
     /**
      * A launch-timing request: validated package + fully-qualified activity class tokens, mapped to

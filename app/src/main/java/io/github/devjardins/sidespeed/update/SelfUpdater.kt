@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,15 @@ private const val APK_NAME = "SideSpeed.apk"
 private const val SUMS_NAME = "SHA256SUMS.txt"
 
 /**
+ * How long [SelfUpdater] waits for the installed versionCode to rise after the helper reports
+ * (or drops) an install. A real install kills our process, so surviving means unconfirmed.
+ */
+const val CONFIRM_TIMEOUT_MS = 60_000L
+
+/** Delay between installed-version polls while confirming an update. */
+const val CONFIRM_POLL_MS = 1_000L
+
+/**
  * "Update now" flow: downloads the release APK and checksums, verifies them, and installs
  * through the helper (or the fallback installer when the helper is down). Files live in
  * `cacheDir/update/` and are deleted after every outcome and on app start ([clearStaleFiles]).
@@ -45,6 +55,8 @@ class SelfUpdater(
     private val cacheDir: File,
     private val busy: Flow<Boolean>,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val confirmTimeoutMs: Long = CONFIRM_TIMEOUT_MS,
+    private val confirmPollMs: Long = CONFIRM_POLL_MS,
 ) {
     private val _state = MutableStateFlow<UpdateUiState>(UpdateUiState.Available)
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
@@ -119,13 +131,65 @@ class SelfUpdater(
             is VerifyResult.Rejected -> return fail(verdict.reason)
         }
         _state.value = UpdateUiState.Installing
-        val outcome = if (helperUp()) helperInstall(apk) else fallbackInstall(apk)
-        // The helper can die between the ping and the stream; fall back instead of failing.
-        val final = if (outcome is InstallOutcome.HelperDown) fallbackInstall(apk) else outcome
-        when (final) {
-            is InstallOutcome.Started -> deleteUpdateFiles() // the app is replaced from here on
-            is InstallOutcome.Failed -> return fail(final.lastLine ?: "Install failed.")
+        // A down helper reports HelperDown without touching the APK, so the fallback below
+        // runs exactly once whether the helper was never up or died on this attempt.
+        val outcome = if (helperUp()) helperInstall(apk) else InstallOutcome.HelperDown
+        when (outcome) {
+            // The helper died before or during the stream, or an impostor read the body and
+            // closed: the APK is untouched, so hand it to the fallback installer as-is.
+            is InstallOutcome.HelperDown -> return finishFallback(apk)
+            is InstallOutcome.Disconnected -> {
+                // A real install kills our process, so if we are still alive the install may
+                // still land: confirm via the installed version before giving up on the helper.
+                if (awaitVersionRise(installedVersion)) {
+                    deleteUpdateFiles() // the app is replaced from here on
+                } else {
+                    return finishFallback(apk)
+                }
+            }
+            is InstallOutcome.Started -> {
+                // END:0 is the helper's word, not proof: a stale-port impostor says it too.
+                // Only a risen versionCode means the update landed; anything else is a failure.
+                if (awaitVersionRise(installedVersion)) {
+                    deleteUpdateFiles() // the app is replaced from here on
+                } else {
+                    return fail("The update didn't install.")
+                }
+            }
+            is InstallOutcome.Failed -> return fail(outcome.lastLine ?: "Install failed.")
+        }
+    }
+
+    /**
+     * Hands [apk] to the system installer. The APK must still be present: this runs only when
+     * the helper path reported [InstallOutcome.HelperDown]/[InstallOutcome.Disconnected] without
+     * a confirmed install, and nothing above deletes files first.
+     */
+    private suspend fun finishFallback(apk: File) {
+        when (val fb = fallbackInstall(apk)) {
+            is InstallOutcome.Started -> deleteUpdateFiles() // session committed; system takes over
+            is InstallOutcome.Disconnected -> return fail("Helper not running.")
+            is InstallOutcome.Failed -> return fail(fb.lastLine ?: "Install failed.")
             is InstallOutcome.HelperDown -> return fail("Helper not running.")
+        }
+    }
+
+    /**
+     * True when the installed versionCode rises above [baseline] within [confirmTimeoutMs].
+     * A real helper install replaces our process, so surviving the stream at all means the
+     * install is still unconfirmed; only a rise counts, never the helper's word alone.
+     */
+    private suspend fun awaitVersionRise(baseline: Long): Boolean {
+        val deadline = System.currentTimeMillis() + confirmTimeoutMs
+        while (true) {
+            val current = try {
+                installed().first
+            } catch (_: Exception) {
+                baseline
+            }
+            if (current > baseline) return true
+            if (System.currentTimeMillis() >= deadline) return false
+            delay(confirmPollMs)
         }
     }
 

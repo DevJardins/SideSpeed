@@ -332,6 +332,71 @@ class HelperServerTest {
         assertTrue(released)
     }
 
+    @Test fun install_gate_await_idle_deadline_gives_up() {
+        val gate = InstallGate()
+        gate.begin()
+        val start = System.currentTimeMillis()
+        assertFalse(gate.awaitIdle(300))
+        assertTrue(System.currentTimeMillis() - start < 5_000)
+        gate.end()
+        assertTrue(gate.awaitIdle(5_000))
+    }
+
+    @Test fun install_gate_await_idle_returns_at_once_when_idle() {
+        assertTrue(InstallGate().awaitIdle(5_000))
+    }
+
+    /** A child that never exits until forcibly destroyed, like a hung `cmd package install`. */
+    private class HungProcess : Process() {
+        @Volatile var forciblyDestroyed = false
+        override fun getOutputStream(): java.io.OutputStream = java.io.ByteArrayOutputStream()
+        override fun getInputStream(): java.io.InputStream = java.io.ByteArrayInputStream(ByteArray(0))
+        override fun getErrorStream(): java.io.InputStream = java.io.ByteArrayInputStream(ByteArray(0))
+        override fun waitFor(): Int {
+            while (!forciblyDestroyed) Thread.sleep(10)
+            return 143
+        }
+
+        override fun exitValue(): Int = throw IllegalThreadStateException("still running")
+        override fun destroy() {
+            forciblyDestroyed = true
+        }
+
+        override fun destroyForcibly(): Process {
+            forciblyDestroyed = true
+            return this
+        }
+    }
+
+    private class ExitedProcess(private val code: Int) : Process() {
+        override fun getOutputStream(): java.io.OutputStream = java.io.ByteArrayOutputStream()
+        override fun getInputStream(): java.io.InputStream = java.io.ByteArrayInputStream(ByteArray(0))
+        override fun getErrorStream(): java.io.InputStream = java.io.ByteArrayInputStream(ByteArray(0))
+        override fun waitFor(): Int = code
+        override fun exitValue(): Int = code
+        override fun destroy() {}
+    }
+
+    @Test fun hung_install_child_is_destroyed_after_the_deadline() {
+        val child = HungProcess()
+        val destroyed = mutableListOf<Process>()
+        val start = System.currentTimeMillis()
+        assertNull(waitInstallExit(child, 300) { destroyed += it; it.destroyForcibly() })
+        assertTrue(System.currentTimeMillis() - start < 5_000)
+        assertEquals(listOf(child), destroyed)
+        assertTrue("hung child must be forcibly destroyed", child.forciblyDestroyed)
+    }
+
+    @Test fun exited_install_child_reports_its_code() {
+        assertEquals(0, waitInstallExit(ExitedProcess(0), 5_000))
+        assertEquals(3, waitInstallExit(ExitedProcess(3), 5_000))
+    }
+
+    @Test fun install_wait_and_apk_watch_deadlines() {
+        assertEquals(180_000L, HelperMain.INSTALL_WAIT_MS)
+        assertEquals(240_000L, HelperMain.APK_EXIT_WAIT_MS)
+    }
+
     @Test fun server_install_self_refused_for_wrong_uid() {
         var invoked = false
         start(

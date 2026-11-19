@@ -106,11 +106,11 @@ class CleanupTest {
         assertEquals(record, store.lastFlow.value)
     }
 
-    @Test fun cleanNowHelperOutdatedRecordsRestartSkip() = runTest {
+    @Test fun cleanNowRefusedRecordsRefusedSkip() = runTest {
         val (fake, _, store, cleanup) = fixture()
         fake.on("pm trim-caches 999999999999999") { listOf("error: request not allowed") to 126 }
         val record = cleanup.cleanNow()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper to use this"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper refused the command"), record)
         assertEquals(record, store.lastFlow.value)
     }
 
@@ -166,14 +166,14 @@ class CleanupTest {
         assertTrue(fake.commands.isEmpty())
     }
 
-    @Test fun maybeAutoHelperOutdatedRecordsRestartSkip() = runTest {
+    @Test fun maybeAutoRefusedRecordsRefusedSkip() = runTest {
         val (fake, _, store, cleanup) = fixture(
             threshold = CleanupThreshold.MB_500,
             beforeFree = 400_000_000L,
         )
         fake.on("pm trim-caches 500000000") { listOf("error: request not allowed") to 126 }
         val record = cleanup.maybeAuto()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Restart the helper to use this"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper refused the command"), record)
         assertEquals(record, store.lastFlow.value)
     }
 

@@ -93,13 +93,30 @@ class AnimationsTest {
         )
     }
 
-    @Test fun staleHelperMapsToHelperOutdated() = runTest {
+    @Test fun refusedPutMapsToRefused() = runTest {
         val (fake, store, animations) = setup().also { (f, _, _) ->
             scriptGets(f, "1", "1", "1")
             f.on("settings put global window_animation_scale 0.5") { listOf("refused") to 126 }
         }
-        assertEquals(ToolResult.HelperOutdated, animations.apply(AnimationLevel.FASTER))
+        // Refusal is not "restart the helper": it surfaces as-is.
+        assertEquals(ToolResult.Refused, animations.apply(AnimationLevel.FASTER))
         // The first put never landed, so nothing may be saved.
+        assertNull(store.animationOriginals.first())
+    }
+
+    @Test fun restoreOfNonStandardOriginalSucceeds() = runTest {
+        val (fake, store, animations) = setup()
+        store.setAnimationOriginals(AnimationOriginals("0.333", "12", "0.000001"))
+        scriptGets(fake, "0.5", "0.5", "0.5")
+        for (key in AnimationKey.entries) {
+            val saved = mapOf(
+                AnimationKey.WINDOW to "0.333",
+                AnimationKey.TRANSITION to "12",
+                AnimationKey.ANIMATOR to "0.000001",
+            ).getValue(key)
+            fake.on("settings put global ${key.key} $saved") { emptyList<String>() to 0 }
+        }
+        assertEquals(ToolResult.Ok(Unit), animations.restore())
         assertNull(store.animationOriginals.first())
     }
 
