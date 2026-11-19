@@ -271,6 +271,14 @@ class MainActivity : ComponentActivity() {
                                 if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
                             }
                         },
+                        maintained = (application as SideSpeedApp).container.maintenanceStore.maintained,
+                        onToggleKeep = { pkg, on ->
+                            lifecycleScope.launch {
+                                val c = (application as SideSpeedApp).container
+                                c.maintenanceStore.setMaintained(pkg, on)
+                                if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
+                            }
+                        },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         onOpenTools = { showTools = true },
                         onOpenAbout = { showAbout = true },

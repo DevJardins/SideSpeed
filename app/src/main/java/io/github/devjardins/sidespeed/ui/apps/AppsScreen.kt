@@ -51,12 +51,11 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
-
-private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), HISTORY("Auto-optimize") }
 
 @Composable
 fun AppsScreen(
@@ -67,6 +66,8 @@ fun AppsScreen(
     history: Flow<List<JobRecord>>,
     autoOptimizeMode: Flow<AutoOptimizeMode>,
     onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
+    maintained: Flow<Set<String>>,
+    onToggleKeep: (String, Boolean) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
     onOpenTools: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -82,23 +83,31 @@ fun AppsScreen(
     val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
+    val ticked by maintained.collectAsState(initial = emptySet())
     val selfRecord by selfCompile.collectAsState(initial = null)
     LaunchedEffect(Unit) { vm.load() }
-    // Save the tab by name and fall back to SIDELOADED for a name this build no
-    // longer has (e.g. a state bundle written by a version with more tabs), so a
-    // stale restore can never crash on a removed enum entry.
-    var tabName by rememberSaveable { mutableStateOf(Tab.SIDELOADED.name) }
-    val tab = Tab.entries.firstOrNull { it.name == tabName } ?: Tab.SIDELOADED
-    var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
-    // Give the D-pad a starting point: the active tab takes focus when the screen opens.
-    val tabFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { tabFocus.requestFocus() } }
+    // Save the filter by name and fall back to SIDELOADED for a name this build no
+    // longer has (e.g. a state bundle written by 0.6 with "HISTORY"), so a stale
+    // restore can never crash on a removed entry.
+    var filterName by rememberSaveable { mutableStateOf(AppsFilter.SIDELOADED.name) }
+    val filter = filterFromSaved(filterName)
+    // A short note under the button row, e.g. when a locked box is pressed.
+    var lockedNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(lockedNote) {
+        if (lockedNote != null) {
+            delay(4000)
+            lockedNote = null
+        }
+    }
+    // Give the D-pad a starting point: the active filter takes focus when the screen opens.
+    val filterFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { filterFocus.requestFocus() } }
 
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Pick an app to compile",
+                    "My Apps",
                     style = SsType.Headline,
                     color = SsColors.TextPrimary,
                     maxLines = 1,
@@ -130,15 +139,21 @@ fun AppsScreen(
                     .horizontalScroll(rememberScrollState())
                     .padding(horizontal = tabRowInset),
             ) {
-                Tab.entries.forEach { t ->
+                AppsFilter.entries.forEach { f ->
                     SsButton(
-                        onClick = { tabName = t.name },
-                        selected = t == tab,
+                        onClick = { filterName = f.name },
+                        selected = f == filter,
                         contentPadding = tabButtonPadding,
-                        modifier = if (t == tab) Modifier.focusRequester(tabFocus) else Modifier,
+                        modifier = if (f == filter) Modifier.focusRequester(filterFocus) else Modifier,
                     ) {
-                        Text(t.label, style = SsType.Body)
+                        Text(f.label, style = SsType.Body)
                     }
+                }
+                SsButton(onClick = {}, contentPadding = tabButtonPadding) {
+                    Text(
+                        optimizeMode?.let { autoOptimizeButtonLabel(it) } ?: "Auto-optimize",
+                        style = SsType.Body,
+                    )
                 }
                 SsButton(onClick = onOpenTools, contentPadding = tabButtonPadding) {
                     Text("Tools", style = SsType.Body)
@@ -146,55 +161,48 @@ fun AppsScreen(
                 SsButton(onClick = onOpenAbout, contentPadding = tabButtonPadding) {
                     Text("About", style = SsType.Body)
                 }
-                Spacer(Modifier.width(16.dp))
-                Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)
-                CompileMode.entries.forEach { m ->
-                    SsButton(
-                        onClick = { mode = m },
-                        selected = m == mode,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    ) { Text(if (m == mode) "✓ ${m.arg}" else m.arg, style = SsType.Caption) }
-                }
             }
-            if (tab == Tab.HISTORY) {
-                val current = optimizeMode
-                if (current != null) {
-                    Text("Keep these apps optimized automatically", style = SsType.Caption, color = SsColors.TextSecondary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AutoOptimizeMode.entries.reversed().forEach { m ->
-                            val option = autoOptimizeOption(m)
-                            SsButton(
-                                (if (m == current) "✓ " else "") + option.title,
-                                onClick = { onAutoOptimizeMode(m) },
-                                selected = m == current,
-                            )
-                        }
-                    }
-                    Text(autoOptimizeOption(current).description, style = SsType.Caption, color = SsColors.TextSecondary)
-                }
+            lockedNote?.let {
+                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             banner()
-            when (tab) {
-                Tab.HISTORY -> HistoryList(history)
-                else -> {
-                    val apps = remember(state.apps, tab) {
-                        if (tab == Tab.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
-                    }
-                    when {
-                        state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
-                        apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
-                        else -> LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+            val apps = remember(state.apps, filter) {
+                if (filter == AppsFilter.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
+            }
+            when {
+                state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
+                apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
+                else -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+                ) {
+                    items(apps, key = { it.packageName }) { app ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(apps, key = { it.packageName }) { app ->
-                                AppRow(
-                                    app,
-                                    lastCompiles[app.packageName],
-                                    maintenancePill(app.packageName, maintenanceState)
-                                        ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
-                                    icon,
-                                ) { onSelect(app, mode) }
+                            AppRow(
+                                app,
+                                lastCompiles[app.packageName],
+                                maintenancePill(app.packageName, maintenanceState)
+                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
+                                icon,
+                                Modifier.weight(1f),
+                            ) { onSelect(app, initialCompileMode(lastCompiles[app.packageName])) }
+                            // While the mode is still loading there is nothing to compare against: no box.
+                            val current = optimizeMode
+                            if (current != null) {
+                                when (val box = boxFor(app, current, ticked)) {
+                                    KeepBox.OFF, KeepBox.ON -> SsButton(
+                                        if (box == KeepBox.ON) "☑" else "☐",
+                                        onClick = { onToggleKeep(app.packageName, box == KeepBox.OFF) },
+                                    )
+                                    KeepBox.LOCKED -> SsButton(
+                                        "☑🔒",
+                                        onClick = { lockedNote = lockedMessage(current) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -217,12 +225,12 @@ fun AppIcon(pkg: String, icon: IconSource, size: androidx.compose.ui.unit.Dp = S
 }
 
 @Composable
-private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, onClick: () -> Unit) {
+private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
     val secondary = remember(last, app.packageName) {
         last?.let { "compiled " + dateFormat.format(Date(it.epochMs)) } ?: app.packageName
     }
-    SsRow(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    SsRow(onClick = onClick, modifier = modifier) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
