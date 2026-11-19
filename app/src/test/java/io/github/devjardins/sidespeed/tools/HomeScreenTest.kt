@@ -224,7 +224,8 @@ class HomeScreenTest {
             "com.google.android.tungsten.setupwraith.RecoveryActivity",
         )
         val fallback = HomeComponent("com.android.settings", "com.android.settings.FallbackHome")
-        val queries = FakeHomeQueries(STOCK, launchers(STOCK, OTHER, own, recovery, fallback))
+        val tvFallback = HomeComponent("com.android.tv.settings", "com.android.tv.settings.system.FallbackHome")
+        val queries = FakeHomeQueries(STOCK, launchers(STOCK, OTHER, own, recovery, fallback, tvFallback))
         val commands = FakeHomeCommands(queries)
         val s = switcher(queries, commands, FakeHomeStore())
         // Sorted by label (the package name in these fakes).

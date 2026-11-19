@@ -66,7 +66,7 @@ fun isExcludedHome(pkg: String, cls: String, ownPackage: String): Boolean = when
     pkg == ownPackage -> true
     pkg == "android" -> true
     pkg.contains("setupwraith") && cls.substringAfterLast('.') == "RecoveryActivity" -> true
-    pkg == "com.android.settings" && cls.substringAfterLast('.') == "FallbackHome" -> true
+    cls.substringAfterLast('.') == "FallbackHome" -> true
     else -> false
 }
 
