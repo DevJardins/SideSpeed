@@ -29,13 +29,14 @@ import io.github.devjardins.sidespeed.ui.theme.SsType
 
 /**
  * The Tools screen shell: a scrollable column with a title and four card slots in fixed order —
- * [health] (Box health), [space] (Free up space), [animations] (Animations), [home] (Home screen).
+ * [health] (Box health), [space] (Free up space), [animations] (Animations), [extras] (Turn off extras), [home] (Home screen).
  */
 @Composable
 fun ToolsScreen(
     health: @Composable () -> Unit,
     space: @Composable () -> Unit,
     animations: @Composable () -> Unit,
+    extras: @Composable () -> Unit,
     home: @Composable () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -65,6 +66,7 @@ fun ToolsScreen(
             health()
             space()
             animations()
+            extras()
             home()
         }
     }

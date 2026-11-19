@@ -20,6 +20,7 @@ import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.tools.HomeCardState
 import io.github.devjardins.sidespeed.tools.HomeResult
 import io.github.devjardins.sidespeed.tools.HomeSwitcher
+import io.github.devjardins.sidespeed.tools.homeCouldntChangeMessage
 import io.github.devjardins.sidespeed.tools.Launcher
 import io.github.devjardins.sidespeed.ui.apps.AppIcon
 import io.github.devjardins.sidespeed.ui.theme.SsButton
@@ -47,13 +48,15 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
 
     LaunchedEffect(Unit) { refresh() }
 
-    fun message(result: HomeResult, changed: Boolean): String = when (result) {
+    suspend fun message(result: HomeResult, changed: Boolean): String = when (result) {
         is HomeResult.Ok -> if (changed) {
             "Home screen changed. Your remote's Home button may still open the previous home screen on some TVs."
         } else {
             "Back to your first home screen."
         }
-        is HomeResult.CouldntChange -> "Couldn't change Home"
+        is HomeResult.CouldntChange -> homeCouldntChangeMessage(
+            runCatching { switcher.currentWithFallback()?.pkg }.getOrNull(),
+        )
         is HomeResult.NoOriginal -> "No earlier home screen was saved."
         is HomeResult.StockDisabledElsewhere ->
             "Your first home screen was turned off by something else, so SideSpeed can't turn it back on."

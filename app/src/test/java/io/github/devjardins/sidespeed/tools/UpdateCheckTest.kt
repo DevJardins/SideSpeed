@@ -43,6 +43,9 @@ class FakeUpdateStore : ToolsStore {
     }
     override val originalHome: Flow<String?> = MutableStateFlow(null)
     override suspend fun setOriginalHome(v: String?) {}
+    override val extrasDisabled: Flow<List<DisabledRecord>> = MutableStateFlow(emptyList())
+    override suspend fun addExtrasDisabled(record: DisabledRecord) {}
+    override suspend fun removeExtrasDisabled(pkg: String) {}
 }
 
 class UpdateCheckTest {

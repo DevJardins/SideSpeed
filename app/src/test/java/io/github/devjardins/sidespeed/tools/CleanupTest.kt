@@ -46,6 +46,9 @@ private class FakeToolsStore(threshold: CleanupThreshold = CleanupThreshold.OFF)
     override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
     override val originalHome: Flow<String?> = flowOf(null)
     override suspend fun setOriginalHome(v: String?) {}
+    override val extrasDisabled: Flow<List<DisabledRecord>> = flowOf(emptyList())
+    override suspend fun addExtrasDisabled(record: DisabledRecord) {}
+    override suspend fun removeExtrasDisabled(pkg: String) {}
 }
 
 private data class Fixture(
