@@ -203,6 +203,45 @@ class CommandAllowlistTest {
         ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
     }
 
+    @Test fun launchTimeNestedClassForm() {
+        assertEquals(
+            listOf("/system/bin/am", "start", "-W", "-S", "-n", "com.foo/com.foo.Main\$Launcher"),
+            CommandAllowlist.toArgv("launch-time com.foo com.foo.Main\$Launcher"),
+        )
+        assertEquals(
+            listOf("/system/bin/am", "start", "-W", "-S", "-n", "com.foo/com.foo.Outer\$Inner\$Deep"),
+            CommandAllowlist.toArgv("launch-time com.foo com.foo.Outer\$Inner\$Deep"),
+        )
+    }
+
+    @Test fun dollarRejectedEverywhereExceptLaunchTimeClass() {
+        listOf(
+            "pm compile -m speed -f com.foo\$M",
+            "pm compile -m verify -f com.foo\$Bar",
+            "cmd package compile -m speed -f com.foo\$M",
+            "dumpsys package com.foo\$Bar",
+            "launch-time com.fo\$o com.foo.Main",
+            "launch-time com.foo\$Bar com.foo.Main",
+            "launch-time com.foo com.foo.Main\$",
+            "launch-time com.foo \$a.B",
+            "launch-time com.foo a..B",
+            "launch-time com.foo a.B\$\$C",
+            "launch-time com.foo a.B;rm",
+            "launch-time com.foo com.foo.Main\$1",
+            "launch-time com.foo a.B c",
+            "launch-time com.foo com.foo.Main extra",
+            "pm trim-caches 10\$0",
+            "settings put global window_animation_scale 0.5\$",
+            "settings put global window_animation_scale\$ 0.5",
+            "settings get global window_animation_scale\$",
+            "install-self 5\$",
+            "bring-back \$",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+        assertNull(CommandAllowlist.installSelfSize("install-self 5\$"))
+        assertEquals(false, CommandAllowlist.isPing("ping abcdefghijklmnop\$23"))
+        assertNull(CommandAllowlist.pingNonce("ping abcdefghijklmnop\$23"))
+    }
+
     @Test fun install_self_size_parses_bounds() {
         assertEquals(1L, CommandAllowlist.installSelfSize("install-self 1"))
         assertEquals(67108864L, CommandAllowlist.installSelfSize("install-self 67108864"))

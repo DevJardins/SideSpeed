@@ -15,6 +15,31 @@ value class PackageName private constructor(val value: String) {
     }
 }
 
+/**
+ * A validated fully-qualified activity class name (Java binary name), e.g.
+ * `com.foo.Main` or `com.foo.Main$Launcher` for a nested launcher activity.
+ * Grammar: dot-separated segments of `[A-Za-z_][A-Za-z0-9_]*`, where each
+ * segment may hold `$`-separated parts (`Outer$Inner`), at least one dot, no
+ * leading/trailing `.` or `$`, no `..`, no `$$`, max 255 chars. Matching is
+ * exact (no trimming): surrounding whitespace is rejected.
+ *
+ * Digits-only `$` parts (`Outer$1`, anonymous classes) are rejected: they are
+ * never launchable activities. `$` is safe here because the helper passes the
+ * class token as a fixed argv element (never a shell), and this is the only
+ * token in any helper command that may contain it.
+ */
+@JvmInline
+value class ActivityClassName private constructor(val value: String) {
+    companion object {
+        const val MAX_LENGTH = 255
+        private const val IDENT = "[A-Za-z_][A-Za-z0-9_]*"
+        private val PATTERN = Regex("^" + IDENT + "([$]" + IDENT + ")*(\\." + IDENT + "([$]" + IDENT + ")*)+$")
+
+        fun parse(raw: String): ActivityClassName? =
+            raw.takeIf { it.length in 1..MAX_LENGTH && PATTERN.matches(it) }?.let(::ActivityClassName)
+    }
+}
+
 sealed interface CompileEvent {
     data class Attempt(val command: String) : CompileEvent
     data class Output(val line: String) : CompileEvent
