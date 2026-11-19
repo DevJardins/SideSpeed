@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -82,6 +83,16 @@ class SelfUpdaterTest {
     private suspend fun SelfUpdater.awaitState(predicate: (UpdateUiState) -> Boolean): UpdateUiState =
         withTimeout(5_000) { state.first(predicate) }
 
+    /**
+     * Installing is emitted before the install call is recorded, so awaiting the state alone
+     * races the recording: wait for the recorded call instead.
+     */
+    private suspend fun awaitCalls(calls: List<File>, count: Int = 1) {
+        withTimeout(5_000) {
+            while (synchronized(calls) { calls.size } < count) delay(10)
+        }
+    }
+
     @Test fun busy_clears_to_available_when_job_ends() = runBlocking {
         val busy = MutableStateFlow(true)
         val u = updater(busyFlow = busy)
@@ -121,6 +132,7 @@ class SelfUpdaterTest {
         u.start("v0.5.0")
         withTimeout(5_000) { sequenceDone.await() }
         collect.cancel()
+        awaitCalls(helperCalls)
         assertEquals(1, helperCalls.size)
         assertTrue(helperCalls.single().name == "SideSpeed.apk")
     }
@@ -139,6 +151,7 @@ class SelfUpdaterTest {
         val u = updater(helperUp = false, helperCalls = helperCalls, fallbackCalls = fallbackCalls)
         u.start("v0.5.0")
         u.awaitState { it is UpdateUiState.Installing }
+        awaitCalls(fallbackCalls)
         assertTrue(helperCalls.isEmpty())
         assertEquals(1, fallbackCalls.size)
     }
@@ -154,6 +167,8 @@ class SelfUpdaterTest {
         )
         u.start("v0.5.0")
         u.awaitState { it is UpdateUiState.Installing }
+        awaitCalls(helperCalls)
+        awaitCalls(fallbackCalls)
         assertEquals(1, helperCalls.size)
         assertEquals(1, fallbackCalls.size)
     }
