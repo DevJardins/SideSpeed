@@ -113,6 +113,8 @@ object CommandAllowlist {
                 listOf("/system/bin/pm", "list", "packages", "-d", "--user", "0")
             t.size == 3 && t[0] == "launch-time" ->
                 launchTime(t[1], t[2])
+            t.size == 1 && t[0] == "home-role" ->
+                listOf("/system/bin/cmd", "role", "get-role-holders", "android.app.role.HOME")
             t.size == 1 && t[0] == "bring-back" ->
                 listOf(
                     "/system/bin/am", "start", "-n",

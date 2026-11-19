@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.tools
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.ShellEvent
+import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.helper.HelperProtocol
 
 sealed interface ToolResult<out T> {
@@ -66,6 +67,12 @@ class ToolsCommands(
 
     override suspend fun setHome(pkg: String, cls: String): ToolResult<Unit> =
         run("set-home $pkg $cls").map { }
+
+    /** The HOME role holder package (first non-blank line, validated), or null when unset/invalid. */
+    override suspend fun homeRoleHolder(): ToolResult<String?> =
+        run("home-role").map { lines ->
+            lines.firstOrNull { it.isNotBlank() }?.let { PackageName.parse(it)?.value }
+        }
 
     override suspend fun enablePackage(pkg: String): ToolResult<Unit> =
         run("pm enable $pkg").map { }

@@ -156,6 +156,34 @@ class ToolsCommandsTest {
         assertTrue(fake.commands.isEmpty())
     }
 
+    @Test fun homeRoleHolderParsesFirstNonBlankLine() = runTest {
+        val (fake, commands) = commands()
+        fake.on("home-role") { listOf("", "  ", "com.example.stock", "com.example.other") to 0 }
+        assertEquals(ToolResult.Ok("com.example.stock"), commands.homeRoleHolder())
+        assertEquals(listOf("home-role"), fake.commands)
+    }
+
+    @Test fun homeRoleHolderBlankOrInvalidMapsToNull() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("home-role") { listOf("", "   ") to 0 }
+        }
+        assertEquals(ToolResult.Ok(null), commands.homeRoleHolder())
+        val (_, commands2) = commands().also { (fake, _) ->
+            fake.on("home-role") { listOf("not a package") to 0 }
+        }
+        assertEquals(ToolResult.Ok(null), commands2.homeRoleHolder())
+        val (_, commands3) = commands().also { (fake, _) ->
+            fake.on("home-role") { listOf("nodots") to 0 }
+        }
+        assertEquals(ToolResult.Ok(null), commands3.homeRoleHolder())
+    }
+
+    @Test fun homeRoleHolderHelperDownShortCircuits() = runTest {
+        val (fake, commands) = commands(helperUp = false)
+        assertEquals(ToolResult.HelperDown, commands.homeRoleHolder())
+        assertTrue(fake.commands.isEmpty())
+    }
+
     @Test fun bringBackOk() = runTest {
         val (fake, commands) = commands()
         fake.on("bring-back") { listOf("Starting: Intent {}") to 0 }

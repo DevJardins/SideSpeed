@@ -36,6 +36,7 @@ interface HomeQueries {
 interface HomeCommands {
     suspend fun setHome(pkg: String, cls: String): ToolResult<Unit>
     suspend fun enablePackage(pkg: String): ToolResult<Unit>
+    suspend fun homeRoleHolder(): ToolResult<String?>
 }
 
 sealed interface HomeResult {
@@ -75,6 +76,13 @@ fun isExcludedHome(pkg: String, cls: String, ownPackage: String): Boolean = when
  * helper `set-home` form (plus `pm enable` on Back to stock for a stock package SideSpeed
  * itself disabled). The original Home is recorded once, only after a change is confirmed
  * by re-resolving Home, and Back to stock only ever touches that record.
+ *
+ * When resolve is ambiguous (it returns the system resolver once a second HOME app is
+ * installed, so [HomeQueries.currentHome] is null), the HOME role holder is the fallback
+ * for "current": its package's sole launcher activity, or null when there is not exactly
+ * one. A change is confirmed when resolve returns the target, or when resolve is still
+ * ambiguous and the role holder is the target package. A failed role read (helper down,
+ * refused, ...) falls back to no current, exactly as before.
  */
 class HomeSwitcher(
     private val queries: HomeQueries,
@@ -86,6 +94,24 @@ class HomeSwitcher(
 ) {
     fun current(): HomeComponent? = queries.currentHome()
 
+    /** Role holder package on a successful read; null on any failure or invalid value. */
+    private suspend fun roleHolderPackage(): String? =
+        (commands.homeRoleHolder() as? ToolResult.Ok)?.value
+
+    /** [current] with the role-holder fallback when resolve is ambiguous. */
+    private suspend fun effectiveCurrent(): HomeComponent? {
+        queries.currentHome()?.let { return it }
+        val pkg = roleHolderPackage() ?: return null
+        return launchers().filter { it.component.pkg == pkg }.singleOrNull()?.component
+    }
+
+    /** True when [target] is confirmed Home: resolve returns it, or resolve is ambiguous and the role holder is its package. */
+    private suspend fun isConfirmedHome(target: HomeComponent): Boolean {
+        val resolved = queries.currentHome()
+        if (resolved != null) return resolved == target
+        return roleHolderPackage() == target.pkg
+    }
+
     fun launchers(): List<Launcher> =
         queries.homeLaunchers()
             .filterNot { isExcludedHome(it.component.pkg, it.component.cls, ownPackage) }
@@ -95,13 +121,13 @@ class HomeSwitcher(
     /** True when a recorded original exists but Home is that original again (it drifted back). */
     suspend fun hasDrifted(): Boolean {
         val original = parseHomeComponent(store.originalHome.first()) ?: return false
-        val now = current() ?: return false
+        val now = effectiveCurrent() ?: return false
         return now == original
     }
 
     suspend fun cardState(): HomeCardState {
         if (isFireOs) return HomeCardState.FireOs
-        val now = current()
+        val now = effectiveCurrent()
         val all = launchers()
         val original = parseHomeComponent(store.originalHome.first())
         val others = all.filter { it.component != now }
@@ -122,7 +148,7 @@ class HomeSwitcher(
         if (launchers().none { it.component == target }) {
             return HomeResult.Failed("That app isn't a home screen app.")
         }
-        val before = current()
+        val before = effectiveCurrent()
         if (before == target) return HomeResult.Ok(target)
         when (val result = commands.setHome(target.pkg, target.cls)) {
             is ToolResult.Ok -> {}
@@ -131,7 +157,7 @@ class HomeSwitcher(
             is ToolResult.Refused -> return HomeResult.Refused
             is ToolResult.Failed -> return HomeResult.Failed(result.message)
         }
-        if (current() != target) return HomeResult.CouldntChange
+        if (!isConfirmedHome(target)) return HomeResult.CouldntChange
         // Record the original once, only after the change is confirmed.
         if (before != null && store.originalHome.first() == null) {
             store.setOriginalHome(encodeHomeComponent(before))
@@ -146,7 +172,7 @@ class HomeSwitcher(
             store.setOriginalHome(null)
             return HomeResult.Failed("The saved home screen isn't valid any more.")
         }
-        if (current() == original) {
+        if (effectiveCurrent() == original) {
             store.setOriginalHome(null)
             return HomeResult.Ok(original)
         }
@@ -167,7 +193,7 @@ class HomeSwitcher(
             is ToolResult.Refused -> return HomeResult.Refused
             is ToolResult.Failed -> return HomeResult.Failed(result.message)
         }
-        if (current() != original) return HomeResult.CouldntChange
+        if (!isConfirmedHome(original)) return HomeResult.CouldntChange
         store.setOriginalHome(null)
         return HomeResult.Ok(original)
     }

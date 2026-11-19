@@ -355,6 +355,30 @@ class CommandAllowlistTest {
         ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
     }
 
+    @Test fun homeRoleForm() {
+        assertEquals(
+            listOf("/system/bin/cmd", "role", "get-role-holders", "android.app.role.HOME"),
+            CommandAllowlist.toArgv("home-role"),
+        )
+    }
+
+    @Test fun homeRoleRejections() {
+        listOf(
+            "home-role extra",
+            "home-role android.app.role.HOME",
+            "home-role android.app.role.DIALER",
+            "home-role com.example.home",
+            "cmd role get-role-holders android.app.role.HOME",
+            "cmd role get-role-holders android.app.role.DIALER",
+            "role get-role-holders android.app.role.HOME",
+            "home-role ",
+            " home-role",
+            "home-role  ",
+            "HOME-ROLE",
+            "home_role",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
     @Test fun bringBackForm() {
         assertEquals(
             listOf(

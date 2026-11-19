@@ -28,12 +28,22 @@ private class FakeHomeCommands(private val queries: FakeHomeQueries) : HomeComma
     var setHomeResult: ToolResult<Unit> = ToolResult.Ok(Unit)
     var enableResult: ToolResult<Unit> = ToolResult.Ok(Unit)
     var flipOnSetHome: Boolean = true
+    /** When true, a successful set-home leaves resolve ambiguous (current stays null) and moves only the role holder. */
+    var stayAmbiguousOnSetHome: Boolean = false
+    var roleHolder: String? = null
+    var roleHolderResult: ToolResult<String?>? = null
 
     override suspend fun setHome(pkg: String, cls: String): ToolResult<Unit> {
         calls += "set-home $pkg $cls"
-        if (setHomeResult is ToolResult.Ok && flipOnSetHome) queries.current = HomeComponent(pkg, cls)
+        if (setHomeResult is ToolResult.Ok && flipOnSetHome) {
+            roleHolder = pkg
+            if (stayAmbiguousOnSetHome) queries.current = null else queries.current = HomeComponent(pkg, cls)
+        }
         return setHomeResult
     }
+
+    override suspend fun homeRoleHolder(): ToolResult<String?> =
+        roleHolderResult ?: ToolResult.Ok(roleHolder)
 
     override suspend fun enablePackage(pkg: String): ToolResult<Unit> {
         calls += "pm enable $pkg"
@@ -237,6 +247,73 @@ class HomeScreenTest {
         val commands = FakeHomeCommands(queries)
         val s = switcher(queries, commands, FakeHomeStore())
         assertEquals(HomeCardState.NoOtherLauncher(STOCK), s.cardState())
+    }
+
+    @Test fun ambiguousResolveFallsBackToRoleHolderForCurrent() = runTest {
+        val queries = FakeHomeQueries(null, launchers(STOCK, OTHER))
+        val commands = FakeHomeCommands(queries).apply { roleHolder = STOCK.pkg }
+        val s = switcher(queries, commands, FakeHomeStore())
+        val state = s.cardState()
+        assertTrue(state is HomeCardState.Ready && state.current == STOCK)
+    }
+
+    @Test fun ambiguousResolveRecordsOriginalAndBackToStockWorks() = runTest {
+        val queries = FakeHomeQueries(null, launchers(STOCK, OTHER))
+        val commands = FakeHomeCommands(queries).apply {
+            roleHolder = STOCK.pkg
+            stayAmbiguousOnSetHome = true
+        }
+        val store = FakeHomeStore()
+        val s = switcher(queries, commands, store)
+        assertEquals(HomeResult.Ok(OTHER), s.makeHome(OTHER))
+        assertEquals(encodeHomeComponent(STOCK), store.originalHome.first())
+        assertEquals(HomeResult.Ok(STOCK), s.backToStock())
+        assertNull(store.originalHome.first())
+        assertEquals(
+            listOf(
+                "set-home ${OTHER.pkg} ${OTHER.cls}",
+                "set-home ${STOCK.pkg} ${STOCK.cls}",
+            ),
+            commands.calls,
+        )
+    }
+
+    @Test fun roleHolderWithoutMatchingLauncherRecordsNothing() = runTest {
+        val queries = FakeHomeQueries(null, launchers(STOCK, OTHER))
+        val commands = FakeHomeCommands(queries).apply {
+            roleHolder = "com.example.ghost"
+            stayAmbiguousOnSetHome = true
+        }
+        val store = FakeHomeStore()
+        val s = switcher(queries, commands, store)
+        assertEquals(HomeResult.Ok(OTHER), s.makeHome(OTHER))
+        assertNull(store.originalHome.first())
+    }
+
+    @Test fun roleHolderWithMultipleLaunchersRecordsNothing() = runTest {
+        val alt = HomeComponent(STOCK.pkg, "com.example.stock.AltActivity")
+        val queries = FakeHomeQueries(null, launchers(STOCK, alt, OTHER))
+        val commands = FakeHomeCommands(queries).apply {
+            roleHolder = STOCK.pkg
+            stayAmbiguousOnSetHome = true
+        }
+        val store = FakeHomeStore()
+        val s = switcher(queries, commands, store)
+        assertEquals(HomeResult.Ok(OTHER), s.makeHome(OTHER))
+        assertNull(store.originalHome.first())
+    }
+
+    @Test fun helperDownDuringRoleReadBehavesAsBefore() = runTest {
+        val queries = FakeHomeQueries(null, launchers(STOCK, OTHER))
+        val commands = FakeHomeCommands(queries).apply {
+            roleHolderResult = ToolResult.HelperDown
+        }
+        val store = FakeHomeStore()
+        val s = switcher(queries, commands, store)
+        // Role read fails, but the change itself still goes through the normal path:
+        // set-home flips resolve to the target, so it succeeds with nothing recorded.
+        assertEquals(HomeResult.Ok(OTHER), s.makeHome(OTHER))
+        assertNull(store.originalHome.first())
     }
 
     @Test fun driftDetectedWhenHomeReturnsToOriginal() = runTest {
