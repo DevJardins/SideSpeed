@@ -192,7 +192,31 @@ fun AppsScreen(
             val apps = remember(state.apps, filter) {
                 if (filter == AppsFilter.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
             }
-            when {
+            if (showAutoOptimize) {
+                // The dialog takes the list's place so every button stays on screen.
+                BackHandler { showAutoOptimize = false }
+                val current = optimizeMode
+                Text("Auto-optimize", style = SsType.Title, color = SsColors.TextPrimary)
+                if (current != null) {
+                    AutoOptimizeMode.entries.forEach { m ->
+                        SsButton(
+                            (if (m == current) "✓ " else "") + autoOptimizeOption(m).title,
+                            onClick = { onAutoOptimizeMode(m) },
+                            selected = m == current,
+                            modifier = if (m == current) Modifier.focusRequester(dialogFocus) else Modifier,
+                        )
+                    }
+                    Text(
+                        autoOptimizeOption(current).description,
+                        style = SsType.Caption,
+                        color = SsColors.TextSecondary,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SsButton("History", onClick = { showAutoOptimize = false; showHistory = true })
+                    SsButton("Close", onClick = { showAutoOptimize = false })
+                }
+            } else when {
                 state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
                 apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
                 else -> LazyColumn(
@@ -229,30 +253,6 @@ fun AppsScreen(
                             }
                         }
                     }
-                }
-            }
-            if (showAutoOptimize) {
-                BackHandler { showAutoOptimize = false }
-                val current = optimizeMode
-                Text("Auto-optimize", style = SsType.Title, color = SsColors.TextPrimary)
-                if (current != null) {
-                    AutoOptimizeMode.entries.forEach { m ->
-                        SsButton(
-                            (if (m == current) "✓ " else "") + autoOptimizeOption(m).title,
-                            onClick = { onAutoOptimizeMode(m) },
-                            selected = m == current,
-                            modifier = if (m == current) Modifier.focusRequester(dialogFocus) else Modifier,
-                        )
-                    }
-                    Text(
-                        autoOptimizeOption(current).description,
-                        style = SsType.Caption,
-                        color = SsColors.TextSecondary,
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SsButton("History", onClick = { showAutoOptimize = false; showHistory = true })
-                    SsButton("Close", onClick = { showAutoOptimize = false })
                 }
             }
         }
