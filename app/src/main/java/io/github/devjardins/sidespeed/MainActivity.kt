@@ -315,6 +315,7 @@ class MainActivity : ComponentActivity() {
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
+                            onModeChange = { selectedMode = it },
                             onBack = back,
                             onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },

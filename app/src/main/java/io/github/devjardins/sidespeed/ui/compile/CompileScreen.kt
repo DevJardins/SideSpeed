@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,6 +66,7 @@ fun CompileScreen(
     onBack: () -> Unit,
     onCheckHelper: () -> Unit,
     onKeepOptimized: () -> Unit = {},
+    onModeChange: (CompileMode) -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val launch by vm.launch.collectAsState()
@@ -115,6 +117,23 @@ fun CompileScreen(
                     onCheckedChange = vm::setLaunchChecked,
                     onMeasure = { if (pkg != null) vm.measure(pkg, app.label) },
                 )
+            }
+
+            if (!state.running) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)
+                    CompileMode.entries.forEach { m ->
+                        SsButton(
+                            onClick = { onModeChange(m) },
+                            selected = m == mode,
+                            enabled = !launchBusy,
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        ) { Text(if (m == mode) "✓ ${m.arg}" else m.arg, style = SsType.Caption) }
+                    }
+                }
             }
 
             when {
