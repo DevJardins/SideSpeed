@@ -40,6 +40,7 @@ private class FakeToolsStore(threshold: CleanupThreshold = CleanupThreshold.OFF)
     override suspend fun setRestorePending(r: RestorePending?) {}
     override val updateDismissedVersion: Flow<String?> = flowOf(null)
     override suspend fun setUpdateDismissedVersion(v: String) {}
+    override suspend fun clearUpdateDismissedVersion() {}
     override val updateLastCheckMs: Flow<Long> = flowOf(0L)
     override val updateLatestVersion: Flow<String?> = flowOf(null)
     override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}

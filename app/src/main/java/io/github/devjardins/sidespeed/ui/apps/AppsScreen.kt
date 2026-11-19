@@ -77,6 +77,7 @@ fun AppsScreen(
     onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
     onOpenTools: () -> Unit,
+    onOpenAbout: () -> Unit,
     banner: @Composable () -> Unit = {},
     tvAddress: String? = null,
     selfCompile: Flow<SelfCompile?>,
@@ -145,6 +146,9 @@ fun AppsScreen(
                 }
                 SsButton(onClick = onOpenTools, contentPadding = tabButtonPadding) {
                     Text("Tools", style = SsType.Body)
+                }
+                SsButton(onClick = onOpenAbout, contentPadding = tabButtonPadding) {
+                    Text("About", style = SsType.Body)
                 }
                 Spacer(Modifier.width(16.dp))
                 Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)

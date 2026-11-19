@@ -33,6 +33,7 @@ class FakeUpdateStore : ToolsStore {
     override suspend fun setRestorePending(r: RestorePending?) {}
     override val updateDismissedVersion: Flow<String?> = dismissed
     override suspend fun setUpdateDismissedVersion(v: String) { dismissed.value = v }
+    override suspend fun clearUpdateDismissedVersion() { dismissed.value = null }
     override val updateLastCheckMs: Flow<Long> = lastCheck
     override val updateLatestVersion: Flow<String?> = latest
     override suspend fun setUpdateCheck(atMs: Long, latest: String?) {
@@ -127,6 +128,91 @@ class UpdateCheckTest {
     @Test fun displayVersionStripsVPrefix() {
         assertEquals("0.5.0", displayVersion("v0.5.0"))
         assertEquals("0.5.0", displayVersion("0.5.0"))
+    }
+
+    @Test fun checkNowUpToDateRestartsTimer() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(0L, null)
+        val now = 25 * 60 * 60 * 1000L
+        val check = UpdateCheck(
+            fetch = { sampleJson },
+            store = store,
+            clock = { now },
+            currentVersion = "0.5.0",
+        )
+        assertEquals(ManualCheckResult.UpToDate, check.checkNow())
+        assertEquals(now, store.updateLastCheckMs.first())
+        assertEquals("v0.5.0", store.updateLatestVersion.first())
+    }
+
+    @Test fun checkNowNewer() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(0L, null)
+        val check = UpdateCheck(
+            fetch = { sampleJson },
+            store = store,
+            clock = { 25 * 60 * 60 * 1000L },
+            currentVersion = "0.4.0",
+        )
+        assertEquals(ManualCheckResult.Newer("v0.5.0"), check.checkNow())
+        assertEquals("v0.5.0", store.updateLatestVersion.first())
+    }
+
+    @Test fun checkNowClearsMatchingDismissal() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(0L, "v0.5.0")
+        store.setUpdateDismissedVersion("v0.5.0")
+        val check = UpdateCheck(
+            fetch = { sampleJson },
+            store = store,
+            clock = { 25 * 60 * 60 * 1000L },
+            currentVersion = "0.4.0",
+        )
+        assertEquals(ManualCheckResult.Newer("v0.5.0"), check.checkNow())
+        assertNull(store.updateDismissedVersion.first())
+    }
+
+    @Test fun checkNowFetchFailureKeepsLatest() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(0L, "0.4.0")
+        val now = 25 * 60 * 60 * 1000L
+        val check = UpdateCheck(
+            fetch = { throw java.io.IOException("offline") },
+            store = store,
+            clock = { now },
+            currentVersion = "0.4.0",
+        )
+        assertEquals(ManualCheckResult.Failed, check.checkNow())
+        assertEquals(now, store.updateLastCheckMs.first())
+        assertEquals("0.4.0", store.updateLatestVersion.first())
+    }
+
+    @Test fun checkNowUnparsableIsFailed() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(0L, "0.4.0")
+        val check = UpdateCheck(
+            fetch = { """{"name": "no tag here"}""" },
+            store = store,
+            clock = { 25 * 60 * 60 * 1000L },
+            currentVersion = "0.4.0",
+        )
+        assertEquals(ManualCheckResult.Failed, check.checkNow())
+        assertEquals("0.4.0", store.updateLatestVersion.first())
+    }
+
+    @Test fun checkNowIgnoresThrottle() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(1_000L, "v0.5.0")
+        var calls = 0
+        val check = UpdateCheck(
+            fetch = { calls++; sampleJson },
+            store = store,
+            clock = { 1_000L + 60_000L },
+            currentVersion = "0.5.0",
+        )
+        assertEquals(ManualCheckResult.UpToDate, check.checkNow())
+        assertEquals(1, calls)
+        assertEquals(1_000L + 60_000L, store.updateLastCheckMs.first())
     }
 
     @Test fun bannerHiddenWhenDismissed() {

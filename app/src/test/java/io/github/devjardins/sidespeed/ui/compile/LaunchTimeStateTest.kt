@@ -92,6 +92,7 @@ class LaunchTimeStateTest {
         override suspend fun setRestorePending(r: RestorePending?) { pending.value = r }
         override val updateDismissedVersion: Flow<String?> = MutableStateFlow(null)
         override suspend fun setUpdateDismissedVersion(v: String) {}
+        override suspend fun clearUpdateDismissedVersion() {}
         override val updateLastCheckMs: Flow<Long> = MutableStateFlow(0L)
         override val updateLatestVersion: Flow<String?> = MutableStateFlow(null)
         override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}

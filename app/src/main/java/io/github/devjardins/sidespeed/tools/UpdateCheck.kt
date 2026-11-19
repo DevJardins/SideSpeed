@@ -66,6 +66,13 @@ fun githubReleaseFetch(): suspend () -> String = {
     }
 }
 
+/** Outcome of a manual update check, for the About screen's result line. */
+sealed interface ManualCheckResult {
+    data object UpToDate : ManualCheckResult
+    data class Newer(val tag: String) : ManualCheckResult
+    data object Failed : ManualCheckResult
+}
+
 /**
  * Polls GitHub for a newer SideSpeed release, at most once per 24 h. Every outcome is silent:
  * offline, rate-limited, or unparsable answers keep the previous latest version (if any) and just
@@ -86,6 +93,26 @@ class UpdateCheck(
             null
         }
         store.setUpdateCheck(now, latest ?: store.updateLatestVersion.first())
+    }
+
+    /**
+     * Manual check for the About screen: same fetch and store behaviour as [checkIfDue], but
+     * ignores the 24 h throttle and always restarts the daily timer. A newer release clears a
+     * matching dismissal so the Apps banner shows again.
+     */
+    suspend fun checkNow(): ManualCheckResult {
+        val now = clock()
+        val latest = try {
+            parseLatestTag(fetch())
+        } catch (_: Exception) {
+            null
+        }
+        store.setUpdateCheck(now, latest ?: store.updateLatestVersion.first())
+        if (latest == null) return ManualCheckResult.Failed
+        // Same numeric comparison as shouldShowBanner; a garbage tag compares equal, never newer.
+        if (compareVersions(latest, currentVersion) <= 0) return ManualCheckResult.UpToDate
+        if (store.updateDismissedVersion.first() == latest) store.clearUpdateDismissedVersion()
+        return ManualCheckResult.Newer(latest)
     }
 
     /** The stored latest version, for callers that need it right after [checkIfDue]. */

@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.sun.security.android)
     implementation(libs.conscrypt.android)
     implementation(libs.hiddenapibypass)
+    implementation(libs.zxing.core)
 
     constraints {
         implementation(libs.bouncycastle.bcprov.jdk15to18) {
