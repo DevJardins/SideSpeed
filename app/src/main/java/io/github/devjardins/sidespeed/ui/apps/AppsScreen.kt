@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -102,6 +103,28 @@ fun AppsScreen(
     // Give the D-pad a starting point: the active filter takes focus when the screen opens.
     val filterFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { filterFocus.requestFocus() } }
+    var showAutoOptimize by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
+    val dialogFocus = remember { FocusRequester() }
+    LaunchedEffect(showAutoOptimize) {
+        if (showAutoOptimize) runCatching { dialogFocus.requestFocus() }
+    }
+    val historyBackFocus = remember { FocusRequester() }
+    LaunchedEffect(showHistory) {
+        if (showHistory) runCatching { historyBackFocus.requestFocus() }
+    }
+
+    if (showHistory) {
+        BackHandler { showHistory = false }
+        SsScreen {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Auto-optimize history", style = SsType.Headline, color = SsColors.TextPrimary)
+                HistoryList(history)
+                SsButton("Back", onClick = { showHistory = false }, modifier = Modifier.focusRequester(historyBackFocus))
+            }
+        }
+        return
+    }
 
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -149,7 +172,7 @@ fun AppsScreen(
                         Text(f.label, style = SsType.Body)
                     }
                 }
-                SsButton(onClick = {}, contentPadding = tabButtonPadding) {
+                SsButton(onClick = { showAutoOptimize = true }, contentPadding = tabButtonPadding) {
                     Text(
                         optimizeMode?.let { autoOptimizeButtonLabel(it) } ?: "Auto-optimize",
                         style = SsType.Body,
@@ -206,6 +229,30 @@ fun AppsScreen(
                             }
                         }
                     }
+                }
+            }
+            if (showAutoOptimize) {
+                BackHandler { showAutoOptimize = false }
+                val current = optimizeMode
+                Text("Auto-optimize", style = SsType.Title, color = SsColors.TextPrimary)
+                if (current != null) {
+                    AutoOptimizeMode.entries.forEach { m ->
+                        SsButton(
+                            (if (m == current) "✓ " else "") + autoOptimizeOption(m).title,
+                            onClick = { onAutoOptimizeMode(m) },
+                            selected = m == current,
+                            modifier = if (m == current) Modifier.focusRequester(dialogFocus) else Modifier,
+                        )
+                    }
+                    Text(
+                        autoOptimizeOption(current).description,
+                        style = SsType.Caption,
+                        color = SsColors.TextSecondary,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SsButton("History", onClick = { showAutoOptimize = false; showHistory = true })
+                    SsButton("Close", onClick = { showAutoOptimize = false })
                 }
             }
         }
