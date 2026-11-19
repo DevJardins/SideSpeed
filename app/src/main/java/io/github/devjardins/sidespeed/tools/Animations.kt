@@ -52,6 +52,7 @@ class Animations(
             is ToolResult.Ok -> read.value
             is ToolResult.HelperDown -> return ToolResult.HelperDown
             is ToolResult.HelperOutdated -> return ToolResult.HelperOutdated
+            is ToolResult.Refused -> return ToolResult.Refused
             is ToolResult.Failed -> return read
         }
         val hadOriginals = store.animationOriginals.first() != null
@@ -91,6 +92,7 @@ class Animations(
             is ToolResult.Ok -> read.value
             is ToolResult.HelperDown -> return ToolResult.HelperDown
             is ToolResult.HelperOutdated -> return ToolResult.HelperOutdated
+            is ToolResult.Refused -> return ToolResult.Refused
             is ToolResult.Failed -> return read
         }
         val values = mapOf(
@@ -120,6 +122,7 @@ class Animations(
                 is ToolResult.Ok -> snapshot[key] = result.value
                 is ToolResult.HelperDown -> return ToolResult.HelperDown
                 is ToolResult.HelperOutdated -> return ToolResult.HelperOutdated
+            is ToolResult.Refused -> return ToolResult.Refused
                 is ToolResult.Failed -> return result
             }
         }

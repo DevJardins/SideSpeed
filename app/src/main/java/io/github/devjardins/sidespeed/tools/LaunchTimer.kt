@@ -24,6 +24,10 @@ class LaunchTimer(
                     commands.bringBack()
                     return ToolResult.HelperOutdated
                 }
+                is ToolResult.Refused -> {
+                    commands.bringBack()
+                    return ToolResult.Refused
+                }
                 is ToolResult.Failed -> {
                     commands.bringBack()
                     return result

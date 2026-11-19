@@ -52,6 +52,7 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
         is ToolResult.Ok -> null
         is ToolResult.HelperDown -> "Helper not running. Start the helper, then try again."
         is ToolResult.HelperOutdated -> "Restart the helper to use this."
+        is ToolResult.Refused -> "The helper refused this setting."
         is ToolResult.Failed -> result.message
     }
 

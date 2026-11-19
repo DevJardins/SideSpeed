@@ -9,6 +9,8 @@ sealed interface ToolResult<out T> {
     data class Ok<T>(val value: T) : ToolResult<T>
     data object HelperDown : ToolResult<Nothing>
     data object HelperOutdated : ToolResult<Nothing>
+    /** The helper refused the command (exit 126: outside its allowlist). Not a stale helper. */
+    data object Refused : ToolResult<Nothing>
     data class Failed(val message: String) : ToolResult<Nothing>
 }
 
@@ -20,8 +22,9 @@ enum class AnimationKey(val key: String) {
 
 /**
  * Typed wrapper over the shell-uid helper for the Tools screen. Every call checks [helperUp] first
- * (helper not running → [ToolResult.HelperDown]) and maps exit 126 (`EXIT_REFUSED`, the stale-helper
- * refusal) to [ToolResult.HelperOutdated] so callers show "Restart the helper to use this".
+ * (helper not running → [ToolResult.HelperDown]) and maps exit 126 (`EXIT_REFUSED`, the allowlist
+ * refusal) to [ToolResult.Refused]. [ToolResult.HelperOutdated] stays for a genuinely stale helper
+ * (old helper binary that predates the command); refusal alone never means "restart the helper".
  */
 class ToolsCommands(
     private val runner: CommandRunner,
@@ -55,6 +58,7 @@ class ToolsCommands(
             }
             is ToolResult.HelperDown -> ToolResult.HelperDown
             is ToolResult.HelperOutdated -> ToolResult.HelperOutdated
+            is ToolResult.Refused -> ToolResult.Refused
             is ToolResult.Failed -> result
         }
 
@@ -64,6 +68,7 @@ class ToolsCommands(
         is ToolResult.Ok -> ToolResult.Ok(f(value))
         is ToolResult.HelperDown -> this
         is ToolResult.HelperOutdated -> this
+        is ToolResult.Refused -> this
         is ToolResult.Failed -> this
     }
 
@@ -82,7 +87,7 @@ class ToolsCommands(
             return ToolResult.HelperDown
         }
         return when (exit) {
-            HelperProtocol.EXIT_REFUSED -> ToolResult.HelperOutdated
+            HelperProtocol.EXIT_REFUSED -> ToolResult.Refused
             0 -> ToolResult.Ok(lines)
             else -> ToolResult.Failed(lines.lastOrNull()?.trim().orEmpty().ifEmpty { "exit $exit" })
         }

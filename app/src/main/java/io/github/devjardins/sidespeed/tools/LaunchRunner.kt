@@ -409,6 +409,7 @@ class LaunchRunner(
         is ToolResult.Ok -> "Couldn't time this app"
         is ToolResult.HelperDown -> "Helper not running"
         is ToolResult.HelperOutdated -> "Restart the helper to use this"
+        is ToolResult.Refused -> "Helper refused the command"
         is ToolResult.Failed -> "Couldn't time this app"
     }
 }
