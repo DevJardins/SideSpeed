@@ -179,6 +179,7 @@ fun ExtrasScreen(
                             },
                         )
                     }
+                    status?.let { Text(it, style = SsType.Body, color = SsColors.TextBody) }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsButton(
                             "Turn off selected",
@@ -259,7 +260,6 @@ fun ExtrasScreen(
                     SsButton("Cancel", onClick = { confirmHome = null })
                 }
             }
-            status?.let { Text(it, style = SsType.Body, color = SsColors.TextBody) }
         }
     }
 }

@@ -64,6 +64,13 @@ fun formatRestoreOutcome(o: ExtrasRestoreOutcome): String = buildString {
     if (o.failed > 0) append(" Failed ${o.failed}.")
 }
 
+internal fun displayLabel(label: String?, pkg: String): String {
+    if (label.isNullOrBlank()) return pkg
+    val trimmed = label.trim()
+    if (!trimmed.contains(' ') && trimmed.contains('.')) return pkg
+    return trimmed
+}
+
 /** PackageManager facts the extras screen needs; all testable without a device. */
 interface ExtrasQueries {
     fun labelOf(pkg: String): String?
@@ -189,7 +196,7 @@ class Extras(
         failedByPkg: Map<String, String>,
         forceNonSelectable: Boolean,
     ): ExtrasRow {
-        val label = queries.labelOf(entry.pkg) ?: entry.pkg
+        val label = displayLabel(queries.labelOf(entry.pkg), entry.pkg)
         val failedLine = failedByPkg[entry.pkg]
         if (isProtected(entry.pkg, entry.setup, homePkg, facts)) {
             return ExtrasRow(entry, label, ExtrasRowKind.Protected, selectable = false, checked = false, caption = null, failedLine)
