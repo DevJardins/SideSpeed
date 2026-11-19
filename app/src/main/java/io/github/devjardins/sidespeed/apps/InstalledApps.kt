@@ -7,7 +7,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
-import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.compile.ActivityClassName
 
 /** Installed version identity used to match a stored launch-time result. */
 data class PkgVersion(val versionCode: Long, val lastUpdateTime: Long)
@@ -81,7 +81,8 @@ class InstalledApps(context: Context) : AppSource {
      * Fully-qualified launch activity class for [pkg], leanback first then
      * normal launcher, or null when SideSpeed cannot open the app. Short names
      * (`".Main"`, `"Main"`) are resolved against the package; anything that is
-     * not a valid dotted class name is rejected so the helper allowlist holds.
+     * not a valid binary class name ([ActivityClassName], including nested
+     * `Outer$Inner` activities) is rejected so the helper allowlist holds.
      */
     fun launchActivity(pkg: String): String? {
         for (category in listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)) {
@@ -98,7 +99,7 @@ class InstalledApps(context: Context) : AppSource {
                 "." !in name -> "$pkg.$name"
                 else -> name
             }
-            PackageName.parse(qualified)?.let { return it.value }
+            ActivityClassName.parse(qualified)?.let { return it.value }
         }
         return null
     }

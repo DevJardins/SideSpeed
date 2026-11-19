@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.helper
 
+import io.github.devjardins.sidespeed.compile.ActivityClassName
 import io.github.devjardins.sidespeed.compile.PackageName
 
 /**
@@ -32,8 +33,12 @@ object CommandAllowlist {
     /** Narrow decimal form for animation scales: `0`, `0.5`, `1.5`, `10`; refuses `11` and wider. */
     private val ANIMATION_VALUE = Regex("^(0|[1-9][0-9]?)(\\.[0-9]{1,2})?$")
 
-    /** Characters a valid request can contain at all: letters, digits, '.', '_', '-' and single spaces. */
-    private val ALLOWED_CHARS = Regex("^[A-Za-z0-9._ -]+$")
+    /**
+     * Characters a valid request can contain at all: letters, digits, '.', '_', '-', '$' and single
+     * spaces. `$` is admitted here only so the launch-time class token can reach its own validator;
+     * every other command's per-token validation still rejects it.
+     */
+    private val ALLOWED_CHARS = Regex("^[A-Za-z0-9._ \$-]+$")
 
     /** A ping nonce: 16 to 64 ASCII letters and digits. */
     private val NONCE = Regex("^[A-Za-z0-9]{16,64}$")
@@ -119,12 +124,13 @@ object CommandAllowlist {
 
     /**
      * A launch-timing request: validated package + fully-qualified activity class tokens, mapped to
-     * `-n pkg/cls`. The class uses the same rules as a package name (no leading `.`); the app resolves
-     * short names to full ones before sending.
+     * `-n pkg/cls`. The class is a Java binary name ([ActivityClassName], so nested activities like
+     * `com.foo.Main$Launcher` are allowed); it is the only token in any command that may contain
+     * `$`. The app resolves short names to full ones before sending.
      */
     private fun launchTime(pkgRaw: String, clsRaw: String): List<String>? {
         val p = pkg(pkgRaw) ?: return null
-        val c = pkg(clsRaw) ?: return null
+        val c = ActivityClassName.parse(clsRaw)?.value?.takeIf { it == clsRaw } ?: return null
         return listOf("/system/bin/am", "start", "-W", "-S", "-n", "$p/$c")
     }
 }
