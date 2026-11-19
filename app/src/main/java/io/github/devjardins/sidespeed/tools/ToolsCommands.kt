@@ -29,7 +29,7 @@ enum class AnimationKey(val key: String) {
 class ToolsCommands(
     private val runner: CommandRunner,
     private val helperUp: suspend () -> Boolean,
-) {
+) : HomeCommands {
     suspend fun trimCaches(targetFreeBytes: Long): ToolResult<Unit> =
         run("pm trim-caches $targetFreeBytes").map { }
 
@@ -63,6 +63,23 @@ class ToolsCommands(
         }
 
     suspend fun bringBack(): ToolResult<Unit> = run("bring-back").map { }
+
+    override suspend fun setHome(pkg: String, cls: String): ToolResult<Unit> =
+        run("set-home $pkg $cls").map { }
+
+    override suspend fun enablePackage(pkg: String): ToolResult<Unit> =
+        run("pm enable $pkg").map { }
+
+    suspend fun disablePackage(pkg: String): ToolResult<Unit> =
+        run("pm disable-user --user 0 $pkg").map { }
+
+    /** Packages disabled for user 0, parsed from `pm list packages -d --user 0` (`package:<pkg>` lines). */
+    suspend fun disabledPackages(): ToolResult<Set<String>> =
+        run("pm list packages -d --user 0").map { lines ->
+            lines.mapNotNull { line ->
+                line.trim().removePrefix("package:").takeIf { it != line.trim() && it.isNotEmpty() }
+            }.toSet()
+        }
 
     private fun <T, R> ToolResult<T>.map(f: (T) -> R): ToolResult<R> = when (this) {
         is ToolResult.Ok -> ToolResult.Ok(f(value))

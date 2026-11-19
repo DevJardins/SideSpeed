@@ -44,11 +44,12 @@ Anything still in speed-profile or a lower filter is upgraded to speed. The tab 
 
 ## Tools
 
-The **Tools** button on the Apps screen opens three cards:
+The **Tools** button on the Apps screen opens four cards:
 
 - **Box health:** device name, Android version, memory, storage and whether the helper is running.
 - **Free up space:** shows free and total storage. **Clean up now** clears app caches (apps keep their data but may download artwork again). **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free: while the helper runs, SideSpeed checks every few hours and clears only as much cache as it needs. It never runs on a timer. Off by default.
 - **Faster animations:** Normal, Faster or Off for Android's window, transition and animator scales. Menus and screen changes move faster; apps do not load faster. **Restore original** puts back the values you had before. On Fire TV, SideSpeed leaves the animator scale alone, because changing it stops the home screen's Settings menu from opening.
+- **Home screen:** on Google TV and Android TV, pick an installed home screen app as Home. SideSpeed remembers the home screen the TV had first, and **Back to stock** returns to it. If no other home screen app is installed, install another home screen app first, then come back here. On Fire TV this card only says Fire TV doesn't allow other home screens.
 
 **Launch time.** On an app's compile screen, SideSpeed can time how long the app takes to open before and after compiling (it opens the app briefly, three times each side, and shows the median), for example `1.9 s → 1.1 s (42% faster)`. **Measure** re-checks any app: it resets the app's compiled code, times it, compiles it back and times it again. The result is kept per app version; after an update it is marked as from an older version.
 

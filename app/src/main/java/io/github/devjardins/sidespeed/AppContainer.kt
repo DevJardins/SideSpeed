@@ -116,6 +116,17 @@ class AppContainer(context: Context) {
         )
     }
 
+    /** Home screen switcher: in-app PackageManager reads, helper writes. */
+    val homeSwitcher: io.github.devjardins.sidespeed.tools.HomeSwitcher by lazy {
+        io.github.devjardins.sidespeed.tools.HomeSwitcher(
+            queries = io.github.devjardins.sidespeed.tools.AndroidHomeQueries(appContext),
+            commands = toolsCommands,
+            store = toolsStore,
+            ownPackage = appContext.packageName,
+            isFireOs = isFireOs,
+        )
+    }
+
     val deviceInfo: DeviceInfo by lazy { AndroidDeviceInfo(appContext) }
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }
 

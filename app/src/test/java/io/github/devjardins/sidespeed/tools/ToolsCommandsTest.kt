@@ -116,6 +116,46 @@ class ToolsCommandsTest {
         assertEquals(ToolResult.Refused, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
     }
 
+    @Test fun setHomeSendsExactForm() = runTest {
+        val (fake, commands) = commands()
+        fake.on("set-home com.example.home com.example.home.MainActivity") { emptyList<String>() to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.setHome("com.example.home", "com.example.home.MainActivity"))
+        assertEquals(listOf("set-home com.example.home com.example.home.MainActivity"), fake.commands)
+    }
+
+    @Test fun enableAndDisableSendExactForms() = runTest {
+        val (fake, commands) = commands()
+        fake.on("pm enable com.example.bloat") { emptyList<String>() to 0 }
+        fake.on("pm disable-user --user 0 com.example.bloat") { emptyList<String>() to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.enablePackage("com.example.bloat"))
+        assertEquals(ToolResult.Ok(Unit), commands.disablePackage("com.example.bloat"))
+        assertEquals(
+            listOf("pm enable com.example.bloat", "pm disable-user --user 0 com.example.bloat"),
+            fake.commands,
+        )
+    }
+
+    @Test fun disabledPackagesParsesList() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("pm list packages -d --user 0") {
+                listOf("package:com.example.off", "package:com.example.alsooff") to 0
+            }
+        }
+        assertEquals(
+            ToolResult.Ok(setOf("com.example.off", "com.example.alsooff")),
+            commands.disabledPackages(),
+        )
+    }
+
+    @Test fun homeCommandsHelperDownShortCircuits() = runTest {
+        val (fake, commands) = commands(helperUp = false)
+        assertEquals(ToolResult.HelperDown, commands.setHome("com.example.home", "com.example.home.MainActivity"))
+        assertEquals(ToolResult.HelperDown, commands.enablePackage("com.example.bloat"))
+        assertEquals(ToolResult.HelperDown, commands.disablePackage("com.example.bloat"))
+        assertEquals(ToolResult.HelperDown, commands.disabledPackages())
+        assertTrue(fake.commands.isEmpty())
+    }
+
     @Test fun bringBackOk() = runTest {
         val (fake, commands) = commands()
         fake.on("bring-back") { listOf("Starting: Intent {}") to 0 }

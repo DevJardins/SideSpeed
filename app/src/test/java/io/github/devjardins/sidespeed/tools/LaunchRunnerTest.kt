@@ -75,6 +75,8 @@ class LaunchRunnerTest {
         override val updateLastCheckMs: Flow<Long> = MutableStateFlow(0L)
         override val updateLatestVersion: Flow<String?> = MutableStateFlow(null)
         override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
+        override val originalHome: Flow<String?> = MutableStateFlow(null)
+        override suspend fun setOriginalHome(v: String?) {}
     }
 
     private class ScriptRunner(

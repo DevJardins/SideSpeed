@@ -28,15 +28,15 @@ import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
 
 /**
- * The Tools screen shell: a scrollable column with a title and three card slots in fixed order —
- * [health] (Box health), [space] (Free up space), [animations] (Animations). Wave 1 replaces each
- * placeholder with its own composable, one line each at the call site.
+ * The Tools screen shell: a scrollable column with a title and four card slots in fixed order —
+ * [health] (Box health), [space] (Free up space), [animations] (Animations), [home] (Home screen).
  */
 @Composable
 fun ToolsScreen(
     health: @Composable () -> Unit,
     space: @Composable () -> Unit,
     animations: @Composable () -> Unit,
+    home: @Composable () -> Unit,
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -65,6 +65,7 @@ fun ToolsScreen(
             health()
             space()
             animations()
+            home()
         }
     }
 }
