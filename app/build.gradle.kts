@@ -21,8 +21,8 @@ android {
         applicationId = "io.github.devjardins.sidespeed"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.5.1"
+        versionCode = 7
+        versionName = "0.5.2"
         buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
     }
 
