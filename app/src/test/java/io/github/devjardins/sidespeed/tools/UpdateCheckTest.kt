@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /** In-memory [ToolsStore] for update-check tests. */
@@ -80,6 +81,32 @@ class UpdateCheckTest {
     @Test fun parseLatestTagMissingIsNull() {
         assertNull(parseLatestTag("""{"name": "no tag here"}"""))
         assertNull(parseLatestTag("not json at all"))
+    }
+
+    private fun releaseDownload(body: ByteArray) = io.github.devjardins.sidespeed.update.UpdateDownload(
+        open = {
+            io.github.devjardins.sidespeed.update.UpdateDownload.Opened(
+                "https://api.github.com/repos/DevJardins/SideSpeed/releases/latest",
+                body.size.toLong(),
+                java.io.ByteArrayInputStream(body),
+            )
+        },
+    )
+
+    @Test fun release_fetch_reads_small_body() = runTest {
+        val body = """{"tag_name":"v0.5.0"}""".toByteArray()
+        assertEquals(String(body), githubReleaseFetch(releaseDownload(body))())
+    }
+
+    @Test fun release_fetch_caps_body_at_256k() = runTest {
+        // Exactly the cap still reads; one byte over must throw so UpdateCheck stays silent.
+        val cap = 256 * 1024
+        assertEquals(cap, githubReleaseFetch(releaseDownload(ByteArray(cap)))().length)
+        try {
+            githubReleaseFetch(releaseDownload(ByteArray(cap + 1)))()
+            fail("expected cap overflow")
+        } catch (_: IllegalStateException) {
+        }
     }
 
     @Test fun checkSkippedWhenCheckedRecently() = runTest {

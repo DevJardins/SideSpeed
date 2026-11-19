@@ -1,10 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
-import kotlinx.coroutines.Dispatchers
+import io.github.devjardins.sidespeed.update.UpdateDownload
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
 
 /** Minimum time between update checks: the release endpoint is polled at most once per 24 h. */
 const val UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L
@@ -48,22 +45,17 @@ fun shouldShowBanner(latest: String?, dismissed: String?, current: String): Bool
     return compareVersions(latest, current) > 0
 }
 
-/** Production fetch: the latest SideSpeed release metadata. Failures (offline, rate limit) throw. */
-fun githubReleaseFetch(): suspend () -> String = {
-    withContext(Dispatchers.IO) {
-        val conn = (URL("https://api.github.com/repos/DevJardins/SideSpeed/releases/latest")
-            .openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10_000
-            readTimeout = 10_000
-            setRequestProperty("User-Agent", "SideSpeed")
-            setRequestProperty("Accept", "application/vnd.github+json")
-        }
-        try {
-            conn.inputStream.bufferedReader().use { it.readText() }
-        } finally {
-            conn.disconnect()
-        }
-    }
+/** Cap for the `releases/latest` body: metadata is tiny; anything larger is a glitch or abuse. */
+const val RELEASE_CHECK_MAX_BYTES = 256 * 1024L
+
+/** Production fetch: the latest SideSpeed release metadata. Failures (offline, rate limit, over-cap) throw. */
+fun githubReleaseFetch(
+    download: UpdateDownload = UpdateDownload(UpdateDownload::httpOpen),
+): suspend () -> String = {
+    download.fetchText(
+        "https://api.github.com/repos/DevJardins/SideSpeed/releases/latest",
+        maxBytes = RELEASE_CHECK_MAX_BYTES,
+    ).getOrThrow()
 }
 
 /** Outcome of a manual update check, for the About screen's result line. */
