@@ -8,7 +8,6 @@ import io.github.devjardins.sidespeed.ui.apps.headerCaption
 import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.BadgeSource
-import io.github.devjardins.sidespeed.ui.apps.ManualResult
 import io.github.devjardins.sidespeed.ui.apps.Pill
 import io.github.devjardins.sidespeed.ui.apps.PillTone
 import io.github.devjardins.sidespeed.ui.apps.pillFor
@@ -141,11 +140,11 @@ class AppsViewModelTest {
         assertNull(headerCaption(null, null))
     }
 
-    @Test fun manualEntryValidation() {
+    @Test fun findAppValidation() {
         val v = vm(Source(listOf(nuvio)))
-        assertEquals(ManualResult.Invalid, v.manualEntry("com.foo; reboot"))
-        assertEquals(ManualResult.NotInstalled, v.manualEntry("com.not.here"))
-        assertEquals(ManualResult.Valid(nuvio), v.manualEntry(" com.nuvio.tv "))
+        assertNull(v.findApp("com.foo; reboot"))
+        assertNull(v.findApp("com.not.here"))
+        assertEquals(nuvio, v.findApp(" com.nuvio.tv "))
     }
 
     @Test fun listRunsOnInjectedIoDispatcherNotMain() {

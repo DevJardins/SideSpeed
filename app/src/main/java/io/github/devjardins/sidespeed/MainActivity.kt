@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
                 }
                 var selectedMode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
                 var selected by remember { mutableStateOf<AppEntry?>(null) }
-                val app = selected ?: selectedPkg?.let { p -> remember(p) { appsVm.manualEntryApp(p) } }
+                val app = selected ?: selectedPkg?.let { p -> remember(p) { appsVm.findApp(p) } }
                 // The header's address line follows the network: recomputed off the main thread on
                 // every resume and whenever the default network's link properties change or drop.
                 var tvAddress by remember { mutableStateOf<String?>(null) }

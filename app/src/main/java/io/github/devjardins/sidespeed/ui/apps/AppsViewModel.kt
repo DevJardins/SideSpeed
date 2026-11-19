@@ -33,12 +33,6 @@ data class AppsUiState(
     val statusLoading: Boolean = false,
 )
 
-sealed interface ManualResult {
-    data class Valid(val app: AppEntry) : ManualResult
-    data object NotInstalled : ManualResult
-    data object Invalid : ManualResult
-}
-
 enum class PillTone { OK, WARN, NEUTRAL }
 
 data class Pill(val label: String, val tone: PillTone)
@@ -125,13 +119,15 @@ class AppsViewModel(
 
     fun pill(pkg: String): Pill? = _state.value.let { pillFor(it.statusLoading, it.statuses[pkg]) }
 
-    fun manualEntry(raw: String): ManualResult {
-        val pkg = PackageName.parse(raw) ?: return ManualResult.Invalid
-        return source.find(pkg.value)?.let { ManualResult.Valid(it) } ?: ManualResult.NotInstalled
+    /**
+     * Resolves a package name to its installed app, or null when the name is not a
+     * valid package name or the app is not installed. Used to restore a selected
+     * app after process/config restore (the package may no longer be installed).
+     */
+    fun findApp(raw: String): AppEntry? {
+        val pkg = PackageName.parse(raw) ?: return null
+        return source.find(pkg.value)
     }
-
-    /** Restores a selected app after process/config restore (package may no longer be installed). */
-    fun manualEntryApp(pkg: String): AppEntry? = (manualEntry(pkg) as? ManualResult.Valid)?.app
 }
 
 class AutoOptimizeOption(val title: String, val description: String)
