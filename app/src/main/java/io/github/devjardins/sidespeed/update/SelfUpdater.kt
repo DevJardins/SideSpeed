@@ -1,7 +1,9 @@
 package io.github.devjardins.sidespeed.update
 
 import android.content.pm.PackageManager
+import android.content.pm.Signature
 import android.os.Build
+import android.util.Log
 import io.github.devjardins.sidespeed.helper.InstallOutcome
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -206,24 +208,47 @@ class SelfUpdater(
 /** Lowercase hex of bytes, for certificate fingerprints. */
 internal fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
+/**
+ * Picks the signer list to trust: [signingInfoSigners] when present and non-empty,
+ * otherwise [legacySignatures]. Null when neither yields a signer, so callers fail closed.
+ * On Android 9 `getPackageArchiveInfo` leaves `signingInfo` null for archives, so the
+ * legacy signatures are the only source there; requesting both flags keeps them populated.
+ */
+internal fun <T> pickSigners(
+    signingInfoSigners: List<T>?,
+    legacySignatures: List<T>?,
+): List<T>? {
+    if (!signingInfoSigners.isNullOrEmpty()) return signingInfoSigners
+    if (!legacySignatures.isNullOrEmpty()) return legacySignatures
+    return null
+}
+
+/** SHA-256 hex set for a non-empty [signatures] list. */
+internal fun signerSha256Set(signatures: List<Signature>): Set<String> {
+    val md = java.security.MessageDigest.getInstance("SHA-256")
+    return signatures.mapTo(mutableSetOf()) { md.digest(it.toByteArray()).toHex() }
+}
+
 /** The installed app's signing-certificate SHA-256 set, or empty when unreadable. */
+@Suppress("DEPRECATION")
 fun installedSignerSha256(pm: PackageManager, packageName: String): Set<String> {
     return try {
-        val info = if (Build.VERSION.SDK_INT >= 28) {
-            pm.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+        val flags = if (Build.VERSION.SDK_INT >= 28) {
+            PackageManager.GET_SIGNING_CERTIFICATES or PackageManager.GET_SIGNATURES
         } else {
-            @Suppress("DEPRECATION")
-            pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            PackageManager.GET_SIGNATURES
         }
+        val info = pm.getPackageInfo(packageName, flags)
         val signatures = if (Build.VERSION.SDK_INT >= 28) {
-            info.signingInfo?.apkContentsSigners
+            @Suppress("DEPRECATION")
+            pickSigners(info.signingInfo?.apkContentsSigners?.toList(), info.signatures?.toList())
         } else {
             @Suppress("DEPRECATION")
-            info.signatures
-        }?.toList() ?: return emptySet()
-        val md = java.security.MessageDigest.getInstance("SHA-256")
-        signatures.mapTo(mutableSetOf()) { md.digest(it.toByteArray()).toHex() }
-    } catch (_: Exception) {
+            info.signatures?.toList()
+        }
+        signatures?.let { signerSha256Set(it) } ?: emptySet()
+    } catch (e: Exception) {
+        Log.w("SideSpeed", "installedSignerSha256: could not read signers", e)
         emptySet()
     }
 }
@@ -232,25 +257,42 @@ fun installedSignerSha256(pm: PackageManager, packageName: String): Set<String> 
  * Production [SelfUpdater.readApkFacts]: package, version and signer set from the APK archive,
  * or null when the file is not a parseable APK.
  */
+@Suppress("DEPRECATION")
 fun readApkFacts(pm: PackageManager, file: File): ApkFacts? {
     return try {
-        val flags = if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES
-        else PackageManager.GET_SIGNATURES
-        val info = pm.getPackageArchiveInfo(file.absolutePath, flags) ?: return null
-        val packageName = info.packageName ?: return null
+        val flags = if (Build.VERSION.SDK_INT >= 28) {
+            PackageManager.GET_SIGNING_CERTIFICATES or PackageManager.GET_SIGNATURES
+        } else {
+            PackageManager.GET_SIGNATURES
+        }
+        val info = pm.getPackageArchiveInfo(file.absolutePath, flags)
+        if (info == null) {
+            Log.w("SideSpeed", "readApkFacts: getPackageArchiveInfo returned null")
+            return null
+        }
+        val packageName = info.packageName
+        if (packageName == null) {
+            Log.w("SideSpeed", "readApkFacts: archive has no package name")
+            return null
+        }
         val versionCode = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
             @Suppress("DEPRECATION")
             info.versionCode.toLong()
         }
         val signatures = if (Build.VERSION.SDK_INT >= 28) {
-            info.signingInfo?.apkContentsSigners
+            @Suppress("DEPRECATION")
+            pickSigners(info.signingInfo?.apkContentsSigners?.toList(), info.signatures?.toList())
         } else {
             @Suppress("DEPRECATION")
-            info.signatures
-        }?.toList() ?: return null
-        val md = java.security.MessageDigest.getInstance("SHA-256")
-        ApkFacts(packageName, versionCode, signatures.mapTo(mutableSetOf()) { md.digest(it.toByteArray()).toHex() })
-    } catch (_: Exception) {
+            info.signatures?.toList()
+        }
+        if (signatures == null) {
+            Log.w("SideSpeed", "readApkFacts: archive has no signers")
+            return null
+        }
+        ApkFacts(packageName, versionCode, signerSha256Set(signatures))
+    } catch (e: Exception) {
+        Log.w("SideSpeed", "readApkFacts: failed to read archive", e)
         null
     }
 }
