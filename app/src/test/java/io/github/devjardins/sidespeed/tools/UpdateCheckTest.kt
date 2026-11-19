@@ -41,6 +41,8 @@ class FakeUpdateStore : ToolsStore {
         lastCheck.value = atMs
         this.latest.value = latest
     }
+    override val originalHome: Flow<String?> = MutableStateFlow(null)
+    override suspend fun setOriginalHome(v: String?) {}
 }
 
 class UpdateCheckTest {
@@ -121,6 +123,37 @@ class UpdateCheckTest {
         )
         check.checkIfDue()
         assertEquals(0, calls)
+    }
+
+    @Test fun intervalIsSixHours() {
+        assertEquals(6 * 60 * 60 * 1000L, UPDATE_CHECK_INTERVAL_MS)
+    }
+
+    @Test fun checkSkippedJustBeforeSixHours() = runTest {
+        val store = FakeUpdateStore()
+        var calls = 0
+        store.setUpdateCheck(1_000L, "0.4.0")
+        val check = UpdateCheck(
+            fetch = { calls++; sampleJson },
+            store = store,
+            clock = { 1_000L + UPDATE_CHECK_INTERVAL_MS - 1L },
+            currentVersion = "0.4.0",
+        )
+        check.checkIfDue()
+        assertEquals(0, calls)
+    }
+
+    @Test fun checkFetchesAtSixHours() = runTest {
+        val store = FakeUpdateStore()
+        store.setUpdateCheck(1_000L, null)
+        val check = UpdateCheck(
+            fetch = { sampleJson },
+            store = store,
+            clock = { 1_000L + UPDATE_CHECK_INTERVAL_MS },
+            currentVersion = "0.4.0",
+        )
+        check.checkIfDue()
+        assertEquals("v0.5.0", store.updateLatestVersion.first())
     }
 
     @Test fun checkFetchesWhenDueAndStoresLatest() = runTest {

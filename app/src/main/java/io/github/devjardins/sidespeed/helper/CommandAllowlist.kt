@@ -102,8 +102,19 @@ object CommandAllowlist {
             t.size == 5 && t[0] == "settings" && t[1] == "put" && t[2] == "global" &&
                 t[3] in ANIMATION_KEYS && animationValue(t[4]) ->
                 listOf("/system/bin/settings", "put", "global", t[3], t[4])
+            t.size == 3 && t[0] == "set-home" ->
+                setHome(t[1], t[2])
+            t.size == 5 && t[0] == "pm" && t[1] == "disable-user" && t[2] == "--user" && t[3] == "0" ->
+                pkg(t[4])?.let { listOf("/system/bin/pm", "disable-user", "--user", "0", it) }
+            t.size == 3 && t[0] == "pm" && t[1] == "enable" ->
+                pkg(t[2])?.let { listOf("/system/bin/pm", "enable", it) }
+            t.size == 6 && t[0] == "pm" && t[1] == "list" && t[2] == "packages" && t[3] == "-d" &&
+                t[4] == "--user" && t[5] == "0" ->
+                listOf("/system/bin/pm", "list", "packages", "-d", "--user", "0")
             t.size == 3 && t[0] == "launch-time" ->
                 launchTime(t[1], t[2])
+            t.size == 1 && t[0] == "home-role" ->
+                listOf("/system/bin/cmd", "role", "get-role-holders", "android.app.role.HOME")
             t.size == 1 && t[0] == "bring-back" ->
                 listOf(
                     "/system/bin/am", "start", "-n",
@@ -132,6 +143,13 @@ object CommandAllowlist {
      * `com.foo.Main$Launcher` are allowed); it is the only token in any command that may contain
      * `$`. The app resolves short names to full ones before sending.
      */
+    /** A set-home request: validated package + class tokens, mapped to `pkg/cls` as one argv element. */
+    private fun setHome(pkgRaw: String, clsRaw: String): List<String>? {
+        val p = pkg(pkgRaw) ?: return null
+        val c = ActivityClassName.parse(clsRaw)?.value?.takeIf { it == clsRaw } ?: return null
+        return listOf("/system/bin/cmd", "package", "set-home-activity", "--user", "0", "$p/$c")
+    }
+
     private fun launchTime(pkgRaw: String, clsRaw: String): List<String>? {
         val p = pkg(pkgRaw) ?: return null
         val c = ActivityClassName.parse(clsRaw)?.value?.takeIf { it == clsRaw } ?: return null

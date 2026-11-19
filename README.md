@@ -12,7 +12,7 @@ The quickest way: install **Downloader** on the TV (from the Amazon Appstore or 
 
 Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
-To update, press **Update now** on the update notice on the Apps screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates at most once a day (or right away from **About** → **Check for updates**, 0.5.2 or later; from 0.5.4 it offers **Update now** straight away) and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. On Fire TV and other Android 9 boxes, Update now works from 0.5.4; on 0.5.2 or 0.5.3, update once with Downloader. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
+To update, press **Update now** on the update notice on the Apps screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates every 6 hours (or right away from **About** → **Check for updates**, 0.5.2 or later; from 0.5.4 it offers **Update now** straight away) and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. On Fire TV and other Android 9 boxes, Update now works from 0.5.4; on 0.5.2 or 0.5.3, update once with Downloader. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
 
 Fire TV Sticks that run Vega OS (instead of Fire OS) are not supported: they cannot run Android apps.
 
@@ -44,11 +44,12 @@ Anything still in speed-profile or a lower filter is upgraded to speed. The tab 
 
 ## Tools
 
-The **Tools** button on the Apps screen opens three cards:
+The **Tools** button on the Apps screen opens four cards:
 
 - **Box health:** device name, Android version, memory, storage and whether the helper is running.
 - **Free up space:** shows free and total storage. **Clean up now** clears app caches (apps keep their data but may download artwork again). **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free: while the helper runs, SideSpeed checks every few hours and clears only as much cache as it needs. It never runs on a timer. Off by default.
 - **Faster animations:** Normal, Faster or Off for Android's window, transition and animator scales. Menus and screen changes move faster; apps do not load faster. **Restore original** puts back the values you had before. On Fire TV, SideSpeed leaves the animator scale alone, because changing it stops the home screen's Settings menu from opening.
+- **Home screen:** on Google TV and Android TV, pick an installed home screen app as Home. SideSpeed remembers the home screen the TV had first, and **Back to stock** returns to it. If no other home screen app is installed, install another home screen app first, then come back here. On Fire TV this card only says Fire TV doesn't allow other home screens.
 
 **Launch time.** On an app's compile screen, SideSpeed can time how long the app takes to open before and after compiling (it opens the app briefly, three times each side, and shows the median), for example `1.9 s → 1.1 s (42% faster)`. **Measure** re-checks any app: it resets the app's compiled code, times it, compiles it back and times it again. The result is kept per app version; after an update it is marked as from an older version.
 

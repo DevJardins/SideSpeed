@@ -38,6 +38,7 @@ import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
 import io.github.devjardins.sidespeed.ui.tools.AnimationsCard
 import io.github.devjardins.sidespeed.ui.tools.HealthCardSlot
+import io.github.devjardins.sidespeed.ui.tools.HomeCard
 import io.github.devjardins.sidespeed.ui.tools.SpaceCard
 import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
@@ -223,6 +224,10 @@ class MainActivity : ComponentActivity() {
                                 Animations(tools.toolsCommands, tools.toolsStore, isFireOs = tools.isFireOs),
                                 tools.toolsStore,
                             )
+                        },
+                        home = {
+                            val c = (application as SideSpeedApp).container
+                            HomeCard(c.homeSwitcher, icons)
                         },
                         onBack = { showTools = false },
                     )

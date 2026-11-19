@@ -44,6 +44,8 @@ private class FakeToolsStore(threshold: CleanupThreshold = CleanupThreshold.OFF)
     override val updateLastCheckMs: Flow<Long> = flowOf(0L)
     override val updateLatestVersion: Flow<String?> = flowOf(null)
     override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
+    override val originalHome: Flow<String?> = flowOf(null)
+    override suspend fun setOriginalHome(v: String?) {}
 }
 
 private data class Fixture(

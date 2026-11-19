@@ -56,6 +56,9 @@ interface ToolsStore {
     val updateLastCheckMs: Flow<Long>
     val updateLatestVersion: Flow<String?>
     suspend fun setUpdateCheck(atMs: Long, latest: String?)
+    /** The original Home (`pkg/cls`) recorded before SideSpeed's first Home change, or null. */
+    val originalHome: Flow<String?>
+    suspend fun setOriginalHome(v: String?)
 }
 
 /** `"<atMs>|<freedBytes>|<skipped>"`; empty middle/last fields decode as null. */
@@ -126,6 +129,7 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     private val dismissedKey = stringPreferencesKey("update_dismissed_version")
     private val lastCheckKey = longPreferencesKey("update_last_check_ms")
     private val latestKey = stringPreferencesKey("update_latest_version")
+    private val originalHomeKey = stringPreferencesKey("original_home")
 
     private fun launchKey(pkg: String) = stringPreferencesKey("$LAUNCH_PREFIX$pkg")
 
@@ -203,6 +207,14 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
         store.edit {
             it[lastCheckKey] = atMs
             if (latest == null) it.remove(latestKey) else it[latestKey] = latest
+        }
+    }
+
+    override val originalHome: Flow<String?> = store.data.map { prefs -> prefs[originalHomeKey] }
+
+    override suspend fun setOriginalHome(v: String?) {
+        store.edit {
+            if (v == null) it.remove(originalHomeKey) else it[originalHomeKey] = v
         }
     }
 }
