@@ -44,6 +44,10 @@ class SelfUpdaterTest {
         helperCalls: MutableList<File> = mutableListOf(),
         fallbackCalls: MutableList<File> = mutableListOf(),
         scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
+        installed: () -> Pair<Long, Set<String>> = { 4L to signer },
+        confirmTimeoutMs: Long = 200,
+        confirmPollMs: Long = 5,
+        fallbackProbe: ((File) -> Unit)? = null,
     ): SelfUpdater {
         val bytes = apkBytes
         val dl = UpdateDownload(open = open ?: { url ->
@@ -58,7 +62,7 @@ class SelfUpdaterTest {
         return SelfUpdater(
             download = dl,
             readApkFacts = { apkFacts },
-            installed = { 4L to signer },
+            installed = installed,
             helperUp = { helperUp },
             helperInstall = { apk ->
                 synchronized(helperCalls) { helperCalls += apk }
@@ -66,11 +70,14 @@ class SelfUpdaterTest {
             },
             fallbackInstall = { apk ->
                 synchronized(fallbackCalls) { fallbackCalls += apk }
+                fallbackProbe?.invoke(apk)
                 fallbackResult
             },
             cacheDir = tmp.root,
             busy = busyFlow ?: flowOf(false),
             scope = scope,
+            confirmTimeoutMs = confirmTimeoutMs,
+            confirmPollMs = confirmPollMs,
         )
     }
 
@@ -171,6 +178,53 @@ class SelfUpdaterTest {
         awaitCalls(fallbackCalls)
         assertEquals(1, helperCalls.size)
         assertEquals(1, fallbackCalls.size)
+    }
+
+    @Test fun impostor_disconnect_after_body_uses_fallback() = runBlocking {
+        val helperCalls = Collections.synchronizedList(mutableListOf<File>())
+        val fallbackCalls = Collections.synchronizedList(mutableListOf<File>())
+        val fallbackSawApk = Collections.synchronizedList(mutableListOf<Boolean>())
+        val u = updater(
+            helperResult = InstallOutcome.Disconnected,
+            fallbackResult = InstallOutcome.Started,
+            helperCalls = helperCalls,
+            fallbackCalls = fallbackCalls,
+            // Record whether the APK still exists at the moment the fallback runs.
+            fallbackProbe = { apk -> fallbackSawApk += apk.exists() },
+        )
+        u.start("v0.5.0")
+        u.awaitState { it is UpdateUiState.Installing }
+        awaitCalls(helperCalls)
+        awaitCalls(fallbackCalls)
+        assertEquals(1, helperCalls.size)
+        assertEquals(1, fallbackCalls.size)
+        assertEquals(listOf(true), fallbackSawApk.toList())
+    }
+
+    @Test fun end_zero_with_version_rise_is_success_without_fallback() = runBlocking {
+        val fallbackCalls = Collections.synchronizedList(mutableListOf<File>())
+        val reads = java.util.concurrent.atomic.AtomicInteger()
+        val u = updater(
+            helperResult = InstallOutcome.Started,
+            fallbackCalls = fallbackCalls,
+            // Baseline read returns 4; once the helper reports END:0 the install lands and reads return 5.
+            installed = { (if (reads.incrementAndGet() <= 2) 4L else 5L) to signer },
+        )
+        u.start("v0.5.0")
+        u.awaitState { it is UpdateUiState.Installing }
+        // Give the confirmation poll time to observe the rise and clean up.
+        withTimeout(5_000) {
+            while (File(tmp.root, "update/SideSpeed.apk").exists()) delay(10)
+        }
+        assertTrue(fallbackCalls.isEmpty())
+    }
+
+    @Test fun end_zero_without_version_rise_is_failed() = runBlocking {
+        val u = updater(helperResult = InstallOutcome.Started)
+        u.start("v0.5.0")
+        val end = u.awaitState { it is UpdateUiState.Failed }
+        assertEquals("The update didn't install.", (end as UpdateUiState.Failed).reason)
+        assertFalse(File(tmp.root, "update/SideSpeed.apk").exists())
     }
 
     @Test fun helper_failed_goes_failed_with_last_line() = runBlocking {

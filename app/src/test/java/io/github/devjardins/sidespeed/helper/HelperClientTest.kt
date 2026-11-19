@@ -376,17 +376,20 @@ class HelperClientTest {
         val gotHeader = ArrayList<String>()
         val gotBody = ArrayList<Byte>()
         handler = { req, s ->
-            gotHeader += req
-            val size = req.removePrefix("install-self ").toInt()
-            val body = ByteArray(size)
-            var off = 0
-            while (off < size) {
-                val n = s.getInputStream().read(body, off, size - off)
-                if (n < 0) break
-                off += n
+            if (req.startsWith("ping")) realHelper(req, s)
+            else {
+                gotHeader += req
+                val size = req.removePrefix("install-self ").toInt()
+                val body = ByteArray(size)
+                var off = 0
+                while (off < size) {
+                    val n = s.getInputStream().read(body, off, size - off)
+                    if (n < 0) break
+                    off += n
+                }
+                gotBody += body.toList()
+                reply(s, "Success", "__END__:0")
             }
-            gotBody += body.toList()
-            reply(s, "Success", "__END__:0")
         }
         assertEquals(InstallOutcome.Started, c.installSelf(apk))
         assertEquals(listOf("install-self 11"), gotHeader.toList())
@@ -400,9 +403,12 @@ class HelperClientTest {
         val apk = tmp.newFile("update.apk")
         apk.writeBytes("hello".toByteArray())
         handler = { req, s ->
-            val size = req.removePrefix("install-self ").toInt()
-            s.getInputStream().readNBytes(size)
-            reply(s, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]", "__END__:1")
+            if (req.startsWith("ping")) realHelper(req, s)
+            else {
+                val size = req.removePrefix("install-self ").toInt()
+                s.getInputStream().readNBytes(size)
+                reply(s, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]", "__END__:1")
+            }
         }
         assertEquals(
             InstallOutcome.Failed(1, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]"),
@@ -413,6 +419,38 @@ class HelperClientTest {
     @Test fun install_self_helper_down_when_no_port() = runBlocking {
         writePort("47310")
         assertEquals(InstallOutcome.HelperDown, client().installSelf(tmp.newFile("a.apk")))
+    }
+
+    @Test fun install_self_reverifies_before_streaming() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        // Impostor takes the port after the ping: it cannot write the ack file.
+        ackOverride = "someoneElsesNonce0123456789abcde"
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        assertEquals(InstallOutcome.HelperDown, c.installSelf(apk))
+        assertTrue(
+            "nothing must be streamed after a failed re-ping: $requests",
+            requests.none { it.startsWith("install-self") },
+        )
+    }
+
+    @Test fun install_self_bare_disconnect_after_body_is_not_success() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        handler = { req, s ->
+            if (req.startsWith("ping")) realHelper(req, s)
+            else {
+                val size = req.removePrefix("install-self ").toInt()
+                s.getInputStream().readNBytes(size)
+                // Impostor reads the body and closes without __END__:0.
+            }
+        }
+        assertEquals(InstallOutcome.Disconnected, c.installSelf(apk))
     }
 
     private companion object {
