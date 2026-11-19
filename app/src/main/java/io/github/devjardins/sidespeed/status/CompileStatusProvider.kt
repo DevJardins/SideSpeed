@@ -11,8 +11,12 @@ import android.net.Uri
 import android.os.Build
 import io.github.devjardins.sidespeed.SideSpeedApp
 import io.github.devjardins.sidespeed.data.DataStorePrefs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 /**
  * Shell-only live compile status, for the Companion's TV card.
@@ -32,7 +36,20 @@ import kotlinx.coroutines.runBlocking
  * then reads as `interrupted`, never `compiling`.
  */
 class CompileStatusProvider : ContentProvider() {
-    override fun onCreate(): Boolean = true
+    /** Latest snapshot; an idle row until the background collector's first pass. Never blocks. */
+    @Volatile private var cached: List<Pair<String, String>> = idleRows()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Volatile private var collectorStarted = false
+
+    /** Test seam: replaces the live/persisted row source read by [refreshOnce]. */
+    internal var refreshSource: (suspend () -> List<Pair<String, String>>?)? = null
+
+    override fun onCreate(): Boolean {
+        ensureCollector()
+        return true
+    }
 
     override fun query(
         uri: Uri,
@@ -41,14 +58,37 @@ class CompileStatusProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
         sortOrder: String?,
     ): Cursor? {
-        val pairs = try {
-            runBlocking { liveRow() ?: context?.persistedRow() }
-        } catch (_: Exception) {
-            null
-        } ?: return null
+        // Served from memory: no runBlocking, no disk, so a binder thread never waits here.
+        ensureCollector()
+        val pairs = currentRows()
         return MatrixCursor(pairs.map { it.first }.toTypedArray()).apply {
             val values: List<Any?> = pairs.map { it.second }
             addRow(values.toTypedArray())
+        }
+    }
+
+    /** The snapshot [query] serves: the latest collector pass, or the idle row before the first. */
+    internal fun currentRows(): List<Pair<String, String>> = cached
+
+    /** One collector pass; keeps the previous snapshot when the source fails or has no row. */
+    internal suspend fun refreshOnce() {
+        val rows = try {
+            refreshSource?.invoke() ?: liveRow() ?: context?.persistedRow()
+        } catch (_: Exception) {
+            null
+        }
+        if (rows != null) cached = rows
+    }
+
+    /** Starts the background collector once, from [onCreate] or lazily from [query]. */
+    @Synchronized private fun ensureCollector() {
+        if (collectorStarted) return
+        collectorStarted = true
+        scope.launch {
+            while (true) {
+                delay(STATUS_SNAPSHOT_REFRESH_MS)
+                refreshOnce()
+            }
         }
     }
 
@@ -86,6 +126,22 @@ class CompileStatusProvider : ContentProvider() {
         ).toWireMap()
     }
 
+    /**
+     * The safe row served before the collector's first pass: idle, nothing in progress,
+     * nothing finished, self not yet known, no version. Same wire shape as every other row.
+     */
+    private fun idleRows(): List<Pair<String, String>> = StatusRow(
+        phase = CompilePhase.IDLE,
+        activePkg = "",
+        activeLabel = "",
+        activeMode = "",
+        activeStartedMs = 0L,
+        queueWaiting = 0,
+        last = null,
+        self = SelfState.PENDING,
+        version = "",
+    ).toWireMap()
+
     override fun getType(uri: Uri): String? = null
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException("read-only")
@@ -97,6 +153,9 @@ class CompileStatusProvider : ContentProvider() {
         throw UnsupportedOperationException("read-only")
 
     companion object {
+        /** Collector cadence: fresh enough for companion polls, cheap enough to run always. */
+        const val STATUS_SNAPSHOT_REFRESH_MS = 2_000L
+
         @Volatile private var debuggableCache: Boolean? = null
 
         private fun Context.cachedDebuggable(): Boolean? {
