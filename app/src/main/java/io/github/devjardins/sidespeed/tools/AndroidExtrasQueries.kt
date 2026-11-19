@@ -23,32 +23,31 @@ class AndroidExtrasQueries(context: Context, private val ownPackage: String) : E
         false
     }
 
-    override fun settingsHandlerPackages(): Set<String> = run {
+    override fun settingsHandlerPackages(): Set<String>? = run {
         val intent = Intent(Settings.ACTION_SETTINGS)
         queryPackages(intent)
     }
 
-    override fun tvInputHardwarePackages(): Set<String> {
+    override fun tvInputHardwarePackages(): Set<String>? = try {
         val out = mutableSetOf<String>()
-        try {
-            val packages = if (Build.VERSION.SDK_INT >= 33) {
-                pm.getInstalledPackages(
-                    PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()),
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-            }
-            for (info in packages) {
-                val perms = info.requestedPermissions ?: continue
-                if ("android.permission.TV_INPUT_HARDWARE" in perms) out += info.packageName
-            }
-        } catch (_: Exception) {
+        val packages = if (Build.VERSION.SDK_INT >= 33) {
+            pm.getInstalledPackages(
+                PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
         }
-        return out
+        for (info in packages) {
+            val perms = info.requestedPermissions ?: continue
+            if ("android.permission.TV_INPUT_HARDWARE" in perms) out += info.packageName
+        }
+        out
+    } catch (_: Exception) {
+        null
     }
 
-    private fun queryPackages(intent: Intent): Set<String> = try {
+    private fun queryPackages(intent: Intent): Set<String>? = try {
         val matches = if (Build.VERSION.SDK_INT >= 33) {
             pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
         } else {
@@ -57,6 +56,6 @@ class AndroidExtrasQueries(context: Context, private val ownPackage: String) : E
         }
         matches.mapNotNull { it.activityInfo?.packageName }.toSet()
     } catch (_: Exception) {
-        emptySet()
+        null
     }
 }

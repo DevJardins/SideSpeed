@@ -209,7 +209,6 @@ class MainActivity : ComponentActivity() {
                         ExtrasScreen(
                             extras = c.extras(forcedExtrasListId),
                             index = c.extrasIndex(),
-                            commands = c.toolsCommands,
                             homeSwitcher = c.homeSwitcher,
                             onBack = { showExtras = false },
                         )

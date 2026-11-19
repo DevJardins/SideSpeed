@@ -36,8 +36,7 @@ import io.github.devjardins.sidespeed.tools.ExtrasRow
 import io.github.devjardins.sidespeed.tools.ExtrasRowKind
 import io.github.devjardins.sidespeed.tools.ExtrasRunStop
 import io.github.devjardins.sidespeed.tools.HomeSwitcher
-import io.github.devjardins.sidespeed.tools.ToolResult
-import io.github.devjardins.sidespeed.tools.ToolsCommands
+import io.github.devjardins.sidespeed.tools.formatRestoreOutcome
 import io.github.devjardins.sidespeed.tools.formatRunOutcome
 import io.github.devjardins.sidespeed.tools.upstreamCommitShort
 import io.github.devjardins.sidespeed.ui.theme.SsButton
@@ -53,7 +52,6 @@ import kotlinx.coroutines.launch
 fun ExtrasScreen(
     extras: Extras,
     index: ExtrasIndex,
-    commands: ToolsCommands,
     homeSwitcher: HomeSwitcher,
     onBack: () -> Unit,
 ) {
@@ -71,27 +69,39 @@ fun ExtrasScreen(
     var confirmHome by remember { mutableStateOf<ExtrasRow?>(null) }
     var restoreEnabled by remember { mutableStateOf(false) }
     var homeLabelForConfirm by remember { mutableStateOf<String?>(null) }
+    var rowFailures by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var helperBlock by remember { mutableStateOf<String?>(null) }
+    var protectionFailed by remember { mutableStateOf(false) }
 
     val match = remember(refresh) {
         extras.match(Build.MANUFACTURER, Build.MODEL, Build.DEVICE)
     }
 
-    LaunchedEffect(match, variantIndex, refresh) {
+    LaunchedEffect(match, variantIndex, refresh, rowFailures) {
         when (val m = match) {
             is ExtrasMatchResult.Matched -> {
                 val meta = m.variants.getOrNull(variantIndex) ?: m.variants.first()
                 activeMeta = meta
-                val disabled = (commands.disabledPackages() as? ToolResult.Ok)?.value.orEmpty()
-                rows = extras.rows(meta, disabled)
-                rows.filter { it.selectable }.forEach { row ->
-                    if (row.entry.pkg !in checked) checked[row.entry.pkg] = row.checked
+                val result = extras.refresh(meta, rowFailures)
+                helperBlock = result.helperMessage
+                protectionFailed = result.protectionCheckFailed
+                if (result.helperMessage != null) {
+                    rows = emptyList()
+                    restoreEnabled = false
+                } else {
+                    rows = result.rows
+                    restoreEnabled = result.recordedCount > 0
+                    rows.filter { it.selectable }.forEach { row ->
+                        if (row.entry.pkg !in checked) checked[row.entry.pkg] = row.checked
+                    }
                 }
-                restoreEnabled = extras.recordedCount() > 0
             }
             else -> {
                 activeMeta = null
                 rows = emptyList()
                 restoreEnabled = false
+                helperBlock = null
+                protectionFailed = false
             }
         }
     }
@@ -104,6 +114,8 @@ fun ExtrasScreen(
                 ?: "your current home screen"
         }
     }
+
+    val actionsBlocked = busy || helperBlock != null || protectionFailed
 
     SsScreen {
         val scrollInset = 8.dp
@@ -148,6 +160,12 @@ fun ExtrasScreen(
                             }
                         }
                     }
+                    helperBlock?.let { msg ->
+                        Text(msg, style = SsType.Body, color = SsColors.DangerCardText)
+                    }
+                    if (protectionFailed) {
+                        Text(Extras.PROTECTION_CHECK_FAILED_MSG, style = SsType.Body, color = SsColors.DangerCardText)
+                    }
                     rows.forEach { row ->
                         ExtrasRowUi(
                             row = row,
@@ -164,20 +182,35 @@ fun ExtrasScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsButton(
                             "Turn off selected",
-                            enabled = !busy && checked.any { it.value },
+                            enabled = !actionsBlocked && checked.any { it.value },
                             onClick = {
                                 busy = true
+                                rowFailures = emptyMap()
                                 scope.launch {
                                     val selected = checked.filterValues { it }.keys
                                     val metaNow = activeMeta ?: return@launch
                                     val entries = extras.entriesFor(metaNow)
                                     val homePkg = homeSwitcher.currentWithFallback()?.pkg
                                     val homeFlag = extras.homePkgHomeInList(metaNow, homePkg)
-                                    val disabledSet = (commands.disabledPackages() as? ToolResult.Ok)?.value.orEmpty()
-                                    val (outcome, stop) = extras.turnOffSelected(selected, entries, disabledSet, homeFlag)
+                                    val facts = extras.loadProtectionFacts()
+                                    if (facts == null) {
+                                        status = Extras.PROTECTION_CHECK_FAILED_MSG
+                                        refresh++
+                                        busy = false
+                                        return@launch
+                                    }
+                                    val disabledSet = (extras.readDisabledPackages() as? io.github.devjardins.sidespeed.tools.ToolResult.Ok)?.value
+                                    if (disabledSet == null) {
+                                        status = Extras.HELPER_DOWN_MSG
+                                        refresh++
+                                        busy = false
+                                        return@launch
+                                    }
+                                    val (outcome, stop) = extras.turnOffSelected(selected, entries, disabledSet, homeFlag, facts)
+                                    rowFailures = outcome.failedByPkg
                                     status = when (stop) {
-                                        ExtrasRunStop.HelperDown -> "Helper not running. Start the helper, then try again."
-                                        ExtrasRunStop.HelperOutdated -> "Restart the helper to use this."
+                                        ExtrasRunStop.HelperDown -> Extras.HELPER_DOWN_MSG
+                                        ExtrasRunStop.HelperOutdated -> Extras.HELPER_OUTDATED_MSG
                                         null -> formatRunOutcome(outcome)
                                     }
                                     refresh++
@@ -187,15 +220,17 @@ fun ExtrasScreen(
                         )
                         SsButton(
                             "Restore everything",
-                            enabled = !busy && restoreEnabled,
+                            enabled = !actionsBlocked && restoreEnabled,
                             onClick = {
                                 busy = true
+                                rowFailures = emptyMap()
                                 scope.launch {
-                                    val (_, stop) = extras.restoreEverything()
+                                    val (outcome, stop) = extras.restoreEverything()
+                                    rowFailures = outcome.failedByPkg
                                     status = when (stop) {
-                                        ExtrasRunStop.HelperDown -> "Helper not running. Start the helper, then try again."
-                                        ExtrasRunStop.HelperOutdated -> "Restart the helper to use this."
-                                        null -> "Restore finished."
+                                        ExtrasRunStop.HelperDown -> Extras.HELPER_DOWN_MSG
+                                        ExtrasRunStop.HelperOutdated -> Extras.HELPER_OUTDATED_MSG
+                                        null -> formatRestoreOutcome(outcome)
                                     }
                                     refresh++
                                     busy = false

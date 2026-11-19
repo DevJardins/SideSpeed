@@ -1,16 +1,22 @@
 package io.github.devjardins.sidespeed.tools
 
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private val MATCH_ONN = DeviceMatch("onn", "onn 4K Pro Streaming Device", "jarvis2")
 private val MATCH_OTHER = DeviceMatch("acme", "Acme TV", "acme1")
+
+private val NO_PROTECTION = ProtectionFacts(emptySet(), emptySet())
+private val TEST_IO = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 private fun sampleIndex() = ExtrasIndex(
     upstreamCommit = "abc1234567890",
@@ -34,11 +40,22 @@ private class FakeExtrasQueries(
     val labels: Map<String, String> = emptyMap(),
     val settings: Set<String> = emptySet(),
     val tvInput: Set<String> = emptySet(),
+    var settingsFails: Boolean = false,
+    var tvInputFails: Boolean = false,
 ) : ExtrasQueries {
+    var settingsCallCount = 0
+    var tvInputCallCount = 0
+
     override fun labelOf(pkg: String): String? = labels[pkg]
     override fun isInstalled(pkg: String): Boolean = pkg in installed
-    override fun settingsHandlerPackages(): Set<String> = settings
-    override fun tvInputHardwarePackages(): Set<String> = tvInput
+    override fun settingsHandlerPackages(): Set<String>? {
+        settingsCallCount++
+        return if (settingsFails) null else settings
+    }
+    override fun tvInputHardwarePackages(): Set<String>? {
+        tvInputCallCount++
+        return if (tvInputFails) null else tvInput
+    }
 }
 
 private class FakeExtrasCommands : ExtrasDisableCommands {
@@ -46,6 +63,7 @@ private class FakeExtrasCommands : ExtrasDisableCommands {
     val enableCalls = mutableListOf<String>()
     var disableResult: ToolResult<Unit> = ToolResult.Ok(Unit)
     var enableResult: ToolResult<Unit> = ToolResult.Ok(Unit)
+    var disabledResult: ToolResult<Set<String>> = ToolResult.Ok(emptySet())
     var disabled: MutableSet<String> = mutableSetOf()
 
     override suspend fun disablePackage(pkg: String): ToolResult<Unit> {
@@ -58,7 +76,11 @@ private class FakeExtrasCommands : ExtrasDisableCommands {
         return enableResult.also { if (it is ToolResult.Ok) disabled -= pkg }
     }
 
-    override suspend fun disabledPackages(): ToolResult<Set<String>> = ToolResult.Ok(disabled.toSet())
+    override suspend fun disabledPackages(): ToolResult<Set<String>> =
+        when (val r = disabledResult) {
+            is ToolResult.Ok -> ToolResult.Ok(disabled.toSet())
+            else -> r
+        }
 }
 
 private class FakeExtrasStore : ToolsStore {
@@ -109,6 +131,7 @@ private fun extras(
     ownPackage = "io.github.devjardins.sidespeed",
     forcedFolderId = forced,
     nowMs = { 1000L },
+    ioDispatcher = TEST_IO,
 )
 
 class ExtrasTest {
@@ -143,14 +166,12 @@ class ExtrasTest {
     @Test fun rowStatesAndDefaults() = runTest {
         val meta = sampleIndex().lists.first()
         val e = extras()
-        val rows = e.rows(meta, disabled = setOf("com.example.bloat"))
+        val rows = e.rows(meta, disabled = setOf("com.example.bloat"), NO_PROTECTION)
         val bloat = rows.first { it.entry.pkg == "com.example.bloat" }
         assertEquals(ExtrasRowKind.Off, bloat.kind)
         val on = rows.first { it.entry.pkg == "com.example.optional" }
         assertFalse(on.checked)
-        val normal = rows.first { it.entry.pkg == "com.example.bloat" }
-        assertEquals(ExtrasRowKind.Off, normal.kind)
-        val fresh = e.rows(meta, emptySet()).first { it.entry.pkg == "com.example.bloat" }
+        val fresh = e.rows(meta, emptySet(), NO_PROTECTION).first { it.entry.pkg == "com.example.bloat" }
         assertTrue(fresh.checked)
     }
 
@@ -160,44 +181,105 @@ class ExtrasTest {
             settings = setOf("com.android.settings"),
             tvInput = setOf("com.tv.input"),
         )
+        val facts = ProtectionFacts(q.settings, q.tvInput)
         val e = extras(queries = q)
         val meta = sampleIndex().lists.first()
-        val rows = e.rows(meta, emptySet())
+        val rows = e.rows(meta, emptySet(), facts)
         assertEquals(ExtrasRowKind.Protected, rows.first { it.entry.pkg == "com.google.android.tungsten.setupwraith" }.kind)
-        assertTrue(e.isProtected("com.tv.input", setupFlag = false, homePkg = null))
+        assertTrue(e.isProtected("com.tv.input", setupFlag = false, homePkg = null, facts = facts))
     }
 
     @Test fun homeRowSelectableRules() = runTest {
         val meta = sampleIndex().lists.first()
         val e = extras(home = HomeComponent("com.example.home", "com.example.home.Main"))
-        val rows = e.rows(meta, emptySet())
+        val rows = e.rows(meta, emptySet(), NO_PROTECTION)
         val homeRow = rows.first { it.entry.home }
         assertTrue(homeRow.selectable)
         val blocked = extras(
             home = HomeComponent("com.google.android.apps.tv.launcherx", "x"),
             entries = { ONN_ENTRIES + ExtrasEntry("com.google.android.apps.tv.launcherx", "", home = true, setup = false, optional = false) },
         )
-        val blockedRow = blocked.rows(meta, emptySet()).first { it.entry.pkg == "com.example.launcher" }
+        val blockedRow = blocked.rows(meta, emptySet(), NO_PROTECTION).first { it.entry.pkg == "com.example.launcher" }
         assertFalse(blockedRow.selectable)
+    }
+
+    @Test fun protectionQueriesCalledOncePerRefresh() = runTest {
+        val many = (1..100).map { ExtrasEntry("com.example.p$it", "", home = false, setup = false, optional = false) }
+        val q = FakeExtrasQueries(installed = many.map { it.pkg }.toMutableSet())
+        val e = extras(entries = { many }, queries = q)
+        val meta = sampleIndex().lists.first()
+        val facts = e.loadProtectionFacts()
+        assertEquals(1, q.settingsCallCount)
+        assertEquals(1, q.tvInputCallCount)
+        e.rows(meta, emptySet(), facts!!)
+        assertEquals(1, q.settingsCallCount)
+        assertEquals(1, q.tvInputCallCount)
+    }
+
+    @Test fun protectionQueryFailureMakesRowsNonSelectable() = runTest {
+        val q = FakeExtrasQueries(
+            installed = mutableSetOf("com.example.bloat"),
+            settingsFails = true,
+        )
+        val e = extras(queries = q)
+        val meta = sampleIndex().lists.first()
+        val result = e.refresh(meta)
+        assertTrue(result.protectionCheckFailed)
+        assertNull(result.helperMessage)
+        val onRow = result.rows.first { it.entry.pkg == "com.example.bloat" }
+        assertFalse(onRow.selectable)
+    }
+
+    @Test fun refreshHelperDownShowsMessageNotRows() = runTest {
+        val commands = FakeExtrasCommands().apply { disabledResult = ToolResult.HelperDown }
+        val e = extras(commands = commands)
+        val meta = sampleIndex().lists.first()
+        val result = e.refresh(meta)
+        assertEquals(Extras.HELPER_DOWN_MSG, result.helperMessage)
+        assertTrue(result.rows.isEmpty())
+    }
+
+    @Test fun refreshHelperOutdatedShowsMessage() = runTest {
+        val commands = FakeExtrasCommands().apply { disabledResult = ToolResult.HelperOutdated }
+        val e = extras(commands = commands)
+        val result = e.refresh(sampleIndex().lists.first())
+        assertEquals(Extras.HELPER_OUTDATED_MSG, result.helperMessage)
     }
 
     @Test fun runRecordsAfterEachSuccess() = runTest {
         val commands = FakeExtrasCommands()
         val store = FakeExtrasStore()
         val e = extras(commands = commands, store = store)
-        val meta = sampleIndex().lists.first()
         val selected = setOf("com.example.bloat")
-        val (outcome, stop) = e.turnOffSelected(selected, ONN_ENTRIES, emptySet(), homePkgHomeInList = false)
+        val (outcome, stop) = e.turnOffSelected(selected, ONN_ENTRIES, emptySet(), homePkgHomeInList = false, NO_PROTECTION)
         assertEquals(null, stop)
         assertEquals(1, outcome.turnedOff)
         assertEquals(listOf("com.example.bloat"), commands.disableCalls)
         assertEquals(listOf("com.example.bloat"), store.disabled.first().map { it.pkg })
     }
 
+    @Test fun runFailedRowReturnedInOutcome() = runTest {
+        val commands = FakeExtrasCommands().apply {
+            disableResult = ToolResult.Failed("Cannot disable a protected package\nmore detail")
+        }
+        val e = extras(commands = commands)
+        val (outcome, _) = e.turnOffSelected(setOf("com.example.bloat"), ONN_ENTRIES, emptySet(), false, NO_PROTECTION)
+        assertEquals(1, outcome.failed)
+        assertEquals("Cannot disable a protected package", outcome.failedByPkg["com.example.bloat"])
+    }
+
+    @Test fun failedRowsShownUntilNextRun() = runTest {
+        val meta = sampleIndex().lists.first()
+        val e = extras()
+        val failures = mapOf("com.example.bloat" to "oops")
+        val rows = e.rows(meta, emptySet(), NO_PROTECTION, failures)
+        assertEquals("oops", rows.first { it.entry.pkg == "com.example.bloat" }.failedLine)
+    }
+
     @Test fun helperDownStopsRun() = runTest {
         val commands = FakeExtrasCommands().apply { disableResult = ToolResult.HelperDown }
         val e = extras(commands = commands)
-        val (_, stop) = e.turnOffSelected(setOf("com.example.bloat"), ONN_ENTRIES, emptySet(), false)
+        val (_, stop) = e.turnOffSelected(setOf("com.example.bloat"), ONN_ENTRIES, emptySet(), false, NO_PROTECTION)
         assertEquals(ExtrasRunStop.HelperDown, stop)
     }
 
@@ -209,9 +291,41 @@ class ExtrasTest {
             DisabledRecord("com.b", 2),
         )
         val e = extras(commands = commands, store = store, entries = { emptyList() })
-        e.restoreEverything()
+        val (outcome, stop) = e.restoreEverything()
+        assertEquals(null, stop)
+        assertEquals(2, outcome.restored)
         assertEquals(listOf("com.b", "com.a"), commands.enableCalls)
         assertTrue(store.disabled.first().isEmpty())
+    }
+
+    @Test fun restoreReportsFailures() = runTest {
+        val commands = FakeExtrasCommands().apply {
+            enableResult = ToolResult.Failed("package missing")
+        }
+        val store = FakeExtrasStore()
+        store.disabled.value = listOf(DisabledRecord("com.a", 1))
+        val e = extras(commands = commands, store = store, entries = { emptyList() })
+        val (outcome, _) = e.restoreEverything()
+        assertEquals(0, outcome.restored)
+        assertEquals(1, outcome.failed)
+        assertEquals("package missing", outcome.failedByPkg["com.a"])
+        assertEquals("Turned back on 0. Failed 1.", formatRestoreOutcome(outcome))
+        assertEquals(listOf("com.a"), store.disabled.first().map { it.pkg })
+    }
+
+    @Test fun runOutcomeOmitsAlreadyOff() = runTest {
+        val commands = FakeExtrasCommands()
+        val e = extras(commands = commands)
+        val (outcome, _) = e.turnOffSelected(
+            setOf("com.example.bloat"),
+            ONN_ENTRIES,
+            disabledBefore = setOf("com.example.bloat"),
+            homePkgHomeInList = false,
+            facts = NO_PROTECTION,
+        )
+        assertEquals(0, outcome.turnedOff)
+        assertTrue(commands.disableCalls.isEmpty())
+        assertEquals("Turned off 0.", formatRunOutcome(outcome))
     }
 
     @Test fun homeCouldntChangeMessage() {

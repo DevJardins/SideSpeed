@@ -1,7 +1,10 @@
 package io.github.devjardins.sidespeed.tools
 
 import io.github.devjardins.sidespeed.compile.PackageName
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /** Google TV stock launchers that block the Home switcher while still enabled. */
 val GoogleTvStockLauncherPkgs = setOf(
@@ -34,11 +37,30 @@ data class ExtrasRow(
     val failedLine: String? = null,
 )
 
-data class ExtrasRunOutcome(val turnedOff: Int, val alreadyOff: Int, val failed: Int)
+data class ProtectionFacts(
+    val settingsHandlers: Set<String>,
+    val tvInputHardware: Set<String>,
+)
+
+data class ExtrasRunOutcome(
+    val turnedOff: Int,
+    val failed: Int,
+    val failedByPkg: Map<String, String> = emptyMap(),
+)
+
+data class ExtrasRestoreOutcome(
+    val restored: Int,
+    val failed: Int,
+    val failedByPkg: Map<String, String> = emptyMap(),
+)
 
 fun formatRunOutcome(o: ExtrasRunOutcome): String = buildString {
     append("Turned off ${o.turnedOff}.")
-    if (o.alreadyOff > 0) append(" Already off ${o.alreadyOff}.")
+    if (o.failed > 0) append(" Failed ${o.failed}.")
+}
+
+fun formatRestoreOutcome(o: ExtrasRestoreOutcome): String = buildString {
+    append("Turned back on ${o.restored}.")
     if (o.failed > 0) append(" Failed ${o.failed}.")
 }
 
@@ -46,8 +68,10 @@ fun formatRunOutcome(o: ExtrasRunOutcome): String = buildString {
 interface ExtrasQueries {
     fun labelOf(pkg: String): String?
     fun isInstalled(pkg: String): Boolean
-    fun settingsHandlerPackages(): Set<String>
-    fun tvInputHardwarePackages(): Set<String>
+    /** null when the query failed. */
+    fun settingsHandlerPackages(): Set<String>?
+    /** null when the query failed. */
+    fun tvInputHardwarePackages(): Set<String>?
 }
 
 interface ExtrasDisableCommands {
@@ -55,6 +79,13 @@ interface ExtrasDisableCommands {
     suspend fun enablePackage(pkg: String): ToolResult<Unit>
     suspend fun disabledPackages(): ToolResult<Set<String>>
 }
+
+data class ExtrasRefreshResult(
+    val rows: List<ExtrasRow>,
+    val recordedCount: Int,
+    val protectionCheckFailed: Boolean,
+    val helperMessage: String?,
+)
 
 class Extras(
     private val index: ExtrasIndex,
@@ -66,6 +97,7 @@ class Extras(
     private val ownPackage: String,
     private val forcedFolderId: String? = null,
     private val nowMs: () -> Long = System::currentTimeMillis,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     fun entriesFor(meta: ExtrasListMeta): List<ExtrasEntry> = loadEntries(meta)
 
@@ -101,14 +133,50 @@ class Extras(
         }
     }
 
-  suspend fun rows(meta: ExtrasListMeta, disabled: Set<String>): List<ExtrasRow> {
+    suspend fun readDisabledPackages(): ToolResult<Set<String>> =
+        withContext(ioDispatcher) { commands.disabledPackages() }
+
+    suspend fun loadProtectionFacts(): ProtectionFacts? = withContext(ioDispatcher) {
+        val settings = queries.settingsHandlerPackages() ?: return@withContext null
+        val tvInput = queries.tvInputHardwarePackages() ?: return@withContext null
+        ProtectionFacts(settings, tvInput)
+    }
+
+    suspend fun refresh(
+        meta: ExtrasListMeta,
+        failedByPkg: Map<String, String> = emptyMap(),
+    ): ExtrasRefreshResult {
+        val disabledResult = withContext(ioDispatcher) { commands.disabledPackages() }
+        when (disabledResult) {
+            is ToolResult.HelperDown ->
+                return ExtrasRefreshResult(emptyList(), 0, protectionCheckFailed = false, helperMessage = HELPER_DOWN_MSG)
+            is ToolResult.HelperOutdated ->
+                return ExtrasRefreshResult(emptyList(), 0, protectionCheckFailed = false, helperMessage = HELPER_OUTDATED_MSG)
+            is ToolResult.Refused, is ToolResult.Failed ->
+                return ExtrasRefreshResult(emptyList(), 0, protectionCheckFailed = false, helperMessage = HELPER_DOWN_MSG)
+            is ToolResult.Ok -> { /* continue */ }
+        }
+        val disabled = disabledResult.value
+        val facts = loadProtectionFacts()
+        val protectionFailed = facts == null
+        val rows = rows(meta, disabled, facts, failedByPkg, forceNonSelectable = protectionFailed)
+        val recorded = store.extrasDisabled.first().size
+        return ExtrasRefreshResult(rows, recorded, protectionFailed, helperMessage = null)
+    }
+
+    suspend fun rows(
+        meta: ExtrasListMeta,
+        disabled: Set<String>,
+        facts: ProtectionFacts?,
+        failedByPkg: Map<String, String> = emptyMap(),
+        forceNonSelectable: Boolean = false,
+    ): List<ExtrasRow> {
         val home = homeCurrent()
         val homePkg = home?.pkg
         val homePkgHomeInList = meta.let { loadEntries(it).any { e -> e.pkg == homePkg && e.home } }
         val entries = loadEntries(meta)
-        val failedByPkg = mutableMapOf<String, String>()
         return entries.map { entry ->
-            rowFor(entry, disabled, homePkg, homePkgHomeInList, failedByPkg)
+            rowFor(entry, disabled, homePkg, homePkgHomeInList, facts, failedByPkg, forceNonSelectable)
         }
     }
 
@@ -117,11 +185,13 @@ class Extras(
         disabled: Set<String>,
         homePkg: String?,
         homePkgHomeInList: Boolean,
+        facts: ProtectionFacts?,
         failedByPkg: Map<String, String>,
+        forceNonSelectable: Boolean,
     ): ExtrasRow {
         val label = queries.labelOf(entry.pkg) ?: entry.pkg
         val failedLine = failedByPkg[entry.pkg]
-        if (isProtected(entry.pkg, entry.setup, homePkg)) {
+        if (isProtected(entry.pkg, entry.setup, homePkg, facts)) {
             return ExtrasRow(entry, label, ExtrasRowKind.Protected, selectable = false, checked = false, caption = null, failedLine)
         }
         if (!queries.isInstalled(entry.pkg)) {
@@ -131,12 +201,13 @@ class Extras(
             return ExtrasRow(entry, label, ExtrasRowKind.Off, selectable = false, checked = false, caption = null, failedLine)
         }
         val (selectable, caption) = homeRowSelectable(entry, homePkg, homePkgHomeInList)
-        val checked = selectable && !entry.optional && !entry.home
+        val effectiveSelectable = selectable && !forceNonSelectable
+        val checked = effectiveSelectable && !entry.optional && !entry.home
         return ExtrasRow(
             entry,
             label,
             ExtrasRowKind.On,
-            selectable = selectable,
+            selectable = effectiveSelectable,
             checked = checked,
             caption = caption,
             failedLine = failedLine,
@@ -157,13 +228,20 @@ class Extras(
         return true to captionHome
     }
 
-    fun isProtected(pkg: String, setupFlag: Boolean, homePkg: String? = null): Boolean {
+    fun isProtected(
+        pkg: String,
+        setupFlag: Boolean,
+        homePkg: String? = null,
+        facts: ProtectionFacts? = null,
+    ): Boolean {
         if (ExtrasSafety.isCore(pkg)) return true
         if (setupFlag) return true
         if (pkg == ownPackage) return true
         if (homePkg != null && pkg == homePkg) return true
-        if (pkg in queries.settingsHandlerPackages()) return true
-        if (pkg in queries.tvInputHardwarePackages()) return true
+        if (facts != null) {
+            if (pkg in facts.settingsHandlers) return true
+            if (pkg in facts.tvInputHardware) return true
+        }
         return false
     }
 
@@ -172,45 +250,45 @@ class Extras(
         entries: List<ExtrasEntry>,
         disabledBefore: Set<String>,
         homePkgHomeInList: Boolean,
+        facts: ProtectionFacts,
     ): Pair<ExtrasRunOutcome, ExtrasRunStop?> {
         val homePkg = homeCurrent()?.pkg
         var turnedOff = 0
-        var alreadyOff = 0
         var failed = 0
         val entryByPkg = entries.associateBy { it.pkg }
-        val failedRows = mutableMapOf<String, String>()
+        val failedByPkg = mutableMapOf<String, String>()
         for (pkg in selectedPkgs) {
             val entry = entryByPkg[pkg] ?: continue
-            if (!rowFor(entry, disabledBefore, homePkg, homePkgHomeInList, failedRows).selectable) continue
-            if (isProtected(pkg, entry.setup, homePkg)) continue
-            if (PackageName.parse(pkg) == null) continue
-            if (pkg in disabledBefore) {
-                alreadyOff++
+            if (!rowFor(entry, disabledBefore, homePkg, homePkgHomeInList, facts, failedByPkg, forceNonSelectable = false).selectable) {
                 continue
             }
+            if (isProtected(pkg, entry.setup, homePkg, facts)) continue
+            if (PackageName.parse(pkg) == null) continue
             when (val result = commands.disablePackage(pkg)) {
                 is ToolResult.Ok -> {
                     store.addExtrasDisabled(DisabledRecord(pkg, nowMs()))
                     turnedOff++
                 }
-                is ToolResult.HelperDown -> return ExtrasRunOutcome(turnedOff, alreadyOff, failed) to ExtrasRunStop.HelperDown
-                is ToolResult.HelperOutdated -> return ExtrasRunOutcome(turnedOff, alreadyOff, failed) to ExtrasRunStop.HelperOutdated
+                is ToolResult.HelperDown -> return ExtrasRunOutcome(turnedOff, failed, failedByPkg) to ExtrasRunStop.HelperDown
+                is ToolResult.HelperOutdated -> return ExtrasRunOutcome(turnedOff, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
                 is ToolResult.Refused -> {
-                    failedRows[pkg] = "refused"
+                    failedByPkg[pkg] = "refused"
                     failed++
                 }
                 is ToolResult.Failed -> {
-                    failedRows[pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failedByPkg[pkg] = result.message.lineSequence().firstOrNull().orEmpty()
                     failed++
                 }
             }
         }
-        return ExtrasRunOutcome(turnedOff, alreadyOff, failed) to null
+        return ExtrasRunOutcome(turnedOff, failed, failedByPkg.toMap()) to null
     }
 
-    suspend fun restoreEverything(): Pair<Int, ExtrasRunStop?> {
+    suspend fun restoreEverything(): Pair<ExtrasRestoreOutcome, ExtrasRunStop?> {
         val recorded = store.extrasDisabled.first().sortedByDescending { it.atMs }
         var restored = 0
+        var failed = 0
+        val failedByPkg = mutableMapOf<String, String>()
         for (rec in recorded) {
             if (PackageName.parse(rec.pkg) == null) continue
             when (val result = commands.enablePackage(rec.pkg)) {
@@ -218,15 +296,28 @@ class Extras(
                     store.removeExtrasDisabled(rec.pkg)
                     restored++
                 }
-                is ToolResult.HelperDown -> return restored to ExtrasRunStop.HelperDown
-                is ToolResult.HelperOutdated -> return restored to ExtrasRunStop.HelperOutdated
-                is ToolResult.Refused, is ToolResult.Failed -> { /* stay recorded */ }
+                is ToolResult.HelperDown -> return ExtrasRestoreOutcome(restored, failed, failedByPkg) to ExtrasRunStop.HelperDown
+                is ToolResult.HelperOutdated -> return ExtrasRestoreOutcome(restored, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
+                is ToolResult.Refused -> {
+                    failedByPkg[rec.pkg] = "refused"
+                    failed++
+                }
+                is ToolResult.Failed -> {
+                    failedByPkg[rec.pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failed++
+                }
             }
         }
-        return restored to null
+        return ExtrasRestoreOutcome(restored, failed, failedByPkg.toMap()) to null
     }
 
     suspend fun recordedCount(): Int = store.extrasDisabled.first().size
+
+    companion object {
+        const val HELPER_DOWN_MSG = "Helper not running. Start the helper, then try again."
+        const val HELPER_OUTDATED_MSG = "Restart the helper to use this."
+        const val PROTECTION_CHECK_FAILED_MSG = "Couldn't check which apps are safe to turn off. Try again."
+    }
 }
 
 enum class ExtrasRunStop { HelperDown, HelperOutdated }
