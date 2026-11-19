@@ -273,6 +273,60 @@ internal class InstallGate {
     @Synchronized fun awaitIdle() {
         while (active > 0) (this as Object).wait()
     }
+
+    /**
+     * Bounded variant for apk-watch: true when the gate went idle within [timeoutMs], false when
+     * the deadline passed with an install still in flight (the caller then exits anyway instead
+     * of blocking the helper's self-exit forever).
+     */
+    @Synchronized fun awaitIdle(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (active > 0) {
+            val remaining = deadline - System.currentTimeMillis()
+            if (remaining <= 0) return false
+            (this as Object).wait(remaining)
+        }
+        return true
+    }
+}
+
+/** Exit-poll interval for [waitInstallExit]; a prompt exit costs at most one extra poll. */
+private const val INSTALL_EXIT_POLL_MS = 50L
+
+/**
+ * Waits up to [timeoutMs] for an install child to exit. Returns its exit code, or null when the
+ * deadline (or an interrupt) beats it — in which case [destroy] has run and the child has been
+ * reaped first, so a hung `cmd package install` can neither linger nor come back as a zombie.
+ * Plain JVM (no android.*) so it is unit-testable: the exit poll uses only API-1 calls, and the
+ * production [destroy] kills forcibly on API 26+ ([HelperMain.runInstall]).
+ */
+internal fun waitInstallExit(
+    child: Process,
+    timeoutMs: Long,
+    destroy: (Process) -> Unit = { it.destroy() },
+): Int? {
+    val deadline = System.currentTimeMillis() + timeoutMs
+    while (true) {
+        try {
+            return child.exitValue()
+        } catch (_: IllegalThreadStateException) {
+            // Still running.
+        }
+        if (System.currentTimeMillis() >= deadline) break
+        try {
+            Thread.sleep(INSTALL_EXIT_POLL_MS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            break
+        }
+    }
+    destroy(child)
+    try {
+        child.waitFor()
+    } catch (_: InterruptedException) {
+        Thread.currentThread().interrupt()
+    }
+    return null
 }
 
 /** An [InputStream] view yielding at most [cap] bytes, counting what was read in [total]. */

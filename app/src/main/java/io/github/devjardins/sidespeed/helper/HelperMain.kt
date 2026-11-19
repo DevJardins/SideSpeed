@@ -31,6 +31,12 @@ object HelperMain {
     private const val BACKLOG = 16
     private const val PROC_RETRY_MS = 50L
 
+    /** Deadline for `cmd package install` after the APK body was delivered; then it is destroyed. */
+    internal const val INSTALL_WAIT_MS = 180_000L
+
+    /** Deadline for an in-flight install before apk-watch exits anyway on an APK change. */
+    internal const val APK_EXIT_WAIT_MS = 240_000L
+
     private val logLock = Any()
 
     @JvmStatic
@@ -91,7 +97,9 @@ object HelperMain {
                     }
                     if (reason != null) {
                         log("self-exit: $reason; waiting for any in-flight install")
-                        installGate.awaitIdle()
+                        if (!installGate.awaitIdle(APK_EXIT_WAIT_MS)) {
+                            log("self-exit: $reason; install still running after ${APK_EXIT_WAIT_MS}ms, exiting anyway")
+                        }
                         log("self-exit: $reason")
                         try { server.close() } catch (_: Throwable) {}
                         deletePortFileIfOurs(port)
@@ -185,6 +193,9 @@ object HelperMain {
      * stdin, while its merged output is pumped to [onLine] on a side thread (so a chatty `cmd`
      * cannot deadlock the copy). A short body (EOF or error before [size] bytes) destroys the
      * install and returns [HelperProtocol.EXIT_HELPER_ERROR]; the caller then skips bring-back.
+     * After the body is delivered the child gets [INSTALL_WAIT_MS] to exit; on timeout it is
+     * forcibly destroyed ([waitInstallExit]) and the install reports
+     * [HelperProtocol.EXIT_HELPER_ERROR], so the caller skips bring-back and the gate is released.
      */
     private fun runInstall(
         argv: List<String>,
@@ -220,7 +231,14 @@ object HelperMain {
                 log("install-self: body stream failed (${e.message}), killing the install")
                 return HelperProtocol.EXIT_HELPER_ERROR
             }
-            val code = p.waitFor()
+            val code = waitInstallExit(p, INSTALL_WAIT_MS) { child ->
+                // destroyForcibly is API 26+; on older TVs destroy() already kills the child.
+                if (android.os.Build.VERSION.SDK_INT >= 26) child.destroyForcibly() else child.destroy()
+            }
+            if (code == null) {
+                log("install-self: install did not finish within ${INSTALL_WAIT_MS}ms, destroyed it")
+                return HelperProtocol.EXIT_HELPER_ERROR
+            }
             done = true
             pump.join(10_000)
             return code
