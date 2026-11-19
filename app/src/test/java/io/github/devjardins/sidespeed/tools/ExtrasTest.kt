@@ -332,4 +332,35 @@ class ExtrasTest {
         assertTrue(homeCouldntChangeMessage("com.google.android.apps.tv.launcherx").contains("Turn off extras"))
         assertEquals("Couldn't change Home", homeCouldntChangeMessage("com.example.other"))
     }
+
+    @Test fun displayLabelFallsBackToPackage() {
+        assertEquals("a.b", displayLabel(null, "a.b"))
+        assertEquals("a.b", displayLabel("  ", "a.b"))
+        assertEquals(
+            "com.android.ondevicepersonalization.services",
+            displayLabel(
+                "com.android.ondevicepersonalization.services.OnDevicePersonalizationApplication",
+                "com.android.ondevicepersonalization.services",
+            ),
+        )
+    }
+
+    @Test fun displayLabelKeepsHumanReadableNames() {
+        assertEquals("Print Spooler", displayLabel("Print Spooler", "com.android.printspooler"))
+        assertEquals("YouTube", displayLabel("YouTube", "com.google.android.youtube.tv"))
+        assertEquals("Ver. 2 Agent", displayLabel("Ver. 2 Agent", "x.y"))
+    }
+
+    @Test fun rowLabelUsesDisplayLabelForClassName() = runTest {
+        val pkg = "com.android.ondevicepersonalization.services"
+        val classLabel = "$pkg.OnDevicePersonalizationApplication"
+        val q = FakeExtrasQueries(
+            installed = mutableSetOf(pkg),
+            labels = mapOf(pkg to classLabel),
+        )
+        val entries = listOf(ExtrasEntry(pkg, "", home = false, setup = false, optional = true))
+        val e = extras(queries = q, entries = { entries })
+        val row = e.rows(sampleIndex().lists.first(), emptySet(), NO_PROTECTION).single()
+        assertEquals(pkg, row.label)
+    }
 }
