@@ -1,9 +1,7 @@
 package io.github.devjardins.sidespeed.ui.apps
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
@@ -21,9 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,10 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -64,7 +56,7 @@ import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
 
-private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), MANUAL("Type a package"), HISTORY("Auto-optimize") }
+private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), HISTORY("Auto-optimize") }
 
 @Composable
 fun AppsScreen(
@@ -92,7 +84,11 @@ fun AppsScreen(
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     val selfRecord by selfCompile.collectAsState(initial = null)
     LaunchedEffect(Unit) { vm.load() }
-    var tab by rememberSaveable { mutableStateOf(Tab.SIDELOADED) }
+    // Save the tab by name and fall back to SIDELOADED for a name this build no
+    // longer has (e.g. a state bundle written by a version with more tabs), so a
+    // stale restore can never crash on a removed enum entry.
+    var tabName by rememberSaveable { mutableStateOf(Tab.SIDELOADED.name) }
+    val tab = Tab.entries.firstOrNull { it.name == tabName } ?: Tab.SIDELOADED
     var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
     // Give the D-pad a starting point: the active tab takes focus when the screen opens.
     val tabFocus = remember { FocusRequester() }
@@ -136,7 +132,7 @@ fun AppsScreen(
             ) {
                 Tab.entries.forEach { t ->
                     SsButton(
-                        onClick = { tab = t },
+                        onClick = { tabName = t.name },
                         selected = t == tab,
                         contentPadding = tabButtonPadding,
                         modifier = if (t == tab) Modifier.focusRequester(tabFocus) else Modifier,
@@ -179,7 +175,6 @@ fun AppsScreen(
             }
             banner()
             when (tab) {
-                Tab.MANUAL -> ManualEntry(vm) { onSelect(it, mode) }
                 Tab.HISTORY -> HistoryList(history)
                 else -> {
                     val apps = remember(state.apps, tab) {
@@ -249,44 +244,6 @@ fun StatusPill(pill: Pill) {
         PillTone.OK -> SsPill(pill.label, SsColors.OkPillBg, SsColors.OkPillText)
         PillTone.WARN -> SsPill(pill.label, SsColors.WarnPillBg, SsColors.WarnPillText)
         PillTone.NEUTRAL -> SsPill(pill.label, SsColors.Button, SsColors.TextSecondary)
-    }
-}
-
-@Composable
-private fun ManualEntry(vm: AppsViewModel, onValid: (AppEntry) -> Unit) {
-    var text by rememberSaveable { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var focused by remember { mutableStateOf(false) }
-    val submit = {
-        when (val r = vm.manualEntry(text)) {
-            is ManualResult.Valid -> { error = null; onValid(r.app) }
-            ManualResult.NotInstalled -> error = "Not installed"
-            ManualResult.Invalid -> error = "Not a valid package name"
-        }
-    }
-    val shape = RoundedCornerShape(10.dp)
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Package name, for example com.example.app", style = SsType.Body, color = SsColors.TextBody)
-        BasicTextField(
-            value = text,
-            onValueChange = { text = it; error = null },
-            singleLine = true,
-            textStyle = SsType.Title.copy(color = SsColors.TextPrimary),
-            cursorBrush = SolidColor(SsColors.Accent),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { submit() }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { focused = it.isFocused }
-                .background(if (focused) SsColors.Raised else SsColors.Surface, shape)
-                .border(
-                    BorderStroke(SsDimens.FocusRing, if (focused) SsColors.Accent else SsColors.Button),
-                    shape,
-                )
-                .padding(16.dp),
-        )
-        error?.let { Text(it, style = SsType.Body, color = SsColors.DangerCardText) }
-        SsButton("Continue", onClick = { submit() })
     }
 }
 
