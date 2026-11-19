@@ -58,6 +58,9 @@ import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
 
+/** One width for every keep box, so the app rows line up whatever the box shows. */
+private val KeepBoxWidth = 88.dp
+
 @Composable
 fun AppsScreen(
     vm: AppsViewModel,
@@ -118,9 +121,13 @@ fun AppsScreen(
         BackHandler { showHistory = false }
         SsScreen {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Auto-optimize history", style = SsType.Headline, color = SsColors.TextPrimary)
+                // Back sits beside the title, as on About, so a long history can't push it off screen.
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    SsButton("‹ Back", onClick = { showHistory = false }, modifier = Modifier.focusRequester(historyBackFocus))
+                    Spacer(Modifier.width(16.dp))
+                    Text("Auto-optimize history", style = SsType.Headline, color = SsColors.TextPrimary)
+                }
                 HistoryList(history)
-                SsButton("Back", onClick = { showHistory = false }, modifier = Modifier.focusRequester(historyBackFocus))
             }
         }
         return
@@ -244,10 +251,12 @@ fun AppsScreen(
                                     KeepBox.OFF, KeepBox.ON -> SsButton(
                                         if (box == KeepBox.ON) "☑" else "☐",
                                         onClick = { onToggleKeep(app.packageName, box == KeepBox.OFF) },
+                                        modifier = Modifier.width(KeepBoxWidth),
                                     )
                                     KeepBox.LOCKED -> SsButton(
                                         "☑🔒",
                                         onClick = { lockedNote = lockedMessage(current) },
+                                        modifier = Modifier.width(KeepBoxWidth),
                                     )
                                 }
                             }
