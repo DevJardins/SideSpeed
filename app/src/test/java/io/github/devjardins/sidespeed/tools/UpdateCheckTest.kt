@@ -41,6 +41,8 @@ class FakeUpdateStore : ToolsStore {
         lastCheck.value = atMs
         this.latest.value = latest
     }
+    override val originalHome: Flow<String?> = MutableStateFlow(null)
+    override suspend fun setOriginalHome(v: String?) {}
 }
 
 class UpdateCheckTest {
