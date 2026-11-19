@@ -66,11 +66,6 @@ fun githubReleaseFetch(): suspend () -> String = {
     }
 }
 
-/**
- * Polls GitHub for a newer SideSpeed release, at most once per 24 h. Every outcome is silent:
- * offline, rate-limited, or unparsable answers keep the previous latest version (if any) and just
- * move the last-check timestamp forward so we don't hammer the API.
- */
 /** Outcome of a manual update check, for the About screen's result line. */
 sealed interface ManualCheckResult {
     data object UpToDate : ManualCheckResult
@@ -78,6 +73,11 @@ sealed interface ManualCheckResult {
     data object Failed : ManualCheckResult
 }
 
+/**
+ * Polls GitHub for a newer SideSpeed release, at most once per 24 h. Every outcome is silent:
+ * offline, rate-limited, or unparsable answers keep the previous latest version (if any) and just
+ * move the last-check timestamp forward so we don't hammer the API.
+ */
 class UpdateCheck(
     private val fetch: suspend () -> String,
     private val store: ToolsStore,
