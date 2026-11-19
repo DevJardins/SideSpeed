@@ -1,0 +1,114 @@
+[
+  {
+    "package": "tv.anoki.acr.controller",
+    "note": "Anoki ACR: recognises what is on screen, persistent, boot receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.JVC",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows and channels in the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cltv.fast",
+    "note": "StreamTV, iWedia free streaming channels (FAST), not the tuner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Filme",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mobisystems.fileman",
+    "note": "File Commander",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zdf.android.mediathek",
+    "note": "ZDF Mediathek (preinstalled for Germany)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "de.rtli.tvnow",
+    "note": "RTL+ (preinstalled for Germany)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant and voice search: the remote's mic button stops working",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "phone-as-remote (Google TV app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Ambient Mode screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

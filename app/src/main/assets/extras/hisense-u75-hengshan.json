@@ -1,0 +1,212 @@
+[
+  {
+    "package": "com.mediatek.dtv.tvinput.dvbtuner",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "Vtp_FamilyMoment, photo/camera app + its screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.vidaatv.hisense.android.tv",
+    "note": "VIDAA Channels Plus, the FAST free-channel preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vidaa.oemtabcontentprovider",
+    "note": "feeds the VIDAA content tab",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.odinbrowser",
+    "note": "built-in web browser, off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.b2b",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.factory",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.fte",
+    "note": "first-time-experience walkthrough, setup only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.alexa",
+    "note": "HiAlexa",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "Ginga, the Brazilian interactive-broadcast stack",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.interactive",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.protector",
+    "note": "\"DeviceAssistant\" cleaner: CACHE_CLEAN, TURBO_MODE, SPACE_PROTECTION",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.calmanconnector",
+    "note": "Calman professional calibration connector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "PAI: silently auto-installs partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referral tracking",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash/feedback uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.mobiledeviceconnectiontips",
+    "note": "Miracast screen mirroring (codePath Miracast); Chromecast and AirPlay kept",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.mediacenter",
+    "note": "Media Center: USB and DLNA file player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.dlna",
+    "note": "DLNA renderer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.singlelisten",
+    "note": "MyMusic",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.roomcalibration",
+    "note": "room audio calibration prompt (RoomCalibration)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

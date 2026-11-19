@@ -1,0 +1,156 @@
+[
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "/system_ext/app/HKC_RetailDisplay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo2",
+    "note": "/system_ext/app/HKC_RetailDisplay_polytron",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.hkcfac",
+    "note": "HKC_FACTORY_AT",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.at.factory.factorymanager",
+    "note": "HKC_FactoryManager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.at.factory.androidtvaidlservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "mediatek.factorymenu.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.hotel",
+    "note": "HKC_AnTv",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "/system/priv-app/AnokiAcrOptin",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "WFDSinkTest, Wi-Fi Display sink test",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hkc.tv.hkc_help",
+    "note": "HKC_Help",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "its RecoveryActivity otherwise takes Home (priority 1)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games, unused here",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV movies and shows",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode / screensaver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows; reports say disabling it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

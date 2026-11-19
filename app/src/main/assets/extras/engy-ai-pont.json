@@ -1,0 +1,100 @@
+[
+  {
+    "package": "com.homwee.store",
+    "note": "Homwee app store (content + ads)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.homwee.help",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki automatic-content-recognition telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner promo / preload setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "feedback telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "feedback consent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync adapter, not needed on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kick.mobile",
+    "note": "Kick",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.audiocn.karaoke.global.micmanager",
+    "note": "karaoke mic manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.obs.mhegservice",
+    "note": "MHEG-5 (UK Freeview) \u2014 not used in LatAm",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.esaba.downloader",
+    "note": "SABA URL downloader preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

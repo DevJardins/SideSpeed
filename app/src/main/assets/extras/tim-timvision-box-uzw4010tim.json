@@ -1,0 +1,443 @@
+[
+  {
+    "package": "timvision.telemetry",
+    "note": "TIMVISION \"traps\" telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smarts.smartagentpassivestb",
+    "note": "passive monitoring agent, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.movenda.omadm.tv",
+    "note": "OMA-DM operator device management",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.movenda.p4mcore",
+    "note": "Movenda core service for the above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.android.BootupTraceQR",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.cputemperature",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.zta",
+    "note": "Technicolor Zero-Touch provisioning",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.autoperiodicreboot",
+    "note": "forced periodic scheduled reboot daemon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.project.releasenote",
+    "note": "pop-up release notes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.technicolor",
+    "note": "partner app installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.app.ota",
+    "note": "ApplicationOta: silent background partner APK installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "timvision.setup_wizard",
+    "note": "TIM setup wizard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner auto-install service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.broadpeak.nanocdnwrapper",
+    "note": "Broadpeak multicast CDN for TIMVISION live; kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "it.telecomitalia.iptuner",
+    "note": "TIMVISION live channels; kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "it.telecomitalia.linemanager",
+    "note": "kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "it.telecomitalia.accountmanager",
+    "note": "TIM account, Firebase messaging; kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "it.telecomitalia.timppapp",
+    "note": "kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "timvision.tvappsettings",
+    "note": "kept on for TIMVISION subscribers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "it.telecomitalia.iotcontroller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.telecomitalia.iotim",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.technicolor.zwavereceiver",
+    "note": "Z-Wave daemon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.speech.pumpkin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.recommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ionitech.airscreen",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apowersoft.mirror.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.instantbits.cast.receiver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.dazn",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvkids",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sky.ott.client.androidtv.SkyIT",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.pluto.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cbs.ca",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.upst.hayu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gameloft.android.GAND.GloftMTHP",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gameloft.android.GAND.GloftPOHP",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.telecomitalia.timmusic_tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.telecomitalia.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.telecomitalia.thefilmclub",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.telecomitalia.calcio",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.figc.vivoazzurrotv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.sensiunici_atv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vativision.vativisionapp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.rds.androidtv.rdssocialtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.mediaset.infinitytv",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "off on this set by the owner's choice; uncomment to disable it too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ro.antenaplay.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ru.iptvremote.android.iptv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mxtech.videoplayer.ad",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.rarity.tvweb",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvtutorials",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "screensaver; the basic daydream remains",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,100 @@
+[
+  {
+    "package": "com.miui.analytics",
+    "note": "OneTrack analytics SDK host",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "TV usage statistics, ~100 MB resident",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.misightservice",
+    "note": "MiSight remote diagnostics and log upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs",
+    "note": "quality/performance reporting, ~86 MB resident",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.cloudcontrol",
+    "note": "cloud control: remote configuration pushes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.duokan.videodaily",
+    "note": "short-video promos; bundles the Xiaomi ad SDK and a P2P upload service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.shoplugin",
+    "note": "TV Taobao shopping plugin",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.shop",
+    "note": "Xiaomi store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "webview container for promotions",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tv.gallery",
+    "note": "\"Pictorial\" wallpaper app, ships ad classes; preinstalled to /data,",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.aitranslate",
+    "note": "AI subtitle translation, ~117 MB resident",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.alarmcenter",
+    "note": "reminders/alarms: re-enable it if you set alarms with XiaoAI voice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.health",
+    "note": "MiHealth",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+    "note": "game center SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

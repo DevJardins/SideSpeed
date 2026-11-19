@@ -1,0 +1,37 @@
+[
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games; keep if used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback component",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "Feedback consent UI",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki ACR consent UI; does not stop native ACR service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.electronic.manual",
+    "note": "Built-in electronic manual no longer available",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

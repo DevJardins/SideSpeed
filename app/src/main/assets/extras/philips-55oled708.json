@@ -1,0 +1,233 @@
+[
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "\"GEL\" metrics collector, runs inside candeebug's process; disable both",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.frameworklogger",
+    "note": "\"FrameworkLogger\": hands reboot reasons and firmware-install records to the Philips logger",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.samba.ssm",
+    "note": "\"Samba Services Manager\": Samba TV ACR (identifies what is on screen), Firebase + Mixpanel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Market Feedback Agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tpv.nftgallery",
+    "note": "\"NFT Collection\" art gallery app, INTERNET",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.demome",
+    "note": "\"Demo me\" retail demo loop. KEPT: on this firmware it requests TV_INPUT_HARDWARE, so disable.sh refuses it (#321)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.m7opapp",
+    "note": "M7 satellite operator promo (Canal Digitaal, TV Vlaanderen, Skylink, HD Austria); keep if you use one",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.astrahdplus",
+    "note": "\"HD+\", German Astra satellite pay-TV operator app; keep if you subscribe",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referrer / attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "runs once at first setup, nothing afterwards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.phorus.playfi.tv",
+    "note": "\"Play-Fi\" multi-room audio app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.phorus.playfi.softap",
+    "note": "DTSPlayFiSoftAP, Play-Fi's soft access point helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.playFiAudioService",
+    "note": "KEEP: Settings, audiocalibration and tpvaudiomanager bind it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.control4app",
+    "note": "\"Control4\" home-automation integration (4 packages)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.control4adapterservice",
+    "note": "\"UcAdaptor\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.control4sddp",
+    "note": "\"SddpService\", Control4 discovery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.control4UcService",
+    "note": "\"UcService\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.matter",
+    "note": "\"MatterTV\", Matter smart-home bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.tvapp",
+    "note": "\"Mimi Sound Personalization\" hearing-test app; Settings only links to it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.sdk.service",
+    "note": "\"MimiService\", its audio service; nothing bound it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.amazonalexa",
+    "note": "\"Amazon Alexa\" bridge (was running at idle)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in (~26 MB at idle)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.dialservice",
+    "note": "\"AOW_DIAL\": DIAL, how Netflix/YouTube phone apps find the TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "Twitch",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.megogo.application",
+    "note": "MEGOGO",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.boosteroidtv.streaming",
+    "note": "Boosteroid cloud gaming",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tm.replica",
+    "note": "\"Replica\" iPhone screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "build-and-install.sh disables it; 182 MB across two processes at idle",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.oemtabprovider",
+    "note": "\"Philips\" tab of the Google TV home screen (promos), INTERNET",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,261 @@
+[
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "metrics collector in candeebug's process",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "boot stats and remote keypress counts feeding the above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.frameworklogger",
+    "note": "hands reboot reasons and firmware-install records to the Philips logger",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Market Feedback Agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvrecommender",
+    "note": "\"Top Picks\" content row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.recommendation",
+    "note": "its backend; disable the row above first",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettv.market",
+    "note": "\"Smart TV Collection\" app storefront",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapps",
+    "note": "the gallery's preload installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp1814",
+    "note": "ARTE (gallery web app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4546",
+    "note": "MEGOGO (gallery web app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp5512",
+    "note": "Fishing TV (gallery web app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp5245",
+    "note": "\"TV SpieleCenter\" games (gallery web app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.android.fitness",
+    "note": "Fitness Buddy",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.boosteroidtv.streaming",
+    "note": "Boosteroid cloud gaming, preinstalled",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referrer / attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "runs once at first setup, nothing afterwards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.sss.authbridge",
+    "note": "set-up-from-phone helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "Google Calendar sync; no calendar app is installed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.amazonalexa",
+    "note": "Alexa bridge: untested here, no channels tuned so zapping and the guide were not checked",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.phorus.playfi.softap",
+    "note": "Play-Fi soft access point helper; stayed disabled",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.phorus.playfi.tv",
+    "note": "Play-Fi app: off on this set, but it re-enables itself at every boot",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.dlna",
+    "note": "DLNA/UPnP server and renderer (on PH1M_WW_9972 Google TV sets the Media app binds it)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.ipcontrol",
+    "note": "LAN control (volume, Ambilight). NOT the JointSpace API on 1925/1926, that is org.droidtv.xtv",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.tvapp",
+    "note": "Mimi sound personalisation app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.sdk.service",
+    "note": "its service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.astrahdplus",
+    "note": "HD+ German satellite operator app; keep it if you subscribe",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.m7opapp",
+    "note": "M7 satellite operator promo; keep it if you use one of those operators",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix: off on this set (the remote's Netflix key then does nothing)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "Apple TV: off on this set",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music: off on this set",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies: off on this set",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant and voice search: off on this set (the mic key does nothing)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader: off on this set; keep it if anyone needs it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,156 @@
+[
+  {
+    "package": "com.tcl.bootadservice",
+    "note": "full-screen ad before Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.c2dm.client",
+    "note": "TCL push channel (ad popups)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tcl.messagebox",
+    "note": "image-message popup receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.bi",
+    "note": "analytics/behaviour reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usagestats",
+    "note": "usage statistics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tvhealthcheck",
+    "note": "diagnostics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.xian.StartandroidService",
+    "note": "background reporting service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.vod",
+    "note": "TCL VOD",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.resource",
+    "note": "waterfall content feed (home wall tiles)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tshop",
+    "note": "TV shopping mall",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gamecenter",
+    "note": "game center",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ffeducation",
+    "note": "education preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pptv.tvsports.preinstall",
+    "note": "PPTV sports preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tencent.qqmusictv",
+    "note": "QQ Music TV preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.weixin",
+    "note": "TV WeChat",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "TV browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iflytek.xiri",
+    "note": "iFlytek voice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iflytek.xiri.recorder.svc",
+    "note": "iFlytek recorder",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iflytek.xiri2.hal",
+    "note": "iFlytek HAL",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iflytek.xiri2.system",
+    "note": "iFlytek system service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.walleve",
+    "note": "\u5c0fT AI / smart-home settings (voice framework)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.versionUpdateApp",
+    "note": "system updater (user choice; snm.upgrade untouched)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

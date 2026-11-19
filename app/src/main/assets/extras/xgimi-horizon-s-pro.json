@@ -1,0 +1,247 @@
+[
+  {
+    "package": "com.xgimi.autokst",
+    "note": "auto keystone correction (system uid)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.windowsystem",
+    "note": "keystone/window service (kstActivity, WondowService)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.tof",
+    "note": "ToF autofocus calibration",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.tvinput",
+    "note": "HDMI 1-3 TV input services",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xhplayer",
+    "note": "HDMI input player + game mode",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.bluetoothservice",
+    "note": "Bluetooth remote service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.misckey",
+    "note": "remote keys, focus/keystone shortcuts, wall-colour adaptation",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.uiconfiguration",
+    "note": "global key receiver, power listener",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xrmservice",
+    "note": "picture/sound adaptation, brightness boost",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.soundermodeservice",
+    "note": "Bluetooth speaker mode",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xgimiservice",
+    "note": "core XGIMI system service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.simpservice",
+    "note": "install service, purpose unclear: kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.overseas.xgimiatvbootwizard",
+    "note": "first-boot wizard: kept, setup wizards can hold Home or provisioning",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.burnin",
+    "note": "factory burn-in test, runs on boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atvwifiverify",
+    "note": "factory Wi-Fi verification",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.minitvfactory",
+    "note": "factory menu, file transfer and burn-in services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "XGIMI bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.xgimi.xgimigalileo",
+    "note": "Play auto-install config for preloads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack (accessibility)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ted.android.tv",
+    "note": "TED",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "Google TV phone remote",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.filemanager",
+    "note": "file manager, DLNA/Samba servers, Baidu bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.gimiplayer",
+    "note": "local video/photo player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.doubanfm",
+    "note": "XGIMI music app, speaker-mode screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atmosphere",
+    "note": "XGIMI animated screensaver / ambient scenes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Backdrop screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

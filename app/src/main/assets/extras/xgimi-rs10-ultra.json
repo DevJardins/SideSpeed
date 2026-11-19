@@ -1,0 +1,156 @@
+[
+  {
+    "package": "com.xgimi.adservice",
+    "note": "XGIMI ad service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.datareporter",
+    "note": "usage/telemetry reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.msgcenter",
+    "note": "push message/notification center",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.instruction30",
+    "note": "help/instruction content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.activitypage",
+    "note": "H5 web page host used by help/account/store pages",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.com.wasu.main",
+    "note": "\u534e\u6570TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gitv.dvb.live",
+    "note": "\u5bbd\u5e26\u7535\u89c6",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hunantv.license",
+    "note": "\u8292\u679cTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ktcp.tvvideo",
+    "note": "\u4e91\u89c6\u542c\u6781\u5149",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.doubanfm",
+    "note": "\u9177\u72d7\u97f3\u4e50\u6781\u7c73\u5b9a\u5236\u7248",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netease.cloudmusic.tv",
+    "note": "\u7f51\u6613\u4e91\u97f3\u4e50",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tencent.qqmusicjimisdk",
+    "note": "QQ Music SDK used by the music apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.karaokesdk",
+    "note": "karaoke SDK (microphone/pay/MV)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.stream.video",
+    "note": "XGIMI video/VIP content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atmosphere",
+    "note": "dynamic/ambient screensaver; the owner uses a third-party aerial screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.newappmarket",
+    "note": "XGIMI app store; Dangbei Market stays installed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.account",
+    "note": "account stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.user",
+    "note": "account/VIP/backup UI and provider",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.payview",
+    "note": "VIP/payment UI",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.upgrade",
+    "note": "OTA updater; kept enabled by default, disabled on the author's TV by choice",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing; nothing prints from a projector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

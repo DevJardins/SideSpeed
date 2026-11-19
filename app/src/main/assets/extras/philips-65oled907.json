@@ -1,0 +1,303 @@
+[
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics uploader: channel watched, resolution, HDMI-CEC devices, viewing times, Ambilight config. Uploads to AWS Firehose/S3 and geolocates the public IP via ipinfo.io",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "metrics collector running inside candeebug's process",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "boot stats, remote keypress counts, panel/eMMC telemetry feeding the two above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Market Feedback Agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referrer / attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvrecommender",
+    "note": "\"Top Picks\" content promotion row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.recommendation",
+    "note": "its headless backend; disable the row above first or you get a live tile with no data source",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettv.market",
+    "note": "\"Smart TV Collection\" app storefront",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapps",
+    "note": "\"NetTvApps\", headless; holds TV_INSTALL_PACKAGES_SILENT, i.e. the gallery's silent preload installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.demome",
+    "note": "\"Demo me\" retail demo mode, e-sticker and shop loop",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.astrahdplus",
+    "note": "HD+ (German satellite operator) info pages; not applicable on a UK Freeview set",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tpv.device",
+    "note": "Play auto-install of TP Vision partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "\"Android TV Core Services\" despite the name: recommendation rows, channels AND the notification panel. Disabling this is visible: the stock notification panel goes with it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "runs once at first setup, nothing afterwards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.sss.authbridge",
+    "note": "Second Screen Setup Auth Bridge (set-up-from-phone helper)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "Google Calendar sync; no calendar app is installed on this TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games; not used on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant and voice search, ~101 MB across two processes. Kills the remote's mic button, \"Hey Google\", on-screen voice search and the mic icon inside YouTube/Play Store search. Settings and tvsystemui guard their calls into it, so nothing crashes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.ipcontrol",
+    "note": "LAN control of volume, audio output, Ambilight on/off and ShopMode. NOT the JointSpace API on 1925/1926 -- that is served by org.droidtv.xtv, which stays. Owner does not drive the TV from Home Assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.frameworklogger",
+    "note": "framework event logger",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.fastip",
+    "note": "free ad-supported channels, has an advertising-ID activity",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zeasn.whalelive",
+    "note": "Whale TV (free ad-supported channels)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.dropboxprovider",
+    "note": "Dropbox provider",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettv_launcherapp",
+    "note": "Philips Smart TV app launcher",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp1815",
+    "note": "Zeasn web app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp20004410",
+    "note": "Zeasn web app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp4546",
+    "note": "Zeasn web app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp4655",
+    "note": "Zeasn web app (Deezer)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp5326",
+    "note": "Zeasn web app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettvapp5512",
+    "note": "Zeasn web app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.amazonalexa",
+    "note": "Alexa only; Google Assistant (katniss) is separate",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.leanbackcustomizer",
+    "note": "partner customisation of the stock launcher; the OPTIONS key keeps working",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "io.mimi.sdk.service",
+    "note": "Mimi sound personalisation service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader; keep it if anyone in the home needs it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.m7opapp",
+    "note": "M7 satellite operators (Canal Digitaal, TV Vlaanderen, Skylink, HD Austria)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "Apple TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.wuaki.apptv",
+    "note": "Rakuten TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fr.filmotv.philips.android.tv",
+    "note": "FilmoTV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.boosteroidtv.streaming",
+    "note": "Boosteroid (cloud gaming)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

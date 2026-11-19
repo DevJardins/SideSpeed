@@ -1,0 +1,212 @@
+[
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "DasApp telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "usage/telemetry reporting, BootReceiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "log uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.hproxy",
+    "note": "network poller service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "HiMsgService vendor push channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ad SDK (Alibaba Baichuan + CIBN shopping)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "ad service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "weather/content feed card",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "store demo reels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "hotel mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.autotest",
+    "note": "factory autotest app (never launch it)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.ar.baike",
+    "note": "AR encyclopedia",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "first-run wizard, already completed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videoconference",
+    "note": "video conferencing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videochat.social",
+    "note": "preloaded video chat",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.fitmirror",
+    "note": "fitness mirror",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.foodmanage",
+    "note": "recipe app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "vendor calendar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.screensaver",
+    "note": "vendor ad screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "AOSP fallback screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "no printing on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "AOSP leftover",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.smartimages",
+    "note": "HiSmartImage AI photo recognition",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.familyalbum",
+    "note": "family album",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.familycloud",
+    "note": "family cloud",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.familymessage",
+    "note": "family message board",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.singlelisten",
+    "note": "SingleListen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.speech.enchatroom",
+    "note": "voice chat room",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.audiocn.karaoke.micmanager",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

@@ -1,0 +1,135 @@
+[
+  {
+    "package": "com.zeasn.whaletrackservice",
+    "note": "Tracking/telemetry service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.whaleservice",
+    "note": "Core Whale OS service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.tokenapp",
+    "note": "Token management",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.hotelmodelservice",
+    "note": "Hotel mode (not needed for home use)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.certified",
+    "note": "Device portal",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.tv.cast",
+    "note": "Casting bloat (not the system cast)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.livetv",
+    "note": "Live TV service: keep it. Disabling it gives \"No Signal\" on every input (HDMI included)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zeasn.whaleos.settings",
+    "note": "Whale OS settings overlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hikeen.factorymenu",
+    "note": "Factory menu (MENU+1147 does NOT work on SMART2KTVSE)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hikeen.factoryautomation",
+    "note": "Factory automation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hikeen.middleware.server",
+    "note": "Middleware server",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.whaletv.aivoice",
+    "note": "AI voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.whaletv.web.app_runtime",
+    "note": "Web app runtime",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Android ad services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.camera2",
+    "note": "Camera (a system app: pm disable-user works, pm uninstall fails with DELETE_FAILED_INTERNAL_ERROR)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mirakulo.astrotv.service",
+    "note": "Ginga interactive TV for ISDB-Tb broadcasts; disabling only turns broadcast interactivity off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.droidlogic.updater",
+    "note": "OTA updater",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.droidlogic.appinstall",
+    "note": "App installer service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.whaletv.launcher",
+    "note": "Original Whale TV launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

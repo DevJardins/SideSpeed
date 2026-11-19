@@ -1,0 +1,114 @@
+[
+  {
+    "package": "com.cvte.gaia.ad.service",
+    "note": "ad service, Google Mobile Ads, SensorsData analytics, Sentry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.wonder.cloud.service",
+    "note": "\"UniAdService\", Firebase, Sentry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.industries",
+    "note": "push messenger (ACTION_INDUSTRY_MESSENGER) + AdReceiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.services.general",
+    "note": "Zeasn search / content service, boots with the TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.pictorial",
+    "note": "screensaver with ads; switch to com.android.dreams.basic Colors",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.weather",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.steward",
+    "note": "\"cleaner\" with scheduled \"optimisation\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.launcher.space",
+    "note": "ads, SensorsData, Sentry, Firebase; also a live-TV preview",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.launcher.space.skin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.mediaclient",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.avod.thirdpartyclient",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.rialto.cordova.webapp.webapp2660c968ef8949678398aeb6fd6cb036",
+    "note": "preloaded Amazon web app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tiktok.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "deezer.android.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ted.android.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

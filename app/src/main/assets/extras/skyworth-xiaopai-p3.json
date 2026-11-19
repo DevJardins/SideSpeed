@@ -1,0 +1,107 @@
+[
+  {
+    "package": "com.tianci.ad",
+    "note": "ad service behind the stock home and the screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.ott.guide",
+    "note": "first-run guide, long since completed on this box",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mipt.store",
+    "note": "Skyworth app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jd.smartservicetwo",
+    "note": "JD shopping service on the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.softap",
+    "note": "Wi-Fi hotspot; this box is on Ethernet",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.smarthome",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.skywechatclient",
+    "note": "WeChat TV client",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.optimization",
+    "note": "\"optimiser\" that only reposts ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.skycleandisk",
+    "note": "storage cleaner, same story",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.remotedebug",
+    "note": "vendor remote debugging; close ADB instead",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nanosic.www.otaservice",
+    "note": "firmware updates; disabled on the tested box (uncomment to do the same)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.skyworthdigital.miracast",
+    "note": "casting; nobody uses it here",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.dragonbox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.agingdragonbox",
+    "note": "factory burn-in agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworthdigital.sky2dlauncherv4",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

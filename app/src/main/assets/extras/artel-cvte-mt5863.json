@@ -1,0 +1,72 @@
+[
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.megogo.tv",
+    "note": "Megogo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "uz.allplay.apptv",
+    "note": "Allplay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "uz.i_tv.player",
+    "note": "i-TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ag.kinom",
+    "note": "Kinom",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fgl27.twitch",
+    "note": "Twitch client",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fgol.HungrySharkEvolution",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack, re-enable if you need a screen reader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.svox.pico",
+    "note": "Pico text-to-speech",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.voicesearch",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

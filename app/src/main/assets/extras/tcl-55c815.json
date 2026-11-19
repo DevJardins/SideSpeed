@@ -1,0 +1,156 @@
+[
+  {
+    "package": "com.tcl.guard",
+    "note": "PERSISTENT system app, also runs a package installer service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "owns the remote's TKey activities (load-bearing per BeyondTV2 profile)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "setup screens + shop-reset receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "owns a saved Wi-Fi network on this unit: disabling it",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.bi",
+    "note": "TCL analytics (BIService, ParamProvider)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tcl.device",
+    "note": "Play auto-install stub (dummy receiver)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "\"send feedback\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner-app attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "\"TCL Channel\" content feed. TCL's updater re-enabled it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.overseasappshow",
+    "note": "\"recommended apps\" showcase (boot/network receivers)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "TCL message/promo box",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "shop-mode energy-label sticker (re-check: the BeyondTV2",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "home-screen recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "one-time setup leftovers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.copydatatotv",
+    "note": "\"copy your phone's data to the TV\" setup helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hbo_android_tv",
+    "note": "old HBO app, superseded by Max (com.wbd.stream, kept)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hbo.hbonow",
+    "note": "old HBO Now app, same",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "the screensaver was already off on this unit. If you turn it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

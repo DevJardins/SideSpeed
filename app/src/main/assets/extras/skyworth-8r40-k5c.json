@@ -1,0 +1,135 @@
+[
+  {
+    "package": "com.tianci.de",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.skyworthdigital.stb.dataprovider",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.coocaa.sky.ccapi",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tianci.ad",
+    "note": "Coocaa ad engine (boot ad, started by bootQueue.xml at ~5 s)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.push",
+    "note": "Boot push notifications (bootQueue.xml, ~1.2 s)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.appstore",
+    "note": "Coocaa App Store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.ipc",
+    "note": "Tianci IPC helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.autoinstaller",
+    "note": "Background APK auto-install service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.user",
+    "note": "Account management",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.baidu.oases",
+    "note": "Baidu Oases / security scanner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.mall",
+    "note": "Shopping portal",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.activecenter",
+    "note": "Activity / promotions center",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.app_browser",
+    "note": "Built-in lightweight web browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.messageprovider",
+    "note": "System message popups",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.tvpitv",
+    "note": "PiTV aggregation service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.theme.child",
+    "note": "Children's mode theme",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.icoolme.tv.weather",
+    "note": "Weather preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.blockchain",
+    "note": "Blockchain preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.smarthome_tv",
+    "note": "Smart home dashboard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

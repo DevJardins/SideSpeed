@@ -1,0 +1,282 @@
+[
+  {
+    "package": "com.yunos.advert.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.adoplayer.service",
+    "note": "the \"Yun Huabao\" ad screensaver content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.probe",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.ottauthclient",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.aliyun.uuid",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.alira.info",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.activeuser",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.idst",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.app.webapplication",
+    "note": "Rendanheyi webview shell",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.downloadapk",
+    "note": "silently installs pushed preloads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.yushuo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.modelintroduction",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.speakingtest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.alibaba.ailabs.genievision",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.alitvasr",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.intelligentvoice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.voicehelper",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.aitv",
+    "note": "Aligenie content app pushed by the updater",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.airplayserver",
+    "note": "AirPlay receiver; Chromecast/Miracast unaffected by this line alone",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.droidlogic.miracast",
+    "note": "Miracast receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.uhome.uplustv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.uhome.messageboard",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.uhome.push",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haierubic.usmartdevice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.iotprovider",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.edu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.bluray",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tv.offline_downloader",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.kidsmode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.audiocn.karaoke.micmanager",
+    "note": "karaoke microphone manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tv.gesturehaier",
+    "note": "hand-gesture control",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nibiru.play",
+    "note": "VR video player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nibiru.alipaytv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tv.hm",
+    "note": "pushed Haier content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.haiertv.ims",
+    "note": "pushed Haier content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.tvmgr",
+    "note": "\"Security Manager\" cleaner app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yunos.osupdate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.youku.taitan.tv",
+    "note": "Youku stock home with sponsored rows",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yunos.tv.homeshell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

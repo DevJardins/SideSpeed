@@ -1,0 +1,135 @@
+[
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ad SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "ad service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "platform data reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "log uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "DasApp reporter (JuUI)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "shop demo loop",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "hotel mode menu",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.meetingroom",
+    "note": "meeting-room mode, answers HOME at -100",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "first-run wizard (already past)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "electronic manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vision.aibook",
+    "note": "AI picture book",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.fitmirror",
+    "note": "fitness mirror",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videochat.social",
+    "note": "preloaded video chat",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videoconference",
+    "note": "video conferencing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "stock weather tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "calendar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ju.miguvideoTV.cmcc",
+    "note": "Migu Video, carrier preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.vod",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,142 @@
+[
+  {
+    "package": "com.jio.stbadservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.systemstats",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.rjil.podlogservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.adc.aka",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.adc.embedded",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.bioscopecontentservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.smartmemorymanager",
+    "note": "aggressive background task killer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.appoptimizer",
+    "note": "aggressive background task killer; PERSISTENT, keeps running (see quirks)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.backgroundscheduler",
+    "note": "periodic telemetry wake-up daemon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.stb.remotediagnose",
+    "note": "remote diagnostics daemon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jiostb.inactivitytimer",
+    "note": "inactivity timeout timer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.store",
+    "note": "Jio App Store; Aurora Store or Universal Installer replace it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.aksys.jiogamepad",
+    "note": "gamepad helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.screensaver",
+    "note": "Jio promo screensaver; replaced by the launcher's Clock screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iwedia.ui.rjio.launcher.reliance",
+    "note": "stock Home; launcher/build-and-install.sh does the handover",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.jio.httpupdate",
+    "note": "FOTA updater; uncomment to freeze firmware updates",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.jio.usbupdate",
+    "note": "USB firmware updater",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.jio.tr069client",
+    "note": "TR-069 remote management; uncomment to stop Jio's remote push",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.jiostb.fti",
+    "note": "first-time setup; disable after setup has run",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.rjil.jiostbsetting",
+    "note": "Jio's settings app; a third-party Home may need it for its menus",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

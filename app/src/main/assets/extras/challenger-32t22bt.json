@@ -1,0 +1,149 @@
+[
+  {
+    "package": "cn.cvte.tv.factory.autotest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tcl.factory.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.audiotest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.fac.menu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.FactoryMode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.sticker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tvclean",
+    "note": "Background memory cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.appstore",
+    "note": "Proprietary app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cm.aptoidetv.pt.cvt_platform7",
+    "note": "Preinstalled Aptoide TV build",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.tcl.odm.android.vstoresubclient",
+    "note": "Zeasn / TCL store client",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.talents.huanclientauth",
+    "note": "Huan client authentication",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.creative.fastscreen.tv",
+    "note": "Screen mirroring adware/service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.ucservice",
+    "note": "CVTE UserCenter service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "MediaTek WFD Sink test utility",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.usbmediaplayer",
+    "note": "Redundant USB player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.media",
+    "note": "Stock media center",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.player",
+    "note": "Stock media player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ecloud.emedia",
+    "note": "DLNA/media cloud service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.browser",
+    "note": "Outdated stock browser (AOSP)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.launcher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

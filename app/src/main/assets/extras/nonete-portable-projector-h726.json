@@ -1,0 +1,275 @@
+[
+  {
+    "package": "com.htc.hyk_test",
+    "note": "factory test app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mobisystems.office",
+    "note": "preloaded Office suite",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.storeos",
+    "note": "HTC app store; it only offers phone builds of the streaming apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.screensaver",
+    "note": "stock screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "ambient screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mphotool.dlna",
+    "note": "DLNA receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mphotool.airplay",
+    "note": "AirPlay receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.miracastReceiver",
+    "note": "Miracast",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.samescreen",
+    "note": "htc_cast mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.nearby.halfsheet",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.wallpapercropper",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.bips",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.bluetoothmidiservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.hotspot2.osulogin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.backupconfirm",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.sharedstoragebackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.localtransport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.managedprovisioning",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "com.android.dynsystem",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.musicfx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.soundpicker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.softwinner.screenshot",
+    "note": "Quick Settings screenshot tile",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.nfx",
+    "note": "vendor NfxAccessibilityService v1.0.82, not the NFC stack; not enabled as a service here",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.searchlite.overlay",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.softwinner.TvdVideo",
+    "note": "USB video player",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.softwinner.imageParser",
+    "note": "image viewer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisilicon.explorer",
+    "note": "file manager with its USB mount and Samba services",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.toofifi",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.htc.htclauncherhighenglishd08",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

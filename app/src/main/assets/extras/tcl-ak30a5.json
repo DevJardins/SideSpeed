@@ -1,0 +1,205 @@
+[
+  {
+    "package": "com.tcl.bootadservice",
+    "note": "boots into a full-screen ad before Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.bi",
+    "note": "analytics/behaviour reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.recognize.service",
+    "note": "screen recognition; also a silent-install channel.",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.c2dm.client",
+    "note": "push channel used by some TCL apps. Disabled on the",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ffkaraoke",
+    "note": "karaoke",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ffeducation",
+    "note": "kids/education content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tclmusic",
+    "note": "music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gamecenter",
+    "note": "game store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.playskill",
+    "note": "\"tips\" app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.appreciate.art",
+    "note": "art-wallpaper screensaver content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "bundled browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.common.weather",
+    "note": "weather widget service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.wholenetsearch",
+    "note": "global search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "EULA nag",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.versionUpdateApp",
+    "note": "TCL updater, kept on so updates arrive (the OTA package com.snm.upgrade is already",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.tvhealthcheck",
+    "note": "diagnostics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "verbose logging",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iflytek.xiri.translate",
+    "note": "iFlytek translate",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ttvs",
+    "note": "3rd-party data/ACR. Also serves com.tcl.ttvs.proxy.business.data,",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account (needed to sign in to TCL services)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.m",
+    "note": "unidentified TCL helper; left enabled on purpose",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.convergehome",
+    "note": "TCL content aggregator; not the HOME app on this build",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.walleve",
+    "note": "TCL \u5c0fT voice assistant, plus com.tcl.walleve.aidaemon",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.audiocn.karaoke.micmanager",
+    "note": "mic handling for the karaoke app, plus com.tcl.micmanager",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.MultiScreenInteraction_TV",
+    "note": "phone screen mirroring / \"\u591a\u5c4f\u4e92\u52a8\" in the source panel",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.miracast",
+    "note": "Miracast / \"\u65e0\u7ebf\u6295\u5c4f\" in the source panel",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.weixin",
+    "note": "WeChat on TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.tshop",
+    "note": "\u7535\u89c6\u8d2d\u7269\u5546\u57ce (shopping mall)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.vod",
+    "note": "\u817e\u8baf\u89c6\u9891 (Tencent Video)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

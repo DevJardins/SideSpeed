@@ -1,0 +1,51 @@
+[
+  {
+    "package": "com.yandex.android.advid",
+    "note": "Yandex advertising ID",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.bugreportsender",
+    "note": "bug report sender",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.daydream",
+    "note": "Yandex video screensaver (ad slot); set the launcher's ClockDream instead",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.prebuiltstub",
+    "note": "empty stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.webplayer",
+    "note": "Yandex web player; Kinopoisk, VK Video and Rutube play without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.alice",
+    "note": "Alice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.input.efir",
+    "note": "Yandex online channels (\"Efir\"), no antenna needed",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

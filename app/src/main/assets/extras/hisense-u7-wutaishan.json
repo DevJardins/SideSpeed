@@ -1,0 +1,114 @@
+[
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "Vtp_ACR, viewing-data content recognition",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referral tracking",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Google TV partner auto-installs (PAI)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash/feedback uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync, unused on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vidaa.oemtabcontentprovider",
+    "note": "the Hisense tab on the Google TV home, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.vidaatv.hisense.android.tv",
+    "note": "VIDAA Channels+, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "\"Family Moment\" photo screensaver and content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.b2b",
+    "note": "hotel/business mode, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.fte",
+    "note": "first-time setup hooks for the setup wizard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.protector",
+    "note": "DeviceAssistant: cache cleaner and \"turbo mode\", starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.alexa",
+    "note": "HiAlexa (Google Assistant is kept)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.dlna",
+    "note": "DLNA media renderer, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.ai_sense",
+    "note": "Vtp_AiCamera, Hisense's USB AI camera. The hengshan list warns",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "setup wizard; owns the saved Wi-Fi, AirPlay stops without it",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

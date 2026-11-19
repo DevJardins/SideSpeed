@@ -1,0 +1,198 @@
+[
+  {
+    "package": "com.apps.function.gdpr",
+    "note": "SCBC data consent agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback bug reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "TV feedback consent dialog (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.mk.wd",
+    "note": "boot receiver with ClickAd/ClickApp/ClickChannel activities (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.scbc.device",
+    "note": "Play store auto-installs of partner apps (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.leanbacklauncher.partnercustomizer",
+    "note": "partner config injecting rows/apps into home screen (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner setup wizard client",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.esticker",
+    "note": "ShowService overlay, demo stickers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.esticker3",
+    "note": "in-store feature sticker animation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.biz.mt",
+    "note": "MOKA background telemetry service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.biz.ds",
+    "note": "MOKA digital signage service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.tvmanager",
+    "note": "background memory cleaner / app auto-start manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mk.tv.meeting.service",
+    "note": "MOKA enterprise meeting service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.wifihotspot",
+    "note": "Wi-Fi hotspot toggle not needed on a TV (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.function.audiolink",
+    "note": "Bluetooth audio receiver / link service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mk.tv.timeclock",
+    "note": "on-screen clock overlay service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.creative.fastscreen.tv",
+    "note": "FastCast / Miracast screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.scast",
+    "note": "SCast screen receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games app & sync",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.ota",
+    "note": "MOKA system OTA updater",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.authota",
+    "note": "authenticated OTA check service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.realsil.ota",
+    "note": "Realtek Bluetooth remote OTA updater",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.dfuservice",
+    "note": "Google TV accessory firmware update service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mxtech.videoplayer.television",
+    "note": "preloaded MX Player TV edition (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.usbmediaplayer",
+    "note": "stock MOKA USB media player app (persists across cold boots)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music stub app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

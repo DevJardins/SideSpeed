@@ -1,0 +1,100 @@
+[
+  {
+    "package": "tv.anoki.acr.controller",
+    "note": "Anoki ACR",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "retail demo, HRetailDisplay_2K",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haierubic.usmartdevice",
+    "note": "Haier smart-device service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.yudee.tv",
+    "note": "Haier share service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.sharetv.webview",
+    "note": "webview used by the share service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "HaierApps_evoSmart promo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.launcher.haiermatrix",
+    "note": "Zeasn content launcher, not the system Home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tvhousekeeper",
+    "note": "TV housekeeper / cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.haier.tv.appmanager",
+    "note": "boot receiver that manages Haier apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation and ad rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.haier.hanyang",
+    "note": "Haier auto-install stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

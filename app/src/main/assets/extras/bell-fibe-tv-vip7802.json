@@ -1,0 +1,205 @@
+[
+  {
+    "package": "com.commscope.report.bell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.commscope.report.companion.bell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.commscope.notification.bell.merlin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arris.notificationlistener.bell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arris.bugreport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arris.android.stb.fti",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arris.quickactions",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games: achievements/leaderboards/cloud saves for",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies & TV, Google's own movie storefront;",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music; the regular YouTube app is a separate",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Android TV's own crash/feedback reporter to Google,",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "populates the stock Google TV home screen's \"recommended",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arris.arus.updater",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ca.bell.chiclet.fibehelper",
+    "note": "the Fibe TV player itself - disables live TV entirely",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ca.bellmedia.cravetv",
+    "note": "CraveTV, a paid Bell Media service (needs a subscription,",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ca.ctv.ctvgo",
+    "note": "CTV, Bell Media's free ad-supported network app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ca.tsn.mobile.android",
+    "note": "TSN: free scores/highlights, paid tier for live games",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vmediagroup.noovo",
+    "note": "Noovo, Bell Media's free French-language network",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.toutv.androidtv",
+    "note": "ICI TOU.TV, Radio-Canada's free streaming app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.clearchannel.iheartradio.tv",
+    "note": "iHeartRadio: free radio, not Bell-specific",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.pelmorex.WeatherEyeAndroid.tv",
+    "note": "the Weather Network, Canada's most-used weather app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tubitv",
+    "note": "Tubi: free ad-supported movies and TV, not Bell-specific",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.quickplay.android.bellmediaplayer",
+    "note": "see the README for its permissions; also content",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.arris.upnpapp",
+    "note": "UPnP/DLNA discovery - lets other devices on your network",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.arris.customizer.rro.merlin",
+    "note": "Runtime Resource Overlay for com.arris.customizer, kept -",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "android.autoinstalls.config.arris.vip7802w",
+    "note": "Play Auto Install config: on a fresh box or after a",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix. The remote's dedicated Netflix button needs",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "YouTube",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

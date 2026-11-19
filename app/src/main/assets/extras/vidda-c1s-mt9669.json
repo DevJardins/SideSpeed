@@ -1,0 +1,198 @@
+[
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.hproxy",
+    "note": "LoopingService + network-change receiver, polls forever",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "the vendor push channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ships Alibaba Baichuan + CIBN shopping SDKs; installed as a user app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "its WatchingAccessibilityService was registered in enabled_accessibility_services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "weather card, a content feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.cloudfalcon",
+    "note": "C1: user app hosting com.hisense.service.ad's boot and network-change receivers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.autotest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.ar.baike",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "first-run wizard, long done; shares android.uid.system, Wi-Fi survived",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "C1: RetailDisplay store demo in /system/product/priv-app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.usbupgrade",
+    "note": "kept: the USB firmware upgrade and recovery path",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.tv.foodmanage",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.screensaver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.keylab.speech.view.vidaa",
+    "note": "voice UI; the remote's mic key stops working (the C1S owner keeps it)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.wechathci",
+    "note": "WeChat photo push: an always-on WebService process and WechatAD pages",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.audiocn.karaoke.micmanager",
+    "note": "karaoke mic manager: boot, network, screen and USB receivers, a resident service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.smartimages",
+    "note": "HiSmartImage screen recognition: ScreenCapService, SIWindowMonitorService accessibility",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.familymessage",
+    "note": "\u5bb6\u5ead\u7559\u8a00 family message board",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vision.palette",
+    "note": "AI \u753b\u677f",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.speech.enchatroom",
+    "note": "AI \u82f1\u8bed\u804a\u5929\u5ba4, pushed as a user app in 2025",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.aiot",
+    "note": "smart-home and IR appliance control",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

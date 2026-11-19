@@ -1,0 +1,149 @@
+[
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "automatic content recognition",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.launcher.partner",
+    "note": "partner content rows for the stock launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.retaildemo",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google screensaver; the new launcher has a Clock screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iqiyi.i18n.tv",
+    "note": "iQIYI; off on the tested set by the owner's choice; uncomment if you don't use it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "HBO Max; off on the tested set by the owner's choice; uncomment if you don't use it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.internet.tvbrowser",
+    "note": "web browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "second web browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "de.stefanpledl.localcast",
+    "note": "LocalCast",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.instantbits.cast.receiver",
+    "note": "Web Video Cast receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.alphainventor.filemanager",
+    "note": "File Manager; re-enable to browse USB drives",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "its RecoveryActivity otherwise takes over Home; can own the saved Wi-Fi (see above)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

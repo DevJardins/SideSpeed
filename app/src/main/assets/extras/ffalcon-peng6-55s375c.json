@@ -1,0 +1,177 @@
+[
+  {
+    "package": "com.tcl.bootadservice",
+    "note": "full-screen ad before Home; the ad is gone on this unit",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.bi",
+    "note": "vendor behaviour analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log collection and upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.c2dm.client",
+    "note": "TCL push, long-lived connection",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "android.autoinstalls.config.tcl.device",
+    "note": "first-boot auto-install of preloaded apps",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.recognize.service",
+    "note": "screen recognition; silent-install channel",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.appreciate.art",
+    "note": "art wallpaper / screensaver with a membership pitch",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.playskill",
+    "note": "\"tips\" promo app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "user-agreement popup",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.wholenetsearch",
+    "note": "whole-net search with VOD promotions",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.vod",
+    "note": "TCL's own video app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.tliveplay",
+    "note": "live-TV promo channels",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "preloaded browser",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.common.weather",
+    "note": "weather widget and its background service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ffeducation",
+    "note": "kids / education content",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ffkaraoke",
+    "note": "karaoke",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.audiocn.karaoke.micmanager",
+    "note": "karaoke microphone manager",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.gamebar",
+    "note": "game bar",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.weixin",
+    "note": "WeChat on TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account and VIP",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.appmarket2",
+    "note": "TCL app store (\u5f53\u8d1d\u5e02\u573a installs apps instead)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "\u7535\u89c6\u536b\u58eb, also the USB APK installer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ui_mediaCenter",
+    "note": "USB playback",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.t_solo",
+    "note": "\u84dd\u7259\u5355\u72ec\u542c",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.kookong.tvplus",
+    "note": "\u673a\u9876\u76d2\u8bbe\u7f6e, IR learning for a set-top box",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

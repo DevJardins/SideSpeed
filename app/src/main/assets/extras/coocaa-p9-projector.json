@@ -1,0 +1,114 @@
+[
+  {
+    "package": "com.tianci.ad",
+    "note": "Coocaa ad SDK (boot/shutdown/screensaver ads)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.push",
+    "note": "background push notifications",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.autoinstaller",
+    "note": "silent background app installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.sysreport",
+    "note": "telemetry & usage reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.messageprovider",
+    "note": "promotional popup messages",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.screensaver",
+    "note": "vendor screensaver with ad engine",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.app_browser",
+    "note": "bundled lightweight browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.mitee.tv",
+    "note": "kids streaming channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.miitee.guard",
+    "note": "kids guard daemon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.tvmanager",
+    "note": "cleaner / memory manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.guide",
+    "note": "boot guide & EPG pusher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.appstore",
+    "note": "stock store with recommendations (Dangbei Market kept)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.os.thememanager",
+    "note": "theme store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.theme_package_starry_night",
+    "note": "preloaded starry night theme",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.theme_world_cup",
+    "note": "preloaded world cup theme",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.angel.voice",
+    "note": "Skyworth voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

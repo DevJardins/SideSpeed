@@ -1,0 +1,205 @@
+[
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "viewing-data (ACR) service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referral tracking",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash/feedback uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync, unused on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.odinbrowser",
+    "note": "Hisense browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "\"Family Moment\" screensaver and photo content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haystack.android",
+    "note": "Haystack News (second unit): recommendation cards, a live channel input",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.vidaatv.hisense.android.tv",
+    "note": "VIDAA Channels, free ad-supported channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vidaa.oemtabcontentprovider",
+    "note": "VIDAA content provider for the stock home's rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.fte",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iqiyi.i18n.tv",
+    "note": "iQIYI",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mercadolibre.android.mplay_tv",
+    "note": "Mercado Play",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "HBO Max",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.alexa",
+    "note": "Hisense Alexa (Google Assistant is kept)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV app (Play Movies) (second unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvunplugged",
+    "note": "YouTube TV (second unit); a subscription service, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tubitv",
+    "note": "Tubi (second unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.pluto.android",
+    "note": "Pluto TV (second unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.roku.web.trc",
+    "note": "The Roku Channel (second unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fubo.firetv.screen",
+    "note": "Fubo (second unit); a subscription service, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.dlna",
+    "note": "DLNA media sharing (only a boot receiver)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.mobiledeviceconnectiontips",
+    "note": "Miracast / screen-sharing receiver (WifiDisplayService) and its tips",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google ambient screensaver; point screensaver_components elsewhere after",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.protector",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

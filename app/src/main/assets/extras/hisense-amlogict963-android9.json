@@ -1,0 +1,37 @@
+[
+  {
+    "package": "com.hisense.service.ad",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.business.ad",
+    "note": "shopping/Taobao advertising integration",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "data reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "platform reports",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "log upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

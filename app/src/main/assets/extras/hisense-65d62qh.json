@@ -1,0 +1,240 @@
+[
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "DasApp: DataReportReceiver only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "usage/telemetry reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "log uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.hproxy",
+    "note": "LoopingService + network-change receiver, polls forever",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "HiMsgService, the vendor push channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ad SDK (ships Alibaba Baichuan + CIBN shopping SDKs)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "ad service; registers a WatchingAccessibilityService",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.widget.pro",
+    "note": "home operator widget rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "weather card, another content feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "DbxDemo / multi-channel sound demo reels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "hotel mode menu",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.meetingroom",
+    "note": "meeting-room mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.autotest",
+    "note": "factory autotest app (never launch it, see PROMPT.md)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.ar.baike",
+    "note": "AR encyclopedia",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "first-run wizard, already done; Wi-Fi belongs to android.uid.system",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.usbupgrade",
+    "note": "USB firmware upgrade. Optional: only needed to flash",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.tv.videoconference",
+    "note": "video conferencing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videochat.social",
+    "note": "preloaded video chat",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.fitmirror",
+    "note": "fitness mirror",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.foodmanage",
+    "note": "recipe app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vision.aibook",
+    "note": "AI picture book",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "vendor calendar, not the AOSP one",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ju.miguvideoTV.cmcc",
+    "note": "Migu Video (\u54aa\u5495\u89c6\u9891) preload. Optional: keep if you use it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.jamdeo.screensaver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "the AOSP screensaver it falls back to",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.deskclock",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.calendar",
+    "note": "RE-ENABLED BY THE FIRMWARE AT EVERY BOOT.",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.music",
+    "note": "Verified 2026-10-22: disabled, rebooted, and",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.smartimages",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.tv.infer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hisense.singlelisten",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

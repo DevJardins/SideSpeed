@@ -1,0 +1,65 @@
+[
+  {
+    "package": "com.cvte.gaia.ad.service",
+    "note": "ad service, the largest app process after Play services (~27 MB)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.wonder.cloud.service",
+    "note": "\"UniAdService\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.industries",
+    "note": "push messenger and ad receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.pictorial",
+    "note": "screensaver with ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.steward",
+    "note": "\"cleaner\" with scheduled optimisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.weather",
+    "note": "the stock launcher's weather; keep it if you keep the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stark.store",
+    "note": "kept by default (it hosts the stock Apps grid); the tested set turned it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisilicon.miracast",
+    "note": "Miracast receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

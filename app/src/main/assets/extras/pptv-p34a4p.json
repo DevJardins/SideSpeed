@@ -1,0 +1,37 @@
+[
+  {
+    "package": "com.pptv.newtvad",
+    "note": "TvAdService, banner ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pptv.push.service",
+    "note": "push channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pptv.snisupdate",
+    "note": "silent installer (PushAppInstallActivity)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pptv.screenprotect",
+    "note": "screensaver ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pptv.tvbuy",
+    "note": "shopping app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

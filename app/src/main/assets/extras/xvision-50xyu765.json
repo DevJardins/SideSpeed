@@ -1,0 +1,86 @@
+[
+  {
+    "package": "com.cvte.wonder.cloud.service",
+    "note": "\"UniAdService\", starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.pictorial",
+    "note": "screensaver with ads (\"Invisible Art\" tile on the stock home)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.steward",
+    "note": "\"TV Assistant\" cleaner / optimiser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.weather",
+    "note": "the stock launcher's weather (~54 MB resident); keep it if you keep the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo loop",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.remotedebug",
+    "note": "ifpdos customer service with a screen-recorder service, runs in the background;",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ecloud.eshare.server",
+    "note": "EShare (\"Kindlink\" tile) phone casting, starts at boot; with the next two ~150 MB",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.ecloud.eairplay",
+    "note": "EShare AirPlay receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.ecloud.emedia",
+    "note": "EShare DLNA renderer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "WFDSinkTest: the Miracast receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.stark.store",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

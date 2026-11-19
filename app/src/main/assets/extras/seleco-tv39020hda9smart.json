@@ -1,0 +1,100 @@
+[
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.toptech",
+    "note": "Zeasn device portal service, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.realtek.device",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.services.general",
+    "note": "Zeasn weather, search and \"weekly\" feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.zeasn.toptech.rtk2851.vstoresubclient",
+    "note": "Zeasn app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.atmaca.atmretailmode",
+    "note": "shop demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.camera2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaper.livepicker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.chrome",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.rtk.mediabrowser",
+    "note": "USB media player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.mediaclient",
+    "note": "the phone build",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google voice search; the remote's mic button stops working",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.rtk.android.miracast",
+    "note": "screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.zeasn.launcher.vstoresubclient.toptech",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]
