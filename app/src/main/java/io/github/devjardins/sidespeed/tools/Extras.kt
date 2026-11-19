@@ -54,6 +54,12 @@ data class ExtrasRestoreOutcome(
     val failedByPkg: Map<String, String> = emptyMap(),
 )
 
+data class ExtrasTurnOnOutcome(
+    val turnedOn: Int,
+    val failed: Int,
+    val failedByPkg: Map<String, String> = emptyMap(),
+)
+
 fun formatRunOutcome(o: ExtrasRunOutcome): String = buildString {
     append("Turned off ${o.turnedOff}.")
     if (o.failed > 0) append(" Failed ${o.failed}.")
@@ -61,6 +67,11 @@ fun formatRunOutcome(o: ExtrasRunOutcome): String = buildString {
 
 fun formatRestoreOutcome(o: ExtrasRestoreOutcome): String = buildString {
     append("Turned back on ${o.restored}.")
+    if (o.failed > 0) append(" Failed ${o.failed}.")
+}
+
+fun formatTurnOnOutcome(o: ExtrasTurnOnOutcome): String = buildString {
+    append("Turned on ${o.turnedOn}.")
     if (o.failed > 0) append(" Failed ${o.failed}.")
 }
 
@@ -205,7 +216,16 @@ class Extras(
             return ExtrasRow(entry, label, ExtrasRowKind.NotInstalled, selectable = false, checked = false, caption = null, failedLine)
         }
         if (entry.pkg in disabled) {
-            return ExtrasRow(entry, label, ExtrasRowKind.Off, selectable = false, checked = false, caption = null, failedLine)
+            val caption = if (entry.home) "This is a home screen app." else null
+            return ExtrasRow(
+                entry,
+                label,
+                ExtrasRowKind.Off,
+                selectable = !forceNonSelectable,
+                checked = false,
+                caption = caption,
+                failedLine,
+            )
         }
         val (selectable, caption) = homeRowSelectable(entry, homePkg, homePkgHomeInList)
         val effectiveSelectable = selectable && !forceNonSelectable
@@ -266,6 +286,7 @@ class Extras(
         val failedByPkg = mutableMapOf<String, String>()
         for (pkg in selectedPkgs) {
             val entry = entryByPkg[pkg] ?: continue
+            if (pkg in disabledBefore) continue
             if (!rowFor(entry, disabledBefore, homePkg, homePkgHomeInList, facts, failedByPkg, forceNonSelectable = false).selectable) {
                 continue
             }
@@ -289,6 +310,43 @@ class Extras(
             }
         }
         return ExtrasRunOutcome(turnedOff, failed, failedByPkg.toMap()) to null
+    }
+
+    suspend fun turnOnSelected(
+        selectedPkgs: Set<String>,
+        entries: List<ExtrasEntry>,
+        disabledBefore: Set<String>,
+        facts: ProtectionFacts,
+    ): Pair<ExtrasTurnOnOutcome, ExtrasRunStop?> {
+        val homePkg = homeCurrent()?.pkg
+        var turnedOn = 0
+        var failed = 0
+        val entryByPkg = entries.associateBy { it.pkg }
+        val recorded = store.extrasDisabled.first().map { it.pkg }.toSet()
+        val failedByPkg = mutableMapOf<String, String>()
+        for (pkg in selectedPkgs) {
+            val entry = entryByPkg[pkg] ?: continue
+            if (pkg !in disabledBefore) continue
+            if (isProtected(pkg, entry.setup, homePkg, facts)) continue
+            if (PackageName.parse(pkg) == null) continue
+            when (val result = commands.enablePackage(pkg)) {
+                is ToolResult.Ok -> {
+                    if (pkg in recorded) store.removeExtrasDisabled(pkg)
+                    turnedOn++
+                }
+                is ToolResult.HelperDown -> return ExtrasTurnOnOutcome(turnedOn, failed, failedByPkg) to ExtrasRunStop.HelperDown
+                is ToolResult.HelperOutdated -> return ExtrasTurnOnOutcome(turnedOn, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
+                is ToolResult.Refused -> {
+                    failedByPkg[pkg] = "refused"
+                    failed++
+                }
+                is ToolResult.Failed -> {
+                    failedByPkg[pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failed++
+                }
+            }
+        }
+        return ExtrasTurnOnOutcome(turnedOn, failed, failedByPkg.toMap()) to null
     }
 
     suspend fun restoreEverything(): Pair<ExtrasRestoreOutcome, ExtrasRunStop?> {

@@ -38,6 +38,7 @@ import io.github.devjardins.sidespeed.tools.ExtrasRunStop
 import io.github.devjardins.sidespeed.tools.HomeSwitcher
 import io.github.devjardins.sidespeed.tools.formatRestoreOutcome
 import io.github.devjardins.sidespeed.tools.formatRunOutcome
+import io.github.devjardins.sidespeed.tools.formatTurnOnOutcome
 import io.github.devjardins.sidespeed.tools.upstreamCommitShort
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -67,6 +68,7 @@ fun ExtrasScreen(
     var activeMeta by remember { mutableStateOf<ExtrasListMeta?>(null) }
     val checked = remember { mutableStateMapOf<String, Boolean>() }
     var confirmHome by remember { mutableStateOf<ExtrasRow?>(null) }
+    var confirmHomeOn by remember { mutableStateOf<ExtrasRow?>(null) }
     var restoreEnabled by remember { mutableStateOf(false) }
     var homeLabelForConfirm by remember { mutableStateOf<String?>(null) }
     var rowFailures by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -172,7 +174,7 @@ fun ExtrasScreen(
                             checked = checked[row.entry.pkg] == true,
                             onToggle = {
                                 if (row.entry.home && row.selectable && checked[row.entry.pkg] != true) {
-                                    confirmHome = row
+                                    if (row.kind == ExtrasRowKind.On) confirmHome = row else confirmHomeOn = row
                                 } else {
                                     checked[row.entry.pkg] = !(checked[row.entry.pkg] == true)
                                 }
@@ -180,15 +182,17 @@ fun ExtrasScreen(
                         )
                     }
                     status?.let { Text(it, style = SsType.Body, color = SsColors.TextBody) }
+                    val rowsByPkg = rows.associateBy { it.entry.pkg }
+                    val tickedOn = checked.filterValues { it }.keys.filter { rowsByPkg[it]?.kind == ExtrasRowKind.On }.toSet()
+                    val tickedOff = checked.filterValues { it }.keys.filter { rowsByPkg[it]?.kind == ExtrasRowKind.Off }.toSet()
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsButton(
                             "Turn off selected",
-                            enabled = !actionsBlocked && checked.any { it.value },
+                            enabled = !actionsBlocked && tickedOn.isNotEmpty(),
                             onClick = {
                                 busy = true
                                 rowFailures = emptyMap()
                                 scope.launch {
-                                    val selected = checked.filterValues { it }.keys
                                     val metaNow = activeMeta ?: return@launch
                                     val entries = extras.entriesFor(metaNow)
                                     val homePkg = homeSwitcher.currentWithFallback()?.pkg
@@ -196,6 +200,7 @@ fun ExtrasScreen(
                                     val facts = extras.loadProtectionFacts()
                                     if (facts == null) {
                                         status = Extras.PROTECTION_CHECK_FAILED_MSG
+                                        checked.clear()
                                         refresh++
                                         busy = false
                                         return@launch
@@ -203,17 +208,57 @@ fun ExtrasScreen(
                                     val disabledSet = (extras.readDisabledPackages() as? io.github.devjardins.sidespeed.tools.ToolResult.Ok)?.value
                                     if (disabledSet == null) {
                                         status = Extras.HELPER_DOWN_MSG
+                                        checked.clear()
                                         refresh++
                                         busy = false
                                         return@launch
                                     }
-                                    val (outcome, stop) = extras.turnOffSelected(selected, entries, disabledSet, homeFlag, facts)
+                                    val (outcome, stop) = extras.turnOffSelected(tickedOn, entries, disabledSet, homeFlag, facts)
                                     rowFailures = outcome.failedByPkg
                                     status = when (stop) {
                                         ExtrasRunStop.HelperDown -> Extras.HELPER_DOWN_MSG
                                         ExtrasRunStop.HelperOutdated -> Extras.HELPER_OUTDATED_MSG
                                         null -> formatRunOutcome(outcome)
                                     }
+                                    checked.clear()
+                                    refresh++
+                                    busy = false
+                                }
+                            },
+                        )
+                        SsButton(
+                            "Turn on selected",
+                            enabled = !actionsBlocked && tickedOff.isNotEmpty(),
+                            onClick = {
+                                busy = true
+                                rowFailures = emptyMap()
+                                scope.launch {
+                                    val metaNow = activeMeta ?: return@launch
+                                    val entries = extras.entriesFor(metaNow)
+                                    val facts = extras.loadProtectionFacts()
+                                    if (facts == null) {
+                                        status = Extras.PROTECTION_CHECK_FAILED_MSG
+                                        checked.clear()
+                                        refresh++
+                                        busy = false
+                                        return@launch
+                                    }
+                                    val disabledSet = (extras.readDisabledPackages() as? io.github.devjardins.sidespeed.tools.ToolResult.Ok)?.value
+                                    if (disabledSet == null) {
+                                        status = Extras.HELPER_DOWN_MSG
+                                        checked.clear()
+                                        refresh++
+                                        busy = false
+                                        return@launch
+                                    }
+                                    val (outcome, stop) = extras.turnOnSelected(tickedOff, entries, disabledSet, facts)
+                                    rowFailures = outcome.failedByPkg
+                                    status = when (stop) {
+                                        ExtrasRunStop.HelperDown -> Extras.HELPER_DOWN_MSG
+                                        ExtrasRunStop.HelperOutdated -> Extras.HELPER_OUTDATED_MSG
+                                        null -> formatTurnOnOutcome(outcome)
+                                    }
+                                    checked.clear()
                                     refresh++
                                     busy = false
                                 }
@@ -233,6 +278,7 @@ fun ExtrasScreen(
                                         ExtrasRunStop.HelperOutdated -> Extras.HELPER_OUTDATED_MSG
                                         null -> formatRestoreOutcome(outcome)
                                     }
+                                    checked.clear()
                                     refresh++
                                     busy = false
                                 }
@@ -258,6 +304,24 @@ fun ExtrasScreen(
                         },
                     )
                     SsButton("Cancel", onClick = { confirmHome = null })
+                }
+            }
+            confirmHomeOn?.let { confirmRow ->
+                Text("Turn on a home screen app?", style = SsType.Title, color = SsColors.TextPrimary)
+                Text(
+                    "Your TV may go back to ${confirmRow.label} as its home screen. You can pick your home screen in Tools → Home screen.",
+                    style = SsType.Body,
+                    color = SsColors.TextBody,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SsButton(
+                        "Turn on",
+                        onClick = {
+                            checked[confirmRow.entry.pkg] = true
+                            confirmHomeOn = null
+                        },
+                    )
+                    SsButton("Cancel", onClick = { confirmHomeOn = null })
                 }
             }
         }
