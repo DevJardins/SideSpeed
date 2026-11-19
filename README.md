@@ -30,15 +30,17 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 
 ## Keeping apps optimized
 
-An app update throws away its compiled code. Open the app's compile screen and choose **Keep this app optimized**, and SideSpeed recompiles it, one app at a time, after every update.
+An app update throws away its compiled code. On the **My Apps** screen each app has a checkbox: tick it and SideSpeed recompiles the app, one app at a time, after every update. You can also open the app and choose **Keep this app optimized**.
 
-The **Auto-optimize** tab on the apps screen keeps groups of apps optimized automatically:
+The **Auto-optimize** button on the My Apps screen keeps groups of apps optimized automatically:
 
 - **All apps**: every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.
 - **Sideloaded only**: only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.
-- **Selected apps**: only the apps you pick. Open an app and choose "Keep this app optimized" to add it.
+- **Selected apps**: only the apps you ticked.
 
-Anything still in speed-profile or a lower filter is upgraded to speed. The tab also shows a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back.
+An app already covered by Auto-optimize shows a ticked, locked box. Anything still in speed-profile or a lower filter is upgraded to speed. **History** on the Auto-optimize dialog shows the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back.
+
+The My Apps screen shows **Sideloaded** apps or **All** apps. On an app's compile screen, **Mode** picks **speed** or **speed-profile** (speed is the default); the app's last-used mode is remembered.
 
 **SideSpeed optimizes itself too.** After you install or update it, SideSpeed compiles itself to speed the next time you leave the app while the helper is running. The Apps screen shows **SideSpeed optimized** once that is done. The APK also includes a baseline profile, which tells Android which of SideSpeed's own code to compile first.
 
