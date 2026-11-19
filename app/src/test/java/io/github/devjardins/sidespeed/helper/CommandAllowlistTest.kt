@@ -281,6 +281,80 @@ class CommandAllowlistTest {
         )
     }
 
+    @Test fun setHomeForm() {
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "set-home-activity", "--user", "0", "com.example.home/com.example.home.MainActivity"),
+            CommandAllowlist.toArgv("set-home com.example.home com.example.home.MainActivity"),
+        )
+        // Nested class: `$` is allowed in the class token only.
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "set-home-activity", "--user", "0", "com.example.home/com.example.home.Main\$Inner"),
+            CommandAllowlist.toArgv("set-home com.example.home com.example.home.Main\$Inner"),
+        )
+    }
+
+    @Test fun setHomeRejections() {
+        listOf(
+            "set-home com.example.home",
+            "set-home com.example.home com.example.home.MainActivity extra",
+            "set-home com.example\$home com.example.home.MainActivity",
+            "set-home nodots com.example.home.MainActivity",
+            "set-home com.example.home .MainActivity",
+            "set-home com.example.home com.example.home.Main\$",
+            "set-home com.example.home com.example.home.Main\$1",
+            "set-home com.example.home a..B",
+            "set-home com.example.home com.example.home.Main;id",
+            "set-home com.example.home/com.example.home.MainActivity",
+            "cmd package set-home-activity --user 0 com.example.home/com.example.home.MainActivity",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
+    @Test fun pmDisableUserForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "disable-user", "--user", "0", "com.example.bloat"),
+            CommandAllowlist.toArgv("pm disable-user --user 0 com.example.bloat"),
+        )
+    }
+
+    @Test fun pmEnableForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "enable", "com.example.bloat"),
+            CommandAllowlist.toArgv("pm enable com.example.bloat"),
+        )
+    }
+
+    @Test fun pmListDisabledForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "list", "packages", "-d", "--user", "0"),
+            CommandAllowlist.toArgv("pm list packages -d --user 0"),
+        )
+    }
+
+    @Test fun pmExtrasRejections() {
+        listOf(
+            "pm disable-user com.example.bloat",
+            "pm disable-user --user 10 com.example.bloat",
+            "pm disable-user --user 0",
+            "pm disable-user --user 0 com.example.bloat extra",
+            "pm disable-user 0 --user com.example.bloat",
+            "pm disable com.example.bloat",
+            "pm disable-user --user 0 com.example\$bloat",
+            "pm disable-user --user 0 nodots",
+            "pm enable",
+            "pm enable com.example.bloat extra",
+            "pm enable --user 0 com.example.bloat",
+            "pm enable com.example\$bloat",
+            "pm uninstall com.example.bloat",
+            "pm uninstall -k --user 0 com.example.bloat",
+            "pm list packages --user 0 -d",
+            "pm list packages -d --user 10",
+            "pm list packages -d",
+            "pm list packages --user 0",
+            "pm list packages -e --user 0",
+            "pm list packages -d --user 0 extra",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
+    }
+
     @Test fun bringBackForm() {
         assertEquals(
             listOf(
