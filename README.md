@@ -12,7 +12,7 @@ The quickest way: install **Downloader** on the TV (from the Amazon Appstore or 
 
 Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
-To update, install the new APK over the old one. Your settings are kept. Updating stops the helper, so start it again afterwards (on Google TV / onn, just open SideSpeed). SideSpeed shows a notice on the Apps screen when a newer version is out; it never downloads or installs anything by itself.
+To update, press **Update now** on the update notice on the Apps screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates at most once a day and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
 
 Fire TV Sticks that run Vega OS (instead of Fire OS) are not supported: they cannot run Android apps.
 
