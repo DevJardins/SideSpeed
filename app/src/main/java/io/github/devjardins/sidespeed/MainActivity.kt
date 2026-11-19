@@ -31,6 +31,7 @@ import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.githubReleaseFetch
+import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
@@ -103,6 +104,7 @@ class MainActivity : ComponentActivity() {
                 var ready by remember { mutableStateOf(false) }
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showTools by rememberSaveable { mutableStateOf(false) }
+                var showAbout by rememberSaveable { mutableStateOf(false) }
                 // Shown in the update banner and compared against the latest GitHub tag.
                 val currentVersion = remember {
                     runCatching {
@@ -190,6 +192,18 @@ class MainActivity : ComponentActivity() {
                         },
                         onBack = { showTools = false },
                     )
+                    showAbout && app == null -> AboutScreen(
+                        versionName = currentVersion,
+                        check = remember(currentVersion) {
+                            UpdateCheck(
+                                githubReleaseFetch(),
+                                (application as SideSpeedApp).container.toolsStore,
+                                System::currentTimeMillis,
+                                currentVersion,
+                            )
+                        },
+                        onBack = { showAbout = false },
+                    )
                     app == null -> AppsScreen(
                         appsVm,
                         lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
@@ -206,6 +220,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
                         onOpenTools = { showTools = true },
+                        onOpenAbout = { showAbout = true },
                         banner = {
                             val container = (application as SideSpeedApp).container
                             UpdateBannerSlot(

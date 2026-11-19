@@ -15,6 +15,7 @@ libadbAndroid = "3.1.1"
 sunSecurityAndroid = "1.1"
 conscrypt = "2.5.3"
 hiddenapibypass = "6.1"
+zxing = "3.5.4"
 junit = "4.13.2"
 coroutines = "1.11.0"
 kadb = "2.1.4"
@@ -44,6 +45,7 @@ libadb-android = { module = "com.github.MuntashirAkon:libadb-android", version.r
 sun-security-android = { module = "com.github.MuntashirAkon:sun-security-android", version.ref = "sunSecurityAndroid" }
 conscrypt-android = { module = "org.conscrypt:conscrypt-android", version.ref = "conscrypt" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }

@@ -52,6 +52,7 @@ interface ToolsStore {
     suspend fun setRestorePending(r: RestorePending?)
     val updateDismissedVersion: Flow<String?>
     suspend fun setUpdateDismissedVersion(v: String)
+    suspend fun clearUpdateDismissedVersion()
     val updateLastCheckMs: Flow<Long>
     val updateLatestVersion: Flow<String?>
     suspend fun setUpdateCheck(atMs: Long, latest: String?)
@@ -188,6 +189,10 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
 
     override suspend fun setUpdateDismissedVersion(v: String) {
         store.edit { it[dismissedKey] = v }
+    }
+
+    override suspend fun clearUpdateDismissedVersion() {
+        store.edit { it.remove(dismissedKey) }
     }
 
     override val updateLastCheckMs: Flow<Long> = store.data.map { prefs -> prefs[lastCheckKey] ?: 0L }
