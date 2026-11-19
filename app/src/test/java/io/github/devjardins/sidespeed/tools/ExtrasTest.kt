@@ -351,6 +351,148 @@ class ExtrasTest {
         assertEquals("Ver. 2 Agent", displayLabel("Ver. 2 Agent", "x.y"))
     }
 
+    @Test fun offRowSelectableWhenDisabledByAnyone() = runTest {
+        val meta = sampleIndex().lists.first()
+        val e = extras()
+        val row = e.rows(meta, disabled = setOf("com.example.bloat"), NO_PROTECTION)
+            .first { it.entry.pkg == "com.example.bloat" }
+        assertEquals(ExtrasRowKind.Off, row.kind)
+        assertTrue(row.selectable)
+        assertFalse(row.checked)
+        val locked = e.rows(
+            meta,
+            disabled = setOf("com.example.bloat"),
+            NO_PROTECTION,
+            forceNonSelectable = true,
+        ).first { it.entry.pkg == "com.example.bloat" }
+        assertEquals(ExtrasRowKind.Off, locked.kind)
+        assertFalse(locked.selectable)
+    }
+
+    @Test fun offSetupAndCoreRowsStayProtected() = runTest {
+        val corePkg = "com.android.systemui"
+        val entries = listOf(
+            ExtrasEntry("com.example.setupoff", "", home = false, setup = true, optional = false),
+            ExtrasEntry(corePkg, "", home = false, setup = false, optional = false),
+        )
+        val q = FakeExtrasQueries(installed = mutableSetOf("com.example.setupoff", corePkg))
+        val e = extras(queries = q, entries = { entries })
+        val rows = e.rows(
+            sampleIndex().lists.first(),
+            disabled = setOf("com.example.setupoff", corePkg),
+            NO_PROTECTION,
+        )
+        val setupRow = rows.first { it.entry.pkg == "com.example.setupoff" }
+        assertEquals(ExtrasRowKind.Protected, setupRow.kind)
+        assertFalse(setupRow.selectable)
+        val coreRow = rows.first { it.entry.pkg == corePkg }
+        assertEquals(ExtrasRowKind.Protected, coreRow.kind)
+        assertFalse(coreRow.selectable)
+    }
+
+    @Test fun offHomeRowSelectableWithCaption() = runTest {
+        val meta = sampleIndex().lists.first()
+        val e = extras()
+        val row = e.rows(meta, disabled = setOf("com.example.launcher"), NO_PROTECTION)
+            .first { it.entry.pkg == "com.example.launcher" }
+        assertEquals(ExtrasRowKind.Off, row.kind)
+        assertTrue(row.selectable)
+        assertEquals("This is a home screen app.", row.caption)
+    }
+
+    @Test fun turnOnSelectedEnablesOnlyTickedOffRows() = runTest {
+        val commands = FakeExtrasCommands()
+        val store = FakeExtrasStore()
+        store.disabled.value = listOf(DisabledRecord("com.example.bloat", 1))
+        val e = extras(commands = commands, store = store)
+        val entries = ONN_ENTRIES + ExtrasEntry("com.example.missing", "", home = false, setup = false, optional = true)
+        val (outcome, stop) = e.turnOnSelected(
+            setOf(
+                "com.example.bloat",
+                "com.example.optional",
+                "com.google.android.tungsten.setupwraith",
+                "com.example.missing",
+                "com.example.notinlist",
+            ),
+            entries,
+            disabledBefore = setOf("com.example.bloat", "com.google.android.tungsten.setupwraith"),
+            NO_PROTECTION,
+        )
+        assertEquals(null, stop)
+        assertEquals(1, outcome.turnedOn)
+        assertEquals(0, outcome.failed)
+        assertEquals(listOf("com.example.bloat"), commands.enableCalls)
+        assertTrue(store.disabled.first().isEmpty())
+    }
+
+    @Test fun turnOnSelectedLeavesRecordAloneWhenNotRecorded() = runTest {
+        val commands = FakeExtrasCommands()
+        val store = FakeExtrasStore()
+        store.disabled.value = listOf(DisabledRecord("com.example.other", 5))
+        val e = extras(commands = commands, store = store)
+        val (outcome, stop) = e.turnOnSelected(
+            setOf("com.example.bloat"),
+            ONN_ENTRIES,
+            disabledBefore = setOf("com.example.bloat"),
+            NO_PROTECTION,
+        )
+        assertEquals(null, stop)
+        assertEquals(1, outcome.turnedOn)
+        assertEquals(listOf("com.example.bloat"), commands.enableCalls)
+        assertEquals(listOf("com.example.other"), store.disabled.first().map { it.pkg })
+    }
+
+    @Test fun turnOnFailedContinuesAndIsReported() = runTest {
+        val commands = FakeExtrasCommands().apply {
+            enableResult = ToolResult.Failed("Cannot enable package\nmore detail")
+        }
+        val e = extras(commands = commands)
+        val entries = ONN_ENTRIES + ExtrasEntry("com.example.second", "", home = false, setup = false, optional = true)
+        val (outcome, stop) = e.turnOnSelected(
+            setOf("com.example.bloat", "com.example.second"),
+            entries,
+            disabledBefore = setOf("com.example.bloat", "com.example.second"),
+            NO_PROTECTION,
+        )
+        assertEquals(null, stop)
+        assertEquals(0, outcome.turnedOn)
+        assertEquals(2, outcome.failed)
+        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.bloat"])
+        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.second"])
+        assertEquals(setOf("com.example.bloat", "com.example.second"), commands.enableCalls.toSet())
+    }
+
+    @Test fun turnOnRefusedIsReported() = runTest {
+        val commands = FakeExtrasCommands().apply { enableResult = ToolResult.Refused }
+        val e = extras(commands = commands)
+        val (outcome, _) = e.turnOnSelected(
+            setOf("com.example.bloat"),
+            ONN_ENTRIES,
+            disabledBefore = setOf("com.example.bloat"),
+            NO_PROTECTION,
+        )
+        assertEquals(0, outcome.turnedOn)
+        assertEquals(1, outcome.failed)
+        assertEquals("refused", outcome.failedByPkg["com.example.bloat"])
+    }
+
+    @Test fun turnOnHelperDownStops() = runTest {
+        val commands = FakeExtrasCommands().apply { enableResult = ToolResult.HelperDown }
+        val e = extras(commands = commands)
+        val (_, stop) = e.turnOnSelected(
+            setOf("com.example.bloat"),
+            ONN_ENTRIES,
+            disabledBefore = setOf("com.example.bloat"),
+            NO_PROTECTION,
+        )
+        assertEquals(ExtrasRunStop.HelperDown, stop)
+    }
+
+    @Test fun formatTurnOnOutcomeTexts() {
+        assertEquals("Turned on 2.", formatTurnOnOutcome(ExtrasTurnOnOutcome(2, 0)))
+        assertEquals("Turned on 1. Failed 1.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 1)))
+    }
+
     @Test fun rowLabelUsesDisplayLabelForClassName() = runTest {
         val pkg = "com.android.ondevicepersonalization.services"
         val classLabel = "$pkg.OnDevicePersonalizationApplication"
