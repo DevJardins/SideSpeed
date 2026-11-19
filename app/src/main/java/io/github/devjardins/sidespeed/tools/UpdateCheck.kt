@@ -3,8 +3,8 @@ package io.github.devjardins.sidespeed.tools
 import io.github.devjardins.sidespeed.update.UpdateDownload
 import kotlinx.coroutines.flow.first
 
-/** Minimum time between update checks: the release endpoint is polled at most once per 24 h. */
-const val UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L
+/** Minimum time between update checks: the release endpoint is polled at most once per 6 h. */
+const val UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
 
 private val TAG_NAME = Regex("\"tag_name\"\\s*:\\s*\"([^\"]*)\"")
 
@@ -66,7 +66,7 @@ sealed interface ManualCheckResult {
 }
 
 /**
- * Polls GitHub for a newer SideSpeed release, at most once per 24 h. Every outcome is silent:
+ * Polls GitHub for a newer SideSpeed release, at most once per 6 h. Every outcome is silent:
  * offline, rate-limited, or unparsable answers keep the previous latest version (if any) and just
  * move the last-check timestamp forward so we don't hammer the API.
  */
@@ -89,7 +89,7 @@ class UpdateCheck(
 
     /**
      * Manual check for the About screen: same fetch and store behaviour as [checkIfDue], but
-     * ignores the 24 h throttle and always restarts the daily timer. A newer release clears a
+     * ignores the 6 h throttle and always restarts the timer. A newer release clears a
      * matching dismissal so the Apps banner shows again.
      */
     suspend fun checkNow(): ManualCheckResult {
