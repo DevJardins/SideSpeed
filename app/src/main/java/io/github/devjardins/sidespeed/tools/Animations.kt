@@ -23,14 +23,44 @@ fun matchLevel(values: Collection<String?>): AnimationLevel? {
 }
 
 /**
- * Reads and writes the three global animation scales through the helper, keeping the user's
+ * Key-aware [matchLevel]: on Fire OS the animator scale is ignored, so a box whose
+ * window/transition are 0.5 but animator is still 1 still matches Faster. Off Fire OS
+ * all three scales must agree, exactly as the collection overload requires.
+ */
+fun matchLevel(values: Map<AnimationKey, String?>, isFireOs: Boolean): AnimationLevel? {
+    val keys = if (isFireOs) {
+        listOf(AnimationKey.WINDOW, AnimationKey.TRANSITION)
+    } else {
+        AnimationKey.entries
+    }
+    return matchLevel(keys.map { values[it] })
+}
+
+/**
+ * Reads and writes the global animation scales through the helper, keeping the user's
  * original values in [ToolsStore] so [restore] can put them back exactly (even non-standard
  * ones like `1.5`; an unset key restores to `1`).
+ *
+ * On Fire OS ([isFireOs]) [apply] never writes `animator_duration_scale`: changing it
+ * breaks Amazon's launcher Settings slide-out. [restore] still writes it back when an
+ * original was saved, so a box already changed by an older version gets fixed.
  */
 class Animations(
     private val commands: ToolsCommands,
     private val store: ToolsStore,
+    val isFireOs: Boolean = false,
 ) {
+    /** Scales [apply] writes; Fire OS leaves the animator scale untouched. */
+    private val applyKeys: List<AnimationKey> = if (isFireOs) {
+        listOf(AnimationKey.WINDOW, AnimationKey.TRANSITION)
+    } else {
+        AnimationKey.entries
+    }
+
+    /** Selected level for [current] readings; on Fire OS matched from window+transition only. */
+    fun matchCurrent(current: Map<AnimationKey, String?>): AnimationLevel? =
+        matchLevel(current, isFireOs)
+
     /** Current value of each scale; unreadable scales (helper down, failure) read as null. */
     suspend fun current(): Map<AnimationKey, String?> =
         AnimationKey.entries.associateWith { key ->
@@ -41,7 +71,8 @@ class Animations(
         }
 
     /**
-     * Sets all three scales to [level]. The current scales are snapshotted first; the snapshot
+     * Sets the writable scales to [level] (all three off Fire OS, window+transition on
+     * Fire OS). The current scales are snapshotted first; the snapshot
      * is saved as the originals only after the first write lands, so a failed apply never
      * claims an original it didn't change. If a later write fails, the keys already written
      * are rolled back to the snapshot (best effort): a fully restored device keeps no
@@ -57,7 +88,7 @@ class Animations(
         }
         val hadOriginals = store.animationOriginals.first() != null
         val written = mutableListOf<AnimationKey>()
-        for (key in AnimationKey.entries) {
+        for (key in applyKeys) {
             when (val result = commands.putAnimationScale(key, level.value)) {
                 is ToolResult.Ok -> {
                     written += key

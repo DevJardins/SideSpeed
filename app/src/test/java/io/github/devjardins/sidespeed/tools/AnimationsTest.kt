@@ -15,6 +15,12 @@ class AnimationsTest {
         return Triple(fake, store, Animations(ToolsCommands(fake) { helperUp }, store))
     }
 
+    private fun setupFireOs(helperUp: Boolean = true): Triple<FakeAdbBackend, FakeUpdateStore, Animations> {
+        val fake = FakeAdbBackend()
+        val store = FakeUpdateStore()
+        return Triple(fake, store, Animations(ToolsCommands(fake) { helperUp }, store, isFireOs = true))
+    }
+
     private fun scriptGets(fake: FakeAdbBackend, window: String, transition: String, animator: String) {
         fake.on("settings get global window_animation_scale") { listOf(window) to 0 }
         fake.on("settings get global transition_animation_scale") { listOf(transition) to 0 }
@@ -173,6 +179,125 @@ class AnimationsTest {
         assertEquals(AnimationLevel.FASTER, matchLevel(listOf("0.50", "0.5", "0.50")))
         assertEquals(AnimationLevel.OFF, matchLevel(listOf("0", "0", "0")))
         assertEquals(AnimationLevel.OFF, matchLevel(listOf("0.0", "0", "0.00")))
+    }
+
+    @Test fun fireOsApplyFasterNeverWritesAnimator() = runTest {
+        val (fake, _, animations) = setupFireOs()
+        scriptGets(fake, "1", "1", "1")
+        fake.on("settings put global window_animation_scale 0.5") { emptyList<String>() to 0 }
+        fake.on("settings put global transition_animation_scale 0.5") { emptyList<String>() to 0 }
+        // No animator put is scripted: an attempt would exit 127 and fail the apply.
+
+        assertEquals(ToolResult.Ok(Unit), animations.apply(AnimationLevel.FASTER))
+        assertEquals(
+            listOf(
+                "settings put global window_animation_scale 0.5",
+                "settings put global transition_animation_scale 0.5",
+            ),
+            fake.commands.filter { it.startsWith("settings put") },
+        )
+    }
+
+    @Test fun fireOsApplyOffNeverWritesAnimator() = runTest {
+        val (fake, _, animations) = setupFireOs()
+        scriptGets(fake, "1", "1", "1")
+        fake.on("settings put global window_animation_scale 0") { emptyList<String>() to 0 }
+        fake.on("settings put global transition_animation_scale 0") { emptyList<String>() to 0 }
+
+        assertEquals(ToolResult.Ok(Unit), animations.apply(AnimationLevel.OFF))
+        assertEquals(
+            listOf(
+                "settings put global window_animation_scale 0",
+                "settings put global transition_animation_scale 0",
+            ),
+            fake.commands.filter { it.startsWith("settings put") },
+        )
+    }
+
+    @Test fun fireOsRestoreRestoresAnimatorIfOriginalSaved() = runTest {
+        val (fake, store, animations) = setupFireOs()
+        store.setAnimationOriginals(AnimationOriginals("1", "1", "1"))
+        scriptGets(fake, "0.5", "0.5", "0.5")
+        fake.on("settings put global window_animation_scale 1") { emptyList<String>() to 0 }
+        fake.on("settings put global transition_animation_scale 1") { emptyList<String>() to 0 }
+        fake.on("settings put global animator_duration_scale 1") { emptyList<String>() to 0 }
+
+        assertEquals(ToolResult.Ok(Unit), animations.restore())
+        assertEquals(
+            listOf(
+                "settings put global window_animation_scale 1",
+                "settings put global transition_animation_scale 1",
+                "settings put global animator_duration_scale 1",
+            ),
+            fake.commands.filter { it.startsWith("settings put") },
+        )
+        assertNull(store.animationOriginals.first())
+    }
+
+    @Test fun fireOsApplyFailureRollsBackOnlyWrittenKeys() = runTest {
+        val (fake, store, animations) = setupFireOs().also { (f, _, _) ->
+            scriptGets(f, "1", "1", "1")
+            f.on("settings put global window_animation_scale 0.5") { emptyList<String>() to 0 }
+            f.on("settings put global transition_animation_scale 0.5") { listOf("boom") to 1 }
+            f.on("settings put global window_animation_scale 1") { emptyList<String>() to 0 }
+        }
+        val result = animations.apply(AnimationLevel.FASTER)
+        assertTrue(result is ToolResult.Failed)
+        assertEquals(
+            listOf(
+                "settings put global window_animation_scale 0.5",
+                "settings put global transition_animation_scale 0.5",
+                "settings put global window_animation_scale 1",
+            ),
+            fake.commands.filter { it.startsWith("settings put") },
+        )
+        assertNull(store.animationOriginals.first())
+    }
+
+    @Test fun fireOsMatchLevelIgnoresAnimator() {
+        val faster = mapOf(
+            AnimationKey.WINDOW to "0.5",
+            AnimationKey.TRANSITION to "0.5",
+            AnimationKey.ANIMATOR to "1",
+        )
+        assertEquals(AnimationLevel.FASTER, matchLevel(faster, isFireOs = true))
+        // The same readings on a non-Fire OS box are mixed and match nothing.
+        assertNull(matchLevel(faster, isFireOs = false))
+        assertNull(matchLevel(listOf("0.5", "0.5", "1.0")))
+        // Animator value does not affect the Fire OS match at all.
+        assertEquals(
+            AnimationLevel.NORMAL,
+            matchLevel(
+                mapOf(
+                    AnimationKey.WINDOW to "1",
+                    AnimationKey.TRANSITION to "1.0",
+                    AnimationKey.ANIMATOR to "0",
+                ),
+                isFireOs = true,
+            ),
+        )
+        assertEquals(
+            AnimationLevel.OFF,
+            matchLevel(
+                mapOf(
+                    AnimationKey.WINDOW to "0",
+                    AnimationKey.TRANSITION to "0.0",
+                    AnimationKey.ANIMATOR to "1",
+                ),
+                isFireOs = true,
+            ),
+        )
+        // Window/transition disagreement still matches nothing on Fire OS.
+        assertNull(
+            matchLevel(
+                mapOf(
+                    AnimationKey.WINDOW to "0.5",
+                    AnimationKey.TRANSITION to "1",
+                    AnimationKey.ANIMATOR to "0.5",
+                ),
+                isFireOs = true,
+            ),
+        )
     }
 
     @Test fun matchLevelRejectsMixedOrUnreadable() {

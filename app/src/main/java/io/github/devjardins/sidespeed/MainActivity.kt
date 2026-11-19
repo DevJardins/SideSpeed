@@ -188,7 +188,10 @@ class MainActivity : ComponentActivity() {
                         },
                         animations = {
                             val tools = (application as SideSpeedApp).container
-                            AnimationsCard(Animations(tools.toolsCommands, tools.toolsStore), tools.toolsStore)
+                            AnimationsCard(
+                                Animations(tools.toolsCommands, tools.toolsStore, isFireOs = tools.isFireOs),
+                                tools.toolsStore,
+                            )
                         },
                         onBack = { showTools = false },
                     )
