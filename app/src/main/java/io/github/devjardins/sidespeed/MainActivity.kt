@@ -32,6 +32,7 @@ import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.githubReleaseFetch
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
+import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
@@ -63,6 +64,36 @@ class MainActivity : ComponentActivity() {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = AppsViewModel(c.installedApps, c.statusChecker) as T
         })[AppsViewModel::class.java]
+    }
+
+    private val aboutVm: AboutViewModel by lazy {
+        val c = (application as SideSpeedApp).container
+        val versionName = runCatching {
+            val info = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    android.content.pm.PackageManager.PackageInfoFlags.of(0),
+                )
+            } else {
+                @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, 0)
+            }
+            info.versionName
+        }.getOrNull() ?: "0.0.0"
+        ViewModelProvider(this, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                AboutViewModel(
+                    UpdateCheck(
+                        githubReleaseFetch(),
+                        c.toolsStore,
+                        System::currentTimeMillis,
+                        versionName,
+                    ),
+                    startUpdate = { tag -> c.selfUpdater.start(tag) },
+                    // Same debug hook as the Apps banner: debuggable builds act as if 9.9.9 shipped.
+                    debugNewerTag = if (c.selfBuild.debuggable) "9.9.9" else null,
+                ) as T
+        })[AboutViewModel::class.java]
     }
 
     private val compileVm: CompileViewModel by lazy {
@@ -197,14 +228,9 @@ class MainActivity : ComponentActivity() {
                     )
                     showAbout && app == null -> AboutScreen(
                         versionName = currentVersion,
-                        check = remember(currentVersion) {
-                            UpdateCheck(
-                                githubReleaseFetch(),
-                                (application as SideSpeedApp).container.toolsStore,
-                                System::currentTimeMillis,
-                                currentVersion,
-                            )
-                        },
+                        viewModel = aboutVm,
+                        selfUpdater = (application as SideSpeedApp).container.selfUpdater,
+                        busy = (application as SideSpeedApp).container.updateBusy,
                         onBack = { showAbout = false },
                     )
                     app == null -> AppsScreen(
