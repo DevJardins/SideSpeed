@@ -64,7 +64,7 @@ class MyAppsTest {
         assertEquals("Auto-optimize: All apps", autoOptimizeButtonLabel(AutoOptimizeMode.ALL))
 
     @Test fun lockedMessageNamesMode() = assertEquals(
-        "Kept optimized by Auto-optimize (All apps). Change it with the Auto-optimize button.",
+        "Kept optimized by Auto-optimize (All apps). Change it on the Auto-optimize screen.",
         lockedMessage(AutoOptimizeMode.ALL),
     )
 

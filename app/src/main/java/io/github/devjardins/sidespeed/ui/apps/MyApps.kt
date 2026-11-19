@@ -31,7 +31,7 @@ fun boxFor(app: AppEntry, mode: AutoOptimizeMode, ticked: Set<String>): KeepBox 
 fun autoOptimizeButtonLabel(mode: AutoOptimizeMode): String = "Auto-optimize: " + autoOptimizeOption(mode).title
 
 fun lockedMessage(mode: AutoOptimizeMode): String =
-    "Kept optimized by Auto-optimize (${autoOptimizeOption(mode).title}). Change it with the Auto-optimize button."
+    "Kept optimized by Auto-optimize (${autoOptimizeOption(mode).title}). Change it on the Auto-optimize screen."
 
 /** The Compile screen mode: the app's last-used mode, or speed when it has never compiled. */
 fun initialCompileMode(last: LastCompile?): CompileMode = last?.mode ?: CompileMode.SPEED
