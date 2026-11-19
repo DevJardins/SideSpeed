@@ -19,7 +19,6 @@ import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.tools.AnimationLevel
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.ToolResult
-import io.github.devjardins.sidespeed.tools.matchLevel
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -39,9 +38,9 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
     var status by remember { mutableStateOf<String?>(null) }
 
     suspend fun refreshSelection() {
-        val current = animations.current().values.toList()
-        unreadable = current.all { it == null }
-        selected = matchLevel(current)
+        val current = animations.current()
+        unreadable = current.values.all { it == null }
+        selected = animations.matchCurrent(current)
     }
 
     LaunchedEffect(Unit) {
@@ -102,6 +101,13 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
                         selected = selected == level,
                     )
                 }
+            }
+            if (animations.isFireOs) {
+                Text(
+                    "On Fire TV, app animations stay at normal speed so the Settings menu keeps working.",
+                    style = SsType.Caption,
+                    color = SsColors.TextSecondary,
+                )
             }
             if (originals != null) {
                 Text(
