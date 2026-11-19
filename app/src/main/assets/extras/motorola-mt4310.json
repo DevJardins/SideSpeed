@@ -1,0 +1,114 @@
+[
+  {
+    "package": "android.autoinstalls.config.hisense.hayward",
+    "note": "silently installs promoted apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "store demo mode, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "store-mode disclaimer from first setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner referral tracking (RLZ ping)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "re-enabled at every boot (header); fed the stock rows",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "partner promo rows (and the stock top-bar icons)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "re-enabled at every boot (header); voice search / Assistant",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "screen reader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tts",
+    "note": "Google text-to-speech (only needed for screen reading)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.arkiv.player.light",
+    "note": "user-installed player the owner did not recognise; not bloat for everyone",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

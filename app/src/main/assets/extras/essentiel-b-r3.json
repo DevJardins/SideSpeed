@@ -1,0 +1,121 @@
+[
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV movies and shows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant / voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.scast",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.creative.fastscreen.tv",
+    "note": "FastCast",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.seraphic.hbbtv.app",
+    "note": "HbbTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.seraphic.webview",
+    "note": "HbbTV's own WebView",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.gallery3d",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaper.livepicker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mk.tv.meeting.service",
+    "note": "digital-signage accessibility service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

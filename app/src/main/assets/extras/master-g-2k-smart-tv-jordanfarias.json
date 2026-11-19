@@ -1,0 +1,58 @@
+[
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "Stock Google TV launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "Initial setup recovery activity",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ad services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "On-device ad personalisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "Federated learning for the above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.electronic.manual",
+    "note": "On-TV electronic manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

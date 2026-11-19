@@ -1,0 +1,184 @@
+[
+  {
+    "package": "com.heytap.tv.heycast",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hpplay.happyplay.aw",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apowersoft.mirror.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.iot.castservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.optvmiracastservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.opos.ott",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.pictorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.imagewall",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.msgboard",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.mcs",
+    "note": "HeyTap push",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nearme.instant.platform.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.remotediagnosing",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.oplus.crashbox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tpv.factorymenu.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "mediatek.factorymenu.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.factory.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.factory.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.fac.menu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.license.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gaochuang.factory.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.konka.factory.at",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.userguide",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.oobe",
+    "note": "first-run wizard, after setup has finished",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.optv.aiengine",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.heytap.tv.aicaption",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,408 @@
+[
+  {
+    "package": "tv.samba.ssm",
+    "note": "Samba TV, fingerprints what's on screen (ACR)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "Qterics device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "Sony device agent / remote support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyericsson.idd.agent",
+    "note": "Sony usage-data agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonybugreportsys",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select promo tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonytab",
+    "note": "Sony tab content on the Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.launcherxcustomizer",
+    "note": "Sony config for the Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sony.bravia",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosystemsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.multiscreendemo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.customersupport",
+    "note": "Help tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync; also carries Google's GrowthKit promo framework",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "RLZ install-attribution provider",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "runs once after first setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.QuickSetupCustomizer",
+    "note": "partner customisation for first setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.hotelmode",
+    "note": "always-running service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntime.normal",
+    "note": "Node.js runtime for hotel apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntime.privilege",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntimeextension.bpk",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntimeextension.node_20_11_1",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.airplayapp",
+    "note": "AirPlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.huey.dlna.module",
+    "note": "DLNA renderer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.huey.dlna.renderersettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyericsson.dlna",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.hbbtvplayer",
+    "note": "HbbTV red-button player for broadcast channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.gestureapp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.distancealert",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sensingcamera.fwupdate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sensingcamera.settings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.notificationcenter",
+    "note": "\"BRAVIA notifications\" inbox",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.promos",
+    "note": "\"My BRAVIA\" promos tile; enabled at the factory on the second unit",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fi.mtv.svod",
+    "note": "old MTV app (v1.0.56, last updated 2024-01); MTV Katsomo is fi.mtvkatsomo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / voice search: the mic button stops working",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.voicesearch",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.assistantadapter",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music (enabled at the factory on the second unit)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies store",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.recapp",
+    "note": "\"Recorded Title List\" tile; recservice stays (also a DLNA receiver)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.livingfit",
+    "note": "Living Decor",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.osat.music",
+    "note": "\"Music\" player for USB files",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.calibrationmonitor",
+    "note": "\"Calman for BRAVIA\" tile",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.ecodashboard",
+    "note": "Eco Dashboard tile",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.timers",
+    "note": "Timers & Clock: the sleep timer and on/off timers go too",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Ambient mode screensaver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.lastaccess",
+    "note": "usage agent",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.interactivetvutil",
+    "note": "ActionLogCollector / ApplicationLogCollector",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.usercontext",
+    "note": "user-context provider",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vewd.core.service",
+    "note": "Vewd browser engine (HbbTV, old Sony store)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tts",
+    "note": "Google text-to-speech",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

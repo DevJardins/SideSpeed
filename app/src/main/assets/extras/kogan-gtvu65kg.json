@@ -1,0 +1,86 @@
+[
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play partner auto-installs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.homwee.store",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.homwee.help",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "re-enable if you use the screen reader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "au.net.abc.iview",
+    "note": "user-installed on this set",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sbs.ondemand.tv",
+    "note": "user-installed on this set",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

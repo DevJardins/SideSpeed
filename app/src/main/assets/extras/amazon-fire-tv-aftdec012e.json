@@ -1,0 +1,135 @@
+[
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.acr",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.democontent.provider",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.neo.minerva",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.neo.minerva.logcat",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfc",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.storm.lightning.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.photos",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.naatyam",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.cast.sink",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.minitv.android.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tubitv.ott",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

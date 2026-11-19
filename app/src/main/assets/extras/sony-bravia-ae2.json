@@ -1,0 +1,261 @@
+[
+  {
+    "package": "tv.samba.ssm",
+    "note": "Samba TV (ACR viewing data)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "Samba TV's opt-in and settings screens",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "(new) Qterics device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyericsson.idd.agent",
+    "note": "(new) Sony usage data",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.usercontext",
+    "note": "viewing context for recommendations",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.seeds.iot",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.promos",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonytab",
+    "note": "Sony tab on the Google TV home; unused once launcherx is off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "(new)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonybugreportsys",
+    "note": "(new) bug-report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.vendorprotocol",
+    "note": "(new) broadcasts model/MAC/IP over SDDP",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sony.bravia",
+    "note": "(new) Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosystemsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.multiscreendemo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.customersupport",
+    "note": "(new) Help tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "(new)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.calibrationmonitor",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.gestureapp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.livingfit",
+    "note": "also the default screensaver, see the header",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.osat.music.toast",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.dtv.tvinput.atsctuner",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.tvinput.atsc3tuner",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.tvinput.atsc3tuner.drmlicenseinstaller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.atscbrowserservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.broadcastclock.broadcastrequirementcontrol",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.broadcastclock.clocksyncservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.broadcastsettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.servicemode.tuner",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.crunchyroll.crunchyroid",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonypicturescore",
+    "note": "Sony Pictures Core",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "came back enabled once on its own; check after Play updates",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "(new)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "its RecoveryActivity otherwise takes over Home",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "launcher/build-and-install.sh disables the stock launcher itself, after Home has moved",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

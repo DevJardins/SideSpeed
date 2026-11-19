@@ -1,0 +1,170 @@
+[
+  {
+    "package": "com.tianci.ad",
+    "note": "boot ad (persist.sys.ad.startboot)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.push",
+    "note": "push service with Sensors Data analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.sysreport",
+    "note": "usage reporting on boot, screen and app install",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.baidu.oases",
+    "note": "Baidu SDK service started at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.autoinstaller",
+    "note": "silently installs promoted apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.skymarket",
+    "note": "shop demo display",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.screensaver",
+    "note": "screensaver with an ad SDK (com.coocaa.adsdk)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.guide",
+    "note": "boot/upgrade guide, push receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.educate",
+    "note": "kids/education channel, ad SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.lifeassistant",
+    "note": "morning call, sleep aid, weather",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.appstore",
+    "note": "Coocaa app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.app_browser",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.tvmanager",
+    "note": "cleaner / \"speed up\", Baidu TV shield",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.loostone.tuning",
+    "note": "karaoke mic tuning, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.angel.voice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.skyworth.aimanager",
+    "note": "far-field mic AI service, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.os.upgrade",
+    "note": "firmware/OTA updates",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.teampresent",
+    "note": "help and customer service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.os.thememanager",
+    "note": "theme store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.messageprovider",
+    "note": "system message box, pushes notices and promotions",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.sky.ccapi",
+    "note": "Coocaa payment centre; breaks Coocaa membership purchases",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.user",
+    "note": "Coocaa account centre; breaks Coocaa account login",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.skycast.tool",
+    "note": "cast component updater; casting itself still works",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.movieplatform",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

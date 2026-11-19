@@ -1,0 +1,170 @@
+[
+  {
+    "package": "com.tcl.bootadservice",
+    "note": "full-screen ad before Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.profilemanager",
+    "note": "audience / profile reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.xian.StartandroidService",
+    "note": "background reporting service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log collection and upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.recognize.service",
+    "note": "screen recognition; silent-install channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.appreciate.art",
+    "note": "art-wallpaper / screensaver promo content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.atomic.servicecenter",
+    "note": "home-screen recommendation cards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.c2dm.client",
+    "note": "TCL push, long-lived connection",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.wholenetsearch",
+    "note": "whole-net search with VOD promotions",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.playskill",
+    "note": "\"tips\" promo app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.repairguide",
+    "note": "repair-guide app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "user-agreement popup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tcl.device",
+    "note": "first-boot auto-install of preloaded apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ffeducation",
+    "note": "kids / education content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ffkaraoke",
+    "note": "karaoke",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.versionUpdateApp",
+    "note": "system OTA and app auto-update",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.UpdatePeripheral",
+    "note": "peripheral firmware OTA, ~200 MB resident",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.snm.upgrade",
+    "note": "updateos, a second updater (not in tcl-q10g-pro; stayed disabled, updates not checked)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.walleve",
+    "note": "iFlytek voice engine, ~230 MB resident",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.common.weather",
+    "note": "weather widget and its background service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tvsmartalbum",
+    "note": "smart photo album",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.weixin",
+    "note": "WeChat on TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.videocall",
+    "note": "video calls",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

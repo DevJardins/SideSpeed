@@ -1,0 +1,254 @@
+[
+  {
+    "package": "com.tcl.ttvs",
+    "note": "TCL BI/awareness/identifier services; see the README on TvSettings without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log capture and upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.interactive",
+    "note": "TCL TIAS background service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mirakulo.astrotv.service",
+    "note": "Ginga (ISDB-Tb broadcast apps), not analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.channelplus",
+    "note": "TCL Live FAST channels, also removes them from Live TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL content \"waterfall\" recommendations",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "TCL tweaks to Google TV home rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "TCL pushed messages and promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "partner auto-installs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartlink.core",
+    "note": "bundles a silent app installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.magiconnectfree",
+    "note": "MagiConnect phone companion app (55V6C unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TGuard: device-use tracking, memory cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "Alexa client (AS23 unit; keep it if you use Alexa)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "EULA/privacy screens (AS23 unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.initsetup",
+    "note": "TCL first-run setup incl. SambaTV ACR hooks; re-enable before rescanning channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account sign-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.exhibit",
+    "note": "store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "store demo stickers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.hotelmenu",
+    "note": "hotel mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "phone remote apps and the mic too; pm enable restores it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ocean.instructions",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.repairguide",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gamebar",
+    "note": "re-enable for the console game-mode overlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.UpdatePeripheral",
+    "note": "re-enable to update a TCL soundbar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.hearaid",
+    "note": "hearing test / volume adaptation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies storefront",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient screensaver; use the launcher's Clock screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.graymatrix.did",
+    "note": "ZEE5 streaming app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ui_mediaCenter",
+    "note": "USB media player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "setup wizard, claims HOME after launcherx is disabled",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

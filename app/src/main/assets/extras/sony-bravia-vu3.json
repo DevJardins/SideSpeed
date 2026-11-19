@@ -1,0 +1,149 @@
+[
+  {
+    "package": "com.sony.dtv.promos",
+    "note": "My BRAVIA promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonytab",
+    "note": "Sony content tab",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.multiscreendemo",
+    "note": "in-store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "Sony help tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.helpguidecontents",
+    "note": "help guide content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonypicturescore",
+    "note": "Sony Pictures Core preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ad services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "federated compute services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "on-device personalization",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner setup/attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "one-time setup initializer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync adapter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "print service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Google TV partner auto-installs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.gallery3d",
+    "note": "legacy gallery app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Ambient photos/art screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "setup wizard; re-enable before a factory reset; costs phone casting after a reboot (the Cast receiver reads its credentials from setupwraith)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

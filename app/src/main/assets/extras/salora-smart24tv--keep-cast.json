@@ -1,0 +1,79 @@
+[
+  {
+    "package": "com.vestel.vestelreporter",
+    "note": "Vestel reporter/telemetry (about 70 MB of RAM when running)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "feedback and crash uploader to Google",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "manufacturer attribution (RLZ) pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvkids",
+    "note": "YouTube Kids",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies / Google TV storefront",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cltv.fast",
+    "note": "\"FAST\" streaming channels (see Differences above)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync, on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.nbu.smartconnect.tv",
+    "note": "Smart Connect (connectivity helper); casting does not need it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant / voice search (about 40-50 MB in two processes)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

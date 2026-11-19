@@ -1,0 +1,268 @@
+[
+  {
+    "package": "com.vestel.vestelreporter",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vestel.smartlogger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vestel.tv.speedup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vestel.smartcenter",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.vestel.malin",
+    "note": "Vestel auto-install stub (preloads apps at setup)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "Disney+",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hbo.hbonow",
+    "note": "HBO Max",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.viaplay.android",
+    "note": "Viaplay",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.spotify.tv.android",
+    "note": "Spotify",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "Twitch",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "dk.dr.tvplayer",
+    "note": "DR TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "dk.yousee.tv.leanback",
+    "note": "YouSee; also claims HOME",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tachyon",
+    "note": "Google Meet / Duo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant and voice search",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.dsi.ant.plugins.antplus",
+    "note": "ANT+ fitness sensors",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.dsi.ant.service.socket",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.managedprovisioning",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.android.dynsystem",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.cts.ctsshim",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.cts.priv.ctsshim",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.backupconfirm",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.se",
+    "note": "Secure Element; the TV has no NFC or eSIM",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.wwtv.mediaplayer",
+    "note": "MMP, the USB media player; not a TvInputService here.",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

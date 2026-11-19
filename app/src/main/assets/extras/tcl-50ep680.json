@@ -1,0 +1,331 @@
+[
+  {
+    "package": "com.tcl.bi",
+    "note": "analytics / telemetry service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL web content feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "retail demo stickers. Worth re-checking here: the BeyondTV2",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.notereminder",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.overseasappshow",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.copydatatotv",
+    "note": "\"copy your phone's data to the TV\" setup helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.dashboard",
+    "note": "TCL dashboard; carries a /giftbox promo activity",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "installs partner/preload apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.assistant",
+    "note": "Google Assistant for TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.assistant",
+    "note": "TCL's assistant surface",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "ambient screensaver. Once it is gone the screensaver has to",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.king.candycrushsaga",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.asanteegames.magicrampage",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mautilus.tvgames.portal.androidtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.popoko.tictactoe",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.secretexit.turbodismount",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vectorunit.purple.googleplay",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.wrcplus.release",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "paskov.biz.happyfruits",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "rocks.funkykarts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ro.pontes.forinaline",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.hexage.ritual",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.joxdev.orbia",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.bruyere.android.solitaire",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ca.cbc.mobile.android.cbcnewsandroidwebview",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.abc.abcnews",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.bloomberg.btva",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cnn.mobile.android.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nousguide.android.rbtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ted.android.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vimeo.android.videoapp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "dw.com.androidtv.live",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "net.aljazeera.english",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.rarity.tvweb",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cloudmosa.puffinTV",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cm.aptoidetv.pt",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.curiosity.curiositystream.androidtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.teamviewer.quicksupport.market",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.tiv.dvtv.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

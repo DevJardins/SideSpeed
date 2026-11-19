@@ -1,0 +1,177 @@
+[
+  {
+    "package": "com.tcl.bi",
+    "note": "TCL BI analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.xian.StartandroidService",
+    "note": "background reporting service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash / feedback reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.dashboard",
+    "note": "TCL dashboard / promo backend",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "partner customisation, promo rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "TCL message / promo box",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "sticker overlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL web-video portal",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclchannel",
+    "note": "TCL Channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.plus",
+    "note": "TCL+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV Movies; the priced row is launcherx",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "silently installs partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner-app attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "one-time setup leftovers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TCL online support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account sign-in; on AR11 a 43C641 rebooted on every standby wake with it off (#3533), so re-enable it if this set does",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ocean.instructions",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync, no calendar on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gallery",
+    "note": "TCL photo gallery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "Alexa bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.assistant",
+    "note": "TCL voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

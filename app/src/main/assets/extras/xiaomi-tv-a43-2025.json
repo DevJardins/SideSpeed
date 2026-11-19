@@ -1,0 +1,177 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs.overseas",
+    "note": "\"TV Quality Service\" feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.atv",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.michannel",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.mitvplus",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.smartshare",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.milinkservice",
+    "note": "Mi cast; Chromecast still works",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.amazon.alexa",
+    "note": "Alexa bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.xiaomi.amelie",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ru.more.play",
+    "note": "Okko",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vk.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.browser.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "phone casting stops after a reboot with it off",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

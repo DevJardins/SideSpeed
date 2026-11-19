@@ -1,0 +1,156 @@
+[
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select app store/promo tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.discovery",
+    "note": "Sony Discover content bar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.bivlinfo",
+    "note": "BIVL content service list (feeds Discover)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sony.bravia",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.sony.mybravia",
+    "note": "\"My BRAVIA\u304b\u3089\u306e\u304a\u3059\u3059\u3081\" promo row on the stock home (Japan)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "Sony device agent / remote support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "Qterics device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.vendorprotocol",
+    "note": "SDDP model/MAC/IP broadcast; re-enable for Control4-style home automation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.customersupport",
+    "note": "Help tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.imanual",
+    "note": "i-Manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.touchpad.tutorial",
+    "note": "touchpad remote tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "Google Play Music, shut down in 2020",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.inputmethod.japanese",
+    "note": "Japanese keyboard (not the active one); kept: needed to type Japanese; the tested set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.osat.music",
+    "note": "re-enable to play music from USB",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.osat.album",
+    "note": "re-enable to view photos from USB",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.osat.video",
+    "note": "re-enable to play videos from USB",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

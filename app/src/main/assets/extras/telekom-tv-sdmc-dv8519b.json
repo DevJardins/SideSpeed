@@ -1,0 +1,107 @@
+[
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "off on this set by choice",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "off on this set by choice",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sdmc",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "hu.telekom.ttvtester",
+    "note": "Telekom TV tester utility",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.dt.onetv.selfcare",
+    "note": "self-care app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tataelxsi.icx",
+    "note": "iCX device management + telemetry (Firebase, Kinesis)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.telekom.onetv.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

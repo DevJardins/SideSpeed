@@ -1,0 +1,142 @@
+[
+  {
+    "package": "com.smartdevice.recommendation",
+    "note": "Coocaa recommendation rows; bundles Sensors Data analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.leanbacklauncher.customizer",
+    "note": "partner config that injects rows into the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.epopplayer",
+    "note": "ePop shop demo player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "shop demo player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.demonow.lightining",
+    "note": "\"Demo Now\" retail mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.myapp",
+    "note": "\"Daily Key\" preload (factory-disabled on sister models)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.Smartdevice.emanual",
+    "note": "on-screen manual; skipped by the input-driver guard here, left on",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "retail disclaimer dialogs; skipped by the same guard, left on",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.smartdevice.aftersale",
+    "note": "boot + network receivers, can push APKs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dailymanage",
+    "note": "\"TV Guard\" boot service, no documented purpose",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.security.SwaiotTV",
+    "note": "Tuya smart-home preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.liskovsoft.androidtv.rukeyboard",
+    "note": "Russian soft keyboard; left enabled, lists never disable a keyboard",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dtv.icast",
+    "note": "Miracast + DLNA",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "RecoveryActivity otherwise steals Home; needs FORCE_SETUPWRAITH=1 when the saved Wi-Fi is not setupwraith's",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV home; com.gathin.tvhome is Home now",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

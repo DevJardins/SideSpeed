@@ -1,0 +1,170 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.michannel",
+    "note": "recommendation channels, Firebase",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.mitvplus",
+    "note": "Xiaomi TV+ promo banners",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.oemtab",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.atv",
+    "note": "banner tiles",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.manualhelp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play auto-installs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.misightservice",
+    "note": "MiSight: DiagnosisReceiver, RemoteDiagnosis; mioffice.cn, mitvos.com",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.detection",
+    "note": "diagnosis and benchmark (benchmarkcn); ad and tracking SDK",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mitv.toolhouse",
+    "note": "network speed test (speedtest.cn), no activities",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mi_connect_service",
+    "note": "Mi Connect / Milink (Airkan) casting for Xiaomi phones",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.videoplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.mediaexplorer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki ACR: automatic content recognition (viewing tracking)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.launcher.partner",
+    "note": "partner rows for the stock launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.retaildemo",
+    "note": "store/demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mtc.emanual",
+    "note": "on-screen manual; firmware re-enables it at every boot",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "first-run wizard; claims HOME. Re-enable before a factory reset",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

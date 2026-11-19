@@ -1,0 +1,149 @@
+[
+  {
+    "package": "com.haierubic.usmartdevice",
+    "note": "Haier smart-device / IoT service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "it.hon.service",
+    "note": "Haier hOn IoT service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "Haier promo content app (Kinopoisk)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tvhousekeeper",
+    "note": "\"TV housekeeper\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.emanual9603",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.oemtabprovider",
+    "note": "the \"Haier\" tab on the Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.launcher.haiermatrix",
+    "note": "Zeasn content launcher, not the system Home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google usage feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki ACR opt-in (content recognition)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.launcher.partner",
+    "note": "partner rows on the stock home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.retaildemo",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "preloaded",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "in.startv.hotstar.dplus.tv",
+    "note": "Disney+ Hotstar, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "id.visionplus.android.atv",
+    "note": "Vision+, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tencent.qqlivei18n",
+    "note": "WeTV, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "Apple TV, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.gamingbar",
+    "note": "Haier game-mode overlay, not wanted; firmware re-enables it at boot",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.haier.overseastv.bluetoothspeaker",
+    "note": "TV as Bluetooth speaker, not wanted",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

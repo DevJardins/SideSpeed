@@ -1,0 +1,184 @@
+[
+  {
+    "package": "com.hisense.hitv.das",
+    "note": "DasApp: DataReportReceiver only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.hproxy",
+    "note": "LoopingService + network-change receiver, polls forever",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "HiMsgService, the vendor push channel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ships Alibaba Baichuan + CIBN shopping SDKs; installed as a user app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "its WatchingAccessibilityService was registered in enabled_accessibility_services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.widget.pro",
+    "note": "home operator widget rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "weather card, another content feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "DbxDemo / multi-channel sound demo reels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.meetingroom",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.autotest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.ar.baike",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "first-run wizard, done; the saved Wi-Fi belongs to android.uid.system",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.usbupgrade",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videoconference",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.fitmirror",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.foodmanage",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vision.aibook",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.screensaver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.vod",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.keylab.speech.view.vidaa",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

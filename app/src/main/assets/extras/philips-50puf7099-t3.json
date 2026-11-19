@@ -1,0 +1,142 @@
+[
+  {
+    "package": "com.tpv.asc.aiot",
+    "note": "\u667a\u80fd\u8fde\u63a5 / smart home hub; system/app/smarthome",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hpplay.happyplay.aw",
+    "note": "\u4e50\u64ad\u6295\u5c4f / LeboCast screen casting; system/app/LeboCast",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.camera.cn",
+    "note": "\u76f8\u673a / camera and remote viewing; system/app/AiCamera",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tpv.asc.videocall.cn",
+    "note": "\u89c6\u9891\u901a\u8bdd / video call; system/app/VideoCall",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.fun.bugreporter",
+    "note": "crash and feedback reporting; BOOT_COMPLETED x2 + INTERNET",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "boot stats, remote keypress counts, panel telemetry (quirk 3)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tpv.asc.taadserver",
+    "note": "TPV ad and telemetry server; BOOT_COMPLETED + INTERNET + WRITE_SECURE_SETTINGS",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tianci.ad",
+    "note": "\u5929\u8d50 ad SDK, versionName carries [philips_v2]; BOOT_COMPLETED + INSTALL_PACKAGES",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tpv.app.recommendation",
+    "note": "TPV recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.funshion.publicity",
+    "note": "\u6b22\u89c6 promotional content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.fun.master",
+    "note": "BestV master service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.fun.ottsecurity",
+    "note": "BestV security module; SYSTEM_ALERT_WINDOW + BOOT_COMPLETED",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.newtv.loginservice",
+    "note": "NewTV login service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.fun.tvupgrade",
+    "note": "BestV upgrader \u2014 the installer of com.bestv.ott itself",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.fun.appstore",
+    "note": "app store; INSTALL_PACKAGES + DELETE_PACKAGES",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.fun.sdkmanager",
+    "note": "SDK manager, which installed most of the preloaded content apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tpv.xmic.ota",
+    "note": "TPV board OTA; INSTALL_PACKAGES + WRITE_SECURE_SETTINGS",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.devicesetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.tpvaiotmessenger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tpv.tvsetting.factory.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

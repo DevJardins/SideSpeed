@@ -1,0 +1,114 @@
+[
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki content-recognition opt-in; starts at boot, network/storage receivers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Android ad services (Topics, attribution)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner attribution pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "setup-only disclaimer screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV app (Play Movies store and watchlist)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "MediaTek Miracast sink (screen mirroring), off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant, off by choice (the remote's mic button stops working)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Ambient screensaver (mixes recommendations in)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

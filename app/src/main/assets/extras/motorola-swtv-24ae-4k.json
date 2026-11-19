@@ -1,0 +1,212 @@
+[
+  {
+    "package": "com.smartdevice.recordactivation",
+    "note": "records first activation, phones home on boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.aftersale",
+    "note": "\"after-sale\" service: boot + network receivers, can install APKs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.recommendation",
+    "note": "promo rows on home, bundles Sensors Data analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.leanbacklauncher.customizer",
+    "note": "partner config that injects sponsored rows into the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.Smartdevice.emanual",
+    "note": "on-screen manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dailymanage",
+    "note": "TV Guard / cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.myapp",
+    "note": "Skyworth app manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "Brazilian Ginga interactive TV, not used in India",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.obs.mhegservice",
+    "note": "UK MHEG interactive TV, not used in India",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.audiocn.karaoke.global.micmanager",
+    "note": "karaoke microphone manager",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.loostone.tuning",
+    "note": "karaoke microphone tuning",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix; the firmware turns it back on at every boot (see above)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.tokenmanager",
+    "note": "Netflix sign-in helper, goes with Netflix",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant: the remote's mic button stops working",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in (cast from a phone)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.dialservice",
+    "note": "DIAL, used with Chromecast to start apps from a phone",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.smartdevice.dtv.icast",
+    "note": "screen mirroring (Miracast / DLNA)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google screensaver / Ambient mode",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "setup wizard; re-enable it before a factory reset",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

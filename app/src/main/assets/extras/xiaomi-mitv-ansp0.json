@@ -1,0 +1,233 @@
+[
+  {
+    "package": "com.miui.analytics",
+    "note": "Mi analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "TV analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "statistics upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs",
+    "note": "quality system: uploads crash/perf/dropbox entries",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.csi",
+    "note": "\"after-sales assistant\": satisfaction survey upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.cloudcontrol",
+    "note": "cloud control: starts on connectivity, pushes apps remotely",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.smspush",
+    "note": "SMS push, useless on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "MiWebView promo container; also fetches the screensaver ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.shoplugin",
+    "note": "TV shopping channel plugin (Taobao SDK)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gitvdemo.video",
+    "note": "GITV promo demo reel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.duokan.videodaily",
+    "note": "video daily promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+    "note": "game centre SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.upgrade",
+    "note": "firmware updater: kept on so updates arrive (#322)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "Mi Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tv.gallery",
+    "note": "Mi photo album",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "Media Explorer as a tile; USB browsing still works",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.screenrecorder",
+    "note": "screen recorder",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.calendar",
+    "note": "calendar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.alarmcenter",
+    "note": "alarms",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.handbook",
+    "note": "user handbook",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tweather",
+    "note": "weather",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.karaoke.service",
+    "note": "karaoke",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvvideocall",
+    "note": "MiTime video calls",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.eetv.litehome",
+    "note": "a second home screen (\"\u529e\u516c\u6a21\u5f0f\" office mode)",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.light",
+    "note": "light-effect app (\"Symphony of Shadows\")",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.smartpanel",
+    "note": "smart-home panel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.smarthome.tv",
+    "note": "Mi Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.voicecontrol",
+    "note": "Xiao Ai voice control",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.wakeupservice",
+    "note": "voice wake-up",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mico.mqtt.service.application.tv",
+    "note": "Mico voice MQTT service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.screensaver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

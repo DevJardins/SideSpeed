@@ -1,0 +1,247 @@
+[
+  {
+    "package": "com.amazon.client.metrics.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.fw.metrics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfc",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ceviche",
+    "note": "data collection pipelines",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.developer.dataservice",
+    "note": "content personalization data for third-party apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.livedeviceservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.privacypassservice",
+    "note": "privacy pass token service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wifilocker",
+    "note": "uploads Wi-Fi passwords to Amazon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.acr",
+    "note": "Automatic Content Recognition",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.kso.blackbird",
+    "note": "launcher ad sync / bidding",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.sneakpeek",
+    "note": "sponsored \"Sneak Peek\" previews",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hybridadidservice",
+    "note": "advertising ID service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.providers.contentsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.easyupgrade",
+    "note": "\"upgrade your Fire TV\" promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "Amazon Shopping on TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.shoptv.firetv.client",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hedwig",
+    "note": "Fire TV Channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.livetv",
+    "note": "Live tab and guide (no tuner on a stick)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.franktvinput",
+    "note": "live TV input feeding the Live tab",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "games hub / Luna cards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.systemnotices",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.releasenotes",
+    "note": "\"what's new\" release notes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.uxnotification",
+    "note": "UX notification popups",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tahoe",
+    "note": "Amazon Kids (FreeTime)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.music",
+    "note": "Amazon Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.photos",
+    "note": "Amazon Photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "remote tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.cloud9",
+    "note": "Silk browser",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.tv.website_launcher",
+    "note": "opens websites in Silk",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.cast.sink",
+    "note": "Miracast / screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.dialservice",
+    "note": "DIAL: phone apps start Netflix/YouTube on the stick",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.awvflingreceiver",
+    "note": "fling receiver for casting from a phone",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

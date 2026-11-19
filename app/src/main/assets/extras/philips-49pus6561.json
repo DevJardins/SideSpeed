@@ -1,0 +1,380 @@
+[
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "\"GEL\" metrics collector, same process as candeebug; disable both",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "boot stats, keypress counts, panel telemetry (needs TVINPUT_ALLOW=1)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.frameworklogger",
+    "note": "reboot reasons and firmware-install records to the Philips logger",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Market Feedback Agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "bug report uploader (55PUS6581)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.demome",
+    "note": "retail demo mode (needs TVINPUT_ALLOW=1)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvrecommender",
+    "note": "\"Top Picks\" content row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.sticker",
+    "note": "e-sticker and shop banners",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "Android TV recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvtutorials",
+    "note": "first-run tutorials (\"How to...\" row on the stock Home)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettv.market",
+    "note": "NetTV app gallery (the \"Shop\" tab on the stock Home)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapps",
+    "note": "NetTvApps manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettv_launcherapp",
+    "note": "NetTV app launcher entry",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.smarttvhome",
+    "note": "\"Philips TV Collection\"",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvregistration",
+    "note": "Philips account registration for NetTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.twittershare",
+    "note": "Twitter share sheet",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.dropboxprovider",
+    "note": "Dropbox source in Media",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.sss",
+    "note": "Second Screen Setup (set up from phone)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.sss.authbridge",
+    "note": "Second Screen Setup auth bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "runs once at first setup, nothing afterwards (55PUS6581)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.dms",
+    "note": "UPnP media server, started at boot; the DLNA renderer and the USB player (contentexplorer) stay (55PUS6581)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp1984",
+    "note": "Dailymotion",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp3134",
+    "note": "iConcerts",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp3358",
+    "note": "Euronews",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp3783",
+    "note": "MeteoNews.TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp3814",
+    "note": "TV5Monde",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp3903",
+    "note": "VOYO",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4023",
+    "note": "Siol.net",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4024",
+    "note": "RTV SLO (web app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4165",
+    "note": "Vreme",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4533",
+    "note": "Kulinarika.net",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4535",
+    "note": "Radio 1",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4768",
+    "note": "France24",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4835",
+    "note": "Cloud Explorer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4836",
+    "note": "Social TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapp4932",
+    "note": "Free Games by PlayWorks",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix (the remote's Netflix button then does nothing; see README.md); off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.aiv.eu",
+    "note": "Prime Video (EU component); off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "YouTube; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "Google Play Music (service discontinued)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "bbc.iplayer.android",
+    "note": "BBC iPlayer; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.plexapp.android",
+    "note": "Plex; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "Twitch; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.cloudmosa.puffinTV",
+    "note": "Puffin TV browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.pokemontv",
+    "note": "Pok\u00e9mon TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "eu.bandainamcoent.pacman256",
+    "note": "PAC-MAN 256",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.expressvpn.vpn",
+    "note": "ExpressVPN",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.privateinternetaccess.android",
+    "note": "Private Internet Access",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.simplexsolutionsinc.vpn_unlimited",
+    "note": "VPN Unlimited",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

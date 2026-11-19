@@ -1,0 +1,65 @@
+[
+  {
+    "package": "com.haierubic.usmartdevice",
+    "note": "Haier smart-device / IoT service, unused by owner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "Haier content/promo app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.emanual",
+    "note": "on-TV manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.launcher.haiermatrix",
+    "note": "Haier TV+ / Zeasn launcher, not Google TV Home; re-enabled itself after one reboot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "HaiCast/Miracast, unused by owner; off on the owner's set; uncomment if you never mirror a screen",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows on stock Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "usage feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "retail demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

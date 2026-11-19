@@ -16,6 +16,7 @@ import io.github.devjardins.sidespeed.status.PersistedCompileStatus
 import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.tools.AnimationOriginals
 import io.github.devjardins.sidespeed.tools.CleanupRecord
+import io.github.devjardins.sidespeed.tools.DisabledRecord
 import io.github.devjardins.sidespeed.tools.CleanupThreshold as ToolsCleanupThreshold
 import io.github.devjardins.sidespeed.tools.LaunchResult
 import io.github.devjardins.sidespeed.tools.LaunchRunner
@@ -98,6 +99,9 @@ class LaunchTimeStateTest {
         override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
         override val originalHome: Flow<String?> = MutableStateFlow(null)
         override suspend fun setOriginalHome(v: String?) {}
+        override val extrasDisabled: Flow<List<DisabledRecord>> = MutableStateFlow(emptyList())
+        override suspend fun addExtrasDisabled(record: DisabledRecord) {}
+        override suspend fun removeExtrasDisabled(pkg: String) {}
     }
 
     /** Stateful scripted runner: handler sees (command, per-command call index). */

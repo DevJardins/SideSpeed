@@ -1,0 +1,44 @@
+[
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.toptech",
+    "note": "ad/portal service; starts at boot, can install packages (~69 MB)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.services.general",
+    "note": "Zeasn \"weather\" service; starts at boot, reads logs (~69 MB)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.zeasn.toptech2851.rca.vstoresubclient",
+    "note": "Zeasn app store; Google Play stays",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.realtek.device",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.rca.toptech",
+    "note": "Zeasn launcher with promo rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

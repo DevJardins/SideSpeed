@@ -1,0 +1,93 @@
+[
+  {
+    "package": "com.yandex.android.advid",
+    "note": "Yandex advertising ID",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.bugreportsender",
+    "note": "bug report sender",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.prebuiltstub",
+    "note": "empty stub, no components",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.daydream",
+    "note": "Yandex video screensaver; the screensaver setting still names it (README.md)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.webplayer",
+    "note": "Yandex web player; YouTube and Kinopoisk play without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.yandex.tv.alice",
+    "note": "Alice voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yandex.browser.tv",
+    "note": "Yandex Browser",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yandex.tv.music",
+    "note": "Yandex Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yandex.tv.videoplayer",
+    "note": "Yandex video player, also smart-home camera streams",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yandex.tv.input.efir",
+    "note": "Yandex online channels (\"Efir\") input and EPG; HDMI/tuner/AV stay on com.mediatek.tvinput",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.cultraview.newfilemanager",
+    "note": "USB media player and file manager",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "WFDSinkTest: the Miracast receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.yandex.tv.home",
+    "note": "Yandex TV Home, about 80 MB with its Metrica process",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

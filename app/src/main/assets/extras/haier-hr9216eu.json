@@ -1,0 +1,100 @@
+[
+  {
+    "package": "com.haierubic.usmartdevice",
+    "note": "Haier smart-device / IoT service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.oemtabprovider",
+    "note": "the \"Haier\" tab on the Google TV home (re-enabled at boot)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "Haier promo content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.launcher.haiermatrix",
+    "note": "Zeasn content launcher, not the system Home (re-enabled at boot)",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tvhousekeeper",
+    "note": "\"TV housekeeper\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.emanual9603",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google usage feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "Anoki ACR opt-in (content recognition)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows on the stock home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "preloaded",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google TV ambient / AI screensaver, not wanted",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

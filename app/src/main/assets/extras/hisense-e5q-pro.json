@@ -1,0 +1,128 @@
+[
+  {
+    "package": "com.hisense.business.ad",
+    "note": "ad SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.ad",
+    "note": "ad service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.platformreport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.logupload",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.service.message",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.demonstrate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.hotelmenu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.electronictutorial",
+    "note": "electronic manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.ar.baike",
+    "note": "AR encyclopedia",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vision.aibook",
+    "note": "AI picture book",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.foodmanage",
+    "note": "recipe app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.fitmirror",
+    "note": "fitness mirror",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videochat.social",
+    "note": "preloaded video chat",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.videoconference",
+    "note": "video conferencing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.tv.fte",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.ambiencephoto",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.tv.weather",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jamdeo.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

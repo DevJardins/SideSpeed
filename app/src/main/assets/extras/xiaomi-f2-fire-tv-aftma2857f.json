@@ -1,0 +1,296 @@
+[
+  {
+    "package": "com.amazon.tv.acr",
+    "note": "Automatic Content Recognition; also reads HDMI input",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "Xiaomi analytics (Firebase), shipped on this Xiaomi-built set",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.client.metrics.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.fw.metrics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfc",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ceviche",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.developer.dataservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wifilocker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.neo.minerva.logcat",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.kso.blackbird",
+    "note": "sponsored banner and row sync",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.sneakpeek",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hybridadidservice",
+    "note": "advertising ID",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hedwig",
+    "note": "Fire TV Channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.franktvinput",
+    "note": "Fire TV Channels' input; the HDMI and tuner inputs are com.droidlogic.tvinput",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.easyupgrade",
+    "note": "upgrade promotions",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "Shop on Fire TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.livedeviceservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.minitv.android.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.privacypassservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.providers.contentsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.systemnotices",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.uxnotification",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.democontent.provider",
+    "note": "retail demo content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.storm.lightning.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tahoe",
+    "note": "Amazon Kids",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.cloud9",
+    "note": "Silk browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.website_launcher",
+    "note": "Silk shortcuts on the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ods.kindleconnect",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whisperjoin.middleware.np",
+    "note": "Wi-Fi provisioning for Amazon devices",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.ffsprovisioneeclient",
+    "note": "frustration-free setup",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wha.mediabrowserservice",
+    "note": "multi-room music group",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "uk.co.bbc.iplayer",
+    "note": "BBC iPlayer (disabled here)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.bskyb.nowtv.beta",
+    "note": "NOW (disabled here)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.onemainstream.skynews.android",
+    "note": "Sky News (disabled here)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.redbull.rbtv",
+    "note": "Red Bull TV (disabled here)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "Disney+ (disabled, later re-enabled to watch)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.pluto.android",
+    "note": "Pluto TV (disabled, later re-enabled)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

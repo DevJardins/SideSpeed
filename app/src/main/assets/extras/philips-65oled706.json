@@ -1,0 +1,184 @@
+[
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "metrics collector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "usage and panel telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvrecommender",
+    "note": "\"Top Picks\" row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.recommendation",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettv.market",
+    "note": "\"Collection Smart TV\" app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvapps",
+    "note": "app gallery preload installer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tpv.device",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.astrahdplus",
+    "note": "HD+ (German satellite operator) info pages",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.m7opapp",
+    "note": "M7 satellite operator promo; keep if you use one of those operators",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.demome",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.amazonalexa",
+    "note": "Alexa bridge; channel zapping and the guide still work without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.tvapp",
+    "note": "Mimi hearing-personalised sound",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "io.mimi.sdk.service",
+    "note": "its audio service; sound unaffected when both are off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.dropboxprovider",
+    "note": "Dropbox source in Media",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "keep if anyone needs the screen reader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.sss.authbridge",
+    "note": "set-up-from-phone helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "no calendar app on the TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "owner's choice (no subscription)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "launcher/build-and-install.sh disables it after Home has moved",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows and the system notification panel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

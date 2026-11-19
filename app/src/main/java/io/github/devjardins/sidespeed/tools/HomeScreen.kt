@@ -99,6 +99,8 @@ class HomeSwitcher(
         (commands.homeRoleHolder() as? ToolResult.Ok)?.value
 
     /** [current] with the role-holder fallback when resolve is ambiguous. */
+    suspend fun currentWithFallback(): HomeComponent? = effectiveCurrent()
+
     private suspend fun effectiveCurrent(): HomeComponent? {
         queries.currentHome()?.let { return it }
         val pkg = roleHolderPackage() ?: return null

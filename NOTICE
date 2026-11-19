@@ -22,6 +22,12 @@ sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
   Derived from OpenJDK sun.security. GPL-2.0 (version 2 only) with the Oracle "Classpath"
   exception. The Classpath exception is what permits linking it from this GPLv3 app.
 
+CleanYourTV (https://github.com/Gathin23/cleanyourtv)
+  Copyright (c) 2026 Gathin. MIT License.
+  Package lists in app/src/main/assets/extras/ are derived from its
+  examples/ device lists. The full MIT text ships in
+  app/src/main/assets/extras/LICENSE.
+
 AndroidX (Jetpack Compose, TV Material, DataStore, Core, Activity),
 Kotlin and kotlinx.coroutines
   Copyright (c) The Android Open Source Project and JetBrains. Apache License 2.0.

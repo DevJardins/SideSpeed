@@ -1,0 +1,331 @@
+[
+  {
+    "package": "com.tcl.ttvs",
+    "note": "TCL BI / awareness / identifier services and T-Cast; off on the 65P735 (AR11), left on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.bi",
+    "note": "TCL BI analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log capture and upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.xian.StartandroidService",
+    "note": "background reporting service; off on the tested units, but TCL's updater needs it (see header), so it stays on",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash / feedback reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.dashboard",
+    "note": "TCL dashboard / promo backend",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "partner customisation channel, promo rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "TCL message / promo box",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.overseasappshow",
+    "note": "\"recommended apps\" showcase",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "sticker / emoji overlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL web-video recommendation portal",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "silently installs partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner-app attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "one-time setup leftovers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TCL online support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account sign-in nags; the 43C641 (AR11) on this same G03_4K_GB / R51MT05 board reboots on waking from standby with it off (#3533), so re-enable it if this set does",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ocean.instructions",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.android.webview",
+    "note": "TCL WebView; com.google.android.webview stays the provider",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.chromium.webview_shell",
+    "note": "WebView test shell",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync, no calendar on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gallery",
+    "note": "TCL photo gallery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.hearaid",
+    "note": "hearing test / volume adaptation; off on the 65P735 (AR11), left on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.magiconnectfree",
+    "note": "TCL phone sharing app; off on the 65P735 (AR11), left on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.nbu.smartconnect.tv",
+    "note": "Google \"smart connect\" nearby service; off on the 65P735 (AR11), left on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.t_solo",
+    "note": "Bluetooth \"Listen alone\"; off on the 65P735 (AR11), but on AR09 it holds TV_INPUT_HARDWARE (50S546), so it stays on",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix (the remote's Netflix button then opens nothing)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ui_mediaCenter",
+    "note": "USB media player; re-enable to play media from USB drives",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gamebar",
+    "note": "game mode / VRR overlay for consoles",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.channelplus",
+    "note": "TCL Live FAST channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "TCL web browser; removes the \"BrowseHere\" row from the stock home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader; off on the 65P735, but it is an accessibility service, so it stays on unless nobody needs it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google search / voice (the remote's mic button)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.assistant",
+    "note": "Google Assistant for TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.assistant",
+    "note": "TCL voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "Alexa bridge",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.micmanager",
+    "note": "remote microphone manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.miracast",
+    "note": "Miracast screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.MultiScreenInteraction_TV",
+    "note": "T-Cast / MagiConnect phone link",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.versionUpdateApp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

@@ -1,0 +1,114 @@
+[
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google RLZ partner attribution pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ad services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "ad personalisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "federated ad/usage learning",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows for the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nes.leanbacklauncher.partnercustomizer",
+    "note": "Nokia's Shop/Discover row config for the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sei",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nes.dvb.playtest",
+    "note": "DVB factory play test",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.utsmta.app",
+    "note": "factory test, listens for USB sticks",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "re-enable if you need the screen reader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant: the remote's mic button stops working",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "ambient screensaver, replaced by the launcher's Clock",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

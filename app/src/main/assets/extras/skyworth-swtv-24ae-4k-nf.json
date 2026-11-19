@@ -1,0 +1,184 @@
+[
+  {
+    "package": "com.smartdevice.recordactivation",
+    "note": "records first activation; boot + network receivers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.aftersale",
+    "note": "\"after-sale\" service: can silently install APKs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.recommendation",
+    "note": "Coocaa recommendation rows; bundles Sensors Data analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.leanbacklauncher.customizer",
+    "note": "partner config that injects rows into the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "Brazilian Ginga interactive TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.obs.mhegservice",
+    "note": "UK MHEG interactive TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.Smartdevice.emanual",
+    "note": "on-screen manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dailymanage",
+    "note": "TV Guard / cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.myapp",
+    "note": "Daily Key / app manager",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.dstvmobile.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.sabcplus.vod",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stremio.one",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dtv.icast",
+    "note": "Miracast / DLNA screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.systemupdater",
+    "note": "automatic OTA firmware updates",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "RecoveryActivity claims HOME at priority 1",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

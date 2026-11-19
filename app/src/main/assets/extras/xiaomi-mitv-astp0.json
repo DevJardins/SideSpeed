@@ -1,0 +1,275 @@
+[
+  {
+    "package": "com.xiaomi.tvqs",
+    "note": "quality/crash uploads; off on the 2026-firmware unit",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.miui.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.cloudcontrol",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvpush.tvpushservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.smspush",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.shoplugin",
+    "note": "TV shopping channel plugin",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.shop",
+    "note": "Xiaomi shop",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.upgrade",
+    "note": "firmware updates: re-enable to check for one",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.karaoke.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.wakeupservice",
+    "note": "Chinese wake word for the voice assistant, ~30% CPU all the time",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "Mi Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "Media Explorer still opens USB photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.screenrecorder",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.smartpanel",
+    "note": "smart home panel",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tweather",
+    "note": "CN weather",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.screensaver",
+    "note": "Xiaomi screensaver; the launcher's clock screensaver takes over",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.healthdiagnosis",
+    "note": "TV self-diagnosis",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.legal.webview",
+    "note": "terms and privacy viewer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mibox.lockscreen",
+    "note": "child lock screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.miplay",
+    "note": "MiPlay, Xiaomi phone casting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.duokan.airkan.tvbox",
+    "note": "AirKan DLNA",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.wfdsinkhelperservice",
+    "note": "Miracast sink helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mi_connect_service",
+    "note": "Mi Connect phone link",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.remotecontroller.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.voicecontrol",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mico.mqtt.service.application.tv",
+    "note": "Xiao AI speaker link",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mipay.wallet.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.pay",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.payment",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.mivideoplayer",
+    "note": "Mi Video, CN streaming; com.mitv.videoplayer still plays USB files",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.smarthome.tv",
+    "note": "Mi Home on the TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sohu.inputmethod.sogou.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

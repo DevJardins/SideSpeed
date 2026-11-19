@@ -1,0 +1,149 @@
+[
+  {
+    "package": "com.whaletv.logger",
+    "note": "WhaleLogger",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.tokenapp",
+    "note": "Zeasn token / tracker (BOOT_COMPLETED, key tracker)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.certified",
+    "note": "device portal client",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.whaleos.appgallery",
+    "note": "Whale app gallery: the ONLY app store here (no Play Store), KEEP it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.stm",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stm.factorytest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.musicfx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.phototable",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.chromium.webview_shell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.dial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.tokenmanager",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.tv.cast",
+    "note": "WhaleCast",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.droidlogic.miracast",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.aml.dial",
+    "note": "YouTube DIAL (cast) server",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

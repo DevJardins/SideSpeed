@@ -1,0 +1,289 @@
+[
+  {
+    "package": "com.tcl.bi",
+    "note": "TCL analytics / telemetry service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.recommendations",
+    "note": "TVINPUT_ALLOW=1 may be needed, see header",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "TCL promo rows / T-key content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer.resource",
+    "note": "32S6500S unit only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.partnerwidget",
+    "note": "32S6500S unit only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.partnercustomizer",
+    "note": "32S6500S unit only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.dashboard",
+    "note": "\"TCL HOME\" tile: message box, gift box and promos; RT41KA unit only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot; RT41KA unit only",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tcl.device",
+    "note": "Play auto-installs of partner apps; TVINPUT_ALLOW=1 may be needed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "retail demo stickers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.appmarket2",
+    "note": "TCL app store (Google Play Store stays)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tvweishi",
+    "note": "\"cleaner\" widget service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account sign-in nags",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.copydatatotv",
+    "note": "phone-to-TV copy helper, starts at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL content/ad app (WebActivity, VideoPlayActivity, Firebase);",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "one-time ToS screen, 32S6500S unit only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nousguide.android.rbtv",
+    "note": "Red Bull TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.spotify.tv.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.MultiScreenInteraction_TV",
+    "note": "TCL's Miracast-like screen mirroring/DLNA app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.ionitech.airscreen",
+    "note": "AirScreen (AirPlay/Miracast receiver), RT41KA unit",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.azteca.live",
+    "note": "Azteca Live, RT41KA unit",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Ambient Mode screensaver (Google content)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tts",
+    "note": "Google text-to-speech, ~18 MB resident; only accessibility uses it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "screen reader; re-enable if someone needs it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.speech.pumpkin",
+    "note": "offline hotword, unused once katniss is off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.gallery3d",
+    "note": "old AOSP gallery; TCL Media Center opens photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaper.livepicker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.common.terminalmanagerplus",
+    "note": "TCL device-management service, starts at boot and watches",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

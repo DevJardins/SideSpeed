@@ -1,0 +1,366 @@
+[
+  {
+    "package": "com.amazon.ceviche",
+    "note": "data collection pipelines",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.client.metrics.api",
+    "note": "metrics client API",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.device.telemetry.emitter",
+    "note": "telemetry emitter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "device log upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfc",
+    "note": "performance telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "performance telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "Wi-Fi metrics upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.livedeviceservice",
+    "note": "live device reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.privacypassservice",
+    "note": "privacy pass token service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.developer.dataservice",
+    "note": "personalization data for third-party apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wifilocker",
+    "note": "uploads Wi-Fi passwords to Amazon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.acr",
+    "note": "Automatic Content Recognition (what's on screen, HDMI included)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hybridadidservice",
+    "note": "advertising ID",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.kso.blackbird",
+    "note": "launcher ad sync / bidding",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.media.recommendations",
+    "note": "sponsored and recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.sneakpeek",
+    "note": "autoplaying previews on Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.providers.contentsupport",
+    "note": "KEEP: with it off, the keyboard turns off voice input inside apps (see header)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "Shop on Fire TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.democontent.provider",
+    "note": "retail demo content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.easyupgrade",
+    "note": "\"upgrade your Fire TV\" promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.systemnotices",
+    "note": "system notices popups",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.uxnotification",
+    "note": "UX notification popups",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.releasenotes",
+    "note": "\"what's new\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hedwig",
+    "note": "Fire TV Channels (free channels with ads)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.storm.lightning.tutorial",
+    "note": "remote app tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "remote tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.music",
+    "note": "Amazon Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.photos",
+    "note": "Amazon Photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tahoe",
+    "note": "Amazon Kids",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "games hub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.spiderpork",
+    "note": "Amazon Luna",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.minitv.android.app",
+    "note": "miniTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.naatyam",
+    "note": "Naatyam",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tubitv.ott",
+    "note": "Tubi",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.localgallery",
+    "note": "Gallery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.smarthomemapviewapp",
+    "note": "smart home dashboard (cameras, lights)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ods.kindleconnect",
+    "note": "\"show on Fire TV\" from Echo / Fire tablet",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.cast.sink",
+    "note": "Miracast screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.vizzini",
+    "note": "Alexa voice on Fire TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexamediaplayer.runtime.ftv",
+    "note": "Alexa media player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexa.externalmediaplayer.fireos",
+    "note": "Alexa music playback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.aca",
+    "note": "Alexa hints/cues providers (AlexaCentralForApps)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.aiondec",
+    "note": "Alexa skill connections",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.audiohome",
+    "note": "Alexa Home Theater",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexaalerts",
+    "note": "alarms, timers, reminders",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexanotifications",
+    "note": "Alexa notifications",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.rtcsessioncontroller",
+    "note": "Alexa calling / Drop In",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.spotify.mediabrowserservice",
+    "note": "Spotify for Alexa (the Spotify app is separate)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.mattercohost",
+    "note": "Matter smart-home controller (com.amazon.tv.matter, Matter casting, stays)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.ffsprovisioneeclient",
+    "note": "frustration-free setup client",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whisperjoin.middleware.np",
+    "note": "frustration-free setup of other Amazon devices",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whisperjoin.middleware.v2.np",
+    "note": "frustration-free setup of other Amazon devices",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

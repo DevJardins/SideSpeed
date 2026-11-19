@@ -1,0 +1,401 @@
+[
+  {
+    "package": "com.tcl.tv.plus",
+    "note": "TCL TV+ content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.channelplus",
+    "note": "TCL Live FAST channels, also removes them from Live TV; see quirks",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "TCL tweaks to Google TV home rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.interactive",
+    "note": "TCL TIAS background service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartlink.core",
+    "note": "bundles a silent app installer (CustomInstallService)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.exhibit",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ocean.instructions",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.repairguide",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.gamebar",
+    "note": "re-enable for the console game-mode overlay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ui_mediaCenter",
+    "note": "re-enable to play media from USB drives",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.UpdatePeripheral",
+    "note": "re-enable to update a TCL soundbar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode screensaver, see quirks above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "phone-app remote, and the remote mic's bridge: see quirks above",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "Samba TV ACR viewing tracking",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ttvs",
+    "note": "TCL analytics; re-enable if firmware updates stop arriving",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log capture and upload",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL Channel / content feed on the 43P69K",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TGuard memory cleaner",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.magiconnectfree",
+    "note": "MagiConnect phone-to-TV app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account prompts",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.useragreement",
+    "note": "TCL EULA screen, only needed during setup",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "Works with Alexa",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV movies and shows",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.airplay2",
+    "note": "AirPlay, together with the next line",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.realtek.airplay2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix, together with the next line",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.tokenmanager",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.t_solo",
+    "note": "T-Solo \"listen alone\": TV sound to Bluetooth headphones",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.hearaid",
+    "note": "hearing-aid audio app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.browser",
+    "note": "TCL web browser",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fr.francetv.pluzz",
+    "note": "France TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fr.tf1.mytf1",
+    "note": "TF1+",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fr.m6.m6replay",
+    "note": "M6+",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.wuaki.apptv",
+    "note": "Rakuten TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.hotelmenu",
+    "note": "hotel-mode portal",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.roku.web.trc",
+    "note": "Roku ad-engagement SDK left on this TCL",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hulu.livingroomplus",
+    "note": "Hulu",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "Disney+",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.peacocktv.peacockandroid",
+    "note": "Peacock",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.cbs.ott",
+    "note": "Paramount+",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "Max",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tubitv",
+    "note": "Tubi",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.pluto.android",
+    "note": "Pluto TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.spotify.tv.android",
+    "note": "Spotify",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.fox.foxone",
+    "note": "FOX ONE",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvunplugged",
+    "note": "YouTube TV, the live service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

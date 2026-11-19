@@ -62,6 +62,14 @@ class ToolsStoreTest {
         assertNull(parseRestorePending("com.x.y|warp|12"))
     }
 
+    @Test fun extrasDisabledRoundTrip() {
+        val records = listOf(
+            DisabledRecord("com.a", 100),
+            DisabledRecord("com.b", 200),
+        )
+        assertEquals(records, parseExtrasDisabled(encodeExtrasDisabled(records)))
+    }
+
     @Test fun cleanupThresholdBytes() {
         assertEquals(null, CleanupThreshold.OFF.bytes)
         assertEquals(500_000_000L, CleanupThreshold.MB_500.bytes)

@@ -1,0 +1,219 @@
+[
+  {
+    "package": "com.xgimi.autokst",
+    "note": "auto keystone correction",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.windowsystem",
+    "note": "keystone/window service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.tof",
+    "note": "ToF autofocus",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.misckey",
+    "note": "remote keys, focus/keystone shortcuts",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.uiconfiguration",
+    "note": "global key receiver, power listener",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xrmservice",
+    "note": "global remote keys, picture/sound adaptation (re-enables the stock launcher, see above)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xgimiservice",
+    "note": "core XGIMI system service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.autoinstall",
+    "note": "purpose unclear (PermissionRequestActivity only): kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.overseas.xgimiatvbootwizard",
+    "note": "first-boot wizard",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.tvinput",
+    "note": "HDMI input service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.inputplayer",
+    "note": "HDMI passthrough player and input switcher",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nbcast.wirelessscreen",
+    "note": "MagiCast: the screen-mirroring receiver (\"Mogo3Pro\" in a phone's list)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atvwifiverify",
+    "note": "factory Wi-Fi verification",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.minitvfactory",
+    "note": "factory menu, file transfer and burn-in services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "XGIMI bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google TV Ambient / Backdrop screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack (accessibility)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "air.ITVMobilePlayer",
+    "note": "ITVX",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / Gemini voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.assistant",
+    "note": "assistant LED service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "Google TV phone remote",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.screensaver",
+    "note": "XGIMI Atmosphere screensaver / ambient scenes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.ota.accessories",
+    "note": "firmware updates for remote, speaker, curtain",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.gimiplayer",
+    "note": "local video/photo player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.doubanfm",
+    "note": "XGIMI music app, speaker-mode screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

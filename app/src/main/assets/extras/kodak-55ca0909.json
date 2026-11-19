@@ -1,0 +1,205 @@
+[
+  {
+    "package": "tv.alphonso.alphonso_eula",
+    "note": "Alphonso ACR ad tracking (background service)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.acr.recommendation",
+    "note": "Skyworth ACR; needs TVINPUT_ALLOW=1 (see header)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.demonow",
+    "note": "retail store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.Smartdevice.emanual",
+    "note": "on-screen e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.recommendations",
+    "note": "recommendations for the Leanback launcher, which is not Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "ambient screensaver; launcher/ has its own clock screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.SW",
+    "note": "Play auto-install config for partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows for the Leanback launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher",
+    "note": "installed, never Home here; restore.sh turns it back on as a stock launcher",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "Google Calendar sync",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.contacts",
+    "note": "Google Contacts sync",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "first-setup initializer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.settings.intelligence",
+    "note": "Settings search suggestions (~25 MB running)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "Google Play Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / voice search (remote mic button)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.speech.pumpkin",
+    "note": "offline voice actions, only used by the Assistant",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tts",
+    "note": "Google text-to-speech (~90 MB at boot; screen reader needs it)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "phone remote app support (~69 MB); the mic button may need it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.smartdevice.multimediaplayer",
+    "note": "USB media player and DLNA renderer; needs TVINPUT_ALLOW=1",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

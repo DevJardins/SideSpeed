@@ -1,0 +1,177 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "log upload receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.atv",
+    "note": "PatchWall",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "sponsored rows in the stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.xioami.dangal",
+    "note": "Play auto-install of partner apps (sic, \"xioami\")",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.mitvplus",
+    "note": "Mi TV+ sponsored live channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.handbook",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomo.tv.milegal",
+    "note": "static legal / privacy text screens",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.smartshare",
+    "note": "Miracast + MiPlay receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.wfdsinkhelperservice",
+    "note": "Miracast sink",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.milinkservice",
+    "note": "Mi Cast discovery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.updateservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.dream",
+    "note": "Mi screensaver; Google Ambient mode (backdrop) kept",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.media.stb.ondemand",
+    "note": "JioCinema / JioTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyliv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.graymatrix.did",
+    "note": "ZEE5",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mxtech.videoplayer.television",
+    "note": "MX Player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.formulaone.production",
+    "note": "F1 TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

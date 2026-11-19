@@ -1,0 +1,58 @@
+[
+  {
+    "package": "com.xgimi.datareporter",
+    "note": "XGIMI usage reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "XGIMI bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ted.android.tv",
+    "note": "TED",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.doubanfm",
+    "note": "XGIMI music app, speaker-mode screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in; re-enable to cast from phones",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.nbu.smartconnect.tv",
+    "note": "Google phone-to-TV connect service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.upgrade",
+    "note": "XGIMI firmware updater; re-enable to receive updates",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

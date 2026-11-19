@@ -1,0 +1,107 @@
+[
+  {
+    "package": "android.autoinstalls.config.Inspur.benq.S905Y2",
+    "note": "silently installs partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.benq.notification",
+    "note": "BenQ push messages and promos (Tag Manager)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows for the stock home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "ambient screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.inspur.firebase",
+    "note": "Inspur data collection (DCReceiver)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.eshare.tutorial",
+    "note": "screen-mirroring tutorial (mirroring itself stays)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV movie store",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant voice",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.ecloud.eshare.server",
+    "note": "eShare screen mirroring, together with the next line",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.ecloud.eairplay",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

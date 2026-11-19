@@ -1,0 +1,268 @@
+[
+  {
+    "package": "com.tcl.tv",
+    "note": "Live TV app, plays HDMI, source picker on the Input key",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.tvinput",
+    "note": "TV input services for HDMI, AV and the tuner",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.ttvs",
+    "note": "firmware updater; also hosts the BI telemetry and the",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "carries a ttvs receiver; kept to be safe",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.system.server",
+    "note": "remote-key plumbing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.tcl_bt_rcu_service",
+    "note": "Bluetooth remote",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.autopair",
+    "note": "Bluetooth remote auto-pairing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.settings",
+    "note": "picture/sound settings",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.dashboard",
+    "note": "\"TCL HOME\" tile",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.suspension",
+    "note": "Quick Panel",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.providers.config",
+    "note": "reported to drop Wi-Fi on the 65C725; not tried here",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.keyhelp",
+    "note": "remote-key help/virtual keys",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account; re-enabled by ttvs, see notes above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TGuard cleaner/support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "promo rows on the stock home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL web-video portal",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "store-demo sticker",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.tcl.device",
+    "note": "partner-app auto installer config",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "first-run wizard, setup already done (owns no Wi-Fi here)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "launcher/build-and-install.sh disables this itself if you use it",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google search/voice; the stock home's search bar goes dead",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "phone-app remote (casting does not need it)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tts",
+    "note": "Google text-to-speech",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "photo screensaver, switch the screensaver first (see notes)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ui_mediaCenter",
+    "note": "USB media player, together with the next three",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.audioplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.videoplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.imageplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Cast receiver: kept here for casting from a phone",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "au.com.stan.and",
+    "note": "Stan",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "TCL Alexa bridge",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

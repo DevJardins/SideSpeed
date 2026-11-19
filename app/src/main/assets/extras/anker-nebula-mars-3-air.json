@@ -1,0 +1,233 @@
+[
+  {
+    "package": "com.mediatek.tvinput",
+    "note": "HDMI input service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.inputplayer",
+    "note": "HDMI passthrough player",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.tv.inputplayeroverlay",
+    "note": "HDMI overlay",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.oceanwing.receiver",
+    "note": "remote control, Nebula IME, accessibility, screen control",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zhixin.nebulasmart",
+    "note": "remote events, accessibility service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zhixin.remoteautopair",
+    "note": "Bluetooth remote auto-pairing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.oceanwing.nebulalinker",
+    "note": "device info, custom shutdown, firmware update dispatch",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zhixin.apphelper",
+    "note": "package install helper, HTML viewer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zhixin.projector.settings",
+    "note": "picture / focus / keystone / battery / update UI",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.zhixin.nebulasetupwizard",
+    "note": "Nebula first-run wizard (not Google's setupwraith)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.wwtv.mediaplayer",
+    "note": "USB media player",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.wwtv.webview",
+    "note": "webview the settings apps use",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.dolby.android.audio.service",
+    "note": "Dolby audio processing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.inputmethod.latin",
+    "note": "the on-screen keyboard",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback / bug reports",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "feedback consent prompt",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ad services",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "federated learning",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "on-device ad personalisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner-app attribution",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zhixin.nebularetailmode",
+    "note": "Nebula retail demo mode (boot receiver)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.waxrain.airplaydmr_OW",
+    "note": "AirPlay / DLNA receiver (Chromecast built-in stays)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.spotify.music",
+    "note": "Spotify",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "Max (HBO)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV buy/rent movies app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Assistant: the firmware re-enables it at every boot; the",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.assistant",
+    "note": "Assistant LED service, same reason",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "the remote's Netflix button needs it (MediaTek global-key",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google Ambient Mode: disabled with the screensaver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "partner rows for the stock home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,331 @@
+[
+  {
+    "package": "com.spotify.tv.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.aspiro.tidal",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.curiosity.curiositystream.androidtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.facebook.katana",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "tv.samba.ssm",
+    "note": "Samba TV fingerprints what's on screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyericsson.idd.agent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.sonybugreportsys",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosystemsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.multiscreendemo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.customersupport",
+    "note": "Help tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.promos",
+    "note": "\"Freeplay\" tile",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select app promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.seeds.iot",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.seeds.iot.remotestart",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.vendorprotocol",
+    "note": "hotel/B2B control protocol",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonytab",
+    "note": "Sony tab row on the Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sony.bravia",
+    "note": "partner apps pushed in after setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.lastaccess",
+    "note": "usage agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.usercontext",
+    "note": "usage agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vewd.core.integration.dia",
+    "note": "Vewd (Opera TV) app-store integration",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.helpguidecontents",
+    "note": "help guide content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.livingfit",
+    "note": "Living Decor / ambient service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.osat.music",
+    "note": "music player; re-enable to play music from USB",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.music.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gaana.fire_tv",
+    "note": "Gaana",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.appgeneration.itunerfree",
+    "note": "iTuner radio",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonypicturescore",
+    "note": "Sony Pictures Core (factory-disabled on the EU unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.hotelmode",
+    "note": "hotel/pro mode",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.b2b.rs232csupport",
+    "note": "RS-232C control for hotel installs",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.accessibility.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.gestureapp",
+    "note": "BRAVIA CAM gestures (no camera on the X80J)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sonyericsson.dlna",
+    "note": "DLNA media server/renderer; Chromecast is separate",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.huey.dlna.module",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.huey.dlna.renderersettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.ecodashboard",
+    "note": "Eco dashboard; seventh unit only, lived with six days",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.launcherxcustomizer",
+    "note": "Sony's add-on for launcherx; disabled with it on the PA unit",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

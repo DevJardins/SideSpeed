@@ -1,0 +1,65 @@
+[
+  {
+    "package": "com.android.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.bips",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mobisystems.office",
+    "note": "OfficeSuite (it also answers the TV passthrough URI)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hy.storeos",
+    "note": "vendor app store; on another unit it ran a persistent CheckUpdateService.",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.Hydraprimeonline",
+    "note": "Hydra Prime",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mphotool.airplay",
+    "note": "AirPlay receiver (ScreenCast)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mphotool.dlna",
+    "note": "DLNA receiver (ScreenCast)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.softwinner.miracastReceiver",
+    "note": "Miracast; re-enable if you cast from a phone",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.toofifi",
+    "note": "phone-remote service on port 8899 (no auth), mic, camera, location",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

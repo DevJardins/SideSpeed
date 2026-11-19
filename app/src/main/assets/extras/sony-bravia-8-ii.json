@@ -1,0 +1,121 @@
+[
+  {
+    "package": "tv.samba.ssm",
+    "note": "Samba TV, fingerprints what's on screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "Samba TV opt-in / privacy screens",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "Qterics device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "Sony device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyericsson.idd.agent",
+    "note": "Sony IDD usage-data agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.promos",
+    "note": "My BRAVIA promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select app promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonytab",
+    "note": "Sony tab on the stock home; unused once launcherx is off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demosystemsupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.multiscreendemo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.airplayapp",
+    "note": "AirPlay",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "launcher/build-and-install.sh disables the stock launcher itself, after Home has moved",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

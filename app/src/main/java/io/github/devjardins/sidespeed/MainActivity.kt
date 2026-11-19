@@ -38,6 +38,9 @@ import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
 import io.github.devjardins.sidespeed.ui.tools.AnimationsCard
 import io.github.devjardins.sidespeed.ui.tools.HealthCardSlot
+import io.github.devjardins.sidespeed.BuildConfig
+import io.github.devjardins.sidespeed.ui.tools.ExtrasCard
+import io.github.devjardins.sidespeed.ui.tools.ExtrasScreen
 import io.github.devjardins.sidespeed.ui.tools.HomeCard
 import io.github.devjardins.sidespeed.ui.tools.SpaceCard
 import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
@@ -137,6 +140,10 @@ class MainActivity : ComponentActivity() {
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showTools by rememberSaveable { mutableStateOf(false) }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
+                var showExtras by rememberSaveable { mutableStateOf(false) }
+                val forcedExtrasListId = remember {
+                    if (BuildConfig.DEBUG) intent.getStringExtra("extras_list_id") else null
+                }
                 // Shown in the update banner and compared against the latest GitHub tag.
                 val currentVersion = remember {
                     runCatching {
@@ -197,6 +204,15 @@ class MainActivity : ComponentActivity() {
                             runCatching { (application as SideSpeedApp).container.launchRunner.restorePending() }
                         }
                     })
+                    showTools && showExtras && app == null -> {
+                        val c = (application as SideSpeedApp).container
+                        ExtrasScreen(
+                            extras = c.extras(forcedExtrasListId),
+                            index = c.extrasIndex(),
+                            homeSwitcher = c.homeSwitcher,
+                            onBack = { showExtras = false },
+                        )
+                    }
                     showTools && app == null -> ToolsScreen(
                         // Worker A owns space; worker C owns health + animations.
                         health = {
@@ -224,6 +240,9 @@ class MainActivity : ComponentActivity() {
                                 Animations(tools.toolsCommands, tools.toolsStore, isFireOs = tools.isFireOs),
                                 tools.toolsStore,
                             )
+                        },
+                        extras = {
+                            ExtrasCard(onOpen = { showExtras = true })
                         },
                         home = {
                             val c = (application as SideSpeedApp).container

@@ -1,0 +1,51 @@
+[
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play auto-installs of promoted apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.leanbacklauncher.partnercustomizer",
+    "note": "partner rows for the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "feedback reports to Google",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.storemode",
+    "note": "KtcStoreMode, retail demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.electronic.manual",
+    "note": "on-TV e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "first-run wizard; its RecoveryActivity claims Home",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

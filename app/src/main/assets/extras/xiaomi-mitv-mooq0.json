@@ -1,0 +1,289 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs.overseas",
+    "note": "TV quality service (telemetry); from the Q1 75 (#1520)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "automatic bug report upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash / feedback reporting",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.atv",
+    "note": "PatchWall (.app.PatchWallActivity)",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.michannel",
+    "note": "Mi recommendation channels, Firebase + GMS measurement",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "Xiaomi promo web content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.floatingframe",
+    "note": "floating promo overlay service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.xiaomi.amelie",
+    "note": "partner app auto-install config",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner / boost / data usage",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.amazon.alexa",
+    "note": "Alexa bridge; Google voice search is kept",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.aha.mitv",
+    "note": "dormant duplicate Aha 2.0.8; ahaflix.tv 2.0.22 is kept",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "Mi Gallery: MiCloud + Xiaomi market SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.dream",
+    "note": "Xiaomi MiDream screensaver, Firebase + skyeye monitor",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Google ambient screensaver, replaced by the Clock dream",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.handbook",
+    "note": "on-screen user manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvlock",
+    "note": "Xiaomi TV lock / parental password",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomo.tv.milegal",
+    "note": "Xiaomi legal / privacy screens",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "vendor disclaimer screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.wwtv.webview",
+    "note": "vendor web view shell",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "retail store demo loop",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "Mi Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.jio.web.androidtv",
+    "note": "JioTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvkids",
+    "note": "YouTube Kids",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.duokan.factorytest",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.recommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.mitvplus",
+    "note": "Mi TV+ FAST channels",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.updateservice",
+    "note": "firmware updates",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "voice assistant (the mic button stops working)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mitv.milinkservice",
+    "note": "Mi Cast",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.smartshare",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.wfdsinkhelperservice",
+    "note": "Miracast sink",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.mediaexplorer",
+    "note": "USB media player",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mitv.videoplayer",
+    "note": "Mi video player",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

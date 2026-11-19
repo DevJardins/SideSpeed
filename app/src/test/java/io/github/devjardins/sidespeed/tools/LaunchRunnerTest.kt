@@ -77,6 +77,9 @@ class LaunchRunnerTest {
         override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
         override val originalHome: Flow<String?> = MutableStateFlow(null)
         override suspend fun setOriginalHome(v: String?) {}
+        override val extrasDisabled: Flow<List<DisabledRecord>> = MutableStateFlow(emptyList())
+        override suspend fun addExtrasDisabled(record: DisabledRecord) {}
+        override suspend fun removeExtrasDisabled(pkg: String) {}
     }
 
     private class ScriptRunner(

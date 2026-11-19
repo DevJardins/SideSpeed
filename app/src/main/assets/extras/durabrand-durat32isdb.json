@@ -1,0 +1,79 @@
+[
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "HRetailDisplay_2K store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "store shortcuts",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps.evoSmart",
+    "note": "store / partner promo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "store disclaimer: disabled in the first owner report, not on this set",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.haier.tvhousekeeper",
+    "note": "\"TV Assistant\" cleaner (/product/app/TV_Assistant)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music, off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "calendar sync",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "printing",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

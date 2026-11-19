@@ -1,0 +1,86 @@
+[
+  {
+    "package": "com.homwee.store",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.homwee.help",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "Ginga, Brazilian DTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.obs.mhegservice",
+    "note": "MHEG-5, UK/Irish DTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV app, the home screen's recommendation source",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode; mixes recommendations into the screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.gdch.wwtv.mediaplayer",
+    "note": "USB media player; needs TVINPUT_ALLOW=1, see header",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "its RecoveryActivity otherwise takes over Home",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "LEFT ENABLED on this set, on purpose - see the header:",
+    "home": true,
+    "setup": false,
+    "optional": true
+  }
+]

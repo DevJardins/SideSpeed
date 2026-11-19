@@ -1,0 +1,135 @@
+[
+  {
+    "package": "it.hon.service",
+    "note": "Haier hOn IoT service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.apps",
+    "note": "Haier promo content app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.tvhousekeeper",
+    "note": "\"TV housekeeper\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.emanual9603",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.oemtabprovider",
+    "note": "the \"Haier\" tab on the Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.launcher.haiermatrix",
+    "note": "Zeasn content launcher, not the system Home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google usage feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.anoki.acr.controller",
+    "note": "Anoki ACR: recognises what is on screen, persistent, boot receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.launcher.partner",
+    "note": "partner rows on the stock home",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.retaildemo",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "preloaded",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haier.overseastv.bluetoothspeaker",
+    "note": "TV as Bluetooth speaker, not wanted",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "not used; the firmware re-enables it at every boot, so hidden with hidden_apps",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video, not used",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music, not used",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.miracast",
+    "note": "Miracast, not used",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Ambient, not used; the screensaver default points at it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

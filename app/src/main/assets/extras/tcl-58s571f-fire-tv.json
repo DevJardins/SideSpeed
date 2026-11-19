@@ -1,0 +1,226 @@
+[
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "Shop on Fire TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.acr",
+    "note": "Automatic Content Recognition (what's on screen, HDMI included)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.democontent.provider",
+    "note": "retail demo content",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.media.recommendations",
+    "note": "sponsored and recommendation rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.sneakpeek",
+    "note": "autoplaying previews on Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hybridadidservice",
+    "note": "advertising ID",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.kso.blackbird",
+    "note": "vendor service; purpose not established, nothing broke without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "Wi-Fi metrics upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "performance telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfc",
+    "note": "performance telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "device log upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.device.telemetry.emitter",
+    "note": "telemetry emitter (see the header)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.storm.lightning.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexaalerts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexanotifications",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexamediaplayer.runtime.ftv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexa.externalmediaplayer.fireos",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.earlyaccess",
+    "note": "Early Access system stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.music",
+    "note": "Amazon Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.photos",
+    "note": "Amazon Photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.minitv.android.app",
+    "note": "miniTV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.naatyam",
+    "note": "Naatyam",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "games hub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.opapp",
+    "note": "OpApp (broadcast operator app)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.smarthomemapviewapp",
+    "note": "Alexa Smart Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.spiderpork",
+    "note": "Amazon Luna",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tahoe",
+    "note": "Amazon Kids",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hedwig",
+    "note": "News",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.localgallery",
+    "note": "Gallery",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ssm",
+    "note": "System Status Monitor",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.firebat",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

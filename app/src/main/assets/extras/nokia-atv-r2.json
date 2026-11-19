@@ -1,0 +1,121 @@
+[
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies & TV app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "Google Calendar sync adapter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader (see the note above)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "recommendation rows on the stock Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Ambient-mode screensaver (see the note above)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.eshow",
+    "note": "vendor \"E-SHOW\" app (the name suggests a shop-display mode)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.esticker",
+    "note": "vendor \"E-Sticker\" app, purpose unclear",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.wifihotspot",
+    "note": "TV as a Wi-Fi hotspot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.function.gdpr",
+    "note": "SCBC data-consent agent",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.channels",
+    "note": "\"S-Channel\" content rows on Home",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "android.autoinstalls.config.scbc.device",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.networkspeed",
+    "note": "speed-test app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.timeclock",
+    "note": "WorldClock",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

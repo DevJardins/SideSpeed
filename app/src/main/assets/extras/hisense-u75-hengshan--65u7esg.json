@@ -1,0 +1,205 @@
+[
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "Hisense ACR (codePath Vtp_ACR), asks PACKAGE_USAGE_STATS",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner referral pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "crash/feedback uploader, asks READ_LOGS",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "PAI: installed DIRECTV GO, Mercado Play and iQIYI on this unit",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.b2b",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.factory",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.fte",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "Vtp_FamilyMoment, photo app + its screensaver; asks RECORD_AUDIO",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.protector",
+    "note": "\"Device Assistant\" cleaner with a boot receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.calmanconnector",
+    "note": "Calman calibration connector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.odinbrowser",
+    "note": "Odin browser; asks CAMERA, RECORD_AUDIO, INSTALL_PACKAGES",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.directv.dtvlatam",
+    "note": "DIRECTV GO",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iqiyi.i18n.tv",
+    "note": "iQIYI (archived by the Play Store)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mercadolibre.android.mplay_tv",
+    "note": "Mercado Play (archived by the Play Store)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "Twitch",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.dlna",
+    "note": "DLNA renderer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.mobiledeviceconnectiontips",
+    "note": "Miracast (\"Screen Casting\")",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.airplaykeycheck",
+    "note": "AirPlay key check",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "Ginga, ISDB-Tb (Brazil)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.interactive",
+    "note": ".atsc.InteractMainService, ATSC (US)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

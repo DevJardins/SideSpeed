@@ -1,0 +1,142 @@
+[
+  {
+    "package": "com.apps.function.gdpr",
+    "note": "SCBC data-consent agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback bug reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.scbc.device",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google partner setup / RLZ pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.leanbacklauncher.partnercustomizer",
+    "note": "partner config injecting rows into stock launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "sponsored and recommendation rows on stock Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.esticker",
+    "note": "ShowService overlay, demo stickers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.eshow",
+    "note": "E-SHOW in-store demo / promo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.clear",
+    "note": "\"TV Booster\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.networkspeed",
+    "note": "speed test app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.timeclock",
+    "note": "WorldClock",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.wifihotspot",
+    "note": "TV as a Wi-Fi hotspot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.function.audiolink",
+    "note": "Audio Link",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.channels",
+    "note": "\"S-Channel\" content rows on stock Home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vewd.core.service",
+    "note": "Vewd app-store / HbbTV core service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.nbu.smartconnect.tv",
+    "note": "Smart Connect",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sonyliv",
+    "note": "Sony LIV; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.ota",
+    "note": "System OTA updater; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.authota",
+    "note": "Auth OTA updater; off on the owner's set, kept on in the shared list",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

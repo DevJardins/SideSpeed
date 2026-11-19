@@ -1,0 +1,373 @@
+[
+  {
+    "package": "com.sony.dtv.b2b.importexport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.prosettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.rs232csupport",
+    "note": "persistent: the process still starts, its components are off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.vendorprotocol",
+    "note": "SDDP model/MAC/IP broadcast for Control4-style home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntime.normal",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.b2b.noderuntime.privilege",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.customersupport",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.smarthelp",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.imanual",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.touchpad.tutorial",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.shopsettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.demomode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.discovery",
+    "note": "Discover bar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.bivlinfo",
+    "note": "feeds Discover",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyselect",
+    "note": "Sony Select promo tile/app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.sonyshelf",
+    "note": "leanbacklauncher's PARTNER_CUSTOMIZATION: the \"Featured",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.sony.bravia",
+    "note": "preloads apps at setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.snei.video.hhvu",
+    "note": "Video Unlimited / PlayStation Video (service discontinued)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.irbrecommendation",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.woprecommendation",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.networkrecommendation",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.recommendationservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.watchtvrecommendation",
+    "note": "Live TV programme recommendations row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.bravialifehack",
+    "note": "BRAVIA tips cards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.bugreportsender",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.remoteaccess",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.duid.generator",
+    "note": "device unique ID generator",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.da.service",
+    "note": "Sony device agent / remote support",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.qterics.da.product",
+    "note": "Qterics device agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.magicpacketnotifyservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.sony.dtv.netflixmanager",
+    "note": "the remote's Netflix button; Netflix itself opened from Home",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.youview",
+    "note": "YouView catch-up TV (UK)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.sss",
+    "note": "Chromecast leftovers (mediashell was already off)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.sss.authbridge",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "screnmirroring.com",
+    "note": "screen mirroring",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.networkapp.wifidirect",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.hbbtvlauncher",
+    "note": "HbbTV tile; HbbTV itself is switched off in README.md",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sonyericsson.dlna",
+    "note": "DLNA",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sonyericsson.dlna.dtcpplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.huey.dlna.renderersettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.huey.dlna.module",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.osat.video",
+    "note": "USB media players; VLC from the Play Store plays USB sticks",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.osat.music",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.goodtoolapps.zeus",
+    "note": "ZEUS browser (Play Store)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.opera.sdk.example",
+    "note": "Sony's built-in \"Internet Browser\"",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.interactivetvplatform",
+    "note": "automatic content recognition: SambaTvRCR, NativeVideoShm,",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.nfcservice",
+    "note": "NFC one-touch mirroring",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.seconddispsetting",
+    "note": "remote access for Sony's old TV SideView phone app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.wfd",
+    "note": "Miracast from Android phones (AirPlay unaffected)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.uei.quicksetsdk.sony",
+    "note": "UEI QuickSet: IR control of a cable box; HDMI-CEC unaffected",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.sony.dtv.osat.album",
+    "note": "tools/disable.sh skips it (it answers the channel VIEW",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

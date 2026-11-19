@@ -1,0 +1,282 @@
+[
+  {
+    "package": "tv.samba.ssm.ui",
+    "note": "Samba TV ACR viewing tracking (enabled at the factory here)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ttvs",
+    "note": "kept: on G10_4K_GB it also holds SystemUpdateActivity (firmware updates); the 55P7K unit had it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.logkit",
+    "note": "log capture and upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.usercenter",
+    "note": "TCL account sign-in nags",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.waterfall.overseas",
+    "note": "TCL Channel / content feed",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.channelplus",
+    "note": "TCL Live FAST channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.tv.tclhome_passive",
+    "note": "pushes TCL content to the home screen at boot",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.partnercustomizer",
+    "note": "TCL tweaks to Google TV home rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.interactive",
+    "note": "TCL TIAS background service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.messagebox",
+    "note": "TCL push messages and promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "silently installs partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.exhibit",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.esticker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.hotelmenu",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.guard",
+    "note": "TGuard memory \"cleaner\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.ocean.instructions",
+    "note": "e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.repairguide",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.smartalexa",
+    "note": "Alexa",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.t_solo",
+    "note": "T-Solo \"listen alone\" (Bluetooth headphones while the speakers stay off)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.disneyplus.mea",
+    "note": "Disney+ (Middle East)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.osn.go",
+    "note": "OSN+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iqiyi.i18n.tv",
+    "note": "iQIYI",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.spotify.tv.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tcl.UpdatePeripheral",
+    "note": "TCL soundbar firmware updater, kept here as shared lists keep updaters;",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.onetimeinitializer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music; the 55C655 unit has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner setup helper",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.tokenmanager",
+    "note": "Netflix sign-in helper, with com.netflix.ninja off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.miracast",
+    "note": "Miracast screen mirroring (Chromecast still casts)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.magiconnectfree",
+    "note": "T-Cast phone app link",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tcl.gamebar",
+    "note": "game bar overlay",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

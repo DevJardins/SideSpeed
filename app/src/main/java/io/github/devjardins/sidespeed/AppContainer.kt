@@ -14,7 +14,12 @@ import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperClient
 import io.github.devjardins.sidespeed.apps.AppIcons
 import io.github.devjardins.sidespeed.apps.InstalledApps
+import io.github.devjardins.sidespeed.BuildConfig
 import io.github.devjardins.sidespeed.tools.AndroidDeviceInfo
+import io.github.devjardins.sidespeed.tools.AndroidExtrasQueries
+import io.github.devjardins.sidespeed.tools.Extras
+import io.github.devjardins.sidespeed.tools.loadExtrasIndex
+import io.github.devjardins.sidespeed.tools.loadExtrasList
 import io.github.devjardins.sidespeed.tools.Cleanup
 import io.github.devjardins.sidespeed.tools.DataStoreToolsStore
 import io.github.devjardins.sidespeed.tools.DeviceInfo
@@ -29,6 +34,7 @@ import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.update.readApkFacts
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -124,8 +130,28 @@ class AppContainer(context: Context) {
             store = toolsStore,
             ownPackage = appContext.packageName,
             isFireOs = isFireOs,
+            sideSpeedDisabled = {
+                toolsStore.extrasDisabled.first().map { it.pkg }.toSet()
+            },
         )
     }
+
+    fun extras(forcedListId: String? = null): Extras {
+        val index = loadExtrasIndex(appContext)
+        val forced = forcedListId?.takeIf { BuildConfig.DEBUG }
+        return Extras(
+            index = index,
+            loadEntries = { loadExtrasList(appContext, it.file) },
+            queries = AndroidExtrasQueries(appContext, appContext.packageName),
+            commands = toolsCommands,
+            store = toolsStore,
+            homeCurrent = { homeSwitcher.currentWithFallback() },
+            ownPackage = appContext.packageName,
+            forcedFolderId = forced,
+        )
+    }
+
+    fun extrasIndex() = loadExtrasIndex(appContext)
 
     val deviceInfo: DeviceInfo by lazy { AndroidDeviceInfo(appContext) }
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }

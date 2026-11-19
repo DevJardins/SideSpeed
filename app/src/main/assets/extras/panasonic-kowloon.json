@@ -1,0 +1,219 @@
+[
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "Disney+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.viaplay.android",
+    "note": "Viaplay",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback reports",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vestel.vestelreporter",
+    "note": "Vestel usage reporter",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "retail demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vestel.easysatelliteinstallation",
+    "note": "satellite setup wizard; the second unit uses the aerial only, untested with a dish",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader; the second unit has it off by choice, uncomment if you never use it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "the \"send diagnostic reports\" consent screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner setup leftovers",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "federated learning / on-device personalisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "internal HTML viewer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.backupconfirm",
+    "note": "backup confirmation dialogs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.sharedstoragebackup",
+    "note": "shared-storage backup transport",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "wallpaper backup transport",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.cameraextensions",
+    "note": "camera extensions; the set has no camera",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "Health Connect backup transport",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.hotspot2.osulogin",
+    "note": "Passpoint / Hotspot 2.0 web login",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV movies and rentals  (off on the third unit by the owner's choice)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.hbo.hbonow",
+    "note": "HBO Max  (off on the third unit by the owner's choice)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vestel.tv.eib",
+    "note": "the on-screen e-manual (its label was confirmed on screen)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vewd.core.browser",
+    "note": "the Vewd browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,247 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs.overseas.y24",
+    "note": "Xiaomi quality-stats uploader (DROPBOX_ENTRY_ADDED, upload log)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.atv",
+    "note": "PatchWall",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.michannel",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.mitvplus",
+    "note": "Mi TV+ FAST channels",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome.oemtab",
+    "note": "the \"Mi Home\" tab injected into Google TV home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.tvmanager",
+    "note": "\"TV Manager\" cleaner / booster",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.updateservice",
+    "note": "firmware updates: re-enable these three to check for one (kept enabled on the 55\" unit)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.upgrader",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.tv.systemupdater",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV / Play Movies app (disabled on the 55\" unit)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "Google ambient screensaver (switch to the Clock dream first; disabled on the 55\" unit)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "Apple TV app (preloaded)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mxtech.videoplayer.television",
+    "note": "MX Player (preloaded)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "print service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "feedback consent prompt",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "Health Connect",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.dynsystem",
+    "note": "Dynamic System Updates installer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner setup leftover",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack screen reader: keep it if anyone at home uses it",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomo.tv.milegal",
+    "note": "Xiaomi legal pages",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mitv.toolhouse",
+    "note": "Xiaomi tool box",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.manualhelp",
+    "note": "Xiaomi manual / help",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "basic colour screensaver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

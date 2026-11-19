@@ -1,0 +1,667 @@
+[
+  {
+    "package": "com.amazon.client.metrics",
+    "note": "protected by Fire OS, cannot be disabled without root",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.client.metrics.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.device.metrics",
+    "note": "protected by Fire OS",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.metrics.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.minerva.client.api",
+    "note": "protected by Fire OS",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.tv.fw.metrics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wirelessmetrics.service",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.perfcollection",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.device.logmanager",
+    "note": "protected by Fire OS",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.device.crashmanager",
+    "note": "protected by Fire OS",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.dp.logger",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.diode",
+    "note": "on-device analysis / diagnostics uploader (protected by Fire OS)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.ceviche",
+    "note": "data collection pipelines",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.developer.dataservice",
+    "note": "\"Alberto\": content personalization data for third-party apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fireos.usagestats.proxy",
+    "note": "reports app usage to Amazon (protected by Fire OS)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.wifilocker",
+    "note": "uploads Wi-Fi passwords to Amazon",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.kso.blackbird",
+    "note": "launcher ad sync / bidding (sponsored banner and rows)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.sneakpeek",
+    "note": "sponsored \"Sneak Peek\" previews",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ftvads.deeplinking",
+    "note": "ad deep links (protected by Fire OS)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.hybridadidservice",
+    "note": "advertising ID service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.hedwig",
+    "note": "Fire TV Channels (free ad-supported channels row and Live input)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.easyupgrade",
+    "note": "\"upgrade your Fire TV\" promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.device.sale.service",
+    "note": "sale / deal campaign service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.shoptv.client",
+    "note": "Amazon Shopping on TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.shoptv.firetv.client",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.livetv",
+    "note": "Live tab and guide",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.franktvinput",
+    "note": "live TV input feeding the Live tab",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.livedeviceservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.gamehub",
+    "note": "games hub / Luna cards",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.imdb.tv.android.app",
+    "note": "Freevee stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.minitv.android.app",
+    "note": "miniTV stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tahoe",
+    "note": "Amazon Kids (FreeTime)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.music",
+    "note": "Amazon Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.bueller.photos",
+    "note": "Amazon Photos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.cloud9",
+    "note": "Silk browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.website_launcher",
+    "note": "opens websites in Silk",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.imdb.livingroom.firetv",
+    "note": "IMDb app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tmm.tutorial",
+    "note": "remote tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.storm.lightning.tutorial",
+    "note": "remote app tutorial",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whad",
+    "note": "whole-home audio (multi-room music)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whasettings",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.wha.mediabrowserservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whisperjoin.middleware.np",
+    "note": "frustration-free setup of other Amazon devices",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.whisperjoin.wss.wifiprovisioner",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.ffsprovisioneeclient",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.ods.kindleconnect",
+    "note": "\"show on Fire TV\" from Echo / Fire tablet (Tarazed)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexaalerts",
+    "note": "alarms, timers, reminders",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.alexanotifications",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexa.externalmediaplayer.fireos",
+    "note": "Alexa music playback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.alexamediaplayer.runtime.ftv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.aiondec",
+    "note": "Alexa skill connections",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.adultswim.firetv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cbs.ott",
+    "note": "Paramount+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.espn.gtv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fox.fts.android",
+    "note": "FOX",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.foxsports.videogo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.fubo.firetv.screen",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hbo.hbonow",
+    "note": "Max",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hulu.plus",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nbcuni.telemundostation.houston.firetv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.webapps.nbc.telemundo",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.peacock.peacockfiretv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tubitv.ott",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.univision.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.pluto.android",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.rialto.cordova.webapp.webapp855cc15add08457a8a1fe62312eab585",
+    "note": "Fox News web app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.csapp",
+    "note": "customer service / help app (protected by Fire OS, cannot be disabled)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.privacypassservice",
+    "note": "privacy pass token service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.providers.contentsupport",
+    "note": "content support provider",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.systemnotices",
+    "note": "system notices",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.releasenotes",
+    "note": "\"what's new\" release notes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.uxnotification",
+    "note": "UX notification popups",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.tv.oobe",
+    "note": "out-of-box setup wizard (protected by Fire OS, cannot be disabled). If it ever is disabled it must be re-enabled before a factory reset",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.vizzini",
+    "note": "Alexa voice search; Fire OS re-enables it at every boot",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.vizzini.ftvcds",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.aria",
+    "note": "voice search screens",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.cardinal",
+    "note": "voice search screens",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.alexa.datastore.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.aca",
+    "note": "Alexa hints/cues",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.audiohome",
+    "note": "Alexa Home Theater",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.spotify.mediabrowserservice",
+    "note": "Spotify for Alexa (the Spotify app is separate)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.firebat",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.tv.support",
+    "note": "Prime Video helper",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.whisperplay.service.install",
+    "note": "remote app install from the phone app (part of the whisperplay casting stack)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.tv.forcedotaupdater.v2",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.cast.sink",
+    "note": "Miracast receiver",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.awvflingreceiver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.dialservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.ssdpservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.whisperplay.contracts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.recess",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.naatyam",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.neodelegate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.csm.htmlruntime",
+    "note": "HTML runtime for Amazon promos",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "no printing on a TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

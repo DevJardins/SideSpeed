@@ -1,0 +1,233 @@
+[
+  {
+    "package": "com.nvidia.stats",
+    "note": "anonymous usage statistics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nvidia.feedback",
+    "note": "crash reports and the \"send feedback\" form",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nvidia.diagtools",
+    "note": "log collector; re-enable if NVIDIA support asks for logs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.nvidia",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nvidia.nvgamecast",
+    "note": "GameStream receiver; Moonlight and Sunshine don't use it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nvidia.tegrazone3",
+    "note": "\"NVIDIA Games\" app and row; GeForce NOW is a separate app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.gallery3d",
+    "note": "legacy photo viewer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.nvidia.ota",
+    "note": "firmware updates; NVIDIA still ships security patches",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant (the mic button stops working)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.speech.pumpkin",
+    "note": "on-device speech; also breaks in-app mic buttons",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.backdrop",
+    "note": "Ambient mode screensaver, see notes",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.osc",
+    "note": "NVIDIA's in-game overlay",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shield.smbserver",
+    "note": "\"Transfer files over local network\" SMB share",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv",
+    "note": "Live Channels; keep it for a network tuner",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom.nvidia",
+    "note": "Prime Video (system copy)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video (Play Store copy)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shieldtech.hooks",
+    "note": "maps an Xbox controller's Guide button to Home",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shieldtech.proxy",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shield.nvcustomize",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shield.registration",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.shieldbeta",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.hotwordsetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.factorybundling",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.benchmarkblocker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.nvidia.NvCPLUpdater",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

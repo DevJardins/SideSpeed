@@ -1,0 +1,107 @@
+[
+  {
+    "package": "com.system.memory.tool",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.media.tools",
+    "note": "/system/app/clean/clean.apk",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.gaia.ad.service",
+    "note": "AdService, calls the stark-cloud.cvte.com ad API",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.wonder.cloud.service",
+    "note": "UniAdService",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.pictorial",
+    "note": "ad screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.steward",
+    "note": "\"TV assistant\" cleaner",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.weather",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stark.store",
+    "note": "Stark app store; Google Play replaces it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.systemupgrade",
+    "note": "firmware updates; off by choice, re-enable to update",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.mozilla.tv.firefox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.browser",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.ionitech.airscreen",
+    "note": "AirScreen casting; Miracast (com.droidlogic.miracast) kept",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.launcher.highend",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.cvte.tv.launcher.highend.skin",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

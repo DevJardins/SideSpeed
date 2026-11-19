@@ -1,0 +1,114 @@
+[
+  {
+    "package": "com.miui.analytics",
+    "note": "OneTrack analytics SDK host",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "TV usage statistics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "statistics upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs",
+    "note": "quality system: crash/perf uploads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.csi",
+    "note": "\u552e\u540e\u8f85\u52a9 \"after-sales assistant\": satisfaction survey upload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.cloudcontrol",
+    "note": "cloud control: remote configuration, pushes apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "\u7535\u89c6\u6d3b\u52a8\u4e2d\u5fc3: promo web container, also fetches screensaver ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.shoplugin",
+    "note": "TV Taobao shopping plugin, two resident processes",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.shop",
+    "note": "\u7535\u89c6\u5546\u57ce Xiaomi TV store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.handbook",
+    "note": "user handbook",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+    "note": "game centre SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.screenrecorder",
+    "note": "screen recorder",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.calendar",
+    "note": "calendar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mimusic2",
+    "note": "Mi Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "\u76f8\u518c photo album; USB media still opens in the media explorer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.smarthome.tv",
+    "note": "Mi Home; the remote's voice button still worked without it",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

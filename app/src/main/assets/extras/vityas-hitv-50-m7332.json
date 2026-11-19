@@ -1,0 +1,142 @@
+[
+  {
+    "package": "com.kgzn.inforeport",
+    "note": "vendor reporting service (INTERNET, boot receiver)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.ktc",
+    "note": "Zeasn ad/store ecosystem provider (boot receiver)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.kgzn.asp.vstoresubclient",
+    "note": "\"vstore\" app-store bridge (INTERNET, READ_PHONE_STATE)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.example.android.bluetoothlegatt",
+    "note": "leftover AOSP BLE sample app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "vendor disclaimer screen at boot",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google voice assistant for TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.castscreen",
+    "note": "vendor screen share (RECORD_AUDIO, CAMERA, location)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.castscreen.overlay",
+    "note": "its overlay helper",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ru.rt.video.app.tv",
+    "note": "Wink",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vk.tv",
+    "note": "VK Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ru.more.play",
+    "note": "More Play",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.oobe",
+    "note": "vendor out-of-box setup wizard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.wwtv.setupwizard",
+    "note": "MTK TV setup wizard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "kgzn.factorymenu.ui",
+    "note": "factory menu",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "mediatek.factorymenu.ui",
+    "note": "factory menu",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.tv.factory",
+    "note": "vendor factory app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.serialport",
+    "note": "serial-port service holding INTERNET and LOCATION",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.bootvideo",
+    "note": "boot video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.loadingequalizer",
+    "note": "boot loading animation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.kgzn.mslauncher",
+    "note": "stock home; tools/disable.sh skips it until another launcher answers HOME",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

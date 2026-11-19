@@ -31,6 +31,8 @@ data class LaunchResult(
 
 data class AnimationOriginals(val window: String?, val transition: String?, val animator: String?)
 
+data class DisabledRecord(val pkg: String, val atMs: Long)
+
 /**
  * An app left in `verify` by an interrupted launch measurement: recompile it
  * to [mode] on the next start, service loop, or helper-up. [versionCode] is
@@ -59,6 +61,10 @@ interface ToolsStore {
     /** The original Home (`pkg/cls`) recorded before SideSpeed's first Home change, or null. */
     val originalHome: Flow<String?>
     suspend fun setOriginalHome(v: String?)
+    /** Packages SideSpeed disabled from Turn off extras, newest appended in the store. */
+    val extrasDisabled: Flow<List<DisabledRecord>>
+    suspend fun addExtrasDisabled(record: DisabledRecord)
+    suspend fun removeExtrasDisabled(pkg: String)
 }
 
 /** `"<atMs>|<freedBytes>|<skipped>"`; empty middle/last fields decode as null. */
@@ -105,6 +111,18 @@ internal fun parseRestorePending(raw: String?): RestorePending? {
 internal fun encodeAnimationOriginals(o: AnimationOriginals): String =
     "${o.window.orEmpty()}|${o.transition.orEmpty()}|${o.animator.orEmpty()}"
 
+/** One `pkg:epochMs` per line. */
+internal fun encodeExtrasDisabled(records: List<DisabledRecord>): String =
+    records.joinToString("\n") { "${it.pkg}:${it.atMs}" }
+
+internal fun parseExtrasDisabled(raw: String?): List<DisabledRecord> =
+    raw?.lines()?.mapNotNull { line ->
+        val parts = line.split(":", limit = 2)
+        if (parts.size != 2) return@mapNotNull null
+        val atMs = parts[1].toLongOrNull() ?: return@mapNotNull null
+        DisabledRecord(pkg = parts[0], atMs = atMs)
+    }.orEmpty()
+
 internal fun parseAnimationOriginals(raw: String?): AnimationOriginals? {
     val parts = raw?.split("|", limit = 3)?.takeIf { it.size == 3 } ?: return null
     return AnimationOriginals(
@@ -130,6 +148,7 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     private val lastCheckKey = longPreferencesKey("update_last_check_ms")
     private val latestKey = stringPreferencesKey("update_latest_version")
     private val originalHomeKey = stringPreferencesKey("original_home")
+    private val extrasDisabledKey = stringPreferencesKey("extras_disabled")
 
     private fun launchKey(pkg: String) = stringPreferencesKey("$LAUNCH_PREFIX$pkg")
 
@@ -215,6 +234,24 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     override suspend fun setOriginalHome(v: String?) {
         store.edit {
             if (v == null) it.remove(originalHomeKey) else it[originalHomeKey] = v
+        }
+    }
+
+    override val extrasDisabled: Flow<List<DisabledRecord>> = store.data.map { prefs ->
+        parseExtrasDisabled(prefs[extrasDisabledKey])
+    }
+
+    override suspend fun addExtrasDisabled(record: DisabledRecord) {
+        store.edit { prefs ->
+            val next = parseExtrasDisabled(prefs[extrasDisabledKey]).filterNot { it.pkg == record.pkg } + record
+            prefs[extrasDisabledKey] = encodeExtrasDisabled(next)
+        }
+    }
+
+    override suspend fun removeExtrasDisabled(pkg: String) {
+        store.edit { prefs ->
+            val next = parseExtrasDisabled(prefs[extrasDisabledKey]).filterNot { it.pkg == pkg }
+            if (next.isEmpty()) prefs.remove(extrasDisabledKey) else prefs[extrasDisabledKey] = encodeExtrasDisabled(next)
         }
     }
 }

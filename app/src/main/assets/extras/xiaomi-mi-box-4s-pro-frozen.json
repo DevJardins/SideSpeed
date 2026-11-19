@@ -1,0 +1,128 @@
+[
+  {
+    "package": "com.miui.tv.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.miui.analytics",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.statistic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.tvqs",
+    "note": "Log uploads and resident performance.MitvPerfService",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.cloudcontrol",
+    "note": "Network/boot receivers and DownloadService",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.shop",
+    "note": "TV shopping; already disabled before the session",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.shoplugin",
+    "note": "Taobao shopping plugin; observed version 6.8.24",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xm.webcontent",
+    "note": "Promotional container, not Android WebView; screensaver-start receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.gamecenter.sdk.service.mibox",
+    "note": "Game SDK",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.screenrecorder",
+    "note": "Screen recording",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xiaomi.mitv.calendar",
+    "note": "Calendar",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.gallery",
+    "note": "Xiaomi gallery and its push service; photo data was not cleared",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mitv.tvhome",
+    "note": "Stock Home",
+    "home": true,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.upgrade",
+    "note": "Firmware updater; OTA installation untested",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.mitv.smartshare",
+    "note": "Kept casting component; not independently tested",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.miplay",
+    "note": "Kept casting component; not independently tested",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.duokan.airkan.tvbox",
+    "note": "Kept casting component; not independently tested",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xiaomi.wfdsinkhelperservice",
+    "note": "Kept casting component; not independently tested",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

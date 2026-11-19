@@ -1,0 +1,198 @@
+[
+  {
+    "package": "com.smartdevice.recommendation",
+    "note": "Coocaa recommendation rows; bundles Sensors Data analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.leanbacklauncher.customizer",
+    "note": "partner config that injects rows into the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.epopplayer",
+    "note": "ePop shop demo player (USB-triggered)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "shop demo player (Skyworth ePop)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.coocaa.demonow.lightining",
+    "note": "\"Demo Now\" retail mode, auto-starts from home",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.Smartdevice.emanual",
+    "note": "on-screen manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "retail legal-disclaimer dialogs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.setupwraith",
+    "note": "Skyworth first-run/privacy wizard; setup is finished",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.aftersale",
+    "note": "boot + network receivers, can install APKs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dailymanage",
+    "note": "\"Daily Manage\" boot service, no documented purpose (like 24NA)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.security.SwaiotTV",
+    "note": "Tuya smart-home preload, unrelated to TV operation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.liskovsoft.androidtv.rukeyboard",
+    "note": "Russian soft keyboard, not used",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.smartdevice.dtv.icast",
+    "note": "Miracast + DLNA",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.wbd.stream",
+    "note": "HBO Max",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.disneyplus.ph",
+    "note": "Disney+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.iqiyi.i18n.tv",
+    "note": "iQIYI",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.odinbrowser",
+    "note": "sideloaded Hisense browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "stock Google TV home; com.gathin.tvhome is Home now",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "its RecoveryActivity otherwise steals Home and crash-loops system_server",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

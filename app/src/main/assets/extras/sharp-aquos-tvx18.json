@@ -1,0 +1,86 @@
+[
+  {
+    "package": "com.sharplabs.dmt.aas.analyticsservice",
+    "note": "Sharp analytics telemetry",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.storedemoapplication",
+    "note": "Sharp retail store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.emanual",
+    "note": "Sharp e-manual",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.emanual_a",
+    "note": "Sharp e-manual (variant a)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.emanual_b",
+    "note": "Sharp e-manual (variant b)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.shlegal",
+    "note": "Sharp legal-notices viewer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.co.sharp.av.android.softwarecopyright",
+    "note": "Sharp open-source copyright viewer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Play Movies & TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.music",
+    "note": "Play Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

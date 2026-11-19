@@ -1,0 +1,107 @@
+[
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.skyworth_hisi352",
+    "note": "ad/portal service for the Whale launcher",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "zeasn.open.technical.tv.store",
+    "note": "Zeasn app store; Google Play stays",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "cn.wps.moffice_i18n_TV",
+    "note": "WPS Office",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "ru.vk.store.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.carriersetup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.simappdialog",
+    "note": "SIM toolkit",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.pixelmigrate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.sharedstoragebackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.toofifi.lineserver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mphotool.usbcastserver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.bips",
+    "note": "default print service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

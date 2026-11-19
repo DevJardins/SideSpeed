@@ -1,0 +1,240 @@
+[
+  {
+    "package": "com.xgimi.autokst",
+    "note": "auto keystone correction",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.windowsystem",
+    "note": "keystone/window service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.tof",
+    "note": "ToF autofocus",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.misckey",
+    "note": "remote keys, focus/keystone shortcuts",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.uiconfiguration",
+    "note": "global key receiver, power listener",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xrmservice",
+    "note": "global remote keys, picture/sound adaptation",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xgimiservice",
+    "note": "core XGIMI system service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.autoinstall",
+    "note": "purpose unclear: kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.overseas.xgimiatvbootwizard",
+    "note": "first-boot wizard",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.ota.accessories",
+    "note": "remote/speaker firmware updater",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.tvinput",
+    "note": "HDMI input service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.wwtv.tvcenter",
+    "note": "MediaTek TV center (inputs)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.dolby.android.audio.service",
+    "note": "Dolby audio",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast built-in",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "owns the Wi-Fi network, see above",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atvwifiverify",
+    "note": "factory Wi-Fi verification",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.minitvfactory",
+    "note": "factory menu, file transfer and burn-in",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.yg.minitvfactory",
+    "note": "second factory menu build",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "XGIMI bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "vendor disclaimer screen, first-run only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner / RLZ install-attribution pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play auto-install config for preloads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack (accessibility), off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "print spooler, no use on a projector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.quickplay.android.bellmediaplayer",
+    "note": "Bell Fibe TV (153 MB resident, boot receiver); this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "ca.bellmedia.cravetv",
+    "note": "Crave; this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.cbs.ca",
+    "note": "CTV / Paramount+ Canada; this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.haystack.android",
+    "note": "Haystack News; this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.tubitv",
+    "note": "Tubi; this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apple.atve.androidtv.appletv",
+    "note": "Apple TV; this set has it off",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

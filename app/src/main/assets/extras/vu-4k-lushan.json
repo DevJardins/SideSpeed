@@ -1,0 +1,86 @@
+[
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "Play auto-install of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "shop demo mode",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV app (rent/buy movies)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.hisense.odinbrowser",
+    "note": "preloaded web browser",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "Vu \"Family Moment\" photo sharing, with its own screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.singlelisten",
+    "note": "Vu \"My Music\"",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mxtech.videoplayer.television",
+    "note": "MX Player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.alexa",
+    "note": "Alexa built-in (Google Assistant kept)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  }
+]

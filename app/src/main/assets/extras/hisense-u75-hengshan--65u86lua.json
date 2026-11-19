@@ -1,0 +1,198 @@
+[
+  {
+    "package": "com.vt.tv.evservice",
+    "note": "Hisense ACR (codePath Vtp_ACR)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.google.gtvpai",
+    "note": "PAI: Play Auto Installs",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.storemode",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.b2b",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.factory",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.fte",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.hishow",
+    "note": "Vtp_FamilyMoment, photo app + its screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.protector",
+    "note": "\"Device Assistant\" cleaner with a boot receiver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.calmanconnector",
+    "note": "Calman calibration connector",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.customerlauncher",
+    "note": "OEMConfig: the tvlauncher.config/apprecs/widget providers behind the \"Hisense\" tab",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.mopa.ginga",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.interactive",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.alexa",
+    "note": "HiAlexa",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.dlna",
+    "note": "DLNA renderer",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.mobiledeviceconnectiontips",
+    "note": "Miracast (\"Screen Casting\")",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.mediacenter",
+    "note": "USB media player",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.tubitv",
+    "note": "Tubi; its remote button then does nothing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Google Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google Play Movies & TV stub",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.settings.intelligence",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.managedprovisioning",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.statementservice",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.vt.tv.aipq",
+    "note": "per-app AI scene detection; dormant on this unit",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.smartservice",
+    "note": "Firebase log reporting for smartsense",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.vt.tv.ai_sense",
+    "note": "USB-camera features; see the WARNING above",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

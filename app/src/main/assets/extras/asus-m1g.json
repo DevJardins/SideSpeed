@@ -1,0 +1,93 @@
+[
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.leanbacklauncher.partnercustomizer",
+    "note": "partner config that injects apps and rows into the home screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.aiconnx.app.stream.tv044",
+    "note": "\"Multi-Platform streamer plus\" preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.officeweb",
+    "note": "OfficeWeb document viewer preload",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.userguide",
+    "note": "on-TV user guide",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.instagram.airwave",
+    "note": "Instagram for TV, installed by the Play Store at setup",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.haystack.android",
+    "note": "Haystack News",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.realtek.miracast",
+    "note": "Cast2Display (Miracast mirroring); Chromecast stays",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.rtk.mediabrowser",
+    "note": "Media Player; also the USB media player, re-enable for USB drives",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "voice assistant",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode; the screensaver was also turned off",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "costs phone casting after a reboot (the Cast receiver reads its credentials from setupwraith)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

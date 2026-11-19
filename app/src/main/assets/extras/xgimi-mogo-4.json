@@ -1,0 +1,247 @@
+[
+  {
+    "package": "com.xgimi.autokst",
+    "note": "auto keystone correction",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.windowsystem",
+    "note": "keystone/window service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.tof",
+    "note": "ToF autofocus",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.misckey",
+    "note": "remote keys, focus/keystone shortcuts",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.uiconfiguration",
+    "note": "global key receiver, power listener",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xrmservice",
+    "note": "global remote keys, picture/sound adaptation (re-enables the stock launcher, see above)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.xgimiservice",
+    "note": "core XGIMI system service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.autoinstall",
+    "note": "purpose unclear (PermissionRequestActivity only): kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.overseas.xgimiatvbootwizard",
+    "note": "first-boot wizard",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.tvinput",
+    "note": "HDMI input service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.tv.inputplayer",
+    "note": "HDMI passthrough player and input switcher",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.xgimi.starmirror",
+    "note": "XGIMI screen-mirroring receiver (ships as a user app here)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.dolby.android.audio.service",
+    "note": "Dolby audio",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "fusion.android.tv.demo",
+    "note": "RetailDisplay store demo",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.atvwifiverify",
+    "note": "factory Wi-Fi verification",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.minitvfactory",
+    "note": "factory menu, file transfer and burn-in (never launched)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.bugreportsender",
+    "note": "XGIMI bug report uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "Google feedback",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "feedback / diagnostics consent prompt",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mstar.android.tv.disclaimercustomization",
+    "note": "vendor disclaimer screen, first-run only",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ad services (Topics, attribution)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "on-device ad personalisation",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "federated learning for the above",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner / RLZ install-attribution pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "Play Games",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.marvin.talkback",
+    "note": "TalkBack (accessibility), off by choice",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "Google Assistant / Gemini voice search",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.assistant",
+    "note": "assistant LED / hotword service",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tv.remote.service",
+    "note": "Google TV phone-as-remote, not the Bluetooth remote",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.xgimi.doubanfm",
+    "note": "XGIMI music app, speaker-mode screen",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "Disney+",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.orange.owtv.tv",
+    "note": "Orange TV",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  }
+]

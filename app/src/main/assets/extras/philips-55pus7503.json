@@ -1,0 +1,128 @@
+[
+  {
+    "package": "com.google.android.feedback",
+    "note": "Market Feedback Agent",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvtutorials",
+    "note": "Android TV first-run tutorials",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.demome",
+    "note": "Retail/store demonstration app",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.nettvrecommender",
+    "note": "Philips NetTV / Top Picks recommendation row",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.usagelogger",
+    "note": "Philips usage and device logging",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvlauncher",
+    "note": "",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tvrecommendations",
+    "note": "Android TV recommendations/content rows",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.leanbacklauncher.recommendations",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.inscape.tvclient.inscapeacr",
+    "note": "Inscape ACR: identifies what is on screen, HDMI included",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.candeebug",
+    "note": "\"DAC\" analytics (runs together with org.droidtv.gel)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.gel",
+    "note": "\"GEL\" analytics",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.tv.frameworklogger",
+    "note": "Framework and reboot logging",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "Google Partner Setup: RLZ attribution pings",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "org.droidtv.sticker",
+    "note": "Philips store-demo stickers",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.twittershare",
+    "note": "Philips Twitter sharing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.nettv.market",
+    "note": "Philips NetTV app gallery; Play Store kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video; owner choice, keep if used",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "org.droidtv.amazonalexa",
+    "note": "Alexa; owner choice, Google Assistant kept",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

@@ -1,0 +1,114 @@
+[
+  {
+    "package": "zeasn.open.technical.tv.store.stellamore.tv",
+    "note": "\"App Store\" home tile - ships Google Ads (doubleclick)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.deviceportal.asdprovider.xym_hisi351",
+    "note": "device portal/OTA (ASDMainService -> smarttv.zeasn.tv)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.zeasn.whale.saas",
+    "note": "stock launcher - also ships Google Ads (doubleclick).",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.stm",
+    "note": "STMFeaturesTest",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stm.factorytest",
+    "note": "STMFactoryAutoTest",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stellamore.tvfactory",
+    "note": "STMFactory",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.stellamore.guide",
+    "note": "STMGuide setup wizard",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.printspooler",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.musicfx",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Android on-device ad framework",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "on-device ad personalization",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

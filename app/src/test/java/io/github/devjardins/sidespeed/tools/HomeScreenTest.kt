@@ -73,6 +73,9 @@ private class FakeHomeStore : ToolsStore {
     override suspend fun setUpdateCheck(atMs: Long, latest: String?) {}
     override val originalHome: Flow<String?> = original
     override suspend fun setOriginalHome(v: String?) { original.value = v }
+    override val extrasDisabled: Flow<List<DisabledRecord>> = MutableStateFlow(emptyList())
+    override suspend fun addExtrasDisabled(record: DisabledRecord) {}
+    override suspend fun removeExtrasDisabled(pkg: String) {}
 }
 
 private fun launchers(vararg c: HomeComponent): List<Launcher> =

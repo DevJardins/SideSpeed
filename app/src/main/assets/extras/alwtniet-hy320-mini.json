@@ -1,0 +1,79 @@
+[
+  {
+    "package": "com.htc.expandsdk",
+    "note": "starts at boot, draws over apps (SYSTEM_ALERT_WINDOW) and uses the internet",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.eventuploadservice",
+    "note": "usage/event uploader",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.storeos",
+    "note": "HTC app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.htc.htcotaupdate",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.softwinner.update",
+    "note": "Allwinner OTA",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "android.rockchip.update.service",
+    "note": "Rockchip updater left in this Allwinner image",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.htc.hyk_test",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.agingdragonbox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.dragonbox",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.softwinner.dragonatt",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.huawei.appmarket",
+    "note": "Huawei AppGallery, installed in the user partition on this unit",
+    "home": false,
+    "setup": false,
+    "optional": false
+  }
+]

@@ -1,0 +1,240 @@
+[
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.mk.wd",
+    "note": "boot receiver with ad-click activities",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "android.autoinstalls.config.scbc.device",
+    "note": "Play auto-installs of partner apps",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.healthconnect.controller",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.health.connect.backuprestore",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.wifihotspot",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.dreams.basic",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.htmlviewer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.backupconfirm",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.sharedstoragebackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.wallpaperbackup",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.providers.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.disney.disneyplus",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.chocolabs.app.chocotv.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "tv.twitch.android.app",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "jp.or.nhk.nhkworld.tv",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.apps.usbmediaplayer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.captiveportallogin",
+    "note": "hotel/caf\u00e9 Wi-Fi sign-in page: re-enable if you need one",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.certinstaller",
+    "note": "installing CA or Wi-Fi certificates by hand",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.companiondevicemanager",
+    "note": "companion-app pairing dialogs",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.dynsystem",
+    "note": "Dynamic System Updates (GSI testing)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.localtransport",
+    "note": "local backup transport",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.managedprovisioning",
+    "note": "work-profile / device-owner setup",
+    "home": false,
+    "setup": true,
+    "optional": true
+  },
+  {
+    "package": "com.android.pacprocessor",
+    "note": "proxy auto-config: re-enable if your network uses a PAC proxy",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.providers.contacts",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.se",
+    "note": "Secure Element service",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.vpndialogs",
+    "note": "VPN consent dialogs: re-enable before setting up a VPN app",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.android.wallpaper.livepicker",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.apps.plugins",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mk.tv.systemserver",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.realtek.leanbacklauncher.partnercustomizer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]

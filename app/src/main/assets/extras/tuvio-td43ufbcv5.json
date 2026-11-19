@@ -1,0 +1,184 @@
+[
+  {
+    "package": "tv.anoki.acr.anokiacroptin",
+    "note": "automatic content recognition (reports what is on screen)",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.adservices.api",
+    "note": "Privacy Sandbox ads",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.ondevicepersonalization.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.federatedcompute.services",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.feedback",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.android.tv.feedbackconsent",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.partnersetup",
+    "note": "partner setup / partner app auto-installs",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.homwee.store",
+    "note": "Changhong app store",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.homwee.help",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.play.games",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.syncadapters.calendar",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.videos",
+    "note": "Google TV recommendations; TD43 only, not installed on TD50",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.netflix.ninja",
+    "note": "Netflix",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.amazon.amazonvideo.livingroom",
+    "note": "Prime Video",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.youtube.tvmusic",
+    "note": "YouTube Music",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.homwee.mmp.screenshare",
+    "note": "AirPlay receiver (iPhone casting)",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.homwee.multiscreenshare",
+    "note": "screen sharing",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.mediatek.androidbox",
+    "note": "WFDSinkTest_CH: the Miracast receiver on this set",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.homwee.mmp.fileexplorer",
+    "note": "USB file browser (\"Media Player\")",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.homwee.mmp.imageplayer",
+    "note": "USB photo viewer",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.mediashell",
+    "note": "Chromecast",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.katniss",
+    "note": "voice search / microphone button",
+    "home": false,
+    "setup": false,
+    "optional": true
+  },
+  {
+    "package": "com.google.android.apps.tv.dreamx",
+    "note": "ambient mode, mixes recommendations into the screensaver",
+    "home": false,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.tungsten.setupwraith",
+    "note": "disable before launcherx; costs phone casting after a reboot (the Cast receiver reads its credentials from setupwraith)",
+    "home": false,
+    "setup": true,
+    "optional": false
+  },
+  {
+    "package": "com.google.android.apps.tv.launcherx",
+    "note": "then: cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity",
+    "home": true,
+    "setup": false,
+    "optional": false
+  },
+  {
+    "package": "com.mediatek.android.leanbacklauncher.partnercustomizer",
+    "note": "",
+    "home": false,
+    "setup": false,
+    "optional": true
+  }
+]
