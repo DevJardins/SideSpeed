@@ -2,9 +2,7 @@ package io.github.devjardins.sidespeed.ui.apps
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,12 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import io.github.devjardins.sidespeed.ui.theme.bleed
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -40,9 +37,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
-import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
-import io.github.devjardins.sidespeed.maintenance.JobRecord
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -51,12 +46,14 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import java.text.DateFormat
 import java.util.Date
 
-private enum class Tab(val label: String) { SIDELOADED("Sideloaded"), ALL("All apps"), HISTORY("Auto-optimize") }
+/** One width for every keep box, so the app rows line up whatever the box shows. */
+private val KeepBoxWidth = 88.dp
 
 @Composable
 fun AppsScreen(
@@ -64,137 +61,104 @@ fun AppsScreen(
     lastCompilesFlow: Flow<Map<String, LastCompile>>,
     icon: IconSource,
     maintenance: StateFlow<MaintenanceState>,
-    history: Flow<List<JobRecord>>,
     autoOptimizeMode: Flow<AutoOptimizeMode>,
-    onAutoOptimizeMode: (AutoOptimizeMode) -> Unit,
+    maintained: Flow<Set<String>>,
+    onToggleKeep: (String, Boolean) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
-    onOpenTools: () -> Unit,
-    onOpenAbout: () -> Unit,
-    banner: @Composable () -> Unit = {},
-    tvAddress: String? = null,
-    selfCompile: Flow<SelfCompile?>,
-    selfVersionCode: Long,
-    selfLastUpdateTime: Long,
-    selfDebuggable: Boolean,
+    onBack: () -> Unit,
 ) {
     val state by vm.state.collectAsState()
     // One DataStore collection for every row, instead of one Flow per row.
     val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
-    val selfRecord by selfCompile.collectAsState(initial = null)
+    val ticked by maintained.collectAsState(initial = emptySet())
     LaunchedEffect(Unit) { vm.load() }
-    // Save the tab by name and fall back to SIDELOADED for a name this build no
-    // longer has (e.g. a state bundle written by a version with more tabs), so a
-    // stale restore can never crash on a removed enum entry.
-    var tabName by rememberSaveable { mutableStateOf(Tab.SIDELOADED.name) }
-    val tab = Tab.entries.firstOrNull { it.name == tabName } ?: Tab.SIDELOADED
-    var mode by rememberSaveable { mutableStateOf(CompileMode.SPEED) }
-    // Give the D-pad a starting point: the active tab takes focus when the screen opens.
-    val tabFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { tabFocus.requestFocus() } }
+    // Save the filter by name and fall back to SIDELOADED for a name this build no
+    // longer has (e.g. a state bundle written by 0.6 with "HISTORY"), so a stale
+    // restore can never crash on a removed entry.
+    var filterName by rememberSaveable { mutableStateOf(AppsFilter.SIDELOADED.name) }
+    val filter = filterFromSaved(filterName)
+    // A short note under the filter row, e.g. when a locked box is pressed.
+    var lockedNote by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(lockedNote) {
+        if (lockedNote != null) {
+            delay(4000)
+            lockedNote = null
+        }
+    }
+    // Give the D-pad a starting point: the active filter takes focus when the screen opens.
+    val filterFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { filterFocus.requestFocus() } }
 
+    BackHandler(onBack = onBack)
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                SsButton("‹ Back", onClick = onBack)
+                Spacer(Modifier.width(16.dp))
                 Text(
-                    "Pick an app to compile",
+                    "My Apps",
                     style = SsType.Headline,
                     color = SsColors.TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.weight(1f))
-                selfOptimizedPill(selfRecord, selfVersionCode, selfLastUpdateTime, selfDebuggable)?.let {
-                    StatusPill(it)
-                    Spacer(Modifier.width(8.dp))
-                }
-                SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
             }
-            headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
-                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            // Five buttons plus the Mode group no longer fit a 1080p row at the default
-            // padding, and narrower layouts (Fire TV Cube) fit even less: tighten the tab
-            // buttons to the Mode buttons' padding and let the row scroll when it must.
-            // The scroll clips to the row bounds, which would cut the end buttons' 2dp
-            // focus ring and 1.03x focus scale: bleed the row out symmetrically and pad
-            // the scroll content by the same amount, so resting edges stay aligned.
-            val tabButtonPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-            val tabRowInset = 8.dp
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .bleed(horizontal = tabRowInset)
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = tabRowInset),
             ) {
-                Tab.entries.forEach { t ->
+                AppsFilter.entries.forEach { f ->
                     SsButton(
-                        onClick = { tabName = t.name },
-                        selected = t == tab,
-                        contentPadding = tabButtonPadding,
-                        modifier = if (t == tab) Modifier.focusRequester(tabFocus) else Modifier,
+                        onClick = { filterName = f.name },
+                        selected = f == filter,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                        modifier = if (f == filter) Modifier.focusRequester(filterFocus) else Modifier,
                     ) {
-                        Text(t.label, style = SsType.Body)
+                        Text(f.label, style = SsType.Body)
                     }
-                }
-                SsButton(onClick = onOpenTools, contentPadding = tabButtonPadding) {
-                    Text("Tools", style = SsType.Body)
-                }
-                SsButton(onClick = onOpenAbout, contentPadding = tabButtonPadding) {
-                    Text("About", style = SsType.Body)
-                }
-                Spacer(Modifier.width(16.dp))
-                Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)
-                CompileMode.entries.forEach { m ->
-                    SsButton(
-                        onClick = { mode = m },
-                        selected = m == mode,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    ) { Text(if (m == mode) "✓ ${m.arg}" else m.arg, style = SsType.Caption) }
                 }
             }
-            if (tab == Tab.HISTORY) {
-                val current = optimizeMode
-                if (current != null) {
-                    Text("Keep these apps optimized automatically", style = SsType.Caption, color = SsColors.TextSecondary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AutoOptimizeMode.entries.reversed().forEach { m ->
-                            val option = autoOptimizeOption(m)
-                            SsButton(
-                                (if (m == current) "✓ " else "") + option.title,
-                                onClick = { onAutoOptimizeMode(m) },
-                                selected = m == current,
-                            )
-                        }
-                    }
-                    Text(autoOptimizeOption(current).description, style = SsType.Caption, color = SsColors.TextSecondary)
-                }
+            lockedNote?.let {
+                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            banner()
-            when (tab) {
-                Tab.HISTORY -> HistoryList(history)
-                else -> {
-                    val apps = remember(state.apps, tab) {
-                        if (tab == Tab.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
-                    }
-                    when {
-                        state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
-                        apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
-                        else -> LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+            val apps = remember(state.apps, filter) {
+                if (filter == AppsFilter.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
+            }
+            when {
+                state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
+                apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
+                else -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
+                ) {
+                    items(apps, key = { it.packageName }) { app ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(apps, key = { it.packageName }) { app ->
-                                AppRow(
-                                    app,
-                                    lastCompiles[app.packageName],
-                                    maintenancePill(app.packageName, maintenanceState)
-                                        ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
-                                    icon,
-                                ) { onSelect(app, mode) }
+                            AppRow(
+                                app,
+                                lastCompiles[app.packageName],
+                                maintenancePill(app.packageName, maintenanceState)
+                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
+                                icon,
+                                Modifier.weight(1f),
+                                onClick = { onSelect(app, initialCompileMode(lastCompiles[app.packageName])) },
+                            )
+                            // While the mode is still loading there is nothing to compare against: no box.
+                            val current = optimizeMode
+                            if (current != null) {
+                                when (val box = boxFor(app, current, ticked)) {
+                                    KeepBox.OFF, KeepBox.ON -> KeepBoxButton(if (box == KeepBox.ON) "☑" else "☐") {
+                                        onToggleKeep(app.packageName, box == KeepBox.OFF)
+                                    }
+                                    KeepBox.LOCKED -> KeepBoxButton("☑🔒") {
+                                        lockedNote = lockedMessage(current)
+                                    }
+                                }
                             }
                         }
                     }
@@ -216,13 +180,27 @@ fun AppIcon(pkg: String, icon: IconSource, size: androidx.compose.ui.unit.Dp = S
     }
 }
 
+/** A keep box with its glyph centered, at the fixed row width. */
 @Composable
-private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, onClick: () -> Unit) {
+private fun KeepBoxButton(label: String, onClick: () -> Unit) {
+    SsButton(
+        onClick = onClick,
+        modifier = Modifier.width(KeepBoxWidth),
+        contentPadding = PaddingValues(vertical = 10.dp),
+    ) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(label, style = SsType.Body)
+        }
+    }
+}
+
+@Composable
+private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
     val secondary = remember(last, app.packageName) {
         last?.let { "compiled " + dateFormat.format(Date(it.epochMs)) } ?: app.packageName
     }
-    SsRow(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+    SsRow(onClick = onClick, modifier = modifier) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -244,37 +222,5 @@ fun StatusPill(pill: Pill) {
         PillTone.OK -> SsPill(pill.label, SsColors.OkPillBg, SsColors.OkPillText)
         PillTone.WARN -> SsPill(pill.label, SsColors.WarnPillBg, SsColors.WarnPillText)
         PillTone.NEUTRAL -> SsPill(pill.label, SsColors.Button, SsColors.TextSecondary)
-    }
-}
-
-@Composable
-private fun HistoryList(history: Flow<List<JobRecord>>) {
-    val records by history.collectAsState(initial = emptyList())
-    if (records.isEmpty()) {
-        Text("Nothing has been optimized automatically yet.", style = SsType.Body, color = SsColors.TextSecondary)
-        return
-    }
-    val format = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
-    ) {
-        items(records) { r ->
-            // Focusable so the D-pad can scroll the list.
-            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(r.label, style = SsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(format.format(Date(r.epochMs)), style = SsType.Caption, color = SsColors.TextSecondary)
-                    }
-                    if (r.success) SsPill("Optimized", SsColors.OkPillBg, SsColors.OkPillText)
-                    else SsPill("Failed: ${r.message}", SsColors.WarnPillBg, SsColors.WarnPillText)
-                }
-            }
-        }
     }
 }

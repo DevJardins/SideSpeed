@@ -35,7 +35,9 @@ import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
+import io.github.devjardins.sidespeed.ui.apps.AutoOptimizeScreen
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
+import io.github.devjardins.sidespeed.ui.home.HomeScreen
 import io.github.devjardins.sidespeed.ui.tools.AnimationsCard
 import io.github.devjardins.sidespeed.ui.tools.HealthCardSlot
 import io.github.devjardins.sidespeed.BuildConfig
@@ -140,6 +142,8 @@ class MainActivity : ComponentActivity() {
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showTools by rememberSaveable { mutableStateOf(false) }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
+                var showMyApps by rememberSaveable { mutableStateOf(false) }
+                var showAutoOptimize by rememberSaveable { mutableStateOf(false) }
                 var showExtras by rememberSaveable { mutableStateOf(false) }
                 val forcedExtrasListId = remember {
                     if (BuildConfig.DEBUG) intent.getStringExtra("extras_list_id") else null
@@ -257,21 +261,41 @@ class MainActivity : ComponentActivity() {
                         busy = (application as SideSpeedApp).container.updateBusy,
                         onBack = { showAbout = false },
                     )
-                    app == null -> AppsScreen(
-                        appsVm,
-                        lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
-                        icon = icons,
-                        maintenance = (application as SideSpeedApp).container.maintenance.state,
-                        history = (application as SideSpeedApp).container.maintenanceStore.history,
-                        autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
-                        onAutoOptimizeMode = { chosen ->
+                    showAutoOptimize && app == null -> AutoOptimizeScreen(
+                        mode = (application as SideSpeedApp).container.maintenanceStore.mode,
+                        onMode = { chosen ->
                             lifecycleScope.launch {
                                 val c = (application as SideSpeedApp).container
                                 c.maintenanceStore.setMode(chosen)
                                 if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
                             }
                         },
+                        history = (application as SideSpeedApp).container.maintenanceStore.history,
+                        onBack = { showAutoOptimize = false },
+                    )
+                    showMyApps && app == null -> AppsScreen(
+                        appsVm,
+                        lastCompilesFlow = (application as SideSpeedApp).container.prefs.lastCompiles(),
+                        icon = icons,
+                        maintenance = (application as SideSpeedApp).container.maintenance.state,
+                        autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
+                        maintained = (application as SideSpeedApp).container.maintenanceStore.maintained,
+                        onToggleKeep = { pkg, on ->
+                            lifecycleScope.launch {
+                                val c = (application as SideSpeedApp).container
+                                c.maintenanceStore.setMaintained(pkg, on)
+                                if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
+                            }
+                        },
                         onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
+                        onBack = { showMyApps = false },
+                    )
+                    app == null -> HomeScreen(
+                        appsVm,
+                        maintenance = (application as SideSpeedApp).container.maintenance.state,
+                        autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
+                        onOpenMyApps = { showMyApps = true },
+                        onOpenAutoOptimize = { showAutoOptimize = true },
                         onOpenTools = { showTools = true },
                         onOpenAbout = { showAbout = true },
                         banner = {
@@ -296,6 +320,7 @@ class MainActivity : ComponentActivity() {
                         selfVersionCode = (application as SideSpeedApp).container.selfBuild.versionCode,
                         selfLastUpdateTime = (application as SideSpeedApp).container.selfBuild.lastUpdateTime,
                         selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
+                        versionName = currentVersion,
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running
@@ -307,6 +332,7 @@ class MainActivity : ComponentActivity() {
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
+                            onModeChange = { selectedMode = it },
                             onBack = back,
                             onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },

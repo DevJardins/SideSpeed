@@ -12,7 +12,7 @@ The quickest way: install **Downloader** on the TV (from the Amazon Appstore or 
 
 Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
-To update, press **Update now** on the update notice on the Apps screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates every 6 hours (or right away from **About** → **Check for updates**, 0.5.2 or later; from 0.5.4 it offers **Update now** straight away) and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. On Fire TV and other Android 9 boxes, Update now works from 0.5.4; on 0.5.2 or 0.5.3, update once with Downloader. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
+To update, press **Update now** on the update notice on the Home screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates every 6 hours (or right away from **About** → **Check for updates**, 0.5.2 or later; from 0.5.4 it offers **Update now** straight away) and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. On Fire TV and other Android 9 boxes, Update now works from 0.5.4; on 0.5.2 or 0.5.3, update once with Downloader. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
 
 Fire TV Sticks that run Vega OS (instead of Fire OS) are not supported: they cannot run Android apps.
 
@@ -30,21 +30,25 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 
 ## Keeping apps optimized
 
-An app update throws away its compiled code. Open the app's compile screen and choose **Keep this app optimized**, and SideSpeed recompiles it, one app at a time, after every update.
+SideSpeed's Home screen has four buttons: **My Apps**, **Auto-optimize**, **Tools** and **About**.
 
-The **Auto-optimize** tab on the apps screen keeps groups of apps optimized automatically:
+An app update throws away its compiled code. On the **My Apps** screen each app has a checkbox: tick it and SideSpeed recompiles the app, one app at a time, after every update. You can also open the app and choose **Keep this app optimized**. The screen shows **Sideloaded** apps or **All** apps.
+
+The **Auto-optimize** screen keeps groups of apps optimized automatically:
 
 - **All apps**: every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.
 - **Sideloaded only**: only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.
-- **Selected apps**: only the apps you pick. Open an app and choose "Keep this app optimized" to add it.
+- **Selected apps**: only the apps you ticked.
 
-Anything still in speed-profile or a lower filter is upgraded to speed. The tab also shows a history of the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back.
+An app already covered by Auto-optimize shows a ticked, locked box. Anything still in speed-profile or a lower filter is upgraded to speed. **History** on the Auto-optimize screen shows the last 20 automatic compiles. Work waits while the helper is down and resumes when it is back.
 
-**SideSpeed optimizes itself too.** After you install or update it, SideSpeed compiles itself to speed the next time you leave the app while the helper is running. The Apps screen shows **SideSpeed optimized** once that is done. The APK also includes a baseline profile, which tells Android which of SideSpeed's own code to compile first.
+On an app's compile screen, **Mode** picks **speed** or **speed-profile** (speed is the default); the app's last-used mode is remembered.
+
+**SideSpeed optimizes itself too.** After you install or update it, SideSpeed compiles itself to speed the next time you leave the app while the helper is running. The Home screen shows **SideSpeed optimized** once that is done. The APK also includes a baseline profile, which tells Android which of SideSpeed's own code to compile first.
 
 ## Tools
 
-The **Tools** button on the Apps screen opens five cards:
+The **Tools** button on the Home screen opens five cards:
 
 - **Box health:** device name, Android version, memory, storage and whether the helper is running.
 - **Free up space:** shows free and total storage. **Clean up now** clears app caches (apps keep their data but may download artwork again). **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free: while the helper runs, SideSpeed checks every few hours and clears only as much cache as it needs. It never runs on a timer. Off by default.
