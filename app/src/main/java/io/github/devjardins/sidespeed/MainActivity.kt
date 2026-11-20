@@ -374,7 +374,7 @@ class MainActivity : ComponentActivity() {
                         val back = { if (!running && !launchBusy) { selected = null; selectedPkg = null } }
                         BackHandler { back() }
                         val catalog by (application as SideSpeedApp).container.appUpdateCatalog.collectAsState(initial = emptyMap())
-                        val available = updateFor(app, app.versionName, app.versionCode, catalog[app.packageName])
+                        val available = updateFor(app, app.versionName, catalog[app.packageName])
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,

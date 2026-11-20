@@ -9,7 +9,7 @@ data class AppEntry(
     val lastUpdateTime: Long,
     /** Preinstalled (FLAG_SYSTEM or FLAG_UPDATED_SYSTEM_APP); such apps often report a null installer. */
     val isSystem: Boolean = false,
-    /** From the PackageManager; null/0 when unknown. Powers the update-badge comparison. */
+    /** From the PackageManager; null/0 when unknown. The version name powers the update-badge comparison. */
     val versionName: String? = null,
     val versionCode: Long = 0L,
 ) {

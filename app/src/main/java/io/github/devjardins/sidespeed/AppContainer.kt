@@ -33,8 +33,11 @@ import io.github.devjardins.sidespeed.update.UpdateDownload
 import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.update.readApkFacts
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -137,9 +140,23 @@ class AppContainer(context: Context) {
         AppUpdateCheck(httpAppUpdateFetch(), appUpdateStore, System::currentTimeMillis)
     }
 
-    /** The last good catalog, parsed for badges; empty until the first successful fetch. */
+    /**
+     * The last good catalog, parsed for badges; empty until the first successful fetch.
+     * Parsed once per new body on a background thread, filtered to installed
+     * packages so the in-memory map stays small, and shared so every collector
+     * (Home, My Apps, Compile) sees the same parse.
+     */
     val appUpdateCatalog: Flow<Map<String, UpdateEntry>> by lazy {
-        appUpdateStore.json.map { raw -> raw?.let(::parseAppUpdates) ?: emptyMap() }
+        appUpdateStore.json
+            .map { raw ->
+                if (raw == null) return@map emptyMap<String, UpdateEntry>()
+                val installed = runCatching {
+                    installedApps.list().map { it.packageName }.toSet()
+                }.getOrDefault(emptySet())
+                parseAppUpdates(raw, installed) ?: emptyMap()
+            }
+            .flowOn(Dispatchers.Default)
+            .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
     }
 
     /** Home screen switcher: in-app PackageManager reads, helper writes. */

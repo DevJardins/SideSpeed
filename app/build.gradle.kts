@@ -117,4 +117,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Real org.json for local unit tests: android.jar only carries stubs, so the
+    // catalog parser tests run against the reference implementation instead.
+    testImplementation(libs.org.json)
 }
