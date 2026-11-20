@@ -304,7 +304,8 @@ class MainActivity : ComponentActivity() {
                             lastAppsPkg = a.packageName
                             selectedMode = m
                         },
-                        onBack = { showMyApps = false },
+                        // Leaving My Apps forgets the opened row, so the next visit starts on the filter.
+                        onBack = { showMyApps = false; lastAppsPkg = null },
                         filterName = appsFilterName,
                         onFilterChange = { appsFilterName = it },
                         returnToPackage = lastAppsPkg,
