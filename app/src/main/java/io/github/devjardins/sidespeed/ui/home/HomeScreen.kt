@@ -39,8 +39,11 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.UpdateEntry
+import io.github.devjardins.sidespeed.updates.myAppsUpdatesCount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 
 /** The Home tile that keeps focus when coming back from its screen. */
 enum class HomeTile { MY_APPS, AUTO_OPTIMIZE, TOOLS, ABOUT }
@@ -72,13 +75,20 @@ fun HomeScreen(
     selfDebuggable: Boolean,
     versionName: String,
     focusedTile: HomeTile = HomeTile.MY_APPS,
+    appUpdates: Flow<Map<String, UpdateEntry>> = emptyFlow(),
+    onVisible: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     val selfRecord by selfCompile.collectAsState(initial = null)
+    val catalog by appUpdates.collectAsState(initial = emptyMap())
+    val updateCount = remember(state.apps, catalog) { myAppsUpdatesCount(state.apps, catalog) }
     // The My Apps tile counts the apps, so keep the list filled while Home shows.
-    LaunchedEffect(Unit) { vm.load() }
+    LaunchedEffect(Unit) {
+        vm.load()
+        onVisible()
+    }
     // Give the D-pad a starting point: the tile just come from, or My Apps first.
     val myAppsFocus = remember { FocusRequester() }
     val autoOptimizeFocus = remember { FocusRequester() }
@@ -125,7 +135,7 @@ fun HomeScreen(
             ) {
                 HomeTile(
                     "My Apps",
-                    myAppsStatus(state.apps, state.loading),
+                    myAppsStatus(state.apps, state.loading, updateCount),
                     onClick = onOpenMyApps,
                     modifier = Modifier.weight(1f).focusRequester(myAppsFocus),
                 )

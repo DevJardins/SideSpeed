@@ -9,6 +9,9 @@ data class AppEntry(
     val lastUpdateTime: Long,
     /** Preinstalled (FLAG_SYSTEM or FLAG_UPDATED_SYSTEM_APP); such apps often report a null installer. */
     val isSystem: Boolean = false,
+    /** From the PackageManager; null/0 when unknown. Powers the update-badge comparison. */
+    val versionName: String? = null,
+    val versionCode: Long = 0L,
 ) {
     /**
      * True for non-system apps not installed by a known store; an unknown (null) installer counts as sideloaded.

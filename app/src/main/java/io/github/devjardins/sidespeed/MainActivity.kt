@@ -31,6 +31,7 @@ import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.githubReleaseFetch
+import io.github.devjardins.sidespeed.updates.updateFor
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
@@ -291,6 +292,7 @@ class MainActivity : ComponentActivity() {
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
                         maintained = (application as SideSpeedApp).container.maintenanceStore.maintained,
+                        appUpdates = (application as SideSpeedApp).container.appUpdateCatalog,
                         onToggleKeep = { pkg, on ->
                             lifecycleScope.launch {
                                 val c = (application as SideSpeedApp).container
@@ -310,10 +312,18 @@ class MainActivity : ComponentActivity() {
                         onFilterChange = { appsFilterName = it },
                         returnToPackage = lastAppsPkg,
                     )
-                    app == null -> HomeScreen(
-                        appsVm,
-                        maintenance = (application as SideSpeedApp).container.maintenance.state,
-                        autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
+                    app == null -> {
+                        val c = (application as SideSpeedApp).container
+                        HomeScreen(
+                            appsVm,
+                            maintenance = c.maintenance.state,
+                            autoOptimizeMode = c.maintenanceStore.mode,
+                            appUpdates = c.appUpdateCatalog,
+                            onVisible = {
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    runCatching { c.appUpdateCheck.checkIfDue() }
+                                }
+                            },
                         onOpenMyApps = {
                             lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.MY_APPS.name
                             showMyApps = true
@@ -354,7 +364,8 @@ class MainActivity : ComponentActivity() {
                         selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
                         versionName = currentVersion,
                         focusedTile = io.github.devjardins.sidespeed.ui.home.homeTileFromSaved(lastHomeTile),
-                    )
+                        )
+                    }
                     else -> {
                         val running = compileVm.state.collectAsState().value.running
                         // Blocked while a launch sequence is busy: leaving would hide its
@@ -362,6 +373,8 @@ class MainActivity : ComponentActivity() {
                         val launchBusy = compileVm.launch.collectAsState().value.busy != null
                         val back = { if (!running && !launchBusy) { selected = null; selectedPkg = null } }
                         BackHandler { back() }
+                        val catalog by (application as SideSpeedApp).container.appUpdateCatalog.collectAsState(initial = emptyMap())
+                        val available = updateFor(app, app.versionName, app.versionCode, catalog[app.packageName])
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
@@ -369,6 +382,7 @@ class MainActivity : ComponentActivity() {
                             onBack = back,
                             onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
+                            availableUpdate = available,
                         )
                     }
                 }
