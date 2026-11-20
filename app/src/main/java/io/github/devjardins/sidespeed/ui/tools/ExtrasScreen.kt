@@ -85,10 +85,14 @@ fun ExtrasScreen(
     }
     var dismissedIds by remember { mutableStateOf(emptySet<String>()) }
     var acceptedIds by remember { mutableStateOf(emptySet<String>()) }
+    // Until the saved answers load, a suggestion shows nothing, so a remembered
+    // "Not my TV" or "Use this list" never flashes the question first.
+    var suggestionsLoaded by remember { mutableStateOf(false) }
     val useListFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         dismissedIds = extras.dismissedSuggestions()
         acceptedIds = extras.acceptedSuggestions()
+        suggestionsLoaded = true
     }
     // A dismissed suggestion reads as NoList; an accepted one opens as its list.
     val effectiveMatch = when (val m = match) {
@@ -171,7 +175,7 @@ fun ExtrasScreen(
                 ExtrasMatchResult.Ambiguous -> {
                     Text("More than one list matches this TV.", style = SsType.Body, color = SsColors.DangerCardText)
                 }
-                is ExtrasMatchResult.Suggested -> {
+                is ExtrasMatchResult.Suggested -> if (suggestionsLoaded) {
                     LaunchedEffect(Unit) { runCatching { useListFocus.requestFocus() } }
                     Text(
                         "This list looks like your TV: ${m.tvHeader}. Check the model before turning anything off.",
