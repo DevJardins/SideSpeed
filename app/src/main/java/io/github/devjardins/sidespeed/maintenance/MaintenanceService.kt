@@ -23,6 +23,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -123,6 +124,7 @@ class MaintenanceService : Service() {
                 engine.scan()
                 runCatching { cleanup.maybeAuto() }
                 runCatching { launches.restorePending() }
+                runCatching { withContext(Dispatchers.IO) { container.appUpdateCheck.checkIfDue() } }
                 delay(6.hours)
             }
         }

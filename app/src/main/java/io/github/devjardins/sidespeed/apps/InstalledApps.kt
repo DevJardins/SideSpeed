@@ -45,6 +45,13 @@ class InstalledApps(context: Context) : AppSource {
             installerOf(pkg),
             info.lastUpdateTime,
             isSystem = isSystem(info),
+            versionName = info.versionName,
+            versionCode = if (Build.VERSION.SDK_INT >= 28) {
+                info.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            },
         )
 
     private fun isSystem(info: PackageInfo): Boolean {

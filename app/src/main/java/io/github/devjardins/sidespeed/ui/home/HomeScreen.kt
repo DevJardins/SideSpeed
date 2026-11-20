@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -38,13 +39,24 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.UpdateEntry
+import io.github.devjardins.sidespeed.updates.myAppsUpdatesCount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
+
+/** The Home tile that keeps focus when coming back from its screen. */
+enum class HomeTile { MY_APPS, AUTO_OPTIMIZE, TOOLS, ABOUT }
+
+/** Restores the saved tile; an unknown or missing name falls back to MY_APPS. */
+fun homeTileFromSaved(name: String?): HomeTile =
+    HomeTile.entries.firstOrNull { it.name == name } ?: HomeTile.MY_APPS
 
 /**
  * The Home screen: the SideSpeed header and four big buttons (My Apps,
- * Auto-optimize, Tools, About), each with a one-line status. My Apps takes
- * the initial focus; Back leaves the app as before.
+ * Auto-optimize, Tools, About), each with a one-line status. [focusedTile]
+ * takes focus: My Apps on first launch, otherwise the tile just come from.
+ * Back leaves the app as before.
  */
 @Composable
 fun HomeScreen(
@@ -62,16 +74,40 @@ fun HomeScreen(
     selfLastUpdateTime: Long,
     selfDebuggable: Boolean,
     versionName: String,
+    focusedTile: HomeTile = HomeTile.MY_APPS,
+    appUpdates: Flow<Map<String, UpdateEntry>> = emptyFlow(),
+    onVisible: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     val selfRecord by selfCompile.collectAsState(initial = null)
+    val catalog by appUpdates.collectAsState(initial = emptyMap())
+    val updateCount = remember(state.apps, catalog) { myAppsUpdatesCount(state.apps, catalog) }
     // The My Apps tile counts the apps, so keep the list filled while Home shows.
-    LaunchedEffect(Unit) { vm.load() }
-    // Give the D-pad a starting point: My Apps takes focus when the screen opens.
+    LaunchedEffect(Unit) {
+        vm.load()
+        onVisible()
+    }
+    // Give the D-pad a starting point: the tile just come from, or My Apps first.
     val myAppsFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { myAppsFocus.requestFocus() } }
+    val autoOptimizeFocus = remember { FocusRequester() }
+    val toolsFocus = remember { FocusRequester() }
+    val aboutFocus = remember { FocusRequester() }
+    LaunchedEffect(focusedTile) {
+        // The screen just come from releases D-pad focus a frame after it leaves;
+        // wait that out so this request wins instead of being reset to My Apps.
+        withFrameNanos { }
+        withFrameNanos { }
+        runCatching {
+            when (focusedTile) {
+                HomeTile.MY_APPS -> myAppsFocus
+                HomeTile.AUTO_OPTIMIZE -> autoOptimizeFocus
+                HomeTile.TOOLS -> toolsFocus
+                HomeTile.ABOUT -> aboutFocus
+            }.requestFocus()
+        }
+    }
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -99,7 +135,7 @@ fun HomeScreen(
             ) {
                 HomeTile(
                     "My Apps",
-                    myAppsStatus(state.apps, state.loading),
+                    myAppsStatus(state.apps, state.loading, updateCount),
                     onClick = onOpenMyApps,
                     modifier = Modifier.weight(1f).focusRequester(myAppsFocus),
                 )
@@ -107,19 +143,19 @@ fun HomeScreen(
                     "Auto-optimize",
                     autoOptimizeStatus(optimizeMode, maintenanceState),
                     onClick = onOpenAutoOptimize,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(autoOptimizeFocus),
                 )
                 HomeTile(
                     "Tools",
                     TOOLS_STATUS,
                     onClick = onOpenTools,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(toolsFocus),
                 )
                 HomeTile(
                     "About",
                     aboutStatus(versionName),
                     onClick = onOpenAbout,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(aboutFocus),
                 )
             }
         }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -24,8 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -46,9 +47,13 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.UpdateEntry
+import io.github.devjardins.sidespeed.updates.updateFor
+import io.github.devjardins.sidespeed.updates.updatePillLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import java.text.DateFormat
 import java.util.Date
 
@@ -66,18 +71,25 @@ fun AppsScreen(
     onToggleKeep: (String, Boolean) -> Unit,
     onSelect: (AppEntry, CompileMode) -> Unit,
     onBack: () -> Unit,
+    filterName: String = AppsFilter.ALL.name,
+    onFilterChange: (String) -> Unit = {},
+    // The package opened from this screen: on return from Compile the list scrolls
+    // to it and its row takes focus. Null on the first open, so the filter does.
+    returnToPackage: String? = null,
+    appUpdates: Flow<Map<String, UpdateEntry>> = emptyFlow(),
 ) {
     val state by vm.state.collectAsState()
     // One DataStore collection for every row, instead of one Flow per row.
     val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
+    val catalog by appUpdates.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     val ticked by maintained.collectAsState(initial = emptySet())
     LaunchedEffect(Unit) { vm.load() }
-    // Save the filter by name and fall back to SIDELOADED for a name this build no
-    // longer has (e.g. a state bundle written by 0.6 with "HISTORY"), so a stale
-    // restore can never crash on a removed entry.
-    var filterName by rememberSaveable { mutableStateOf(AppsFilter.SIDELOADED.name) }
+    // The filter lives in MainActivity (saved by name) so it survives the Compile
+    // screen; fall back to ALL for a name this build no longer has (e.g. a state
+    // bundle written by 0.6 with "HISTORY"), so a stale restore can never crash
+    // on a removed entry.
     val filter = filterFromSaved(filterName)
     // A short note under the filter row, e.g. when a locked box is pressed.
     var lockedNote by remember { mutableStateOf<String?>(null) }
@@ -87,9 +99,13 @@ fun AppsScreen(
             lockedNote = null
         }
     }
-    // Give the D-pad a starting point: the active filter takes focus when the screen opens.
+    // Give the D-pad a starting point: the row opened last takes focus when coming
+    // back from Compile, otherwise the active filter does (first open included).
     val filterFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { filterFocus.requestFocus() } }
+    val rowFocusers = remember { mutableMapOf<String, FocusRequester>() }
+    // Consumed once per return: later list changes (e.g. switching the filter)
+    // must not yank focus back to the old row.
+    var restoreDone by remember(returnToPackage) { mutableStateOf(false) }
 
     BackHandler(onBack = onBack)
     SsScreen {
@@ -111,7 +127,7 @@ fun AppsScreen(
             ) {
                 AppsFilter.entries.forEach { f ->
                     SsButton(
-                        onClick = { filterName = f.name },
+                        onClick = { onFilterChange(f.name) },
                         selected = f == filter,
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                         modifier = if (f == filter) Modifier.focusRequester(filterFocus) else Modifier,
@@ -126,10 +142,39 @@ fun AppsScreen(
             val apps = remember(state.apps, filter) {
                 if (filter == AppsFilter.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
             }
+            val listState = rememberLazyListState()
+            // Back from Compile: scroll to the opened row and focus it. When it is not
+            // in the current list (or this is the first open), the filter keeps focus.
+            LaunchedEffect(apps, returnToPackage) {
+                if (restoreDone) return@LaunchedEffect
+                // The Compile screen releases D-pad focus a frame after it leaves;
+                // wait that out so this request wins instead of being reset away.
+                withFrameNanos { }
+                withFrameNanos { }
+                val target = returnToPackage
+                if (target == null || state.loading || apps.isEmpty()) {
+                    if (!state.loading && target == null) {
+                        runCatching { filterFocus.requestFocus() }
+                        restoreDone = true
+                    }
+                    return@LaunchedEffect
+                }
+                val index = apps.indexOfFirst { it.packageName == target }
+                if (index < 0) {
+                    runCatching { filterFocus.requestFocus() }
+                } else {
+                    listState.scrollToItem(index)
+                    runCatching {
+                        rowFocusers.getOrPut(target) { FocusRequester() }.requestFocus()
+                    }
+                }
+                restoreDone = true
+            }
             when {
                 state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
                 apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
                 else -> LazyColumn(
+                    state = listState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
                 ) {
@@ -139,13 +184,17 @@ fun AppsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            val available = updateFor(app, app.versionName, catalog[app.packageName])
                             AppRow(
                                 app,
                                 lastCompiles[app.packageName],
-                                maintenancePill(app.packageName, maintenanceState)
+                                // An available update wins: a kept app always has a maintenance pill.
+                                available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
+                                    ?: maintenancePill(app.packageName, maintenanceState)
                                     ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
                                 icon,
-                                Modifier.weight(1f),
+                                Modifier.weight(1f)
+                                    .focusRequester(rowFocusers.getOrPut(app.packageName) { FocusRequester() }),
                                 onClick = { onSelect(app, initialCompileMode(lastCompiles[app.packageName])) },
                             )
                             // While the mode is still loading there is nothing to compare against: no box.

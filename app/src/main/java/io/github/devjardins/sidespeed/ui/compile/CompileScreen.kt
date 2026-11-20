@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.ui.compile
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,6 +35,7 @@ import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.ui.about.rememberQrBitmap
 import io.github.devjardins.sidespeed.ui.apps.AppIcon
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.ui.theme.CardShape
@@ -43,6 +46,9 @@ import io.github.devjardins.sidespeed.ui.theme.SsDimens
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.AvailableUpdate
+import io.github.devjardins.sidespeed.updates.updateCardTitle
+import io.github.devjardins.sidespeed.updates.updateSourceLine
 import kotlinx.coroutines.delay
 
 const val RUNNING_NOTE = "A compile is running — please wait until it finishes."
@@ -67,6 +73,7 @@ fun CompileScreen(
     onCheckHelper: () -> Unit,
     onKeepOptimized: () -> Unit = {},
     onModeChange: (CompileMode) -> Unit = {},
+    availableUpdate: AvailableUpdate? = null,
 ) {
     val state by vm.state.collectAsState()
     val launch by vm.launch.collectAsState()
@@ -111,6 +118,7 @@ fun CompileScreen(
             // While a launch sequence is busy every action below is disabled and
             // Back is blocked (MainActivity): the runner owns the screen until it finishes.
             val launchBusy = launch.busy != null
+            availableUpdate?.let { UpdateAvailableCard(it, installedVersion = app.versionName ?: "unknown") }
             if (launch.launchable || launch.stored != null) {
                 LaunchTimeSection(
                     launch = launch,
@@ -206,6 +214,42 @@ fun CompileScreen(
 
             if (state.running || (result != null && showLog)) {
                 LogView(state.log, Modifier.weight(1f).focusRequester(logFocus))
+            }
+        }
+    }
+}
+
+/**
+ * Notify-only update notice above the launch-time card: what is out, what is
+ * installed, where to get it (phone QR plus a link to type on this TV).
+ * Never an install button: other apps are only ever updated by the user.
+ */
+@Composable
+private fun UpdateAvailableCard(update: AvailableUpdate, installedVersion: String) {
+    SsCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Update available", style = SsType.Title, color = SsColors.TextPrimary)
+            Text(
+                updateCardTitle(update.name, update.versionName, installedVersion),
+                style = SsType.Body,
+                color = SsColors.TextBody,
+            )
+            updateSourceLine(update.source)?.let {
+                Text(it, style = SsType.Body, color = SsColors.TextBody)
+            }
+            val link = update.link
+            if (!link.isNullOrBlank()) {
+                Image(
+                    rememberQrBitmap(link),
+                    contentDescription = "QR code for $link",
+                    modifier = Modifier.size(160.dp),
+                )
+                Text(link, style = SsType.Body, color = SsColors.TextBody)
+                Text(
+                    "Scan with your phone, or type the link into a browser on this TV.",
+                    style = SsType.Caption,
+                    color = SsColors.TextSecondary,
+                )
             }
         }
     }
