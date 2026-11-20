@@ -184,7 +184,7 @@ fun AppsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            val available = updateFor(app, app.versionName, app.versionCode, catalog[app.packageName])
+                            val available = updateFor(app, app.versionName, catalog[app.packageName])
                             AppRow(
                                 app,
                                 lastCompiles[app.packageName],

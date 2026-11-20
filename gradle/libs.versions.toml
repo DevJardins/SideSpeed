@@ -17,6 +17,7 @@ conscrypt = "2.5.3"
 hiddenapibypass = "6.1"
 zxing = "3.5.4"
 junit = "4.13.2"
+json = "20240303"
 coroutines = "1.11.0"
 kadb = "2.1.4"
 bouncycastle = "1.85"
@@ -47,6 +48,7 @@ conscrypt-android = { module = "org.conscrypt:conscrypt-android", version.ref = 
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 junit = { module = "junit:junit", version.ref = "junit" }
+org-json = { module = "org.json:json", version.ref = "json" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }

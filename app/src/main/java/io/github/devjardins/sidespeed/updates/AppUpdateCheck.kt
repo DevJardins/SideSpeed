@@ -1,7 +1,9 @@
 package io.github.devjardins.sidespeed.updates
 
 import io.github.devjardins.sidespeed.BuildConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -37,7 +39,8 @@ class AppUpdateCheck(
         }
         when (outcome) {
             is AppUpdateOutcome.Data ->
-                if (parseAppUpdates(outcome.body) == null) {
+                // The body can approach 1 MB: validate it off the main thread.
+                if (withContext(Dispatchers.Default) { parseAppUpdates(outcome.body) } == null) {
                     store.setCheck(now, oldJson, etag)
                 } else {
                     store.setCheck(now, outcome.body, outcome.etag)

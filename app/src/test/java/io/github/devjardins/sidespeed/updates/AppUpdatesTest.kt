@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.updates
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,10 +20,9 @@ class AppUpdatesTest {
 
     private fun entry(
         versionName: String = "29.47",
-        versionCode: Long? = 2947L,
         source: String? = "github",
         name: String = "SmartTube",
-    ) = UpdateEntry(name, versionName, versionCode, source, "https://example.com/page", "https://sidespeed.app/u/x")
+    ) = UpdateEntry(name, versionName, source, "https://example.com/page", "https://sidespeed.app/u/x")
 
     private val fixture = """
         {
@@ -55,13 +55,17 @@ class AppUpdatesTest {
         val tube = catalog["org.smarttube.tv"]!!
         assertEquals("SmartTube", tube.name)
         assertEquals("29.47", tube.versionName)
-        assertEquals(2947L, tube.versionCode)
         assertEquals("github", tube.source)
         assertEquals("https://sidespeed.app/u/smarttube", tube.short)
         val example = catalog["com.example.app"]!!
         assertEquals("1.2.10", example.versionName)
-        assertNull(example.versionCode)
         assertNull(example.short)
+    }
+
+    @Test fun parseIgnoresVersionCodeField() {
+        // The catalog's version code is never read, even when present.
+        val json = """{"schema":1,"apps":{"a.b":{"name":"A","versionName":"2","versionCode":99}}}"""
+        assertEquals("2", parseAppUpdates(json)!!["a.b"]!!.versionName)
     }
 
     @Test fun parseRejectsSchemaMismatch() {
@@ -80,101 +84,145 @@ class AppUpdatesTest {
         assertEquals(setOf("c.d"), parseAppUpdates(json)!!.keys)
     }
 
-    @Test fun dottedCompareIsNumeric() {
-        assertTrue(compareStrictVersions("1.2.10", "1.2.9")!! > 0)
-        assertTrue(compareStrictVersions("1.2.9", "1.2.10")!! < 0)
+    @Test fun parseSkipsNonStringVersionName() {
+        val json = """{"schema":1,"apps":{"a.b":{"name":"Number","versionName":29},"c.d":{"name":"Ok","versionName":"2"}}}"""
+        assertEquals(setOf("c.d"), parseAppUpdates(json)!!.keys)
+    }
+
+    @Test fun parseSkipsNonObjectEntries() {
+        val json = """{"schema":1,"apps":{"a.b":"nope","c.d":{"name":"Ok","versionName":"2"}}}"""
+        assertEquals(setOf("c.d"), parseAppUpdates(json)!!.keys)
+    }
+
+    @Test fun parseFiltersToInstalledPackages() {
+        val catalog = parseAppUpdates(fixture, setOf("com.example.app"))!!
+        assertEquals(setOf("com.example.app"), catalog.keys)
+    }
+
+    @Test fun numericRunsCompare() {
+        assertTrue(compareVersionNames("1.2.10", "1.2.9")!! > 0)
+        assertTrue(compareVersionNames("1.2.9", "1.2.10")!! < 0)
+        assertTrue(compareVersionNames("32.80", "32.79")!! > 0)
+        assertTrue(compareVersionNames("32.80s", "32.79")!! > 0)
     }
 
     @Test fun leadingVIsIgnored() {
-        assertEquals(0, compareStrictVersions("v29.47", "29.47"))
-        assertTrue(compareStrictVersions("v29.47", "29.46")!! > 0)
+        assertEquals(0, compareVersionNames("v29.47", "29.47"))
+        assertTrue(compareVersionNames("v29.47", "29.46")!! > 0)
     }
 
     @Test fun missingPartsCountAsZero() {
-        assertEquals(0, compareStrictVersions("1.0", "1.0.0"))
-        assertTrue(compareStrictVersions("1.0.1", "1.0")!! > 0)
+        assertEquals(0, compareVersionNames("1.0", "1.0.0"))
+        assertTrue(compareVersionNames("1.0.1", "1.0")!! > 0)
     }
 
-    @Test fun nonNumericIsUncertain() {
-        assertNull(compareStrictVersions("29.47-beta", "29.47"))
-        assertNull(compareStrictVersions("29.47", "29.47-beta"))
-        assertNull(compareStrictVersions("beta", "1.0"))
-        assertNull(compareStrictVersions("", "1.0"))
-        assertNull(compareStrictVersions("1.0", ""))
+    @Test fun preReleaseIsUncertain() {
+        assertNull(compareVersionNames("29.47-beta", "29.46"))
+        assertNull(compareVersionNames("29.47", "29.47-beta"))
+        assertNull(compareVersionNames("1.1.0", "1.2.0-beta.2"))
+        assertNull(compareVersionNames("beta", "1.0"))
+        assertNull(compareVersionNames("", "1.0"))
+        assertNull(compareVersionNames("1.0", ""))
+    }
+
+    @Test fun arcIsNotARcMarker() {
+        // "arc" contains "rc" but not as a word: -arc.4 still badges over -arc.3.
+        assertTrue(compareVersionNames("1.2.0-arc.4", "1.2.0-arc.3")!! > 0)
+        assertEquals(0, compareVersionNames("1.2.0-arc.3", "1.2.0-arc.3"))
+    }
+
+    @Test fun arcUpdateBadges() {
+        val u = updateFor(
+            app(versionName = "1.2.0-arc.3"),
+            "1.2.0-arc.3",
+            entry(versionName = "1.2.0-arc.4", source = null, name = "Arc"),
+        )
+        assertEquals("1.2.0-arc.4", u!!.versionName)
+    }
+
+    @Test fun arcSameIsNoBadge() {
+        assertNull(updateFor(app(versionName = "1.2.0-arc.3"), "1.2.0-arc.3", entry(versionName = "1.2.0-arc.3")))
+    }
+
+    @Test fun betaInstalledIsNoBadge() {
+        assertNull(updateFor(app(versionName = "1.2.0-beta.2"), "1.2.0-beta.2", entry(versionName = "1.1.0")))
     }
 
     @Test fun newerByNameBadges() {
-        val u = updateFor(app(versionName = "1.2.9", versionCode = 0L), "1.2.9", 0L, entry(versionName = "1.2.10", versionCode = null))
+        val u = updateFor(app(versionName = "1.2.9", versionCode = 0L), "1.2.9", entry(versionName = "1.2.10"))
         assertEquals("1.2.10", u!!.versionName)
         assertEquals("Update: 1.2.10", updatePillLabel(u.versionName))
     }
 
     @Test fun vPrefixNewerBadges() {
-        val u = updateFor(app(), "29.46", 2946L, entry(versionName = "v29.47", versionCode = null))
+        val u = updateFor(app(), "29.46", entry(versionName = "v29.47"))
         assertEquals("v29.47", u!!.versionName)
     }
 
     @Test fun equalNameIsNoBadge() {
-        assertNull(updateFor(app(versionName = "1.0", versionCode = 0L), "1.0", 0L, entry(versionName = "1.0.0", versionCode = null)))
+        assertNull(updateFor(app(versionName = "1.0", versionCode = 0L), "1.0", entry(versionName = "1.0.0")))
     }
 
     @Test fun olderNameIsNoBadge() {
-        assertNull(updateFor(app(versionName = "1.2.10", versionCode = 0L), "1.2.10", 0L, entry(versionName = "1.2.9", versionCode = null)))
+        assertNull(updateFor(app(versionName = "1.2.10", versionCode = 0L), "1.2.10", entry(versionName = "1.2.9")))
     }
 
     @Test fun betaNameIsNoBadge() {
-        assertNull(updateFor(app(versionName = "29.46", versionCode = 0L), "29.46", 0L, entry(versionName = "29.47-beta", versionCode = null)))
-        assertNull(updateFor(app(versionName = "29.47-beta", versionCode = 0L), "29.47-beta", 0L, entry(versionName = "29.47", versionCode = null)))
+        assertNull(updateFor(app(versionName = "29.46", versionCode = 0L), "29.46", entry(versionName = "29.47-beta")))
+        assertNull(updateFor(app(versionName = "29.47-beta", versionCode = 0L), "29.47-beta", entry(versionName = "29.47")))
     }
 
-    @Test fun versionCodeWinsWhenPresent() {
-        // Catalog name older, code newer: still an update.
-        val u = updateFor(app(versionName = "29.47", versionCode = 2946L), "29.47", 2946L, entry(versionName = "29.40", versionCode = 2947L))
-        assertEquals("29.40", u!!.versionName)
-        // Catalog name newer, code older: no badge.
-        assertNull(updateFor(app(versionName = "29.40", versionCode = 2947L), "29.40", 2947L, entry(versionName = "29.47", versionCode = 2946L)))
-        assertNull(updateFor(app(versionName = "29.47", versionCode = 2947L), "29.47", 2947L, entry(versionName = "29.48", versionCode = 2947L)))
+    @Test fun versionCodeIsNeverUsed() {
+        // Catalog code larger but same version name: no badge.
+        assertNull(updateFor(app(versionName = "29.47", versionCode = 2946L), "29.47", entry()))
+        // Catalog name newer: badges regardless of the installed code.
+        assertNotNull(updateFor(app(versionName = "29.40", versionCode = 9999L), "29.40", entry()))
     }
 
     @Test fun systemAppIsNoBadge() {
-        assertNull(updateFor(app(isSystem = true), "29.46", 2946L, entry()))
+        assertNull(updateFor(app(isSystem = true), "29.46", entry()))
     }
 
     @Test fun storeAppIsNoBadge() {
-        assertNull(updateFor(app(installer = "com.android.vending"), "29.46", 2946L, entry()))
-        assertNull(updateFor(app(installer = "com.amazon.venezia"), "29.46", 2946L, entry()))
+        assertNull(updateFor(app(installer = "com.android.vending"), "29.46", entry()))
+        assertNull(updateFor(app(installer = "com.amazon.venezia"), "29.46", entry()))
     }
 
     @Test fun missingEntryIsNoBadge() {
-        assertNull(updateFor(app(), "29.46", 2946L, null))
+        assertNull(updateFor(app(), "29.46", null))
     }
 
     @Test fun blankCatalogVersionIsNoBadge() {
-        assertNull(updateFor(app(), "29.46", 2946L, entry(versionName = "")))
+        assertNull(updateFor(app(), "29.46", entry(versionName = "")))
+    }
+
+    @Test fun blankInstalledVersionIsNoBadge() {
+        assertNull(updateFor(app(versionName = null), null, entry()))
+        assertNull(updateFor(app(versionName = ""), "", entry()))
     }
 
     @Test fun nameFallsBackToInstalledLabel() {
-        val u = updateFor(app(), "29.46", 2946L, entry(name = "", versionCode = null, versionName = "29.47"))
+        val u = updateFor(app(), "29.46", entry(name = "", versionName = "29.47"))
         assertEquals("SmartTube", u!!.name)
     }
 
     @Test fun linkPrefersShort() {
-        val u = updateFor(app(), "29.46", 2946L, entry(versionCode = null))
+        val u = updateFor(app(), "29.46", entry())
         assertEquals("https://sidespeed.app/u/x", u!!.link)
     }
 
     @Test fun linkFallsBackToPage() {
-        val e = UpdateEntry("N", "2", null, "fdroid", "https://f-droid.org/p/a.b", null)
-        assertEquals("https://f-droid.org/p/a.b", updateFor(app(), "1", 0L, e)!!.link)
+        val e = UpdateEntry("N", "2", "fdroid", "https://f-droid.org/p/a.b", null)
+        assertEquals("https://f-droid.org/p/a.b", updateFor(app(), "1", e)!!.link)
     }
 
     @Test fun linkNullWhenNeither() {
-        val e = UpdateEntry("N", "2", null, null, null, null)
-        assertNull(updateFor(app(), "1", 0L, e)!!.link)
+        val e = UpdateEntry("N", "2", null, null, null)
+        assertNull(updateFor(app(), "1", e)!!.link)
     }
 
     @Test fun cardTitle() {
-        assertEquals("SmartTube 29.47 is out (you have 29.46.)", updateCardTitle("SmartTube", "29.47", "29.46"))
+        assertEquals("SmartTube 29.47 is out. You have 29.46.", updateCardTitle("SmartTube", "29.47", "29.46"))
     }
 
     @Test fun sourceLines() {
