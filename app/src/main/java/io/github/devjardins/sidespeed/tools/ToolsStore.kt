@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.devjardins.sidespeed.compile.CompileMode
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +66,12 @@ interface ToolsStore {
     val extrasDisabled: Flow<List<DisabledRecord>>
     suspend fun addExtrasDisabled(record: DisabledRecord)
     suspend fun removeExtrasDisabled(pkg: String)
+    /** Suggested extras list ids the user rejected with "Not my TV". */
+    val extrasDismissedSuggestions: Flow<Set<String>>
+    suspend fun addExtrasDismissedSuggestion(folderId: String)
+    /** Suggested extras list ids the user accepted with "Use this list". */
+    val extrasAcceptedSuggestions: Flow<Set<String>>
+    suspend fun addExtrasAcceptedSuggestion(folderId: String)
 }
 
 /** `"<atMs>|<freedBytes>|<skipped>"`; empty middle/last fields decode as null. */
@@ -149,6 +156,8 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
     private val latestKey = stringPreferencesKey("update_latest_version")
     private val originalHomeKey = stringPreferencesKey("original_home")
     private val extrasDisabledKey = stringPreferencesKey("extras_disabled")
+    private val extrasDismissedKey = stringSetPreferencesKey("extras_suggested_dismissed")
+    private val extrasAcceptedKey = stringSetPreferencesKey("extras_suggested_accepted")
 
     private fun launchKey(pkg: String) = stringPreferencesKey("$LAUNCH_PREFIX$pkg")
 
@@ -252,6 +261,26 @@ class DataStoreToolsStore(private val store: DataStore<Preferences>) : ToolsStor
         store.edit { prefs ->
             val next = parseExtrasDisabled(prefs[extrasDisabledKey]).filterNot { it.pkg == pkg }
             if (next.isEmpty()) prefs.remove(extrasDisabledKey) else prefs[extrasDisabledKey] = encodeExtrasDisabled(next)
+        }
+    }
+
+    override val extrasDismissedSuggestions: Flow<Set<String>> = store.data.map { prefs ->
+        prefs[extrasDismissedKey].orEmpty()
+    }
+
+    override suspend fun addExtrasDismissedSuggestion(folderId: String) {
+        store.edit { prefs ->
+            prefs[extrasDismissedKey] = prefs[extrasDismissedKey].orEmpty() + folderId
+        }
+    }
+
+    override val extrasAcceptedSuggestions: Flow<Set<String>> = store.data.map { prefs ->
+        prefs[extrasAcceptedKey].orEmpty()
+    }
+
+    override suspend fun addExtrasAcceptedSuggestion(folderId: String) {
+        store.edit { prefs ->
+            prefs[extrasAcceptedKey] = prefs[extrasAcceptedKey].orEmpty() + folderId
         }
     }
 }

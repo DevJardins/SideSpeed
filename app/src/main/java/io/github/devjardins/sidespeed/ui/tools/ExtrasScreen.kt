@@ -83,9 +83,25 @@ fun ExtrasScreen(
     val match = remember(refresh) {
         extras.match(Build.MANUFACTURER, Build.MODEL, Build.DEVICE)
     }
+    var dismissedIds by remember { mutableStateOf(emptySet<String>()) }
+    var acceptedIds by remember { mutableStateOf(emptySet<String>()) }
+    val useListFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        dismissedIds = extras.dismissedSuggestions()
+        acceptedIds = extras.acceptedSuggestions()
+    }
+    // A dismissed suggestion reads as NoList; an accepted one opens as its list.
+    val effectiveMatch = when (val m = match) {
+        is ExtrasMatchResult.Suggested -> when {
+            m.folderId in dismissedIds -> ExtrasMatchResult.NoList
+            m.folderId in acceptedIds -> ExtrasMatchResult.Matched(m.folderId, m.variants)
+            else -> m
+        }
+        else -> m
+    }
 
-    LaunchedEffect(match, variantIndex, refresh, rowFailures) {
-        when (val m = match) {
+    LaunchedEffect(effectiveMatch, variantIndex, refresh, rowFailures) {
+        when (val m = effectiveMatch) {
             is ExtrasMatchResult.Matched -> {
                 val meta = m.variants.getOrNull(variantIndex) ?: m.variants.first()
                 activeMeta = meta
@@ -147,7 +163,7 @@ fun ExtrasScreen(
                 Text("Turn off extras", style = SsType.Headline, color = SsColors.TextPrimary)
                 if (busy) androidx.compose.foundation.layout.Box(Modifier.padding(start = 12.dp)) { SsSpinner() }
             }
-            when (match) {
+            when (val m = effectiveMatch) {
                 ExtrasMatchResult.NoList -> {
                     Text("No list for this TV yet.", style = SsType.Body, color = SsColors.TextBody)
                     Text("Lists come from the CleanYourTV project.", style = SsType.Caption, color = SsColors.TextSecondary)
@@ -155,17 +171,46 @@ fun ExtrasScreen(
                 ExtrasMatchResult.Ambiguous -> {
                     Text("More than one list matches this TV.", style = SsType.Body, color = SsColors.DangerCardText)
                 }
+                is ExtrasMatchResult.Suggested -> {
+                    LaunchedEffect(Unit) { runCatching { useListFocus.requestFocus() } }
+                    Text(
+                        "This list looks like your TV: ${m.tvHeader}. Check the model before turning anything off.",
+                        style = SsType.Body,
+                        color = SsColors.TextBody,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SsButton(
+                            "Use this list",
+                            modifier = Modifier.focusRequester(useListFocus),
+                            onClick = {
+                                scope.launch {
+                                    extras.acceptSuggestion(m.folderId)
+                                    acceptedIds = acceptedIds + m.folderId
+                                }
+                            },
+                        )
+                        SsButton(
+                            "Not my TV",
+                            onClick = {
+                                scope.launch {
+                                    extras.dismissSuggestion(m.folderId)
+                                    dismissedIds = dismissedIds + m.folderId
+                                }
+                            },
+                        )
+                    }
+                }
                 is ExtrasMatchResult.Matched -> {
-                    val meta = match.variants.getOrNull(variantIndex) ?: match.variants.first()
+                    val meta = m.variants.getOrNull(variantIndex) ?: m.variants.first()
                     Text(shortHeader(meta), style = SsType.Title, color = SsColors.TextPrimary)
                     Text(
                         "List from CleanYourTV, ${upstreamCommitShort(index.upstreamCommit)}.",
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
-                    if (match.variants.size > 1) {
+                    if (m.variants.size > 1) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            match.variants.forEachIndexed { i, v ->
+                            m.variants.forEachIndexed { i, v ->
                                 SsButton(
                                     v.variant,
                                     onClick = { variantIndex = i },

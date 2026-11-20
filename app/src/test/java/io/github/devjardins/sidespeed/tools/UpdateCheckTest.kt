@@ -46,6 +46,10 @@ class FakeUpdateStore : ToolsStore {
     override val extrasDisabled: Flow<List<DisabledRecord>> = MutableStateFlow(emptyList())
     override suspend fun addExtrasDisabled(record: DisabledRecord) {}
     override suspend fun removeExtrasDisabled(pkg: String) {}
+    override val extrasDismissedSuggestions: Flow<Set<String>> = MutableStateFlow(emptySet())
+    override suspend fun addExtrasDismissedSuggestion(folderId: String) {}
+    override val extrasAcceptedSuggestions: Flow<Set<String>> = MutableStateFlow(emptySet())
+    override suspend fun addExtrasAcceptedSuggestion(folderId: String) {}
 }
 
 class UpdateCheckTest {

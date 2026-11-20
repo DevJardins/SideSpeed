@@ -23,6 +23,26 @@ sealed interface ExtrasMatchResult {
     data object NoList : ExtrasMatchResult
     data object Ambiguous : ExtrasMatchResult
     data class Matched(val folderId: String, val variants: List<ExtrasListMeta>) : ExtrasMatchResult
+    data class Suggested(
+        val folderId: String,
+        val variants: List<ExtrasListMeta>,
+        val tvHeader: String,
+    ) : ExtrasMatchResult
+}
+
+/** Lowercase whole-word tokens: any run of non-letters/digits is a separator. */
+internal fun extrasHeaderTokens(text: String): List<String> =
+    text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }
+
+/** True when [needle]'s tokens appear consecutively inside [haystack]'s tokens. */
+internal fun extrasHeaderContains(haystack: String, needle: String): Boolean {
+    val needleTokens = extrasHeaderTokens(needle)
+    if (needleTokens.isEmpty()) return false
+    val hayTokens = extrasHeaderTokens(haystack)
+    if (hayTokens.size < needleTokens.size) return false
+    return (0..hayTokens.size - needleTokens.size).any { i ->
+        hayTokens.subList(i, i + needleTokens.size) == needleTokens
+    }
 }
 
 enum class ExtrasRowKind { On, Off, NotInstalled, Protected }
@@ -141,15 +161,37 @@ class Extras(
                 } else null
             }
             .distinct()
-        return when {
-            matchedFolders.isEmpty() -> ExtrasMatchResult.NoList
-            matchedFolders.size > 1 -> ExtrasMatchResult.Ambiguous
-            else -> {
-                val id = matchedFolders.single()
-                ExtrasMatchResult.Matched(id, index.lists.filter { it.id == id }.sortedBy { it.variant })
+        if (matchedFolders.isNotEmpty()) {
+            return when {
+                matchedFolders.size > 1 -> ExtrasMatchResult.Ambiguous
+                else -> {
+                    val id = matchedFolders.single()
+                    ExtrasMatchResult.Matched(id, index.lists.filter { it.id == id }.sortedBy { it.variant })
+                }
             }
         }
+        // No exact match: suggest the list whose free-text header names both
+        // Build.DEVICE and Build.MODEL as whole words, in order.
+        if (model.isBlank() || device.isBlank()) return ExtrasMatchResult.NoList
+        val suggestedIds = index.lists
+            .filter { extrasHeaderContains(it.tv, device) && extrasHeaderContains(it.tv, model) }
+            .map { it.id }
+            .distinct()
+        if (suggestedIds.size != 1) return ExtrasMatchResult.NoList
+        val id = suggestedIds.single()
+        val variants = index.lists.filter { it.id == id }.sortedBy { it.variant }
+        return ExtrasMatchResult.Suggested(id, variants, variants.first().tv)
     }
+
+    /** Folder ids the user rejected from the suggestion prompt. */
+    suspend fun dismissedSuggestions(): Set<String> = store.extrasDismissedSuggestions.first()
+
+    suspend fun dismissSuggestion(folderId: String) = store.addExtrasDismissedSuggestion(folderId)
+
+    /** Folder ids the user accepted from the suggestion prompt. */
+    suspend fun acceptedSuggestions(): Set<String> = store.extrasAcceptedSuggestions.first()
+
+    suspend fun acceptSuggestion(folderId: String) = store.addExtrasAcceptedSuggestion(folderId)
 
     suspend fun readDisabledPackages(): ToolResult<Set<String>> =
         withContext(ioDispatcher) { commands.disabledPackages() }
