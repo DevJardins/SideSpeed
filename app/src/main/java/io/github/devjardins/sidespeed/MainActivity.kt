@@ -143,6 +143,17 @@ class MainActivity : ComponentActivity() {
                 var showTools by rememberSaveable { mutableStateOf(false) }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
                 var showMyApps by rememberSaveable { mutableStateOf(false) }
+                // Last Home tile opened: Home leaves composition on these screens,
+                // so this survives and decides which tile takes focus on return.
+                var lastHomeTile by rememberSaveable {
+                    mutableStateOf(io.github.devjardins.sidespeed.ui.home.HomeTile.MY_APPS.name)
+                }
+                var appsFilterName by rememberSaveable {
+                    mutableStateOf(io.github.devjardins.sidespeed.ui.apps.AppsFilter.ALL.name)
+                }
+                // Last app opened from My Apps: survives the Compile screen (where
+                // My Apps leaves composition) so Back can scroll to it and refocus it.
+                var lastAppsPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showAutoOptimize by rememberSaveable { mutableStateOf(false) }
                 var showExtras by rememberSaveable { mutableStateOf(false) }
                 val forcedExtrasListId = remember {
@@ -287,17 +298,37 @@ class MainActivity : ComponentActivity() {
                                 if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
                             }
                         },
-                        onSelect = { a, m -> selected = a; selectedPkg = a.packageName; selectedMode = m },
+                        onSelect = { a, m ->
+                            selected = a
+                            selectedPkg = a.packageName
+                            lastAppsPkg = a.packageName
+                            selectedMode = m
+                        },
                         onBack = { showMyApps = false },
+                        filterName = appsFilterName,
+                        onFilterChange = { appsFilterName = it },
+                        returnToPackage = lastAppsPkg,
                     )
                     app == null -> HomeScreen(
                         appsVm,
                         maintenance = (application as SideSpeedApp).container.maintenance.state,
                         autoOptimizeMode = (application as SideSpeedApp).container.maintenanceStore.mode,
-                        onOpenMyApps = { showMyApps = true },
-                        onOpenAutoOptimize = { showAutoOptimize = true },
-                        onOpenTools = { showTools = true },
-                        onOpenAbout = { showAbout = true },
+                        onOpenMyApps = {
+                            lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.MY_APPS.name
+                            showMyApps = true
+                        },
+                        onOpenAutoOptimize = {
+                            lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.AUTO_OPTIMIZE.name
+                            showAutoOptimize = true
+                        },
+                        onOpenTools = {
+                            lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.TOOLS.name
+                            showTools = true
+                        },
+                        onOpenAbout = {
+                            lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.ABOUT.name
+                            showAbout = true
+                        },
                         banner = {
                             val container = (application as SideSpeedApp).container
                             UpdateBannerSlot(
@@ -321,6 +352,7 @@ class MainActivity : ComponentActivity() {
                         selfLastUpdateTime = (application as SideSpeedApp).container.selfBuild.lastUpdateTime,
                         selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
                         versionName = currentVersion,
+                        focusedTile = io.github.devjardins.sidespeed.ui.home.homeTileFromSaved(lastHomeTile),
                     )
                     else -> {
                         val running = compileVm.state.collectAsState().value.running

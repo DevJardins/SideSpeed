@@ -6,10 +6,10 @@ import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 
-enum class AppsFilter(val label: String) { SIDELOADED("Sideloaded"), ALL("All") }
+enum class AppsFilter(val label: String) { ALL("All"), SIDELOADED("Sideloaded") }
 
-/** Restores the saved filter; an unknown or missing name (e.g. 0.6's "HISTORY") falls back to SIDELOADED. */
-fun filterFromSaved(name: String?): AppsFilter = AppsFilter.entries.firstOrNull { it.name == name } ?: AppsFilter.SIDELOADED
+/** Restores the saved filter; an unknown or missing name (e.g. 0.6's "HISTORY") falls back to ALL. */
+fun filterFromSaved(name: String?): AppsFilter = AppsFilter.entries.firstOrNull { it.name == name } ?: AppsFilter.ALL
 
 enum class KeepBox { OFF, ON, LOCKED }
 
@@ -36,9 +36,9 @@ fun lockedMessage(mode: AutoOptimizeMode): String =
 /** The Compile screen mode: the app's last-used mode, or speed when it has never compiled. */
 fun initialCompileMode(last: LastCompile?): CompileMode = last?.mode ?: CompileMode.SPEED
 
-/** The My Apps tile status on Home: sideloaded and total counts, or a loading line. */
+/** The My Apps tile status on Home: total then sideloaded counts, or a loading line. */
 fun myAppsStatus(apps: List<AppEntry>, loading: Boolean): String =
-    if (loading) "Loading apps…" else "${apps.count { it.isSideloaded }} sideloaded · ${apps.size} apps"
+    if (loading) "Loading apps…" else "${apps.size} apps · ${apps.count { it.isSideloaded }} sideloaded"
 
 /** The Auto-optimize tile status on Home: the mode plus what maintenance still has to do. */
 fun autoOptimizeStatus(mode: AutoOptimizeMode?, state: MaintenanceState): String {

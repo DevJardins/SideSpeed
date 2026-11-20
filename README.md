@@ -32,7 +32,7 @@ SideSpeed needs a helper running as the shell user. It starts from the APK itsel
 
 SideSpeed's Home screen has four buttons: **My Apps**, **Auto-optimize**, **Tools** and **About**.
 
-An app update throws away its compiled code. On the **My Apps** screen each app has a checkbox: tick it and SideSpeed recompiles the app, one app at a time, after every update. You can also open the app and choose **Keep this app optimized**. The screen shows **Sideloaded** apps or **All** apps.
+An app update throws away its compiled code. On the **My Apps** screen each app has a checkbox: tick it and SideSpeed recompiles the app, one app at a time, after every update. You can also open the app and choose **Keep this app optimized**. The screen shows **All** apps or **Sideloaded** apps (All is the default).
 
 The **Auto-optimize** screen keeps groups of apps optimized automatically:
 
