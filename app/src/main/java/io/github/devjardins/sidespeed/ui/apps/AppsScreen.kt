@@ -47,9 +47,13 @@ import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.UpdateEntry
+import io.github.devjardins.sidespeed.updates.updateFor
+import io.github.devjardins.sidespeed.updates.updatePillLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import java.text.DateFormat
 import java.util.Date
 
@@ -72,10 +76,12 @@ fun AppsScreen(
     // The package opened from this screen: on return from Compile the list scrolls
     // to it and its row takes focus. Null on the first open, so the filter does.
     returnToPackage: String? = null,
+    appUpdates: Flow<Map<String, UpdateEntry>> = emptyFlow(),
 ) {
     val state by vm.state.collectAsState()
     // One DataStore collection for every row, instead of one Flow per row.
     val lastCompiles by lastCompilesFlow.collectAsState(initial = emptyMap())
+    val catalog by appUpdates.collectAsState(initial = emptyMap())
     val maintenanceState by maintenance.collectAsState()
     val optimizeMode: AutoOptimizeMode? by autoOptimizeMode.collectAsState(initial = null)
     val ticked by maintained.collectAsState(initial = emptySet())
@@ -178,10 +184,12 @@ fun AppsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            val available = updateFor(app, app.versionName, app.versionCode, catalog[app.packageName])
                             AppRow(
                                 app,
                                 lastCompiles[app.packageName],
                                 maintenancePill(app.packageName, maintenanceState)
+                                    ?: available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
                                     ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
                                 icon,
                                 Modifier.weight(1f)

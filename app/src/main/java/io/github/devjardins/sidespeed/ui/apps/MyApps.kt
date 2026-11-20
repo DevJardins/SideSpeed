@@ -36,9 +36,12 @@ fun lockedMessage(mode: AutoOptimizeMode): String =
 /** The Compile screen mode: the app's last-used mode, or speed when it has never compiled. */
 fun initialCompileMode(last: LastCompile?): CompileMode = last?.mode ?: CompileMode.SPEED
 
-/** The My Apps tile status on Home: total then sideloaded counts, or a loading line. */
-fun myAppsStatus(apps: List<AppEntry>, loading: Boolean): String =
-    if (loading) "Loading apps…" else "${apps.size} apps · ${apps.count { it.isSideloaded }} sideloaded"
+/** The My Apps tile status on Home: update count when any, else total then sideloaded counts, or a loading line. */
+fun myAppsStatus(apps: List<AppEntry>, loading: Boolean, updates: Int = 0): String {
+    if (loading) return "Loading apps…"
+    if (updates > 0) return "${apps.size} apps · $updates " + if (updates == 1) "update" else "updates"
+    return "${apps.size} apps · ${apps.count { it.isSideloaded }} sideloaded"
+}
 
 /** The Auto-optimize tile status on Home: the mode plus what maintenance still has to do. */
 fun autoOptimizeStatus(mode: AutoOptimizeMode?, state: MaintenanceState): String {
