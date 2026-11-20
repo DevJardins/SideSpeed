@@ -188,8 +188,9 @@ fun AppsScreen(
                             AppRow(
                                 app,
                                 lastCompiles[app.packageName],
-                                maintenancePill(app.packageName, maintenanceState)
-                                    ?: available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
+                                // An available update wins: a kept app always has a maintenance pill.
+                                available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
+                                    ?: maintenancePill(app.packageName, maintenanceState)
                                     ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
                                 icon,
                                 Modifier.weight(1f)
