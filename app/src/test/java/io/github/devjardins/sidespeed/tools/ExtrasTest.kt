@@ -111,6 +111,16 @@ private class FakeExtrasStore : ToolsStore {
     override suspend fun removeExtrasDisabled(pkg: String) {
         disabled.value = disabled.value.filterNot { it.pkg == pkg }
     }
+    val dismissedSuggestions = MutableStateFlow<Set<String>>(emptySet())
+    override val extrasDismissedSuggestions: Flow<Set<String>> = dismissedSuggestions
+    override suspend fun addExtrasDismissedSuggestion(folderId: String) {
+        dismissedSuggestions.value = dismissedSuggestions.value + folderId
+    }
+    val acceptedSuggestions = MutableStateFlow<Set<String>>(emptySet())
+    override val extrasAcceptedSuggestions: Flow<Set<String>> = acceptedSuggestions
+    override suspend fun addExtrasAcceptedSuggestion(folderId: String) {
+        acceptedSuggestions.value = acceptedSuggestions.value + folderId
+    }
 }
 
 private fun extras(
@@ -491,6 +501,130 @@ class ExtrasTest {
     @Test fun formatTurnOnOutcomeTexts() {
         assertEquals("Turned on 2.", formatTurnOnOutcome(ExtrasTurnOnOutcome(2, 0)))
         assertEquals("Turned on 1. Failed 1.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 1)))
+    }
+
+    // Verbatim `tv` headers copied from app/src/main/assets/extras/index.json.
+    private fun shippedHeadersIndex() = ExtrasIndex(
+        upstreamCommit = "shipped",
+        lists = listOf(
+            ExtrasListMeta(
+                "onn-4k-pro-gen2", "default", "onn-4k-pro-gen2.json",
+                "onn 4K Pro Streaming Device (Gen 2, Walmart; jarvis2, Amlogic S905X5M), US",
+                "Google TV 14", "onn", null,
+            ),
+            ExtrasListMeta(
+                "amazon-fire-tv-aftdec012e", "default", "amazon-fire-tv-aftdec012e.json",
+                "Amazon Fire TV, AFTDEC012E (ginza), Android 11",
+                "Fire OS", "Amazon", null,
+            ),
+            ExtrasListMeta(
+                "amazon-fire-tv-stick-4k-2018", "default", "amazon-fire-tv-stick-4k-2018.json",
+                "Amazon Fire TV Stick 4K, 1st gen 2018 (AFTMM, mantis)",
+                "Fire OS", "Amazon", null,
+            ),
+            ExtrasListMeta(
+                "kogan-gtvu65kg", "default", "kogan-gtvu65kg.json",
+                "Kogan Google TV (Changhong CHiQ AI PONT, GTVU65KG, dangni, MediaTek mt5867), Australia",
+                "Google TV", "Kogan", null,
+            ),
+            ExtrasListMeta(
+                "chiq-gtvu65", "default", "chiq-gtvu65.json",
+                "CHiQ AI PONT (Changhong GTVU65, dangni, MediaTek mt5867); also CHiQ L32FM10V",
+                "Google TV", "CHiQ", null,
+            ),
+        ),
+    )
+
+    @Test fun suggestedOnnWithoutExactMatch() {
+        val e = extras(index = shippedHeadersIndex())
+        val r = e.match("onn", "onn 4K Pro Streaming Device", "jarvis2")
+        assertTrue(r is ExtrasMatchResult.Suggested)
+        r as ExtrasMatchResult.Suggested
+        assertEquals("onn-4k-pro-gen2", r.folderId)
+        assertEquals(
+            "onn 4K Pro Streaming Device (Gen 2, Walmart; jarvis2, Amlogic S905X5M), US",
+            r.tvHeader,
+        )
+        assertEquals(listOf("onn-4k-pro-gen2"), r.variants.map { it.id })
+    }
+
+    @Test fun suggestedGroupsVariantsById() {
+        val lists = shippedHeadersIndex().lists + ExtrasListMeta(
+            "onn-4k-pro-gen2", "cast", "onn--cast.json",
+            "onn 4K Pro Streaming Device (Gen 2, Walmart; jarvis2, Amlogic S905X5M), US",
+            "Google TV 14", "onn", null,
+        )
+        val e = extras(index = ExtrasIndex("x", lists))
+        val r = e.match("onn", "onn 4K Pro Streaming Device", "jarvis2")
+        assertTrue(r is ExtrasMatchResult.Suggested)
+        assertEquals(listOf("cast", "default"), (r as ExtrasMatchResult.Suggested).variants.map { it.variant })
+    }
+
+    @Test fun exactMatchBeatsSuggestion() {
+        val e = extras()
+        val r = e.match("onn", "onn 4K Pro Streaming Device", "jarvis2")
+        assertTrue(r is ExtrasMatchResult.Matched)
+    }
+
+    @Test fun modelAloneOrCodenameAloneIsNoList() {
+        val e = extras(index = shippedHeadersIndex())
+        assertEquals(
+            ExtrasMatchResult.NoList,
+            e.match("other", "onn 4K Pro Streaming Device", "other-device"),
+        )
+        assertEquals(
+            ExtrasMatchResult.NoList,
+            e.match("onn", "something else", "jarvis2"),
+        )
+    }
+
+    @Test fun blankModelOrDeviceNeverSuggests() {
+        val e = extras(index = shippedHeadersIndex())
+        assertEquals(ExtrasMatchResult.NoList, e.match("onn", "", "jarvis2"))
+        assertEquals(ExtrasMatchResult.NoList, e.match("onn", "onn 4K Pro Streaming Device", ""))
+        assertEquals(ExtrasMatchResult.NoList, e.match("onn", "   ", "jarvis2"))
+    }
+
+    @Test fun fireTvStickIsNoList() {
+        val e = extras(index = shippedHeadersIndex())
+        assertEquals(ExtrasMatchResult.NoList, e.match("Amazon", "AFTGAZL", "gazelle"))
+    }
+
+    @Test fun emulatorIsNoList() {
+        val e = extras(index = shippedHeadersIndex())
+        assertEquals(
+            ExtrasMatchResult.NoList,
+            e.match("Google", "sdk_google_atv64_arm64", "generic_arm64"),
+        )
+    }
+
+    @Test fun partialWordIsNoMatch() {
+        val e = extras(index = shippedHeadersIndex())
+        // "GTVU65" is only a prefix of the "GTVU65KG" token in the Kogan header.
+        assertEquals(ExtrasMatchResult.NoList, e.match("Kogan", "GTVU65", "Australia"))
+        // The full token still suggests.
+        val r = e.match("Kogan", "GTVU65KG", "Australia")
+        assertTrue(r is ExtrasMatchResult.Suggested)
+        assertEquals("kogan-gtvu65kg", (r as ExtrasMatchResult.Suggested).folderId)
+    }
+
+    @Test fun twoSuggestedIdsIsNoList() {
+        val tv = "Widget TV (ModelX thingy, DeviceY, board), test"
+        val lists = listOf(
+            ExtrasListMeta("widget-a", "default", "a.json", tv, "O", "b", null),
+            ExtrasListMeta("widget-b", "default", "b.json", tv, "O", "b", null),
+        )
+        val e = extras(index = ExtrasIndex("x", lists))
+        assertEquals(ExtrasMatchResult.NoList, e.match("b", "ModelX thingy", "DeviceY"))
+    }
+
+    @Test fun suggestionRoundTripsThroughStore() = runTest {
+        val store = FakeExtrasStore()
+        val e = extras(store = store)
+        e.dismissSuggestion("onn-4k-pro-gen2")
+        assertEquals(setOf("onn-4k-pro-gen2"), e.dismissedSuggestions())
+        e.acceptSuggestion("kogan-gtvu65kg")
+        assertEquals(setOf("kogan-gtvu65kg"), e.acceptedSuggestions())
     }
 
     @Test fun rowLabelUsesDisplayLabelForClassName() = runTest {
