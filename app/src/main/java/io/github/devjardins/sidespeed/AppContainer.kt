@@ -33,8 +33,11 @@ import io.github.devjardins.sidespeed.update.UpdateDownload
 import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.update.readApkFacts
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
@@ -51,7 +54,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import io.github.devjardins.sidespeed.status.TvAddress
+import io.github.devjardins.sidespeed.updates.AppUpdateCheck
+import io.github.devjardins.sidespeed.updates.AppUpdateStore
+import io.github.devjardins.sidespeed.updates.DataStoreAppUpdateStore
+import io.github.devjardins.sidespeed.updates.UpdateEntry
+import io.github.devjardins.sidespeed.updates.httpAppUpdateFetch
+import io.github.devjardins.sidespeed.updates.parseAppUpdates
 import io.github.devjardins.sidespeed.net.LanCandidate
+import kotlinx.coroutines.flow.map
 import io.github.devjardins.sidespeed.net.pickLanIpv4
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -120,6 +130,33 @@ class AppContainer(context: Context) {
             cacheDir = appContext.cacheDir,
             busy = updateBusy,
         )
+    }
+
+    /** Sideloaded-app update catalog: notify-only state, refreshed at most once per 24 h. */
+    val appUpdateStore: AppUpdateStore by lazy { DataStoreAppUpdateStore(appContext) }
+
+    /** Fetches updates.json with the stored ETag; failures stay silent and keep the last good copy. */
+    val appUpdateCheck: AppUpdateCheck by lazy {
+        AppUpdateCheck(httpAppUpdateFetch(), appUpdateStore, System::currentTimeMillis)
+    }
+
+    /**
+     * The last good catalog, parsed for badges; empty until the first successful fetch.
+     * Parsed once per new body on a background thread, filtered to installed
+     * packages so the in-memory map stays small, and shared so every collector
+     * (Home, My Apps, Compile) sees the same parse.
+     */
+    val appUpdateCatalog: Flow<Map<String, UpdateEntry>> by lazy {
+        appUpdateStore.json
+            .map { raw ->
+                if (raw == null) return@map emptyMap<String, UpdateEntry>()
+                val installed = runCatching {
+                    installedApps.list().map { it.packageName }.toSet()
+                }.getOrDefault(emptySet())
+                parseAppUpdates(raw, installed) ?: emptyMap()
+            }
+            .flowOn(Dispatchers.Default)
+            .stateIn(appScope, SharingStarted.Eagerly, emptyMap())
     }
 
     /** Home screen switcher: in-app PackageManager reads, helper writes. */
