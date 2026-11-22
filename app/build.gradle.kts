@@ -129,5 +129,6 @@ tasks.withType<Test>().configureEach {
     systemProperty("kotlinx.coroutines.test.catchNonTestRelatedExceptions", "false")
     testLogging {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        events("standard_error")
     }
 }
