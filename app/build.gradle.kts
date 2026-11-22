@@ -121,3 +121,10 @@ dependencies {
     // catalog parser tests run against the reference implementation instead.
     testImplementation(libs.org.json)
 }
+
+// Print the full stack trace (with causes) when a unit test fails, so CI logs show the real error.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
