@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +58,7 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
             targetState = screen,
+            modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
             transitionSpec = {
                 val forward = targetState.ordinal > initialState.ordinal
                 val dir = if (forward) 1 else -1
