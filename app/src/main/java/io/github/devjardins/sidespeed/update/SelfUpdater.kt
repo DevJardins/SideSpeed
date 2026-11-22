@@ -201,7 +201,9 @@ class SelfUpdater(
     }
 
     private fun deleteUpdateFiles() {
-        File(cacheDir, UPDATE_DIR).listFiles()?.forEach { it.deleteRecursively() }
+        // Best effort: deleteRecursively throws AssertionError if a file vanishes mid-walk, which must not
+        // crash the update coroutine.
+        File(cacheDir, UPDATE_DIR).listFiles()?.forEach { runCatching { it.deleteRecursively() } }
     }
 }
 

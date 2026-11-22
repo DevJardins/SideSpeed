@@ -21,8 +21,8 @@ android {
         applicationId = "io.github.devjardins.sidespeed"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.6.0"
+        versionCode = 11
+        versionName = "0.7.0"
         buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
         buildConfigField("String", "APP_UPDATES_URL", "\"https://sidespeed.app/updates.json\"")
     }
@@ -123,10 +123,8 @@ dependencies {
 }
 
 // Print the full stack trace (with causes) when a unit test fails, so CI logs show the real error.
-// A stray coroutine exception from an earlier test class (timing-dependent, seen only on CI) must not
-// fail whichever runTest happens to start next; such exceptions are still printed by the JVM.
+// Test stderr is printed too, so an uncaught exception in a background coroutine shows which test caused it.
 tasks.withType<Test>().configureEach {
-    systemProperty("kotlinx.coroutines.test.catchNonTestRelatedExceptions", "false")
     testLogging {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         events("standard_error")
