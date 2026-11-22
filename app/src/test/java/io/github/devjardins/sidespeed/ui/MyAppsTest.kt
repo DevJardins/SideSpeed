@@ -15,6 +15,8 @@ import io.github.devjardins.sidespeed.ui.apps.KeepBox
 import io.github.devjardins.sidespeed.ui.apps.autoOptimizeButtonLabel
 import io.github.devjardins.sidespeed.ui.apps.boxFor
 import io.github.devjardins.sidespeed.ui.apps.filterFromSaved
+import io.github.devjardins.sidespeed.ui.home.HomeTile
+import io.github.devjardins.sidespeed.ui.home.homeTileFromSaved
 import io.github.devjardins.sidespeed.ui.apps.initialCompileMode
 import io.github.devjardins.sidespeed.ui.apps.lockedMessage
 import org.junit.Assert.assertEquals
@@ -50,9 +52,11 @@ class MyAppsTest {
 
     @Test fun filterRestoresAll() = assertEquals(AppsFilter.ALL, filterFromSaved("ALL"))
 
-    @Test fun staleHistoryFilterFallsBackToSideloaded() = assertEquals(AppsFilter.SIDELOADED, filterFromSaved("HISTORY"))
+    @Test fun allFilterIsFirst() = assertEquals(listOf(AppsFilter.ALL, AppsFilter.SIDELOADED), AppsFilter.entries)
 
-    @Test fun missingFilterFallsBackToSideloaded() = assertEquals(AppsFilter.SIDELOADED, filterFromSaved(null))
+    @Test fun staleHistoryFilterFallsBackToAll() = assertEquals(AppsFilter.ALL, filterFromSaved("HISTORY"))
+
+    @Test fun missingFilterFallsBackToAll() = assertEquals(AppsFilter.ALL, filterFromSaved(null))
 
     @Test fun buttonLabelSelected() =
         assertEquals("Auto-optimize: Selected apps", autoOptimizeButtonLabel(AutoOptimizeMode.SELECTED))
@@ -75,7 +79,7 @@ class MyAppsTest {
 
     @Test fun myAppsStatusCountsSideloaded() {
         val apps = listOf(app("a.a"), app("b.b", "com.android.vending"), app("c.c"))
-        assertEquals("2 sideloaded · 3 apps", myAppsStatus(apps, loading = false))
+        assertEquals("3 apps · 2 sideloaded", myAppsStatus(apps, loading = false))
     }
 
     @Test fun myAppsStatusLoading() =
@@ -103,4 +107,10 @@ class MyAppsTest {
         assertEquals("Space, animations, extras, home screen", TOOLS_STATUS)
 
     @Test fun aboutStatusNamesVersion() = assertEquals("Version 0.7.0", aboutStatus("0.7.0"))
+
+    @Test fun homeTileRestoresTools() = assertEquals(HomeTile.TOOLS, homeTileFromSaved("TOOLS"))
+
+    @Test fun homeTileMissingFallsBackToMyApps() = assertEquals(HomeTile.MY_APPS, homeTileFromSaved(null))
+
+    @Test fun homeTileUnknownFallsBackToMyApps() = assertEquals(HomeTile.MY_APPS, homeTileFromSaved("NOPE"))
 }
