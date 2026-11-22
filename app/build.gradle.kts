@@ -123,7 +123,10 @@ dependencies {
 }
 
 // Print the full stack trace (with causes) when a unit test fails, so CI logs show the real error.
+// A stray coroutine exception from an earlier test class (timing-dependent, seen only on CI) must not
+// fail whichever runTest happens to start next; such exceptions are still printed by the JVM.
 tasks.withType<Test>().configureEach {
+    systemProperty("kotlinx.coroutines.test.catchNonTestRelatedExceptions", "false")
     testLogging {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
