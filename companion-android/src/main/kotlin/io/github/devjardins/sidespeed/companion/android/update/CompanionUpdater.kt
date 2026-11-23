@@ -23,9 +23,11 @@ import io.github.devjardins.sidespeed.companion.update.RELEASES_API_URL
 import io.github.devjardins.sidespeed.companion.update.parseSha256Sums
 import io.github.devjardins.sidespeed.companion.update.verifyCompanionApk
 import kotlinx.coroutines.CancellationException
+import io.github.devjardins.sidespeed.companion.android.CompanionApplication
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,6 +70,7 @@ class CompanionUpdater(
 
     private var lastTag: String? = null
     private var job: Job? = null
+    private var installTimeout: Job? = null
 
     /** Manual check for the About screen: runs when it opens and when its button is pressed. */
     fun checkNow() {
@@ -90,6 +93,9 @@ class CompanionUpdater(
     @Synchronized
     fun startUpdate() {
         if (job?.isActive == true) return
+        // The install itself keeps running after execute() returns (the system owns the
+        // session), so the job guard above no longer covers it: stay put while Installing.
+        if (_state.value is CompanionUpdateState.Installing) return
         job = scope.launch {
             try {
                 execute()
@@ -117,8 +123,25 @@ class CompanionUpdater(
         }
     }
 
+    /**
+     * Reports the system installer's verdict for the committed session. Called by
+     * [CompanionInstallStatusReceiver]; [status] is the [PackageInstaller.EXTRA_STATUS] value
+     * and [message] the system's [PackageInstaller.EXTRA_STATUS_MESSAGE], if any. Late results
+     * (after the timeout below already failed the update) are ignored. `lastTag` is kept, so
+     * "Try again" restarts the update.
+     */
+    fun onInstallResult(status: Int, message: String?) {
+        val next = installStatusToState(status, message) ?: return
+        installTimeout?.cancel()
+        installTimeout = null
+        if (_state.value is CompanionUpdateState.Installing) {
+            deleteUpdateFiles()
+            _state.value = next
+        }
+    }
+
     private suspend fun execute() {
-        val tag = lastTag ?: run {
+        lastTag ?: run {
             _state.value = CompanionUpdateState.Failed("Couldn't check for updates. Try again later.")
             return
         }
@@ -154,10 +177,13 @@ class CompanionUpdater(
         }
         _state.value = CompanionUpdateState.Installing
         when (val outcome = installViaSession(apk)) {
-            // The session is committed; the system takes over from here.
+            // The session is committed; the system takes over from here. The state stays
+            // Installing until CompanionInstallStatusReceiver reports the verdict (or the
+            // timeout below fires), so "Update now" doesn't come back while the system
+            // confirmation is up.
             is InstallResult.Started -> {
                 deleteUpdateFiles()
-                _state.value = CompanionUpdateState.Available(tag)
+                watchInstallTimeout()
             }
             is InstallResult.Failed -> return fail(outcome.reason ?: "Install failed.")
         }
@@ -166,6 +192,22 @@ class CompanionUpdater(
     private suspend fun fail(reason: String) {
         deleteUpdateFiles()
         _state.value = CompanionUpdateState.Failed(reason)
+    }
+
+    /**
+     * Fails the update when the system never reports back: a committed session normally
+     * confirms within seconds, so five silent minutes means the result was lost. Without this
+     * the About screen would sit on Installing forever.
+     */
+    private fun watchInstallTimeout() {
+        installTimeout?.cancel()
+        installTimeout = scope.launch {
+            delay(INSTALL_TIMEOUT_MS)
+            if (_state.value is CompanionUpdateState.Installing) {
+                deleteUpdateFiles()
+                _state.value = CompanionUpdateState.Failed("Install didn't finish. Try again.")
+            }
+        }
     }
 
     private suspend fun installViaSession(apk: File): InstallResult = withContext(Dispatchers.IO) {
@@ -224,21 +266,51 @@ fun clearStaleUpdateFiles(context: Context) {
     File(context.cacheDir, UPDATE_DIR).listFiles()?.forEach { runCatching { it.deleteRecursively() } }
 }
 
+/** How long a committed session may stay silent before the update fails instead. */
+internal const val INSTALL_TIMEOUT_MS = 5 * 60 * 1000L
+
+/**
+ * Maps a PackageInstaller session verdict to the next update state, or null when the verdict
+ * needs no state change: the confirmation screen is launched by the receiver, and success
+ * replaces the process, so neither touches the About screen. Pure for unit tests: [status]
+ * is the `EXTRA_STATUS` value, [message] the `EXTRA_STATUS_MESSAGE`, if any.
+ */
+internal fun installStatusToState(status: Int, message: String?): CompanionUpdateState? = when (status) {
+    PackageInstaller.STATUS_PENDING_USER_ACTION,
+    PackageInstaller.STATUS_SUCCESS,
+    -> null
+    PackageInstaller.STATUS_FAILURE_ABORTED -> CompanionUpdateState.Failed("Update cancelled.")
+    else -> if (message.isNullOrBlank()) {
+        CompanionUpdateState.Failed("Install failed.")
+    } else {
+        CompanionUpdateState.Failed("Install failed. $message")
+    }
+}
+
 /**
  * Receives the install session's status. The confirmation screen ([Intent.EXTRA_INTENT] on
- * [PackageInstaller.STATUS_PENDING_USER_ACTION]) is the only status acted on; every other
- * outcome needs no in-app handling — success replaces the app, failure leaves it running.
+ * [PackageInstaller.STATUS_PENDING_USER_ACTION]) is launched; success needs nothing (the
+ * process is replaced); any other verdict is reported to the updater, which fails the update
+ * but keeps `lastTag` so "Try again" restarts it.
  */
 class CompanionInstallStatusReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1) != PackageInstaller.STATUS_PENDING_USER_ACTION) return
-        val confirm: Intent? = if (Build.VERSION.SDK_INT >= 33) {
-            intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(Intent.EXTRA_INTENT)
+        val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
+        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            val confirm: Intent? = if (Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_INTENT)
+            }
+            confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { context.startActivity(it) }
+            return
         }
-        confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { context.startActivity(it) }
+        if (status == PackageInstaller.STATUS_SUCCESS) return
+        val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+        runCatching {
+            (context.applicationContext as CompanionApplication).graph.updater.onInstallResult(status, message)
+        }
     }
 }
 

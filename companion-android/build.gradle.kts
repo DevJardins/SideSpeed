@@ -22,8 +22,9 @@ android {
         applicationId = "io.github.devjardins.sidespeed.companion"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        // Same version as the TV app: the single source is sidespeed.versionName in gradle.properties.
+        // Same version as the TV app: the single source is sidespeed.versionName in
+        // gradle.properties, computed by the root build script (0.7.0 -> 700).
+        versionCode = rootProject.extra["sidespeedVersionCode"] as Int
         versionName = providers.gradleProperty("sidespeed.versionName").get()
     }
 

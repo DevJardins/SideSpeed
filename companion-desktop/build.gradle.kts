@@ -44,12 +44,24 @@ dependencies {
 val appVersion: String = providers.gradleProperty("sidespeed.versionName").get()
 
 /**
- * jpackage needs a major version of 1 or more on macOS and Windows, so this differs from the 0.x
- * app versions: 0.7.0 ships as package 1.7.0. The app itself reports [appVersion] via the
- * generated CompanionVersion below, never this jpackage number.
+ * jpackage needs a major version of 1 or more on macOS and Windows, so this differs from the
+ * app version: the package major is the app major plus one (0.7.0 ships as 1.7.0, 1.0.0 will
+ * ship as 2.0.0), keeping every release above the previous one. The app itself reports
+ * [appVersion] via the generated CompanionVersion below, never this jpackage number.
+ * MSI caps each part (major.minor 255, build 65535), so the build fails early with a clear
+ * message instead of producing a broken installer.
  */
-val packageVersionValue = appVersion.trim().removePrefix("v").split(".").let { parts ->
-    "1.${parts.getOrElse(1) { "0" }}.${parts.getOrElse(2) { "0" }}"
+val packageVersionValue = run {
+    val raw = appVersion.trim().removePrefix("v")
+    val parts = raw.split(".")
+    fun fail(what: String): Nothing = error("$what (sidespeed.versionName=$appVersion)")
+    if (parts.size != 3) fail("sidespeed.versionName must be three numeric parts (major.minor.patch)")
+    val numbers = parts.map { it.toIntOrNull()?.takeIf { n -> n >= 0 } ?: fail("sidespeed.versionName must be three numeric parts (major.minor.patch)") }
+    val (major, minor, patch) = numbers
+    if (major + 1 > 255) fail("desktop package major ${major + 1} exceeds the MSI limit of 255")
+    if (minor > 255) fail("desktop package minor $minor exceeds the MSI limit of 255")
+    if (patch > 65535) fail("desktop package patch $patch exceeds the MSI limit of 65535")
+    "${major + 1}.$minor.$patch"
 }
 
 /** Exposes the real app version to the UI as a generated constant, not the jpackage number. */
