@@ -19,11 +19,16 @@ import kotlin.concurrent.thread
  *  1. A connection slot is taken; beyond [maxConnections] the socket is closed at once.
  *  2. [callerUid] identifies the peer. Unless it equals [allowedUid] the socket is closed and the refusal
  *     logged. No request byte has been read at this point.
- *  3. One request line is read (printable ASCII, at most [HelperProtocol.MAX_REQUEST_CHARS]) within
- *     [requestTimeoutMs]. After that there is no timeout, since a compile can take minutes.
- *  4. `ping` is answered by [pong]; for `ping <nonce>` the nonce is first written by [writeAck] (if that fails
- *     the reply is [HelperProtocol.EXIT_HELPER_ERROR] with no pong). Anything else must map through [CommandAllowlist.toArgv] and is then
- *     run by [runner] (a fixed argv, no shell). Everything else is refused with [HelperProtocol.EXIT_REFUSED].
+ *  3. One request line `<nonce> <request>` is read (printable ASCII, at most
+ *     [HelperProtocol.MAX_REQUEST_LINE_CHARS]) within [requestTimeoutMs]. After that there is no timeout,
+ *     since a compile can take minutes. A missing or bad nonce is refused with
+ *     [HelperProtocol.EXIT_REFUSED] and logged; nothing runs.
+ *  4. The nonce is written by [writeAck] and a [HelperProtocol.PROVEN] line is sent first (if the write
+ *     fails the reply is an error with [HelperProtocol.EXIT_HELPER_ERROR] and nothing runs). Only then
+ *     is the request handled: `ping` is answered by [pong], `install-self <size>` streams the body into
+ *     [installRunner], anything else must map through [CommandAllowlist.toArgv] and is then run by
+ *     [runner] (a fixed argv, no shell). Everything else is refused with [HelperProtocol.EXIT_REFUSED],
+ *     after the proof: the client fails closed on any reply whose first line is not [HelperProtocol.PROVEN].
  */
 internal class HelperServer(
     private val server: ServerSocket,
@@ -96,32 +101,37 @@ internal class HelperServer(
 
         val out = Out(BufferedWriter(OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8)), log)
         socket.soTimeout = requestTimeoutMs
-        val request = try {
+        val line = try {
             readRequestLine(socket.getInputStream())
         } catch (e: SocketTimeoutException) {
             log("uid=$uid: no request within $requestTimeoutMs ms")
             null
         }
-        if (request == null) {
+        if (line == null) {
             log("uid=$uid: missing, malformed or overlong request")
             out.line("error: bad request")
             out.end(HelperProtocol.EXIT_REFUSED)
             return
         }
+        val (nonce, request) = HelperProtocol.splitNonce(line) ?: run {
+            log("REFUSED request with missing or bad nonce from uid=$uid")
+            out.line("error: request not allowed")
+            out.end(HelperProtocol.EXIT_REFUSED)
+            return
+        }
         socket.soTimeout = 0 // compiles can take minutes
 
+        try {
+            writeAck(nonce)
+        } catch (t: Throwable) {
+            log("uid=$uid: cannot write proof for the request nonce: ${t::class.java.simpleName}: ${t.message}")
+            out.line("error: helper could not write the request proof: ${t.message}")
+            out.end(HelperProtocol.EXIT_HELPER_ERROR)
+            return
+        }
+        out.line(HelperProtocol.PROVEN)
+
         if (CommandAllowlist.isPing(request)) {
-            val nonce = CommandAllowlist.pingNonce(request)
-            if (nonce != null) {
-                try {
-                    writeAck(nonce)
-                } catch (t: Throwable) {
-                    log("uid=$uid: cannot write ping ack: ${t::class.java.simpleName}: ${t.message}")
-                    out.line("error: helper could not write the ping ack: ${t.message}")
-                    out.end(HelperProtocol.EXIT_HELPER_ERROR)
-                    return
-                }
-            }
             out.line(pong())
             out.end(0)
             return
@@ -220,16 +230,19 @@ internal class HelperServer(
 
         /**
          * Reads one request line byte by byte, so nothing past it is consumed. Returns null for an empty request,
-         * a byte outside printable ASCII (0x20..0x7E), or more than [HelperProtocol.MAX_REQUEST_CHARS] chars.
+         * a byte outside printable ASCII (0x20..0x7E), or more than [maxChars] chars.
          * The line ends at "\n" or at end of stream.
          */
-        fun readRequestLine(input: InputStream): String? {
+        fun readRequestLine(
+            input: InputStream,
+            maxChars: Int = HelperProtocol.MAX_REQUEST_LINE_CHARS,
+        ): String? {
             val sb = StringBuilder()
             while (true) {
                 val b = input.read()
                 if (b == -1 || b == '\n'.code) return sb.toString().ifEmpty { null }
                 if (b < 0x20 || b > 0x7E) return null
-                if (sb.length >= HelperProtocol.MAX_REQUEST_CHARS) return null
+                if (sb.length >= maxChars) return null
                 sb.append(b.toChar())
             }
         }
