@@ -8,9 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,7 +33,9 @@ import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.githubReleaseFetch
+import io.github.devjardins.sidespeed.updates.pickVariant
 import io.github.devjardins.sidespeed.updates.updateFor
+import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
@@ -50,6 +54,8 @@ import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
+import io.github.devjardins.sidespeed.updates.ApkVariant
+import io.github.devjardins.sidespeed.updates.AppUpdateUiState
 import io.github.devjardins.sidespeed.ui.setup.SetupScreen
 import io.github.devjardins.sidespeed.ui.setup.SetupViewModel
 import io.github.devjardins.sidespeed.ui.setup.StrategyReadier
@@ -373,8 +379,46 @@ class MainActivity : ComponentActivity() {
                         val launchBusy = compileVm.launch.collectAsState().value.busy != null
                         val back = { if (!running && !launchBusy) { selected = null; selectedPkg = null } }
                         BackHandler { back() }
-                        val catalog by (application as SideSpeedApp).container.appUpdateCatalog.collectAsState(initial = emptyMap())
+                        val container = (application as SideSpeedApp).container
+                        val catalog by container.appUpdateCatalog.collectAsState(initial = emptyMap())
                         val available = updateFor(app, app.versionName, catalog[app.packageName])
+                        // Reopening the same app keeps its live update: reset only when a
+                        // different package's update is idle or finished, never while it runs.
+                        // Leaving the screen (Back) cancels nothing and is never blocked.
+                        LaunchedEffect(app.packageName) {
+                            val updater = container.appUpdater
+                            val current = updater.pkg.value
+                            if (current != null && current != app.packageName) {
+                                when (updater.state.value) {
+                                    is AppUpdateUiState.Downloading,
+                                    is AppUpdateUiState.Checking,
+                                    is AppUpdateUiState.Installing,
+                                        -> Unit // Another app is updating: leave it running.
+                                    else -> updater.reset()
+                                }
+                            }
+                        }
+                        // Signer reads go through PackageManager: off the main thread.
+                        val pickedVariant by produceState<ApkVariant?>(
+                            null, available?.apk, app.packageName to app.versionCode,
+                        ) {
+                            value = withContext(Dispatchers.IO) {
+                                val variants = available?.apk.orEmpty()
+                                if (variants.isEmpty()) {
+                                    null
+                                } else {
+                                    pickVariant(
+                                        variants,
+                                        android.os.Build.SUPPORTED_ABIS.toList(),
+                                        android.os.Build.VERSION.SDK_INT,
+                                        app.versionCode,
+                                        installedSignerSha256(packageManager, app.packageName),
+                                    )
+                                }
+                            }
+                        }
+                        val appUpdateState by container.appUpdater.state.collectAsState()
+                        val updatePkg by container.appUpdater.pkg.collectAsState()
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
@@ -383,6 +427,16 @@ class MainActivity : ComponentActivity() {
                             onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
                             availableUpdate = available,
+                            pickedVariant = pickedVariant,
+                            appUpdateState = appUpdateState,
+                            updatePkg = updatePkg,
+                            onUpdateNow = {
+                                pickedVariant?.let { variant ->
+                                    available?.let { update ->
+                                        container.appUpdater.start(app.packageName, variant, update.versionName)
+                                    }
+                                }
+                            },
                         )
                     }
                 }

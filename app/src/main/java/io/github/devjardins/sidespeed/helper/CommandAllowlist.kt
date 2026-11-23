@@ -18,7 +18,12 @@ object CommandAllowlist {
     /** Byte cap for `install-self`, matching the 64 MiB download cap. */
     const val MAX_INSTALL_BYTES = 67_108_864L
 
+    /** Byte cap for `install-update`: 200 MiB, the largest APK the updater will fetch. */
+    const val MAX_UPDATE_BYTES = 209_715_200L
+
     private val INSTALL_SELF_SIZE_DIGITS = Regex("^[0-9]{1,8}$")
+
+    private val INSTALL_UPDATE_SIZE_DIGITS = Regex("^[0-9]{1,9}$")
 
     private val MODES = setOf("speed", "speed-profile", "verify")
 
@@ -78,6 +83,33 @@ object CommandAllowlist {
     fun installSelfArgv(size: Long): List<String> = listOf(
         "/system/bin/cmd", "package", "install", "-r",
         "--pkg", INSTALL_SELF_PACKAGE, "-S", size.toString(),
+    )
+
+    /**
+     * The package and byte count of an `install-update <pkg> <size>` request (1..[MAX_UPDATE_BYTES]),
+     * or null. Exactly 3 tokens; [pkg] passes the same validation as every other package token
+     * (exact, untrimmed), and SideSpeed's own package is refused here: self-updates keep
+     * `install-self`. A plain runner can never execute it: [toArgv] stays null for `install-update`.
+     */
+    fun installUpdate(command: String): Pair<String, Long>? {
+        val t = command.split(' ')
+        if (t.size != 3 || t[0] != "install-update") return null
+        val packageName = pkg(t[1]) ?: return null
+        if (packageName == INSTALL_SELF_PACKAGE) return null
+        if (!INSTALL_UPDATE_SIZE_DIGITS.matches(t[2])) return null
+        val size = t[2].toLongOrNull() ?: return null
+        if (size < 1 || size > MAX_UPDATE_BYTES) return null
+        return packageName to size
+    }
+
+    /**
+     * Fixed argv for an `install-update` of [size] bytes for [pkg]: reinstall
+     * (`-r`, never `-d`) of an already-installed package, with no test, ABI
+     * or user flags. [pkg] and [size] are the only variable tokens.
+     */
+    fun installUpdateArgv(pkg: String, size: Long): List<String> = listOf(
+        "/system/bin/cmd", "package", "install", "-r",
+        "--pkg", pkg, "-S", size.toString(),
     )
 
     /** Maps a requested command line to a fixed argv, or null if not allowed. `ping` returns null: see [isPing]. */

@@ -25,9 +25,11 @@ import kotlin.concurrent.thread
  *     [HelperProtocol.EXIT_REFUSED] and logged; nothing runs.
  *  4. The nonce is written by [writeAck] and a [HelperProtocol.PROVEN] line is sent first (if the write
  *     fails the reply is an error with [HelperProtocol.EXIT_HELPER_ERROR] and nothing runs). Only then
- *     is the request handled: `ping` is answered by [pong], `install-self <size>` streams the body into
- *     [installRunner], anything else must map through [CommandAllowlist.toArgv] and is then run by
- *     [runner] (a fixed argv, no shell). Everything else is refused with [HelperProtocol.EXIT_REFUSED],
+ *     is the request handled: `ping` is answered by [pong], `install-self <size>` and
+ *     `install-update <pkg> <size>` stream the body into [installRunner] (the latter only for a
+ *     package [packageCheck] confirms, and never with [bringBack]), anything else must map through
+ *     [CommandAllowlist.toArgv] and is then run by [runner] (a fixed argv, no shell). Everything
+ *     else is refused with [HelperProtocol.EXIT_REFUSED],
  *     after the proof: the client fails closed on any reply whose first line is not [HelperProtocol.PROVEN].
  */
 internal class HelperServer(
@@ -49,6 +51,12 @@ internal class HelperServer(
     private val bringBack: () -> Int = { 0 },
     private val installGate: InstallGate = InstallGate(),
     private val bodyTimeoutMs: Int = BODY_TIMEOUT_MS,
+    /**
+     * True when [pkg] is an installed third-party sideloaded app (not a
+     * store app): the [HelperMain] check. Runs before any body byte of an
+     * `install-update` is read; false refuses the request.
+     */
+    private val packageCheck: (String) -> Boolean = { false },
 ) {
     private val slots = Semaphore(maxConnections)
 
@@ -141,6 +149,11 @@ internal class HelperServer(
             handleInstallSelf(socket, uid, out, installSize)
             return
         }
+        val update = CommandAllowlist.installUpdate(request)
+        if (update != null) {
+            handleInstallUpdate(socket, uid, out, update.first, update.second)
+            return
+        }
         val argv = CommandAllowlist.toArgv(request)
         if (argv == null) {
             log("REFUSED request from uid=$uid: '$request'")
@@ -170,6 +183,44 @@ internal class HelperServer(
      */
     private fun handleInstallSelf(socket: Socket, uid: Int, out: Out, size: Long) {
         log("uid=$uid run install-self size=$size")
+        streamInstallBody(socket, uid, out, CommandAllowlist.installSelfArgv(size), size, "install-self", true)
+    }
+
+    /**
+     * Runs `install-update <pkg> <size>`: like `install-self`, except [packageCheck] must first
+     * confirm [pkg] is an installed third-party sideloaded app (checked before any body byte is
+     * read, so a refused request leaves the body unread), and a success never runs [bringBack]
+     * (only our own update brings the app back).
+     */
+    private fun handleInstallUpdate(socket: Socket, uid: Int, out: Out, pkg: String, size: Long) {
+        if (!packageCheck(pkg)) {
+            log("REFUSED install-update $pkg: not an installed third-party sideloaded app")
+            out.line("error: request not allowed")
+            out.end(HelperProtocol.EXIT_REFUSED)
+            return
+        }
+        log("uid=$uid run install-update pkg=$pkg size=$size")
+        streamInstallBody(
+            socket, uid, out,
+            CommandAllowlist.installUpdateArgv(pkg, size), size, "install-update pkg=$pkg", false,
+        )
+    }
+
+    /**
+     * Streams exactly [size] bytes from the socket into [installRunner] (never more). The runner
+     * keeps going after the client disconnects, and a short body is a failure: no bring-back,
+     * non-zero exit. Runs under [installGate] so apk-watch cannot exit the helper mid-install.
+     * [describe] names the run in the log; [bringBackAfter] runs [bringBack] on success.
+     */
+    private fun streamInstallBody(
+        socket: Socket,
+        uid: Int,
+        out: Out,
+        argv: List<String>,
+        size: Long,
+        describe: String,
+        bringBackAfter: Boolean,
+    ) {
         val start = System.currentTimeMillis()
         // Bound a stalled body: without this the socket keeps soTimeout=0 (set for compiles),
         // and a client that stops mid-body would hold InstallGate and a slot forever. A timeout
@@ -180,25 +231,27 @@ internal class HelperServer(
         try {
             val stdin = CappedInputStream(socket.getInputStream(), size)
             val exit = try {
-                installRunner(CommandAllowlist.installSelfArgv(size), stdin, size, out::line)
+                installRunner(argv, stdin, size, out::line)
             } catch (t: Throwable) {
-                log("uid=$uid install-self failed: ${t::class.java.simpleName}: ${t.message}")
+                log("uid=$uid $describe failed: ${t::class.java.simpleName}: ${t.message}")
                 out.line("error: helper could not run the install: ${t.message}")
                 HelperProtocol.EXIT_HELPER_ERROR
             }
             val delivered = stdin.total >= size
             val finalExit = if (exit == 0 && !delivered) HelperProtocol.EXIT_HELPER_ERROR else exit
             if (finalExit == 0) {
-                try {
-                    bringBack()
-                } catch (t: Throwable) {
-                    log("uid=$uid bring-back failed: ${t::class.java.simpleName}: ${t.message}")
+                if (bringBackAfter) {
+                    try {
+                        bringBack()
+                    } catch (t: Throwable) {
+                        log("uid=$uid bring-back failed: ${t::class.java.simpleName}: ${t.message}")
+                    }
                 }
             } else {
-                log("uid=$uid install-self not installed: exit=$exit delivered=$delivered/$size")
+                log("uid=$uid $describe not installed: exit=$exit delivered=$delivered/$size")
             }
             out.end(finalExit)
-            log("uid=$uid finished install-self size=$size exit=$finalExit in ${System.currentTimeMillis() - start} ms")
+            log("uid=$uid finished $describe size=$size exit=$finalExit in ${System.currentTimeMillis() - start} ms")
         } finally {
             installGate.end()
         }

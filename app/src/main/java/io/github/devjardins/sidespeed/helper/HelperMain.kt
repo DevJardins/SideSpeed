@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.helper
 
 import android.os.Process
+import io.github.devjardins.sidespeed.apps.STORE_INSTALLERS
 import android.system.Os
 import java.io.File
 import java.io.FileOutputStream
@@ -122,6 +123,7 @@ object HelperMain {
             installGate = installGate,
             writeAck = ::writeAckFile,
             log = ::log,
+            packageCheck = ::packageCheck,
         ).serve()
         deletePortFileIfOurs(port)
         return 0
@@ -252,6 +254,43 @@ object HelperMain {
                 }
             }
         }
+    }
+
+    /**
+     * True when [pkg] is already installed from a third party: a `pm list packages -3 -i`
+     * row names exactly [pkg] with an installer outside [STORE_INSTALLERS]. System and
+     * store apps fail closed (false), as does any `pm` failure. The argv is fixed (only
+     * [pkg], already allowlist-validated, varies), and runs through ProcessBuilder, never a shell.
+     */
+    internal fun packageCheck(pkg: String): Boolean {
+        val lines = try {
+            capture(listOf("/system/bin/pm", "list", "packages", "-3", "-i", pkg))
+        } catch (t: Throwable) {
+            log("install-update check: pm failed (${t::class.java.simpleName}: ${t.message})")
+            return false
+        }
+        return isThirdPartySideload(lines, pkg)
+    }
+
+    /**
+     * True when some output line installs exactly [pkg] from a third-party
+     * installer. See [pmListInstaller] for the line format.
+     */
+    internal fun isThirdPartySideload(lines: List<String>, pkg: String): Boolean {
+        val installer = lines.firstNotNullOfOrNull { pmListInstaller(it, pkg) } ?: return false
+        return installer !in STORE_INSTALLERS
+    }
+
+    /**
+     * The installer of the `pm list packages -3 -i` line for exactly [pkg], or null.
+     * A row is `package:<pkg>` followed by whitespace and `installer=<x>` (on older
+     * releases the row for an unknown installer reads `installer=null`, which counts
+     * as third-party). Anything else — including a line for a longer package name
+     * that merely starts with [pkg] — is null.
+     */
+    internal fun pmListInstaller(line: String, pkg: String): String? {
+        val m = Regex("^package:${Regex.escape(pkg)}\\s+installer=(\\S+)$").find(line) ?: return null
+        return m.groupValues[1]
     }
 
     private fun lookUpSideSpeedUid(): Int? {

@@ -56,6 +56,7 @@ import kotlinx.coroutines.launch
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.updates.AppUpdateCheck
 import io.github.devjardins.sidespeed.updates.AppUpdateStore
+import io.github.devjardins.sidespeed.updates.AppUpdater
 import io.github.devjardins.sidespeed.updates.DataStoreAppUpdateStore
 import io.github.devjardins.sidespeed.updates.UpdateEntry
 import io.github.devjardins.sidespeed.updates.httpAppUpdateFetch
@@ -135,9 +136,43 @@ class AppContainer(context: Context) {
     /** Sideloaded-app update catalog: notify-only state, refreshed at most once per 24 h. */
     val appUpdateStore: AppUpdateStore by lazy { DataStoreAppUpdateStore(appContext) }
 
-    /** Fetches updates.json with the stored ETag; failures stay silent and keep the last good copy. */
+    /** Fetches updates-v2.json with the stored ETag; failures stay silent and keep the last good copy. */
     val appUpdateCheck: AppUpdateCheck by lazy {
         AppUpdateCheck(httpAppUpdateFetch(), appUpdateStore, System::currentTimeMillis)
+    }
+
+    /**
+     * Per-app update flow ("Update now" on the Compile screen): downloads the picked variant and
+     * installs it through the helper, or the system installer when the helper is down.
+     */
+    val appUpdater: AppUpdater by lazy {
+        // The Compile screen's retry button says "Try again", so the fallback names that.
+        val fallback = FallbackInstaller(appContext, "Try again")
+        AppUpdater(
+            download = UpdateDownload(UpdateDownload::httpOpen),
+            readApkFacts = { readApkFacts(appContext.packageManager, it) },
+            installed = { pkg ->
+                val pm = appContext.packageManager
+                val info = if (Build.VERSION.SDK_INT >= 33) {
+                    pm.getPackageInfo(
+                        pkg,
+                        PackageManager.PackageInfoFlags.of(0),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.getPackageInfo(pkg, 0)
+                }
+                val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else {
+                    @Suppress("DEPRECATION")
+                    info.versionCode.toLong()
+                }
+                code to installedSignerSha256(pm, pkg)
+            },
+            helperUp = { helper.ping() != null },
+            helperInstall = { pkg, apk -> helper.installUpdate(pkg, apk) },
+            fallbackInstall = { fallback.install(it) },
+            cacheDir = appContext.cacheDir,
+        )
     }
 
     /**

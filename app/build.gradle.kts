@@ -25,7 +25,7 @@ android {
         versionCode = rootProject.extra["sidespeedVersionCode"] as Int
         versionName = providers.gradleProperty("sidespeed.versionName").get()
         buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
-        buildConfigField("String", "APP_UPDATES_URL", "\"https://sidespeed.app/updates.json\"")
+        buildConfigField("String", "APP_UPDATES_URL", "\"https://sidespeed.app/updates-v2.json\"")
     }
 
     signingConfigs {
@@ -49,7 +49,7 @@ android {
             buildConfigField("String", "UPDATE_BASE_URL", "\"$base\"")
             // The emulator E2E serves a fixture catalog from the host loopback; release is always sidespeed.app.
             val catalog = (findProperty("appUpdatesUrl") as String?)?.takeIf { it.isNotBlank() }
-                ?: "https://sidespeed.app/updates.json"
+                ?: "https://sidespeed.app/updates-v2.json"
             buildConfigField("String", "APP_UPDATES_URL", "\"$catalog\"")
         }
         release {

@@ -1,6 +1,8 @@
 package io.github.devjardins.sidespeed.updates
 
 import io.github.devjardins.sidespeed.apps.AppEntry
+import io.github.devjardins.sidespeed.helper.CommandAllowlist
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -8,13 +10,13 @@ import org.json.JSONObject
 const val APP_UPDATES_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
 /**
- * Cap for the updates.json body: the real catalog holds thousands of
- * F-Droid/IzzyOnDroid entries (~0.6-1 MB), so allow 3 MB before calling it a glitch.
+ * Cap for the updates-v2.json body: the real catalog holds thousands of
+ * F-Droid/IzzyOnDroid entries (~3.05 MB), so allow 8 MB before calling it a glitch.
  */
-const val APP_UPDATES_MAX_BYTES = 3 * 1024 * 1024L
+const val APP_UPDATES_MAX_BYTES = 8 * 1024 * 1024L
 
 /**
- * One catalog entry from updates.json. Only the version name is required;
+ * One catalog entry from updates-v2.json. Only the version name is required;
  * the source and links are all optional. The catalog's version code, when
  * present, is ignored: catalog codes can differ from the installed build
  * (e.g. per-ABI codes), so the version name alone decides.
@@ -25,11 +27,29 @@ data class UpdateEntry(
     val source: String? = null,
     val page: String? = null,
     val short: String? = null,
+    /** Downloadable APKs of exactly [versionName]; empty for old entries (QR card only). */
+    val apk: List<ApkVariant> = emptyList(),
 )
 
 /**
- * A catalog entry proven newer than the installed app. Notify only:
- * the app never downloads or installs other apps.
+ * One downloadable APK of exactly the entry's version name. An empty
+ * [abis] list means a universal build; an empty [signer] set means the
+ * feed names no signing key.
+ */
+data class ApkVariant(
+    val url: String,
+    val sha256: String,
+    val size: Long,
+    val versionCode: Long,
+    val abis: List<String> = emptyList(),
+    val minSdk: Int? = null,
+    val signer: Set<String> = emptySet(),
+)
+
+/**
+ * A catalog entry proven newer than the installed app. The Compile screen
+ * offers Update now only when [pickVariant] finds a variant for this TV;
+ * otherwise the card is the QR and short link, and nothing is downloaded.
  */
 data class AvailableUpdate(
     val packageName: String,
@@ -38,15 +58,17 @@ data class AvailableUpdate(
     val source: String?,
     val page: String?,
     val short: String?,
+    val apk: List<ApkVariant> = emptyList(),
 ) {
     /** The link to show and encode: the short link when present, else the full page. */
     val link: String? get() = short?.takeIf { it.isNotBlank() } ?: page?.takeIf { it.isNotBlank() }
 }
 
 /**
- * Parses the updates.json catalog. Unknown fields are ignored. Returns null
- * when the payload is not a schema-1 catalog (wrong or missing schema,
- * truncated JSON), so callers keep the last good copy instead.
+ * Parses the updates-v2.json catalog. Unknown fields are ignored. Returns null
+ * when the payload is not a schema-1 or schema-2 catalog (wrong or missing schema,
+ * truncated JSON), so callers keep the last good copy instead. updates.json stays
+ * schema 1 with no `apk` for old apps; v2 adds `apk` with the same entry shape.
  *
  * When [installedPackages] is given, only entries for those packages are
  * kept, so the in-memory map stays small against a thousand-entry catalog.
@@ -57,7 +79,7 @@ fun parseAppUpdates(json: String, installedPackages: Set<String>? = null): Map<S
     } catch (_: JSONException) {
         return null
     }
-    if (root.optInt("schema", -1) != 1) return null
+    if (root.optInt("schema", -1) != 1 && root.optInt("schema", -1) != 2) return null
     val apps = try {
         root.getJSONObject("apps")
     } catch (_: JSONException) {
@@ -81,9 +103,90 @@ fun parseAppUpdates(json: String, installedPackages: Set<String>? = null): Map<S
             source = entry.opt("source") as? String,
             page = entry.opt("page") as? String,
             short = entry.opt("short") as? String,
+            apk = parseApkVariants(entry.opt("apk")),
         )
     }
     return out
+}
+
+/** A variant's checksum: exactly 64 lowercase hex chars, as the feed writes it. */
+private val VARIANT_HEX64 = Regex("^[0-9a-f]{64}$")
+
+/** A variant's signer fingerprint: the same 64 lowercase hex chars. */
+private val SIGNER_HEX64 = Regex("^[0-9a-f]{64}$")
+
+/**
+ * The entry's `apk` array, dropping any variant that is not well formed:
+ * non-https URL, bad checksum, bad size, missing version code, or a
+ * malformed ABI or signer list. A missing or non-array value means an
+ * old entry with no downloads.
+ */
+private fun parseApkVariants(raw: Any?): List<ApkVariant> {
+    if (raw == null || raw == JSONObject.NULL || raw !is JSONArray) return emptyList()
+    val out = ArrayList<ApkVariant>(raw.length())
+    for (i in 0 until raw.length()) {
+        (raw.opt(i) as? JSONObject)?.let { parseApkVariant(it)?.let(out::add) }
+    }
+    return out
+}
+
+/** One well-formed variant, or null. See [parseApkVariants] for the rules. */
+private fun parseApkVariant(o: JSONObject): ApkVariant? {
+    val url = (o.opt("url") as? String)
+        ?.takeIf { it.startsWith("https://") && it.length > "https://".length }
+        ?: return null
+    val sha256 = (o.opt("sha256") as? String)?.takeIf { VARIANT_HEX64.matches(it) } ?: return null
+    val size = (o.opt("size") as? Number)?.toLong()
+        ?.takeIf { it in 1..CommandAllowlist.MAX_UPDATE_BYTES }
+        ?: return null
+    if (o.isNull("versionCode")) return null
+    val versionCode = (o.opt("versionCode") as? Number)?.toLong()?.takeIf { it > 0 } ?: return null
+    val abis = when (val a = o.opt("abis")) {
+        null, JSONObject.NULL -> emptyList()
+        is JSONArray -> (0 until a.length()).map { a.opt(it) as? String ?: return null }
+        else -> return null
+    }
+    val minSdk = when (val m = o.opt("minSdk")) {
+        null, JSONObject.NULL -> null
+        is Number -> m.toLong().takeIf { it >= 0 }?.toInt() ?: return null
+        else -> return null
+    }
+    val signer = when (val s = o.opt("signer")) {
+        null, JSONObject.NULL -> emptySet()
+        is JSONArray -> (0 until s.length()).mapTo(LinkedHashSet()) {
+            (s.opt(it) as? String)?.takeIf { SIGNER_HEX64.matches(it) } ?: return null
+        }
+        else -> return null
+    }
+    return ApkVariant(url, sha256, size, versionCode, abis, minSdk, signer)
+}
+
+/**
+ * The variant to offer Update now for, or null when none fits this TV (then
+ * the card stays QR-only). A variant fits when its [ApkVariant.minSdk] is
+ * at most [sdk] (or absent), its version code is newer than the installed
+ * one, and its signer set is empty (the feed names none) or equals the
+ * installed set. Among the fits, the first ABI in [supportedAbis] order
+ * (from `Build.SUPPORTED_ABIS`) that some variant lists wins; otherwise a
+ * universal variant (empty [ApkVariant.abis]) wins.
+ */
+fun pickVariant(
+    variants: List<ApkVariant>,
+    supportedAbis: List<String>,
+    sdk: Int,
+    installedVersionCode: Long,
+    installedSigners: Set<String>,
+): ApkVariant? {
+    val fitting = variants.filter { v ->
+        (v.minSdk == null || v.minSdk <= sdk) &&
+            v.versionCode > installedVersionCode &&
+            (v.signer.isEmpty() || v.signer == installedSigners)
+    }
+    if (fitting.isEmpty()) return null
+    for (abi in supportedAbis) {
+        fitting.firstOrNull { abi in it.abis }?.let { return it }
+    }
+    return fitting.firstOrNull { it.abis.isEmpty() }
 }
 
 /**
@@ -146,6 +249,7 @@ fun updateFor(
         source = entry.source,
         page = entry.page,
         short = entry.short,
+        apk = entry.apk,
     )
 }
 

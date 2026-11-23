@@ -4,7 +4,8 @@ import java.io.File
 import java.security.MessageDigest
 
 private val HEX64 = Regex("^[0-9a-fA-F]{64}$")
-private const val PACKAGE = "io.github.devjardins.sidespeed"
+/** SideSpeed's own package: the only package a self-update may install. */
+const val SELF_UPDATE_PACKAGE = "io.github.devjardins.sidespeed"
 
 /** A parsed APK's identity: package, version, and signing-certificate SHA-256 set. */
 data class ApkFacts(val packageName: String, val versionCode: Long, val signerSha256: Set<String>)
@@ -34,20 +35,31 @@ fun parseSha256Sums(text: String, fileName: String): String? {
     return null
 }
 
-/** All checks from the design, in order: checksum, parse, package, version, signer set equality. */
+/**
+ * All checks from the design, in order: checksum, parse, package, version, signer set equality.
+ * [expectedPackage] is SideSpeed's own package for self-updates, or the updated app's package
+ * for sideloaded-app updates. [expectedVersionCode] is null for self-updates (any newer version
+ * is accepted) and the catalog variant's version code for app updates (the APK must match it
+ * exactly, and it must be newer than the installed one).
+ */
 fun verifyUpdate(
     fileSha256: String,
     expectedSha256: String?,
     apk: ApkFacts?,
     installedVersionCode: Long,
     installedSignerSha256: Set<String>,
+    expectedPackage: String = SELF_UPDATE_PACKAGE,
+    expectedVersionCode: Long? = null,
 ): VerifyResult {
-    if (expectedSha256 == null) return VerifyResult.Rejected("No checksum found for SideSpeed.apk.")
+    if (expectedSha256 == null) return VerifyResult.Rejected("No checksum found for this update.")
     if (!fileSha256.equals(expectedSha256, ignoreCase = true)) {
         return VerifyResult.Rejected("Checksum mismatch.")
     }
     if (apk == null) return VerifyResult.Rejected("Could not read the downloaded APK.")
-    if (apk.packageName != PACKAGE) return VerifyResult.Rejected("Wrong package: ${apk.packageName}.")
+    if (apk.packageName != expectedPackage) return VerifyResult.Rejected("Wrong package: ${apk.packageName}.")
+    if (expectedVersionCode != null && apk.versionCode != expectedVersionCode) {
+        return VerifyResult.Rejected("Version does not match the update.")
+    }
     if (apk.versionCode <= installedVersionCode) return VerifyResult.Rejected("Not newer than the installed version.")
     if (apk.signerSha256.isEmpty() || installedSignerSha256.isEmpty()) {
         return VerifyResult.Rejected("Signer unknown: refusing the update.")

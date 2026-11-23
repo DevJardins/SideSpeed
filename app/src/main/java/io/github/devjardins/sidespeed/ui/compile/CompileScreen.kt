@@ -41,15 +41,19 @@ import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
+import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsDimens
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.updates.ApkVariant
+import io.github.devjardins.sidespeed.updates.AppUpdateUiState
 import io.github.devjardins.sidespeed.updates.AvailableUpdate
 import io.github.devjardins.sidespeed.updates.updateCardTitle
 import io.github.devjardins.sidespeed.updates.updateSourceLine
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 const val RUNNING_NOTE = "A compile is running — please wait until it finishes."
 
@@ -74,6 +78,10 @@ fun CompileScreen(
     onKeepOptimized: () -> Unit = {},
     onModeChange: (CompileMode) -> Unit = {},
     availableUpdate: AvailableUpdate? = null,
+    pickedVariant: ApkVariant? = null,
+    appUpdateState: AppUpdateUiState = AppUpdateUiState.Idle,
+    updatePkg: String? = null,
+    onUpdateNow: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val launch by vm.launch.collectAsState()
@@ -118,7 +126,16 @@ fun CompileScreen(
             // While a launch sequence is busy every action below is disabled and
             // Back is blocked (MainActivity): the runner owns the screen until it finishes.
             val launchBusy = launch.busy != null
-            availableUpdate?.let { UpdateAvailableCard(it, installedVersion = app.versionName ?: "unknown") }
+            availableUpdate?.let {
+                UpdateAvailableCard(
+                    it,
+                    installedVersion = app.versionName ?: "unknown",
+                    pickedVariant = pickedVariant,
+                    updateState = appUpdateState,
+                    updatePkg = updatePkg,
+                    onUpdateNow = onUpdateNow,
+                )
+            }
             if (launch.launchable || launch.stored != null) {
                 LaunchTimeSection(
                     launch = launch,
@@ -219,13 +236,38 @@ fun CompileScreen(
     }
 }
 
+/** "12 MB", "12.5 MB": the update download size in whole or one-decimal megabytes. */
+fun formatUpdateSize(size: Long): String {
+    val tenths = ((size / 1_048_576.0) * 10).roundToInt()
+    return if (tenths % 10 == 0) "${tenths / 10} MB" else "${tenths / 10}.${tenths % 10} MB"
+}
+
+/** The host of an update URL ("f-droid.org"), or the URL itself when it has none. */
+fun updateHost(url: String): String =
+    runCatching { java.net.URI(url).host?.takeIf { it.isNotBlank() } }.getOrNull()
+        ?: url.substringAfter("https://").substringBefore('/')
+
 /**
- * Notify-only update notice above the launch-time card: what is out, what is
- * installed, where to get it (phone QR plus a link to type on this TV).
- * Never an install button: other apps are only ever updated by the user.
+ * Update notice above the launch-time card: what is out, what is installed,
+ * where to get it (phone QR plus a link to type on this TV). When a variant
+ * fits this TV, one Update now button downloads, checks and installs it;
+ * otherwise the card stays QR-only and nothing is downloaded.
  */
 @Composable
-private fun UpdateAvailableCard(update: AvailableUpdate, installedVersion: String) {
+private fun UpdateAvailableCard(
+    update: AvailableUpdate,
+    installedVersion: String,
+    pickedVariant: ApkVariant?,
+    updateState: AppUpdateUiState,
+    updatePkg: String?,
+    onUpdateNow: () -> Unit,
+) {
+    // Another app's update is running: say so in plain text instead of offering
+    // Update now, and keep this card's QR below as the manual way.
+    val elsewhereRunning = updatePkg != null && updatePkg != update.packageName &&
+        (updateState is AppUpdateUiState.Downloading ||
+            updateState is AppUpdateUiState.Checking ||
+            updateState is AppUpdateUiState.Installing)
     SsCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Update available", style = SsType.Title, color = SsColors.TextPrimary)
@@ -236,6 +278,15 @@ private fun UpdateAvailableCard(update: AvailableUpdate, installedVersion: Strin
             )
             updateSourceLine(update.source)?.let {
                 Text(it, style = SsType.Body, color = SsColors.TextBody)
+            }
+            if (elsewhereRunning) {
+                Text(
+                    "Another app is updating. Wait for it to finish.",
+                    style = SsType.Body,
+                    color = SsColors.TextBody,
+                )
+            } else if (pickedVariant != null) {
+                UpdateNowSection(pickedVariant, updateState, onUpdateNow)
             }
             val link = update.link
             if (!link.isNullOrBlank()) {
@@ -251,6 +302,76 @@ private fun UpdateAvailableCard(update: AvailableUpdate, installedVersion: Strin
                     color = SsColors.TextSecondary,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The one-press update: a caveat plus Update now above the QR, then progress
+ * while it runs. The button carries no focus requester, so opening the screen
+ * still focuses Start compile first; it stays reachable by D-pad like the rest.
+ * Pressing it removes the focused button, so the progress line is focusable and
+ * takes focus instead; Try again takes focus on failure, the done line on success.
+ */
+@Composable
+private fun UpdateNowSection(
+    variant: ApkVariant,
+    updateState: AppUpdateUiState,
+    onUpdateNow: () -> Unit,
+) {
+    val progressFocus = remember { FocusRequester() }
+    val retryFocus = remember { FocusRequester() }
+    val doneFocus = remember { FocusRequester() }
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is AppUpdateUiState.Idle -> Unit
+            is AppUpdateUiState.Failed -> runCatching { retryFocus.requestFocus() }
+            is AppUpdateUiState.Done -> runCatching { doneFocus.requestFocus() }
+            else -> runCatching { progressFocus.requestFocus() }
+        }
+    }
+    when (updateState) {
+        is AppUpdateUiState.Idle -> {
+            Text(
+                "Downloads ${formatUpdateSize(variant.size)} from ${updateHost(variant.url)}. " +
+                    "SideSpeed checks it is a real update of the app you have, then installs it. " +
+                    "Your data in the app stays.",
+                style = SsType.Body,
+                color = SsColors.TextBody,
+            )
+            SsButton("Update now", onClick = onUpdateNow)
+        }
+        is AppUpdateUiState.Downloading -> {
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SsSpinner(24.dp)
+                    Text("Downloading… ${updateState.percent}%", style = SsType.Title, color = SsColors.TextPrimary)
+                }
+            }
+        }
+        is AppUpdateUiState.Checking -> {
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Checking the download…", style = SsType.Title, color = SsColors.TextPrimary)
+            }
+        }
+        is AppUpdateUiState.Installing -> {
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Installing…", style = SsType.Title, color = SsColors.TextPrimary)
+            }
+        }
+        is AppUpdateUiState.AwaitingConfirmation -> {
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Your TV will ask you to confirm the install.", style = SsType.Body, color = SsColors.TextBody)
+            }
+        }
+        is AppUpdateUiState.Done -> {
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(doneFocus)) {
+                Text("Updated to ${updateState.versionName}.", style = SsType.Title, color = SsColors.Accent)
+            }
+        }
+        is AppUpdateUiState.Failed -> {
+            Text(updateState.reason, style = SsType.Body, color = SsColors.TextBody)
+            SsButton("Try again", onClick = onUpdateNow, modifier = Modifier.focusRequester(retryFocus))
         }
     }
 }
