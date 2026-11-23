@@ -32,7 +32,7 @@ sealed interface InstallOutcome {
     /**
      * Every byte was written but the connection closed with no `__END__`: an impostor may have
      * read the body and closed, or the real install may have killed us too slowly to observe.
-     * Never success on its own: the caller must confirm via the installed version first.
+     * Never success on its own: the caller confirms via the installed version first.
      */
     object Disconnected : InstallOutcome
     data class Failed(val exit: Int, val lastLine: String?) : InstallOutcome
@@ -61,10 +61,14 @@ data class HelperPing(val version: Int, val apkPath: String) {
  * Client for the shell-uid helper ([HelperMain]) on loopback TCP. See [HelperProtocol] for the wire format.
  *
  * Identity: the port file can be stale (helper killed, reboot), letting another app bind that port and fake
- * replies. [ping] therefore sends a fresh random nonce and only trusts the reply if the helper wrote that nonce
- * to [ackFile], which apps cannot write. [shell] only talks to the port verified by the last successful [ping].
- * [installSelf] re-proves the verified port with a fresh nonce immediately before streaming.
- * Residual risk: if the helper dies between [ping] and [shell], another app could take the port in between.
+ * replies. So every request carries a fresh random nonce (`<nonce> <command>`), and on that same connection
+ * the client requires a `__PROVEN__` first line plus a matching per-nonce file in [ackDir] (which apps cannot
+ * write) before emitting any [ShellEvent] or writing any body byte. A failed proof clears the verified port
+ * and fails closed: [AdbConnectionLost] from [shell], [InstallOutcome.HelperDown] from [installSelf],
+ * null from [ping]. A null [ping] is the restart path: the setup flow relaunches the helper, which also
+ * covers an old v1 helper (it refuses v2 lines, so it never proves).
+ * Residual risk: an impostor on a stale port can only deny service (connections fail closed). It can neither
+ * fake results nor receive the APK body, since proof comes before any output or body byte on every connection.
  *
  * Retries (after each of [retryDelaysMs]) only cover immediate refusals: a refused connect, or a connection
  * closed or reset with no reply within [immediateCloseWindowMs] of connecting. That is how the helper turns
@@ -76,7 +80,7 @@ data class HelperPing(val version: Int, val apkPath: String) {
 class HelperClient(
     private val portFile: File = File(HelperProtocol.PORT_FILE),
     private val connect: (Int) -> Socket = { Socket("127.0.0.1", it) },
-    private val ackFile: File = File(HelperProtocol.ACK_FILE),
+    private val ackDir: File = File(HelperProtocol.ACK_DIR),
     private val retryDelaysMs: List<Long> = DEFAULT_RETRY_DELAYS_MS,
     private val immediateCloseWindowMs: Long = DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS,
     private val log: (String) -> Unit = { Log.w(TAG, it) },
@@ -87,7 +91,7 @@ class HelperClient(
     @Volatile private var verifiedPort: Int? = null
 
     /**
-     * Pings the helper with a fresh nonce and checks [ackFile]. Returns null if the helper is not running,
+     * Pings the helper with a fresh nonce and checks [ackDir]. Returns null if the helper is not running,
      * refuses, cannot prove its identity, or speaks another protocol version. A non-null result also
      * verifies the port for [shell]; a null result clears it.
      */
@@ -105,17 +109,11 @@ class HelperClient(
         return verifyPort(port)?.let { port to it }
     }
 
-    /**
-     * One verification round against a known [port]: fresh nonce, pong, and ack-file proof.
-     * Used by [verify], and by [installSelf] to re-prove the helper on the already verified
-     * port immediately before streaming, so a dead helper plus a stale-port impostor cannot
-     * receive the APK. Never touches [verifiedPort] itself.
-     */
+    /** One verification round against a known [port]: fresh nonce, proof, pong, and version check. */
     private suspend fun verifyPort(port: Int): HelperPing? {
-        val nonce = newNonce()
         val lines = mutableListOf<String>()
         val exit = try {
-            exchange(port, "${CommandAllowlist.PING} $nonce", PING_READ_TIMEOUT_MS, clearOnFailure = false) {
+            exchange(port, CommandAllowlist.PING, PING_READ_TIMEOUT_MS, clearOnFailure = false) {
                 lines += it
             }
         } catch (e: AdbConnectionLost) {
@@ -128,15 +126,6 @@ class HelperClient(
         }
         val pong = lines.firstNotNullOfOrNull { HelperPing.parse(it) } ?: run {
             log("ping on port $port: no pong in ${lines.take(3)}")
-            return null
-        }
-        val ack = try {
-            ackFile.readText().trim()
-        } catch (_: IOException) {
-            null
-        }
-        if (ack != nonce) {
-            log("ping on port $port: ack file does not hold our nonce; not trusting this server (stale port?)")
             return null
         }
         if (pong.version != HELPER_PROTOCOL_VERSION) {
@@ -154,29 +143,22 @@ class HelperClient(
     }
 
     /**
-     * Streams [apk] to the verified helper as `install-self <size>` + raw bytes. Immediately
-     * before streaming, the helper is re-proved on the verified port with a fresh nonce/ack
-     * round; a failed re-proof is [HelperDown] and nothing is streamed. `__END__:0` after the
-     * full body is [Started]. A close with no `__END__` after the full body is [Disconnected],
-     * never success: the caller must confirm via the installed version (an impostor reads the
-     * body and closes the same way a real install dying with us does). An `END<n>` with n≠0
-     * that does arrive is [Failed] with the last output line. [HelperDown] when the helper was
-     * never verified, fails re-proof, or the connect itself fails.
+     * Streams [apk] to the verified helper as `<nonce> install-self <size>` + raw bytes. On the install
+     * connection itself the helper must prove first: without `__PROVEN__` plus a matching ack file no body
+     * byte is written and the result is [HelperDown]. `__END__:0` after the full body is [Started]. A close
+     * with no `__END__` after the full body is [Disconnected], never success: the caller confirms via the
+     * installed version (an impostor reads the body and closes the same way a real install dying with us
+     * does). An `END<n>` with n≠0 that does arrive is [Failed] with the last output line. [HelperDown] when
+     * the helper was never verified, fails the proof, or the connect itself fails.
      */
     @OptIn(InternalCoroutinesApi::class)
     suspend fun installSelf(apk: File): InstallOutcome = withContext(Dispatchers.IO) {
         val port = verifiedPort ?: return@withContext InstallOutcome.HelperDown
-        // The helper may have died since [ping]; another app could hold the port now.
-        // Re-proof uses the shared ack file, so hold the ping lock across it like [ping] does.
-        val proven = pingLock.withLock { verifyPort(port) }
-        if (proven == null) {
-            if (verifiedPort == port) verifiedPort = null
-            return@withContext InstallOutcome.HelperDown
-        }
         val size = apk.length()
         if (size <= 0) {
             return@withContext InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file")
         }
+        val nonce = newNonce()
         val socket = try {
             runInterruptible { connect(port) }
         } catch (_: IOException) {
@@ -186,12 +168,25 @@ class HelperClient(
         val onCancel = currentCoroutineContext().job
             .invokeOnCompletion(onCancelling = true, invokeImmediately = true) { closeQuietly(socket) }
         try {
-            socket.soTimeout = 0 // the install can take ~30 s, so no read timeout after the body
+            socket.soTimeout = PROOF_READ_TIMEOUT_MS
             val out = socket.getOutputStream()
-            out.write("install-self $size\n".toByteArray(Charsets.US_ASCII))
-            apk.inputStream().use { it.copyTo(out) }
+            out.write("$nonce install-self $size\n".toByteArray(Charsets.US_ASCII))
             out.flush()
             val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
+            val proven = try {
+                reader.readLine()
+            } catch (e: IOException) {
+                currentCoroutineContext().ensureActive()
+                null
+            }
+            if (proven != HelperProtocol.PROVEN || !AckProofs.matches(ackDir, nonce)) {
+                log("install on port $port: helper did not prove itself; writing zero body bytes")
+                if (verifiedPort == port) verifiedPort = null
+                return@withContext InstallOutcome.HelperDown
+            }
+            socket.soTimeout = 0 // the install can take ~30 s, so no read timeout after the body
+            apk.inputStream().use { it.copyTo(out) }
+            out.flush()
             var last: String? = null
             while (true) {
                 val line = try {
@@ -231,8 +226,10 @@ class HelperClient(
     private fun newNonce(): String = String(CharArray(NONCE_LENGTH) { NONCE_CHARS[random.nextInt(NONCE_CHARS.length)] })
 
     /**
-     * Sends one request and passes each response line to [onLine] until `__END__:<exit>`; returns the exit.
-     * Throws [AdbConnectionLost] if the connection fails or ends before the end marker. Must run on an IO thread.
+     * Sends one request with a fresh proof nonce and passes each response line after the proof to [onLine]
+     * until `__END__:<exit>`; returns the exit. The first line must be `__PROVEN__` with a matching ack file,
+     * else nothing reaches [onLine] and this throws. Throws [AdbConnectionLost] if the connection fails or
+     * ends before the end marker. Must run on an IO thread.
      */
     private suspend fun exchange(
         port: Int,
@@ -241,14 +238,29 @@ class HelperClient(
         clearOnFailure: Boolean = true,
         onLine: suspend (String) -> Unit,
     ): Int {
+        val nonce = newNonce()
         val c = try {
-            open(port, request, readTimeoutMs)
+            open(port, "$nonce $request", readTimeoutMs)
         } catch (e: AdbConnectionLost) {
             if (clearOnFailure && verifiedPort == port) verifiedPort = null
             throw e
         }
         try {
-            var line: String? = c.first
+            if (c.first != HelperProtocol.PROVEN) {
+                if (clearOnFailure && verifiedPort == port) verifiedPort = null
+                throw AdbConnectionLost("helper on port $port did not prove itself (stale port?)")
+            }
+            if (!AckProofs.matches(ackDir, nonce)) {
+                log("port $port: ack dir does not hold our nonce; not trusting this server (stale port?)")
+                if (clearOnFailure && verifiedPort == port) verifiedPort = null
+                throw AdbConnectionLost("helper on port $port did not prove itself (stale port?)")
+            }
+            var line: String? = try {
+                c.reader.readLine()
+            } catch (e: IOException) {
+                currentCoroutineContext().ensureActive()
+                throw AdbConnectionLost("helper connection lost", e)
+            }
             while (line != null) {
                 HelperProtocol.parseEnd(line)?.let { return it }
                 onLine(line)
@@ -350,6 +362,7 @@ class HelperClient(
         const val DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS = 500L
         private const val TAG = "SideSpeedHelper"
         private const val PING_READ_TIMEOUT_MS = 5_000
+        private const val PROOF_READ_TIMEOUT_MS = 10_000
         private const val NONCE_LENGTH = 32
         private const val NONCE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 

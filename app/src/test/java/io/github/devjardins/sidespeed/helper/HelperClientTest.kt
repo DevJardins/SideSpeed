@@ -2,6 +2,8 @@ package io.github.devjardins.sidespeed.helper
 
 import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.adb.ShellEvent
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
@@ -42,14 +44,14 @@ class HelperClientTest {
     private val connectPorts: MutableList<Int> = Collections.synchronizedList(mutableListOf())
     private val logs: MutableList<String> = Collections.synchronizedList(mutableListOf())
     private val portFile by lazy { tmp.root.resolve("sidespeed_helper.port") }
-    private val ackFile by lazy { tmp.root.resolve("sidespeed_helper.ack") }
+    private val ackDir by lazy { tmp.root.resolve("sidespeed_helper.acks") }
 
     /** What the fake helper does with each request; the default behaves like the real helper. */
     @Volatile private var handler: (String, Socket) -> Unit = ::realHelper
 
-    @Volatile private var pong = "pong v=1 uid=2000 apk=/x"
+    @Volatile private var pong = "pong v=2 uid=2000 apk=/x"
 
-    /** When set, the fake writes this to the ack file instead of the nonce it was sent. */
+    /** When set, the fake writes this to the nonce's ack file instead of the nonce it was sent. */
     @Volatile private var ackOverride: String? = null
 
     init {
@@ -78,15 +80,22 @@ class HelperClientTest {
 
     @After fun tearDown() = server.close()
 
+    /** Speaks protocol v2: per-nonce ack file, then `__PROVEN__`, then the payload. */
     private fun realHelper(req: String, s: Socket) {
+        val nonce = req.substringBefore(' ')
+        val inner = req.substringAfter(' ', "")
+        if (!HelperProtocol.NONCE.matches(nonce) || inner.isEmpty()) {
+            reply(s, "error: request not allowed", "__END__:126")
+            return
+        }
+        ackDir.mkdirs()
+        ackDir.resolve(nonce).writeText((ackOverride ?: nonce) + "\n")
         when {
-            req.startsWith("ping ") -> {
-                ackFile.writeText((ackOverride ?: req.removePrefix("ping ")) + "\n")
-                reply(s, pong, "__END__:0")
-            }
-            req == "dumpsys package dexopt" -> reply(s, "Dexopt state:", "  [com.nuvio.tv]", "__END__:0")
-            req.startsWith("pm compile") -> reply(s, "Failure: x", "__END__:1")
-            else -> reply(s, "error: request not allowed", "__END__:126")
+            inner == "ping" -> reply(s, HelperProtocol.PROVEN, pong, "__END__:0")
+            inner == "dumpsys package dexopt" ->
+                reply(s, HelperProtocol.PROVEN, "Dexopt state:", "  [com.nuvio.tv]", "__END__:0")
+            inner.startsWith("pm compile") -> reply(s, HelperProtocol.PROVEN, "Failure: x", "__END__:1")
+            else -> reply(s, HelperProtocol.PROVEN, "error: request not allowed", "__END__:126")
         }
     }
 
@@ -103,7 +112,7 @@ class HelperClientTest {
     ) = HelperClient(
         portFile = portFile,
         connect = connect,
-        ackFile = ackFile,
+        ackDir = ackDir,
         retryDelaysMs = retryDelaysMs,
         immediateCloseWindowMs = immediateCloseWindowMs,
         log = { logs += it },
@@ -124,9 +133,9 @@ class HelperClientTest {
     @Test fun pingParsesPong() = runBlocking {
         writePort()
         val c = client()
-        assertEquals(HelperPing(1, "/x"), c.ping())
+        assertEquals(HelperPing(2, "/x"), c.ping())
         assertEquals(listOf(47310), connectPorts.toList())
-        assertTrue(requests.single(), Regex("^ping [A-Za-z0-9]{32}$").matches(requests.single()))
+        assertTrue(requests.single(), Regex("^[A-Za-z0-9]{32} ping$").matches(requests.single()))
     }
 
     @Test fun eachPingUsesAFreshNonce() = runBlocking {
@@ -146,9 +155,17 @@ class HelperClientTest {
         assertTrue(logs.toString(), logs.any { it.contains("ack") })
     }
 
-    @Test fun pingReturnsNullWhenAckFileMissing() = runBlocking {
+    @Test fun pingReturnsNullWhenProvenButAckFileMissing() = runBlocking {
+        // Impostor: right first line, but it cannot write into the ack dir.
         writePort()
-        handler = { _, s -> reply(s, pong, "__END__:0") } // impersonator: cannot write the ack file
+        handler = { _, s -> reply(s, HelperProtocol.PROVEN, pong, "__END__:0") }
+        assertNull(client().ping())
+    }
+
+    @Test fun pingReturnsNullWhenImpostorAnswersWithoutProof() = runBlocking {
+        // A protocol v1 helper (or an impostor) never sends the proof line.
+        writePort()
+        handler = { _, s -> reply(s, pong, "__END__:0") }
         assertNull(client().ping())
     }
 
@@ -164,26 +181,38 @@ class HelperClientTest {
         }
         assertTrue(connectPorts.isEmpty())
         writePort("47319")
-        assertEquals(HelperPing(1, "/x"), client().ping())
+        assertEquals(HelperPing(2, "/x"), client().ping())
     }
 
     @Test fun versionMismatchGivesNull() = runBlocking {
         writePort()
-        pong = "pong v=2 uid=2000 apk=/x"
+        pong = "pong v=3 uid=2000 apk=/x"
+        assertNull(client().ping())
+    }
+
+    @Test fun protocolV1HelperGetsTheRestartPath() = runBlocking {
+        // The old helper refuses v2 lines and never proves: ping fails closed (null) so the
+        // setup flow restarts the helper, exactly like a version mismatch.
+        writePort()
+        handler = { req, s ->
+            val inner = req.substringAfter(' ', "")
+            if (inner == "ping") reply(s, "error: request not allowed", "__END__:126")
+            else reply(s, "error: request not allowed", "__END__:126")
+        }
         assertNull(client().ping())
     }
 
     @Test fun refusedPingGivesNull() = runBlocking {
         writePort()
-        handler = { _, s -> reply(s, "error: request not allowed", "__END__:126") }
+        handler = { _, s -> reply(s, HelperProtocol.PROVEN, "error: request not allowed", "__END__:126") }
         assertNull(client().ping())
     }
 
     @Test fun apkPathWithTildesAndEquals() = runBlocking {
         writePort()
         val path = "/data/app/~~Ab3_x-Y==/io.github.devjardins.sidespeed-Qz9==/base.apk"
-        pong = "pong v=1 uid=2000 apk=$path"
-        assertEquals(HelperPing(1, path), client().ping())
+        pong = "pong v=2 uid=2000 apk=$path"
+        assertEquals(HelperPing(2, path), client().ping())
     }
 
     @Test fun parsePong() {
@@ -194,8 +223,8 @@ class HelperClientTest {
     }
 
     @Test fun isCurrentComparesApkPath() {
-        assertTrue(HelperPing(1, "/x").isCurrent("/x"))
-        assertFalse(HelperPing(1, "/x").isCurrent("/y"))
+        assertTrue(HelperPing(2, "/x").isCurrent("/x"))
+        assertFalse(HelperPing(2, "/x").isCurrent("/y"))
     }
 
     @Test fun shellGivesLinesThenExit() = runBlocking {
@@ -206,7 +235,7 @@ class HelperClientTest {
             listOf(ShellEvent.Line("Dexopt state:"), ShellEvent.Line("  [com.nuvio.tv]"), ShellEvent.Exit(0)),
             c.shell("dumpsys package dexopt").toList(),
         )
-        assertEquals("dumpsys package dexopt", requests.last())
+        assertTrue(requests.last(), Regex("^[A-Za-z0-9]{32} dumpsys package dexopt$").matches(requests.last()))
     }
 
     @Test fun shellPassesNonZeroExit() = runBlocking {
@@ -223,7 +252,11 @@ class HelperClientTest {
         writePort()
         val c = client()
         c.ping()
-        handler = { _, s -> reply(s, "partial") }
+        handler = { req, s ->
+            val nonce = req.substringBefore(' ')
+            ackDir.resolve(nonce).writeText("$nonce\n")
+            reply(s, HelperProtocol.PROVEN, "partial")
+        }
         val seen = mutableListOf<ShellEvent>()
         try {
             c.shell("dumpsys package dexopt").collect { seen += it }
@@ -231,6 +264,44 @@ class HelperClientTest {
         } catch (_: AdbConnectionLost) {
         }
         assertEquals(listOf(ShellEvent.Line("partial")), seen)
+    }
+
+    @Test fun shellWithoutProofEmitsNothingAndThrows() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        // The helper died after the ping and an impostor took the port: no proof line.
+        handler = { _, s -> reply(s, "Dexopt state:", "__END__:0") }
+        val seen = mutableListOf<ShellEvent>()
+        try {
+            c.shell("dumpsys package dexopt").collect { seen += it }
+            fail("expected AdbConnectionLost")
+        } catch (_: AdbConnectionLost) {
+        }
+        assertTrue("unproven output must never reach the collector: $seen", seen.isEmpty())
+    }
+
+    @Test fun shellProvenWithoutAckEmitsNothingAndThrows() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        handler = { _, s -> reply(s, HelperProtocol.PROVEN, "Dexopt state:", "__END__:0") }
+        val seen = mutableListOf<ShellEvent>()
+        try {
+            c.shell("dumpsys package dexopt").collect { seen += it }
+            fail("expected AdbConnectionLost")
+        } catch (_: AdbConnectionLost) {
+        }
+        assertTrue(seen.isEmpty())
+        // The failed proof clears the port: nothing is sent after it.
+        val sent = requests.size
+        try {
+            c.shell("dumpsys package dexopt").collect { }
+            fail("expected AdbConnectionLost")
+        } catch (e: AdbConnectionLost) {
+            assertTrue(e.message, e.message!!.contains("helper not verified"))
+        }
+        assertEquals(sent, requests.size)
     }
 
     @Test fun shellWithoutVerifiedPingThrows() = runBlocking {
@@ -247,7 +318,7 @@ class HelperClientTest {
     @Test fun shellAfterFailedVerificationThrows() = runBlocking {
         writePort()
         val c = client()
-        assertEquals(HelperPing(1, "/x"), c.ping())
+        assertEquals(HelperPing(2, "/x"), c.ping())
         ackOverride = "someoneElsesNonce0123456789abcde"
         assertNull(c.ping())
         try {
@@ -267,6 +338,20 @@ class HelperClientTest {
         assertEquals(listOf(47312, 47312), connectPorts.toList())
     }
 
+    @Test fun concurrentShellsProveIndependently() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val first = async { c.shell("dumpsys package dexopt").toList() }
+        val second = async { c.shell("pm compile -m speed -f com.nuvio.tv").toList() }
+        val (a, b) = awaitAll(first, second)
+        assertTrue(a.contains(ShellEvent.Exit(0)))
+        assertEquals(listOf(ShellEvent.Line("Failure: x"), ShellEvent.Exit(1)), b)
+        val shellReqs = requests.drop(1)
+        assertEquals(2, shellReqs.size)
+        assertNotEquals(shellReqs[0].substringBefore(' '), shellReqs[1].substringBefore(' '))
+    }
+
     @Test fun refusedConnectRetriedTwiceThenSucceeds() = runBlocking {
         writePort()
         val attempts = AtomicInteger()
@@ -275,7 +360,7 @@ class HelperClientTest {
             if (attempts.incrementAndGet() <= 2) throw ConnectException("Connection refused")
             Socket(loopback, server.localPort)
         })
-        assertEquals(HelperPing(1, "/x"), c.ping())
+        assertEquals(HelperPing(2, "/x"), c.ping())
         assertEquals(3, attempts.get())
     }
 
@@ -291,7 +376,7 @@ class HelperClientTest {
         writePort()
         val seen = AtomicInteger()
         handler = { req, s -> if (seen.incrementAndGet() > 1) realHelper(req, s) } // first: close with no reply
-        assertEquals(HelperPing(1, "/x"), client().ping())
+        assertEquals(HelperPing(2, "/x"), client().ping())
         assertEquals(2, requests.size)
     }
 
@@ -312,7 +397,8 @@ class HelperClientTest {
         } catch (_: AdbConnectionLost) {
         }
         Thread.sleep(500) // a (wrong) retry after 1 ms backoff would have arrived by now
-        assertEquals(listOf("pm compile -m speed -f com.nuvio.tv"), requests.drop(1))
+        assertEquals(1, requests.drop(1).size)
+        assertTrue(requests.drop(1).single().endsWith("pm compile -m speed -f com.nuvio.tv"))
     }
 
     @Test fun resetAfterTheWindowIsNotRetried() = runBlocking {
@@ -333,7 +419,7 @@ class HelperClientTest {
         writePort()
         val seen = AtomicInteger()
         handler = { req, s -> if (seen.incrementAndGet() > 1) realHelper(req, s) else s.setSoLinger(true, 0) }
-        assertEquals(HelperPing(1, "/x"), client().ping())
+        assertEquals(HelperPing(2, "/x"), client().ping())
         assertEquals(2, requests.size)
     }
 
@@ -350,8 +436,10 @@ class HelperClientTest {
         val c = client()
         c.ping()
         val closed = CountDownLatch(1)
-        handler = { _, s ->
-            reply(s, "first line")
+        handler = { req, s ->
+            val nonce = req.substringBefore(' ')
+            ackDir.resolve(nonce).writeText("$nonce\n")
+            reply(s, HelperProtocol.PROVEN, "first line")
             // Block until the client goes away: read() returns -1 or throws once it closes. A read timeout
             // means the client never closed, so it does not count.
             try {
@@ -376,10 +464,13 @@ class HelperClientTest {
         val gotHeader = ArrayList<String>()
         val gotBody = ArrayList<Byte>()
         handler = { req, s ->
-            if (req.startsWith("ping")) realHelper(req, s)
+            if (req.endsWith(" ping")) realHelper(req, s)
             else {
                 gotHeader += req
-                val size = req.removePrefix("install-self ").toInt()
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
                 val body = ByteArray(size)
                 var off = 0
                 while (off < size) {
@@ -392,7 +483,8 @@ class HelperClientTest {
             }
         }
         assertEquals(InstallOutcome.Started, c.installSelf(apk))
-        assertEquals(listOf("install-self 11"), gotHeader.toList())
+        assertEquals(1, gotHeader.size)
+        assertTrue(gotHeader.single(), Regex("^[A-Za-z0-9]{32} install-self 11$").matches(gotHeader.single()))
         assertEquals("hello-world", gotBody.toByteArray().toString(Charsets.UTF_8))
     }
 
@@ -403,9 +495,12 @@ class HelperClientTest {
         val apk = tmp.newFile("update.apk")
         apk.writeBytes("hello".toByteArray())
         handler = { req, s ->
-            if (req.startsWith("ping")) realHelper(req, s)
+            if (req.endsWith(" ping")) realHelper(req, s)
             else {
-                val size = req.removePrefix("install-self ").toInt()
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
                 s.getInputStream().readNBytes(size)
                 reply(s, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]", "__END__:1")
             }
@@ -421,19 +516,60 @@ class HelperClientTest {
         assertEquals(InstallOutcome.HelperDown, client().installSelf(tmp.newFile("a.apk")))
     }
 
-    @Test fun install_self_reverifies_before_streaming() = runBlocking {
+    @Test fun install_self_impostor_gets_no_body_bytes() = runBlocking {
         writePort()
         val c = client()
         c.ping()
-        // Impostor takes the port after the ping: it cannot write the ack file.
-        ackOverride = "someoneElsesNonce0123456789abcde"
+        // Impostor takes the port after the ping: on the install connection it answers
+        // without proof, so the client must send zero body bytes.
+        val bodyBytes = AtomicInteger()
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                reply(s, "Success", "__END__:0")
+                try {
+                    val buf = ByteArray(4096)
+                    while (true) {
+                        val n = s.getInputStream().read(buf)
+                        if (n < 0) break
+                        bodyBytes.addAndGet(n)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
         val apk = tmp.newFile("update.apk")
         apk.writeBytes("hello".toByteArray())
         assertEquals(InstallOutcome.HelperDown, c.installSelf(apk))
-        assertTrue(
-            "nothing must be streamed after a failed re-ping: $requests",
-            requests.none { it.startsWith("install-self") },
-        )
+        assertEquals("no body byte may reach an unproven server", 0, bodyBytes.get())
+        // The request line goes out, but the install never starts: exactly one install line, no retry.
+        assertEquals(1, requests.count { it.contains("install-self") })
+    }
+
+    @Test fun install_self_proven_without_ack_gets_no_body_bytes() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val bodyBytes = AtomicInteger()
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                reply(s, HelperProtocol.PROVEN, "Success", "__END__:0")
+                try {
+                    val buf = ByteArray(4096)
+                    while (true) {
+                        val n = s.getInputStream().read(buf)
+                        if (n < 0) break
+                        bodyBytes.addAndGet(n)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        assertEquals(InstallOutcome.HelperDown, c.installSelf(apk))
+        assertEquals("no body byte may reach an unproven server", 0, bodyBytes.get())
     }
 
     @Test fun install_self_bare_disconnect_after_body_is_not_success() = runBlocking {
@@ -443,9 +579,12 @@ class HelperClientTest {
         val apk = tmp.newFile("update.apk")
         apk.writeBytes("hello".toByteArray())
         handler = { req, s ->
-            if (req.startsWith("ping")) realHelper(req, s)
+            if (req.endsWith(" ping")) realHelper(req, s)
             else {
-                val size = req.removePrefix("install-self ").toInt()
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
                 s.getInputStream().readNBytes(size)
                 // Impostor reads the body and closes without __END__:0.
             }
@@ -468,7 +607,11 @@ class HelperClientTest {
         repeat(150) {
             val c = client()
             c.ping()
-            handler = { _, s -> reply(s, "partial") }
+            handler = { req, s ->
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN, "partial")
+            }
             val seen = mutableListOf<ShellEvent>()
             try {
                 c.shell("dumpsys package dexopt").collect { seen += it }

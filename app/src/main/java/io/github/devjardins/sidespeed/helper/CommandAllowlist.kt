@@ -49,7 +49,7 @@ object CommandAllowlist {
 
     /**
      * True for `ping` and `ping <nonce>`, which the helper answers itself (nothing is executed).
-     * For the nonce form see [pingNonce] and [HelperProtocol.ACK_FILE].
+     * Every request on the wire also carries an outer proof nonce; see [HelperProtocol.ACK_DIR].
      */
     fun isPing(command: String): Boolean = command == PING || pingNonce(command) != null
 

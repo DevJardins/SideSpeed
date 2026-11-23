@@ -296,17 +296,14 @@ object HelperMain {
     private val ackLock = Any()
 
     /**
-     * Writes a ping nonce to [HelperProtocol.ACK_FILE]: temp file, chmod 0644, rename, so a reader never sees a
-     * partial nonce. The nonce was validated by [CommandAllowlist.pingNonce] (alphanumeric only). Throws on
-     * failure so the ping is answered with an error instead of an unprovable pong.
+     * Writes a per-request nonce proof to [HelperProtocol.ACK_DIR] (see [AckProofs]). The nonce was
+     * validated by [HelperServer] via [HelperProtocol.splitNonce] (alphanumeric only). Throws on
+     * failure so the request is answered with an error instead of an unproven reply.
      */
     private fun writeAckFile(nonce: String) = synchronized(ackLock) {
-        val target = File(HelperProtocol.ACK_FILE)
-        val tmp = File(HelperProtocol.ACK_FILE + ".tmp")
-        tmp.delete()
-        tmp.writeText("$nonce\n")
-        Os.chmod(tmp.path, "644".toInt(8))
-        if (!tmp.renameTo(target)) throw IOException("rename to ${target.path} failed")
+        AckProofs.write(File(HelperProtocol.ACK_DIR), nonce) { file, mode ->
+            Os.chmod(file.path, mode)
+        }
     }
 
     private fun deletePortFileIfOurs(port: Int) {
