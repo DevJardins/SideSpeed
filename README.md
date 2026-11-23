@@ -124,7 +124,7 @@ For signed APKs, copy `keystore.properties.example` to `keystore.properties` and
 
 ## Releasing
 
-1. Raise `versionCode` and `versionName` in `app/build.gradle.kts` (and in `companion-android/build.gradle.kts` if the companion changed).
+1. Bump `sidespeed.versionName` in `gradle.properties`. The Android `versionCode`s (TV and companion, `major*10000 + minor*100 + patch`) and the desktop package version (`(major+1).minor.patch`) derive from it automatically — nothing else needs a hand bump.
 2. Write the release notes in `.github/release-notes/v<version>.md`.
 3. Merge to `main`, then tag and push: `git tag v<version> && git push origin v<version>`.
 4. CI builds everything and creates a **draft** release. It fails if either APK is not signed with the project key. The draft has versioned files, `SHA256SUMS.txt`, and copies under fixed names: `SideSpeed.apk`, `SideSpeed-Companion.apk`, `SideSpeed-Companion-macos-arm64.dmg`, `-windows-x64.msi`, `-linux-amd64.deb` and `-linux-x86_64.rpm`.

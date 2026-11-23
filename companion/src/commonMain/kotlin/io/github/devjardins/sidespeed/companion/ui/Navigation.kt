@@ -10,7 +10,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 
 enum class Page { HOME, ADD, SETTINGS, ABOUT }
 
@@ -36,7 +36,15 @@ private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 
 /** Root of the companion UI, shared by the Android and desktop apps. */
 @Composable
-fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.") {
+fun CompanionApp(
+    vm: CompanionViewModel,
+    desktop: Boolean,
+    aboutText: String = "SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.",
+    aboutVersion: String = "",
+    updateState: CompanionUpdateState = CompanionUpdateState.Idle,
+    onCheckUpdates: () -> Unit = {},
+    updateAction: @Composable () -> Unit = {},
+) {
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
     var dismissedFirstRun by remember { mutableStateOf(false) }
@@ -89,10 +97,14 @@ fun CompanionApp(vm: CompanionViewModel, desktop: Boolean, aboutText: String = "
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
                 )
-                Screen.ABOUT -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Header("About and licences", onBack = { page = Page.SETTINGS })
-                    SsCard { SsText(aboutText) }
-                }
+                Screen.ABOUT -> AboutScreen(
+                    aboutText = aboutText,
+                    versionName = aboutVersion,
+                    update = updateState,
+                    onCheckUpdates = onCheckUpdates,
+                    onBack = { page = Page.SETTINGS },
+                    updateAction = updateAction,
+                )
             }
         }
     }

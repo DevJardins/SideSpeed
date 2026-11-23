@@ -45,6 +45,29 @@ plugins {
     alias(libs.plugins.androidx.baselineprofile) apply false
 }
 
+/**
+ * Single source for the Android versionCode of the TV app and the Companion app: derived from
+ * sidespeed.versionName in gradle.properties as major*10000 + minor*100 + patch (0.7.0 -> 700),
+ * so a version bump never needs a hand-maintained versionCode. Consumed via
+ * `val sidespeedVersionCode: Int by rootProject.extra`. Minor and patch must stay below 100 to
+ * keep the scheme collision-free; the build fails early otherwise.
+ */
+val sidespeedVersionCode: Int by extra(
+    providers.gradleProperty("sidespeed.versionName").get().let { versionName ->
+        val parts = versionName.trim().removePrefix("v").split(".")
+        fun fail(what: String): Nothing = error("$what (sidespeed.versionName=$versionName)")
+        if (parts.size != 3) fail("sidespeed.versionName must be three numeric parts (major.minor.patch)")
+        val numbers = parts.map {
+            it.toIntOrNull()?.takeIf { n -> n >= 0 }
+                ?: fail("sidespeed.versionName must be three numeric parts (major.minor.patch)")
+        }
+        val (major, minor, patch) = numbers
+        if (minor >= 100) fail("minor version $minor must be below 100 (versionCode = major*10000 + minor*100 + patch)")
+        if (patch >= 100) fail("patch version $patch must be below 100 (versionCode = major*10000 + minor*100 + patch)")
+        major * 10000 + minor * 100 + patch
+    },
+)
+
 // AGP's standalone lint tool classpath (androidLintTool) resolves its own old
 // copies (guava 33.4.0, BC 1.80.2, httpclient 4.5.6, commons-lang3 3.16.0),
 // which the dependency-submission snapshot also reports. Align every module.

@@ -39,6 +39,8 @@ import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
+import io.github.devjardins.sidespeed.companion.ui.SsButton
+import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -108,6 +110,7 @@ fun main() {
         Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM),
     )
     val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope, overlay = overlay)
+    val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
 
     application {
         val tray = rememberTrayState()
@@ -197,7 +200,19 @@ fun main() {
             state = rememberWindowState(size = DpSize(420.dp, 640.dp)),
             resizable = true,
         ) {
-            CompanionApp(vm, desktop = true)
+            val updateState by desktopUpdater.state.collectAsState()
+            CompanionApp(
+                vm,
+                desktop = true,
+                aboutVersion = CompanionVersion.APP_VERSION,
+                updateState = updateState,
+                onCheckUpdates = desktopUpdater::checkNow,
+                updateAction = {
+                    if (updateState is CompanionUpdateState.Available) {
+                        SsButton("Download", onClick = desktopUpdater::openDownload)
+                    }
+                },
+            )
         }
     }
 }
