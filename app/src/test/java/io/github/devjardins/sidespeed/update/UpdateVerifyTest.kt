@@ -91,6 +91,43 @@ class UpdateVerifyTest {
         }
     }
 
+    @Test fun app_update_ok_when_all_match() {
+        val hash = "d".repeat(64)
+        val signer = setOf("e".repeat(64))
+        val apk = ApkFacts(packageName = "com.nuvio.tv", versionCode = 5, signerSha256 = signer)
+        assertEquals(
+            VerifyResult.Ok,
+            verifyUpdate(hash, hash, apk, 4, signer, "com.nuvio.tv", 5),
+        )
+    }
+
+    @Test fun app_update_rejects() {
+        val hash = "d".repeat(64)
+        val signer = setOf("e".repeat(64))
+        fun okApk() = ApkFacts(packageName = "com.nuvio.tv", versionCode = 5, signerSha256 = signer)
+        val cases = listOf(
+            "sha mismatch" to verifyUpdate("f".repeat(64), hash, okApk(), 4, signer, "com.nuvio.tv", 5),
+            "null apk" to verifyUpdate(hash, hash, null, 4, signer, "com.nuvio.tv", 5),
+            "wrong package" to verifyUpdate(hash, hash, okApk().copy(packageName = "com.evil.app"), 4, signer, "com.nuvio.tv", 5),
+            "version is not the listed one" to verifyUpdate(hash, hash, okApk().copy(versionCode = 6), 4, signer, "com.nuvio.tv", 5),
+            "listed version is not newer" to verifyUpdate(hash, hash, okApk(), 5, signer, "com.nuvio.tv", 5),
+            "older than installed" to verifyUpdate(hash, hash, okApk().copy(versionCode = 3), 4, signer, "com.nuvio.tv", 5),
+            "signer differs" to verifyUpdate(hash, hash, okApk().copy(signerSha256 = setOf("0".repeat(64))), 4, signer, "com.nuvio.tv", 5),
+        )
+        for ((name, result) in cases) {
+            assertTrue(name, result is VerifyResult.Rejected)
+            assertTrue(name, (result as VerifyResult.Rejected).reason.isNotEmpty())
+        }
+    }
+
+    @Test fun self_update_ignores_expected_version() {
+        // Self-updates accept any newer version: no listed version is passed.
+        val hash = "d".repeat(64)
+        val signer = setOf("e".repeat(64))
+        val apk = ApkFacts("io.github.devjardins.sidespeed", 9, signer)
+        assertEquals(VerifyResult.Ok, verifyUpdate(hash, hash, apk, 4, signer))
+    }
+
     @Test fun sha256_hex_matches_file_bytes() {
         val f: File = tmp.newFile("a.bin")
         f.writeBytes("hello".toByteArray())

@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +32,9 @@ import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.githubReleaseFetch
+import io.github.devjardins.sidespeed.updates.pickVariant
 import io.github.devjardins.sidespeed.updates.updateFor
+import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
@@ -373,8 +376,29 @@ class MainActivity : ComponentActivity() {
                         val launchBusy = compileVm.launch.collectAsState().value.busy != null
                         val back = { if (!running && !launchBusy) { selected = null; selectedPkg = null } }
                         BackHandler { back() }
-                        val catalog by (application as SideSpeedApp).container.appUpdateCatalog.collectAsState(initial = emptyMap())
+                        val container = (application as SideSpeedApp).container
+                        val catalog by container.appUpdateCatalog.collectAsState(initial = emptyMap())
                         val available = updateFor(app, app.versionName, catalog[app.packageName])
+                        // A fresh screen starts the per-app flow idle; a running update from
+                        // another app is cancelled so the card never shows its progress.
+                        LaunchedEffect(app.packageName) {
+                            container.appUpdater.reset()
+                        }
+                        val pickedVariant = remember(available, app.packageName) {
+                            val variants = available?.apk.orEmpty()
+                            if (variants.isEmpty()) {
+                                null
+                            } else {
+                                pickVariant(
+                                    variants,
+                                    android.os.Build.SUPPORTED_ABIS.toList(),
+                                    android.os.Build.VERSION.SDK_INT,
+                                    app.versionCode,
+                                    installedSignerSha256(packageManager, app.packageName),
+                                )
+                            }
+                        }
+                        val appUpdateState by container.appUpdater.state.collectAsState()
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
@@ -383,6 +407,15 @@ class MainActivity : ComponentActivity() {
                             onKeepOptimized = { MaintenanceService.start(applicationContext) },
                             onCheckHelper = { selected = null; selectedPkg = null; setupVm.checkAgain(); ready = false },
                             availableUpdate = available,
+                            pickedVariant = pickedVariant,
+                            appUpdateState = appUpdateState,
+                            onUpdateNow = {
+                                pickedVariant?.let { variant ->
+                                    available?.let { update ->
+                                        container.appUpdater.start(app.packageName, variant, update.versionName)
+                                    }
+                                }
+                            },
                         )
                     }
                 }

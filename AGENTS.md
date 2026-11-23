@@ -44,7 +44,8 @@ the code may have a bug.
   No switching is offered there.
 - Never tell people what to install.
   No recommendations, no browse lists of apps they do not have.
-- SideSpeed tells the user what is out of date; it does not install other apps
+- SideSpeed installs only updates of apps already installed, signed with the same key,
+  one press at a time; it never installs new apps
   (see "Updates for sideloaded apps" in `README.md`).
 - The feature is "Trusted Network", never "home network".
   In UI labels and titles it is "Trusted Network";
@@ -114,6 +115,12 @@ the code may have a bug.
   or class names, and short install bodies all fail closed.
 - `install-self` accepts at most `MAX_INSTALL_BYTES` (64 MiB).
 - `install-self` installs only `INSTALL_SELF_PACKAGE`.
+- `install-update <pkg> <size>` updates one installed app: the helper first checks `<pkg>`
+  is an installed third-party sideloaded app (never a store or system app) and refuses
+  otherwise before reading any body byte; then it runs only
+  `cmd package install -r --pkg <pkg> -S <size>` (no `-d`, `-t`, `-g` or `--user`).
+  Cap is `MAX_UPDATE_BYTES` (200 MiB); SideSpeed's own package is refused here
+  (self-updates keep `install-self`).
 - Update installs verify before applying (`app/.../update/UpdateVerify.kt`):
   checksum against the release `SHA256SUMS` first, then package name,
   then version, then exact signer-set equality with the installed app.

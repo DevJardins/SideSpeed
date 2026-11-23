@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.updates
 
 import io.github.devjardins.sidespeed.apps.AppEntry
+import io.github.devjardins.sidespeed.helper.CommandAllowlist
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -260,5 +261,137 @@ class AppUpdatesTest {
         )
         val catalog = parseAppUpdates(fixture)!!
         assertEquals(1, myAppsUpdatesCount(apps, catalog))
+    }
+
+    private fun variantJson(
+        url: String = "https://example.com/a.apk",
+        sha256: String = "a".repeat(64),
+        size: Any = 12_345,
+        versionCode: Any? = 3,
+        abis: String? = """["arm64-v8a"]""",
+        minSdk: String = ",\"minSdk\":28",
+        signer: String = ""","signer":["${"b".repeat(64)}"]""",
+    ): String {
+        val vc = if (versionCode == null) "" else ""","versionCode":$versionCode"""
+        val ab = if (abis == null) "" else ""","abis":$abis"""
+        return """{"url":"$url","sha256":"$sha256","size":$size$vc$ab$minSdk$signer}"""
+    }
+
+    private fun entryWithApk(vararg variants: String): UpdateEntry {
+        val json = """{"schema":1,"apps":{"a.b":{"name":"A","versionName":"2","apk":[${variants.joinToString(",")}]}}}"""
+        return parseAppUpdates(json)!!["a.b"]!!
+    }
+
+    @Test fun parseApkVariant() {
+        val v = entryWithApk(variantJson()).apk.single()
+        assertEquals("https://example.com/a.apk", v.url)
+        assertEquals("a".repeat(64), v.sha256)
+        assertEquals(12_345L, v.size)
+        assertEquals(3L, v.versionCode)
+        assertEquals(listOf("arm64-v8a"), v.abis)
+        assertEquals(28, v.minSdk)
+        assertEquals(setOf("b".repeat(64)), v.signer)
+    }
+
+    @Test fun parseVariantDefaultsAreUniversal() {
+        val v = entryWithApk(variantJson(abis = null, minSdk = "", signer = "")).apk.single()
+        assertTrue(v.abis.isEmpty())
+        assertNull(v.minSdk)
+        assertTrue(v.signer.isEmpty())
+    }
+
+    @Test fun parseDropsMalformedVariantsButKeepsEntry() {
+        val over = CommandAllowlist.MAX_UPDATE_BYTES + 1
+        val entry = entryWithApk(
+            variantJson(url = "http://example.com/a.apk"),
+            variantJson(sha256 = "zzz"),
+            variantJson(sha256 = "A".repeat(64)),
+            variantJson(size = 0),
+            variantJson(size = over),
+            variantJson(versionCode = null),
+        )
+        assertTrue("malformed variants are dropped: ${entry.apk}", entry.apk.isEmpty())
+    }
+
+    @Test fun parseUppercaseSha256IsDropped() {
+        // The feed writes lowercase hex; anything else is not well formed.
+        val entry = entryWithApk(variantJson(sha256 = "A".repeat(64)))
+        assertTrue(entry.apk.isEmpty())
+    }
+
+    @Test fun parseDropsBadSignerAndBadAbis() {
+        val entry = entryWithApk(
+            variantJson(signer = ""","signer":["zzz"]"""),
+            variantJson(abis = """["arm64-v8a", 7]"""),
+        )
+        assertTrue(entry.apk.isEmpty())
+    }
+
+    @Test fun parseNoApkIsEmptyList() {
+        val json = """{"schema":1,"apps":{"a.b":{"name":"A","versionName":"2"}}}"""
+        assertTrue(parseAppUpdates(json)!!["a.b"]!!.apk.isEmpty())
+    }
+
+    @Test fun updateForThreadsVariants() {
+        val u = updateFor(app(versionName = "1"), "1", entryWithApk(variantJson()))
+        assertEquals(1, u!!.apk.size)
+        assertEquals(3L, u.apk.single().versionCode)
+    }
+
+    private fun pickable(
+        abis: List<String> = listOf("arm64-v8a"),
+        minSdk: Int? = 28,
+        versionCode: Long = 3,
+        signer: Set<String> = setOf("b".repeat(64)),
+    ) = ApkVariant("https://example.com/a.apk", "a".repeat(64), 100L, versionCode, abis, minSdk, signer)
+
+    @Test fun pickPrefersFirstSupportedAbi() {
+        val arm = pickable(abis = listOf("armeabi-v7a"))
+        val x64 = pickable(abis = listOf("arm64-v8a"))
+        assertEquals(x64, pickVariant(listOf(arm, x64), listOf("arm64-v8a", "armeabi-v7a"), 28, 2L, setOf("b".repeat(64))))
+        assertEquals(arm, pickVariant(listOf(arm, x64), listOf("armeabi-v7a", "arm64-v8a"), 28, 2L, setOf("b".repeat(64))))
+    }
+
+    @Test fun pickUniversalFallback() {
+        val specific = pickable(abis = listOf("x86_64"))
+        val universal = pickable(abis = emptyList())
+        assertEquals(
+            universal,
+            pickVariant(listOf(specific, universal), listOf("arm64-v8a"), 28, 2L, setOf("b".repeat(64))),
+        )
+    }
+
+    @Test fun pickNoMatchIsNull() {
+        val specific = pickable(abis = listOf("x86_64"))
+        assertNull(pickVariant(listOf(specific), listOf("arm64-v8a"), 28, 2L, setOf("b".repeat(64))))
+        assertNull(pickVariant(emptyList(), listOf("arm64-v8a"), 28, 2L, setOf("b".repeat(64))))
+    }
+
+    @Test fun pickFiltersMinSdk() {
+        val v = pickable(minSdk = 29)
+        assertNull(pickVariant(listOf(v), listOf("arm64-v8a"), 28, 2L, setOf("b".repeat(64))))
+        assertEquals(v, pickVariant(listOf(v), listOf("arm64-v8a"), 29, 2L, setOf("b".repeat(64))))
+        val noMin = v.copy(minSdk = null)
+        assertEquals(noMin, pickVariant(listOf(noMin), listOf("arm64-v8a"), 21, 2L, setOf("b".repeat(64))))
+    }
+
+    @Test fun pickRequiresNewerVersionCode() {
+        val v = pickable(versionCode = 3)
+        assertNull(pickVariant(listOf(v), listOf("arm64-v8a"), 28, 3L, setOf("b".repeat(64))))
+        assertNull(pickVariant(listOf(v), listOf("arm64-v8a"), 28, 4L, setOf("b".repeat(64))))
+        assertEquals(v, pickVariant(listOf(v), listOf("arm64-v8a"), 28, 2L, setOf("b".repeat(64))))
+    }
+
+    @Test fun pickSignerMismatchIsNull() {
+        val v = pickable()
+        assertNull(pickVariant(listOf(v), listOf("arm64-v8a"), 28, 2L, setOf("c".repeat(64))))
+    }
+
+    @Test fun pickSignerAbsentIsAllowed() {
+        val v = pickable(signer = emptySet())
+        assertEquals(
+            v,
+            pickVariant(listOf(v), listOf("arm64-v8a"), 28, 2L, setOf("c".repeat(64))),
+        )
     }
 }

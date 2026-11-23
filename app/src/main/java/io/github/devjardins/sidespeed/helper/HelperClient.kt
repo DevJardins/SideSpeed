@@ -153,24 +153,48 @@ class HelperClient(
      */
     @OptIn(InternalCoroutinesApi::class)
     suspend fun installSelf(apk: File): InstallOutcome = withContext(Dispatchers.IO) {
-        val port = verifiedPort ?: return@withContext InstallOutcome.HelperDown
         val size = apk.length()
+        // Unverified first (as before the install-update refactor): an empty file with no
+        // helper reports HelperDown, not a failed install.
+        if (verifiedPort == null) return@withContext InstallOutcome.HelperDown
         if (size <= 0) {
             return@withContext InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file")
         }
+        streamInstall("install-self $size", apk)
+    }
+
+    /**
+     * Streams [apk] to the verified helper as `<nonce> install-update <pkg> <size>` + raw bytes.
+     * Same proof and outcomes as [installSelf]: no `__PROVEN__` plus matching ack means
+     * [InstallOutcome.HelperDown] with zero body bytes written, and only an installed
+     * versionCode rise confirms the update (see the app updater).
+     */
+    @OptIn(InternalCoroutinesApi::class)
+    suspend fun installUpdate(pkg: String, apk: File): InstallOutcome = withContext(Dispatchers.IO) {
+        val size = apk.length()
+        if (verifiedPort == null) return@withContext InstallOutcome.HelperDown
+        if (size <= 0) {
+            return@withContext InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file")
+        }
+        streamInstall("install-update $pkg $size", apk)
+    }
+
+    @OptIn(InternalCoroutinesApi::class)
+    private suspend fun streamInstall(command: String, apk: File): InstallOutcome {
+        val port = verifiedPort ?: return InstallOutcome.HelperDown
         val nonce = newNonce()
         val socket = try {
             runInterruptible { connect(port) }
         } catch (_: IOException) {
             if (verifiedPort == port) verifiedPort = null
-            return@withContext InstallOutcome.HelperDown
+            return InstallOutcome.HelperDown
         }
         val onCancel = currentCoroutineContext().job
             .invokeOnCompletion(onCancelling = true, invokeImmediately = true) { closeQuietly(socket) }
-        try {
+        return try {
             socket.soTimeout = PROOF_READ_TIMEOUT_MS
             val out = socket.getOutputStream()
-            out.write("$nonce install-self $size\n".toByteArray(Charsets.US_ASCII))
+            out.write("$nonce $command\n".toByteArray(Charsets.US_ASCII))
             out.flush()
             val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
             val proven = try {
@@ -182,7 +206,7 @@ class HelperClient(
             if (proven != HelperProtocol.PROVEN || !AckProofs.matches(ackDir, nonce)) {
                 log("install on port $port: helper did not prove itself; writing zero body bytes")
                 if (verifiedPort == port) verifiedPort = null
-                return@withContext InstallOutcome.HelperDown
+                return InstallOutcome.HelperDown
             }
             socket.soTimeout = 0 // the install can take ~30 s, so no read timeout after the body
             apk.inputStream().use { it.copyTo(out) }
@@ -197,7 +221,7 @@ class HelperClient(
                 } ?: break
                 val end = HelperProtocol.parseEnd(line)
                 if (end != null) {
-                    return@withContext if (end == 0) InstallOutcome.Started
+                    return if (end == 0) InstallOutcome.Started
                     else InstallOutcome.Failed(end, last)
                 }
                 last = line

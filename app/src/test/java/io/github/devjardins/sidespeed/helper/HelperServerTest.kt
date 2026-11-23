@@ -52,6 +52,7 @@ class HelperServerTest {
         bringBack: () -> Int = { bringBackCalls.incrementAndGet(); 0 },
         installGate: InstallGate = InstallGate(),
         bodyTimeoutMs: Int = HelperServer.BODY_TIMEOUT_MS,
+        packageCheck: (String) -> Boolean = { false },
     ) {
         val s = HelperServer(
             server = server,
@@ -73,6 +74,7 @@ class HelperServerTest {
             log = { logs += it },
             maxConnections = maxConnections,
             requestTimeoutMs = requestTimeoutMs,
+            packageCheck = packageCheck,
         )
         thread(isDaemon = true) { s.serve() }
     }
@@ -475,6 +477,113 @@ class HelperServerTest {
     @Test fun install_wait_and_apk_watch_deadlines() {
         assertEquals(180_000L, HelperMain.INSTALL_WAIT_MS)
         assertEquals(240_000L, HelperMain.APK_EXIT_WAIT_MS)
+    }
+
+    @Test fun server_install_update_streams_exact_bytes_without_bring_back() {
+        val received = java.io.ByteArrayOutputStream()
+        var seenArgv: List<String>? = null
+        var seenSize = -1L
+        val checked = mutableListOf<String>()
+        start(
+            installRunner = { argv, stdin, size, onLine ->
+                seenArgv = argv
+                seenSize = size
+                stdin.copyTo(received)
+                onLine("Success")
+                0
+            },
+            packageCheck = { checked += it; true },
+        )
+        val lines = exchange("$nonce install-update com.nuvio.tv 5\nhelloXYZ")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "install", "-r",
+                "--pkg", "com.nuvio.tv", "-S", "5"),
+            seenArgv,
+        )
+        assertEquals(5L, seenSize)
+        assertEquals("hello", received.toByteArray().toString(Charsets.UTF_8))
+        assertEquals(listOf("com.nuvio.tv"), checked)
+        assertEquals(0, bringBackCalls.get())
+        assertEquals("__END__:0", lines.last())
+        assertTrue(logs.toString(), logs.any { it.contains("run install-update pkg=com.nuvio.tv size=5") })
+    }
+
+    @Test fun server_install_update_refused_without_reading_body() {
+        var invoked = false
+        start(
+            installRunner = { _, _, _, _ -> invoked = true; 0 },
+            packageCheck = { false },
+        )
+        val lines = Socket(loopback, server.localPort).use { c ->
+            c.soTimeout = 5_000
+            c.getOutputStream().write("$nonce install-update com.android.vending 5\nhello".toByteArray())
+            c.getOutputStream().flush()
+            c.shutdownOutput()
+            c.getInputStream().bufferedReader().readLines()
+        }
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals(listOf("error: request not allowed", "__END__:126"), lines.drop(1))
+        assertFalse("a refused install-update must not run", invoked)
+        assertEquals(0, bringBackCalls.get())
+        assertTrue(
+            logs.toString(),
+            logs.any { it == "REFUSED install-update com.android.vending: not an installed third-party sideloaded app" },
+        )
+    }
+
+    @Test fun server_install_update_short_body_fails_without_bring_back() {
+        var gotBytes = -1
+        start(
+            installRunner = { _, stdin, _, _ ->
+                gotBytes = stdin.readBytes().size
+                HelperProtocol.EXIT_HELPER_ERROR
+            },
+            packageCheck = { true },
+        )
+        val lines = Socket(loopback, server.localPort).use { c ->
+            c.soTimeout = 5_000
+            c.getOutputStream().write("$nonce install-update com.nuvio.tv 5\nhel".toByteArray())
+            c.getOutputStream().flush()
+            c.shutdownOutput()
+            c.getInputStream().bufferedReader().readLines()
+        }
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals(3, gotBytes)
+        assertEquals("__END__:125", lines.last())
+        assertEquals(0, bringBackCalls.get())
+    }
+
+    @Test fun server_install_update_refuses_self_package_and_oversize() {
+        var invoked = false
+        val checked = mutableListOf<String>()
+        start(
+            installRunner = { _, _, _, _ -> invoked = true; 0 },
+            packageCheck = { checked += it; true },
+        )
+        assertEquals(
+            "__END__:126",
+            exchange("$nonce install-update io.github.devjardins.sidespeed 10\n0123456789").last(),
+        )
+        assertEquals(
+            "__END__:126",
+            exchange("$nonce install-update com.nuvio.tv 209715201\n").last(),
+        )
+        assertFalse(invoked)
+        assertTrue("the allowlist refuses before any check: $checked", checked.isEmpty())
+        assertTrue(ran.isEmpty())
+    }
+
+    @Test fun server_install_update_refused_for_wrong_uid() {
+        var invoked = false
+        start(
+            uid = 2000,
+            installRunner = { _, _, _, _ -> invoked = true; 0 },
+            packageCheck = { true },
+        )
+        assertEquals(emptyList<String>(), exchange("$nonce install-update com.nuvio.tv 5\nhello"))
+        assertFalse(invoked)
+        assertEquals(0, bringBackCalls.get())
     }
 
     @Test fun server_install_self_refused_for_wrong_uid() {

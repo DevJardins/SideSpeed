@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.helper
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CommandAllowlistTest {
@@ -267,6 +268,62 @@ class CommandAllowlistTest {
             "install-self +1",
             "install-self 0x10",
         ).forEach { assertNull(it, CommandAllowlist.installSelfSize(it)) }
+    }
+
+    @Test fun install_update_parses_package_and_size() {
+        assertEquals("com.nuvio.tv" to 5L, CommandAllowlist.installUpdate("install-update com.nuvio.tv 5"))
+        assertEquals(
+            "com.nuvio.tv" to 209_715_200L,
+            CommandAllowlist.installUpdate("install-update com.nuvio.tv 209715200"),
+        )
+        assertEquals("com.foo.bar" to 1L, CommandAllowlist.installUpdate("install-update com.foo.bar 1"))
+    }
+
+    @Test fun install_update_rejections() {
+        listOf(
+            "install-update",
+            "install-update com.nuvio.tv",
+            "install-update com.nuvio.tv 5 extra",
+            "install-update com.nuvio.tv 5 ",
+            " install-update com.nuvio.tv 5",
+            "install-update  com.nuvio.tv 5",
+            "install-update com.nuvio.tv  5",
+            "install-update com.nuvio.tv 0",
+            "install-update com.nuvio.tv 209715201",
+            "install-update com.nuvio.tv 9999999999",
+            "install-update com.nuvio.tv +5",
+            "install-update com.nuvio.tv -5",
+            "install-update com.nuvio.tv 0x10",
+            "install-update com.nuvio.tv 5.0",
+            "install-update com.nuvio.tv five",
+            "install-update com.nuvio.tv 5\$",
+            "install-update nodots 5",
+            "install-update  com.nuvio.tv 5",
+            "install-update com.nuvio.tv",
+            "pm install-update com.nuvio.tv 5",
+            "install-self 5",
+            "",
+        ).forEach { assertNull(it, CommandAllowlist.installUpdate(it)) }
+    }
+
+    @Test fun install_update_refuses_self_package() {
+        assertNull(CommandAllowlist.installUpdate("install-update io.github.devjardins.sidespeed 10"))
+        assertNull(CommandAllowlist.installUpdate("install-update io.github.devjardins.sidespeed 209715200"))
+    }
+
+    @Test fun install_update_argv_is_reinstall_without_danger_flags() {
+        val argv = CommandAllowlist.installUpdateArgv("com.nuvio.tv", 5)
+        assertEquals(
+            listOf("/system/bin/cmd", "package", "install", "-r", "--pkg", "com.nuvio.tv", "-S", "5"),
+            argv,
+        )
+        listOf("-d", "-t", "-g", "--user").forEach { flag ->
+            assertTrue("argv must never carry $flag: $argv", flag !in argv)
+        }
+    }
+
+    @Test fun to_argv_never_maps_install_update() {
+        assertNull(CommandAllowlist.toArgv("install-update com.nuvio.tv 5"))
     }
 
     @Test fun to_argv_never_maps_install_self() {

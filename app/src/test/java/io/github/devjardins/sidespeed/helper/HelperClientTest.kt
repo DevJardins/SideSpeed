@@ -385,6 +385,127 @@ class HelperClientTest {
         assertEquals(500L, HelperClient.DEFAULT_IMMEDIATE_CLOSE_WINDOW_MS)
     }
 
+    @Test fun install_update_sends_header_and_exact_bytes() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello-world".toByteArray())
+        val gotHeader = ArrayList<String>()
+        val gotBody = ArrayList<Byte>()
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                gotHeader += req
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
+                val body = ByteArray(size)
+                var off = 0
+                while (off < size) {
+                    val n = s.getInputStream().read(body, off, size - off)
+                    if (n < 0) break
+                    off += n
+                }
+                gotBody += body.toList()
+                reply(s, "Success", "__END__:0")
+            }
+        }
+        assertEquals(InstallOutcome.Started, c.installUpdate("com.nuvio.tv", apk))
+        assertEquals(1, gotHeader.size)
+        assertTrue(gotHeader.single(), Regex("^[A-Za-z0-9]{32} install-update com\\.nuvio\\.tv 11$").matches(gotHeader.single()))
+        assertEquals("hello-world", gotBody.toByteArray().toString(Charsets.UTF_8))
+    }
+
+    @Test fun install_update_reports_failed_on_nonzero_end() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
+                s.getInputStream().readNBytes(size)
+                reply(s, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]", "__END__:1")
+            }
+        }
+        assertEquals(
+            InstallOutcome.Failed(1, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: foo]"),
+            c.installUpdate("com.nuvio.tv", apk),
+        )
+    }
+
+    @Test fun install_update_helper_down_when_no_port() = runBlocking {
+        writePort("47310")
+        assertEquals(InstallOutcome.HelperDown, client().installUpdate("com.nuvio.tv", tmp.newFile("a.apk")))
+    }
+
+    @Test fun install_update_impostor_gets_no_body_bytes() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val bodyBytes = AtomicInteger()
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                reply(s, "Success", "__END__:0")
+                try {
+                    val buf = ByteArray(4096)
+                    while (true) {
+                        val n = s.getInputStream().read(buf)
+                        if (n < 0) break
+                        bodyBytes.addAndGet(n)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        assertEquals(InstallOutcome.HelperDown, c.installUpdate("com.nuvio.tv", apk))
+        assertEquals("no body byte may reach an unproven server", 0, bodyBytes.get())
+        assertEquals(1, requests.count { it.contains("install-update") })
+    }
+
+    @Test fun install_update_bare_disconnect_after_body_is_not_success() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("hello".toByteArray())
+        handler = { req, s ->
+            if (req.endsWith(" ping")) realHelper(req, s)
+            else {
+                val size = req.substringAfterLast(' ').toInt()
+                val nonce = req.substringBefore(' ')
+                ackDir.resolve(nonce).writeText("$nonce\n")
+                reply(s, HelperProtocol.PROVEN)
+                s.getInputStream().readNBytes(size)
+            }
+        }
+        assertEquals(InstallOutcome.Disconnected, c.installUpdate("com.nuvio.tv", apk))
+    }
+
+    @Test fun install_update_empty_apk_is_failed_without_connecting() = runBlocking {
+        writePort()
+        val c = client()
+        c.ping()
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes(ByteArray(0))
+        val sent = requests.size
+        assertEquals(
+            InstallOutcome.Failed(HelperProtocol.EXIT_HELPER_ERROR, "empty APK file"),
+            c.installUpdate("com.nuvio.tv", apk),
+        )
+        assertEquals(sent, requests.size)
+    }
+
     /** A compile the helper accepted and then died on (no output yet) must never be resent. */
     @Test fun closeAfterTheWindowIsNotRetried() = runBlocking {
         writePort()

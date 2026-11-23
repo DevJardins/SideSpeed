@@ -128,7 +128,7 @@ class SelfUpdater(
             _state.value = UpdateUiState.Downloading(it)
         }).getOrElse { return fail("Download failed.") }
         val (installedVersion, installedSigners) = installed()
-        when (val verdict = verifyUpdate(sha256Hex(apk), expected, readApkFacts(apk), installedVersion, installedSigners)) {
+        when (val verdict = verifyUpdate(sha256Hex(apk), expected, readApkFacts(apk), installedVersion, installedSigners, SELF_UPDATE_PACKAGE)) {
             is VerifyResult.Ok -> Unit
             is VerifyResult.Rejected -> return fail(verdict.reason)
         }
