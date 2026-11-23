@@ -688,7 +688,13 @@ class CompanionViewModel(
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
-        val trusted = TrustMatcher.currentTrusted(fp, networks)
+        val matched = TrustMatcher.currentTrusted(fp, networks)
+        // A match on a record made before the gateway MAC was read hardens that record.
+        val upgraded = if (fp != null && matched != null) TrustMatcher.upgraded(matched, fp) else null
+        if (upgraded != null) store.saveTrustedNetwork(upgraded)
+        val trusted = upgraded ?: matched
+        // The upgrade above rewrote the record, so the state reads the saved copy.
+        val networksNow = if (upgraded != null) store.trustedNetworks() else networks
         val overlays = store.trustedOverlays()
         val tailnet = overlay?.source?.snapshot()?.let { snap ->
             TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
@@ -722,7 +728,7 @@ class CompanionViewModel(
                 firstRun = networks.isEmpty() && overlays.isEmpty(),
                 currentNetwork = fp,
                 trustedNetworkName = trusted?.displayName,
-                trustedNetworks = networks,
+                trustedNetworks = networksNow,
                 trustedOverlays = overlays,
                 tailnet = tailnet,
                 tvs = cards,

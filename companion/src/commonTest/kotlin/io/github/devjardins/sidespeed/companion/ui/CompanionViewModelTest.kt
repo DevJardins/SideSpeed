@@ -87,6 +87,24 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun refreshUpgradesTheTrustedRecordWithTheGatewayMac() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.fp = home.copy(gatewayMac = "00:11:22:33:44:55")
+        r.vm.refreshNow()
+        runCurrent()
+        assertEquals("00:11:22:33:44:55", r.store.trustedNetworks().single().fingerprint.gatewayMac)
+    }
+
+    @Test
+    fun refreshNeverChangesExistingRecordFields() = runTest(UnconfinedTestDispatcher()) {
+        val stored = homeNet.copy(fingerprint = home.copy(gatewayMac = "00:11:22:33:44:55"))
+        val r = Rig(this, InMemoryCompanionStore(networks = listOf(stored)), FakeTvSession(mapOf()), home.copy(gatewayMac = "00:11:22:33:44:55"))
+        r.vm.refreshNow()
+        runCurrent()
+        assertEquals(stored, r.store.trustedNetworks().single())
+    }
+
+    @Test
     fun trustCurrentNetworkSavesFingerprintUnderName() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = false)
         r.vm.trustCurrentNetwork("Living room")
