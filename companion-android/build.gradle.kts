@@ -23,7 +23,12 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 9
-        versionName = "0.7.0"
+        // Same version as the TV app: the single source is sidespeed.versionName in gradle.properties.
+        versionName = providers.gradleProperty("sidespeed.versionName").get()
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     signingConfigs {

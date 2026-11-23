@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Self-update through a PackageInstaller session. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".CompanionApplication"
@@ -22,5 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Receives the self-update session's confirmation screen intent. -->
+        <receiver
+            android:name=".update.CompanionInstallStatusReceiver"
+            android:exported="false" />
     </application>
 </manifest>

@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import io.github.devjardins.sidespeed.companion.android.update.AndroidUpdateAction
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 
@@ -48,7 +49,16 @@ class MainActivity : ComponentActivity() {
                 // The first value is what the app already scheduled; only later changes replace the schedule.
                 if (first[0]) first[0] = false else UpkeepWorker.schedule(applicationContext, interval, replace = true)
             }
-            CompanionApp(vm, desktop = false)
+            val updater = (application as CompanionApplication).graph.updater
+            val updateState by updater.state.collectAsState()
+            CompanionApp(
+                vm,
+                desktop = false,
+                aboutVersion = updater.installedVersion,
+                updateState = updateState,
+                onCheckUpdates = updater::checkNow,
+                updateAction = { AndroidUpdateAction(updateState, updater) },
+            )
         }
     }
 

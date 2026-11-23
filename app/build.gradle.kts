@@ -22,7 +22,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 11
-        versionName = "0.7.0"
+        versionName = providers.gradleProperty("sidespeed.versionName").get()
         buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
         buildConfigField("String", "APP_UPDATES_URL", "\"https://sidespeed.app/updates.json\"")
     }

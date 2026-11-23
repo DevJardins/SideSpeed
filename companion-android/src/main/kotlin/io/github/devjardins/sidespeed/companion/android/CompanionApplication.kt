@@ -14,6 +14,11 @@ import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
+import io.github.devjardins.sidespeed.companion.android.update.CompanionDownload
+import io.github.devjardins.sidespeed.companion.android.update.CompanionUpdater
+import io.github.devjardins.sidespeed.companion.android.update.clearStaleUpdateFiles
+import io.github.devjardins.sidespeed.companion.android.update.installedSignerSha256
+import io.github.devjardins.sidespeed.companion.android.update.readApkFacts
 import io.github.devjardins.sidespeed.companion.tv.AndroidDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
@@ -52,6 +57,16 @@ class Graph(app: Application, scope: CoroutineScope) {
 
     /** One view model for the whole process: rotating or recreating the Activity doesn't restart it. */
     val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
+
+    /** Self-update: check state and installer for the About screen. */
+    val updater = CompanionUpdater(
+        app,
+        BuildConfig.VERSION_NAME,
+        CompanionDownload(CompanionDownload::httpOpen),
+        { file -> readApkFacts(app.packageManager, file) },
+        { installedSignerSha256(app.packageManager, app.packageName) },
+        scope,
+    )
 }
 
 class CompanionApplication : Application() {
@@ -61,6 +76,7 @@ class CompanionApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        clearStaleUpdateFiles(this)
         graph = Graph(this, appScope)
         appScope.launch { UpkeepWorker.schedule(this@CompanionApplication, graph.store.settings().intervalMinutes, replace = false) }
         watchNetwork()
