@@ -401,10 +401,20 @@ class CompanionViewModel(
             RangeChoice.Default -> sweepScope(subnet, own, gateway)
         }
         var swept = false
+        val trustedIdAtStart = trusted.id
+        var lastTrustCheckMs = clock()
+        try {
         discovery.run(DiscoveryPlan(scope, own = own, gateway = gateway, skip = resumeSkip)).collect { event ->
             when (event) {
-                is DiscoveryEvent.Progress ->
+                is DiscoveryEvent.Progress -> {
+                    val now = clock()
+                    if (now - lastTrustCheckMs >= 1_000) {
+                        lastTrustCheckMs = now
+                        val live = currentTrusted()
+                        if (live == null || live.id != trustedIdAtStart) throw FindTrustLost()
+                    }
                     _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }
+                }
                 is DiscoveryEvent.Found -> {
                     val host = event.address.toString()
                     _state.update { s ->
@@ -422,6 +432,17 @@ class CompanionViewModel(
                     swept = true
                 }
             }
+        }
+        } catch (_: FindTrustLost) {
+            val keptFound = _state.value.found
+            val keptUnsupported = _state.value.unsupported
+            refresh(
+                error = Copy.NOT_TRUSTED_ERROR,
+                settleBusy = false,
+                retainFound = keptFound,
+                retainUnsupported = keptUnsupported,
+            )
+            return false
         }
         refresh(error = if (swept) null else Copy.CANT_SCAN, settleBusy = false)
         if (swept) _state.update { it.copy(noneFound = it.found.isEmpty()) }
@@ -481,8 +502,14 @@ class CompanionViewModel(
     private suspend fun pollLoop() {
         while (true) {
             currentCoroutineContext().ensureActive()
-            val eligible = _state.value.tvs.filter {
-                it.checkableHere && it.status == TvStatus.RUNNING && it.id !in parkedTvIds
+            val trusted = currentTrusted()
+            val overlays = store.trustedOverlays()
+            val cards = _state.value.tvs.associateBy { it.id }
+            val eligible = store.tvs().mapNotNull { saved ->
+                if (!checkableHere(saved, trusted, overlays)) return@mapNotNull null
+                val card = cards[saved.id] ?: return@mapNotNull null
+                if (card.status != TvStatus.RUNNING || saved.id in parkedTvIds) return@mapNotNull null
+                card
             }
             val ids = eligible.map { it.id }.toSet()
             (pollSessions.keys - ids).forEach { id -> runCatching { pollSessions.remove(id)?.close() } }
@@ -496,7 +523,18 @@ class CompanionViewModel(
 
     private suspend fun pollOneTv(tv: TvCardState) {
         try {
+            val saved = store.tvs().find { it.id == tv.id }
+            val newSession = tv.id !in pollSessions
             val session = pollSessions.getOrPut(tv.id) { connector.open(tv.address) }
+            if (newSession) {
+                val serial = session.run(TvCommands.SERIAL).trim()
+                if (serial != saved?.serial) {
+                    runCatching { pollSessions.remove(tv.id)?.close() }
+                    pollFailures.remove(tv.id)
+                    parkedTvIds += tv.id
+                    return
+                }
+            }
             val parsed = parseActivityRow(session.run(TvCommands.STATUS_QUERY))
             pollFailures.remove(tv.id)
             if (parsed != null) setActivity(tv.id, parsed)
@@ -645,6 +683,8 @@ class CompanionViewModel(
         settleBusy: Boolean = true,
         lastRestart: RestartResult? = null,
         updateLastRestart: Boolean = false,
+        retainFound: List<String>? = null,
+        retainUnsupported: List<String>? = null,
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
@@ -690,7 +730,8 @@ class CompanionViewModel(
                 busy = if (settleBusy) false else it.busy,
                 lastRestart = if (updateLastRestart) lastRestart else it.lastRestart,
                 error = error,
-                found = if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
+                found = retainFound ?: if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
+                unsupported = retainUnsupported ?: it.unsupported,
             )
         }
     }
@@ -699,6 +740,8 @@ class CompanionViewModel(
         val p = s.split('.')
         return p.size == 4 && p.all { o -> o.isNotEmpty() && o.length <= 3 && o.all { it in '0'..'9' } && o.toInt() <= 255 }
     }
+
+    private class FindTrustLost : Exception()
 
     private companion object {
         var counter = 0

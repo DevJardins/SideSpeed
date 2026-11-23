@@ -24,6 +24,9 @@ import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -373,6 +376,16 @@ class CompanionViewModelTest {
         r.vm.addTvByAddress("192.168.5.20")
         assertTrue(r.vm.state.value.addErrors.isEmpty())
         assertEquals(1, r.store.tvs().size)
+    }
+
+    /** Wraps a probe so Discovery's parallel sweep hits hosts one at a time. */
+    private class SerialProbe(private val inner: AdbProbe, private val yieldMs: Long = 0) : AdbProbe {
+        private val lock = Mutex()
+        override suspend fun probe(address: Ipv4, port: Int, timeoutMs: Int): ProbeResult =
+            lock.withLock {
+                if (yieldMs > 0) delay(yieldMs)
+                inner.probe(address, port, timeoutMs)
+            }
     }
 
     /** A LAN whose probes wait on [gate]: the sweep stays in flight until the test opens it. */
@@ -904,5 +917,105 @@ class CompanionViewModelTest {
         assertEquals(ActivityPhase.COMPILING, r.vm.state.value.tvs.single().activity?.phase)
         r.vm.setHomeVisible(false)
         runCurrent()
+    }
+
+    @Test
+    fun pollStopsWhenTheTrustedNetworkIsLost() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        val polledAfterTrust = r.fake.sent.count { it == TvCommands.STATUS_QUERY }
+        assertTrue(polledAfterTrust >= 1)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        advanceTimeBy(3_001)
+        assertEquals(polledAfterTrust, r.fake.sent.count { it == TvCommands.STATUS_QUERY })
+        assertEquals(1, r.fake.opened.size)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun pollSerialMismatchParksAfterSerialOnly() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.fake.outputs[TvCommands.SERIAL] = "OTHER-TV"
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        assertEquals(listOf(TvCommands.SERIAL), r.fake.sent)
+        assertTrue(r.fake.sent.none { it == TvCommands.STATUS_QUERY })
+        advanceTimeBy(30_000)
+        assertEquals(listOf(TvCommands.SERIAL), r.fake.sent)
+        r.vm.setHomeVisible(false)
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        assertTrue(r.fake.sent.count { it == TvCommands.SERIAL } >= 2)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun pollSerialMatchReusesSessionWithoutASecondSerial() = runTest(UnconfinedTestDispatcher()) {
+        val r = activityRig()
+        r.vm.setHomeVisible(true)
+        runCurrent()
+        assertEquals(1, r.fake.sent.count { it == TvCommands.SERIAL })
+        advanceTimeBy(3_001)
+        assertEquals(1, r.fake.sent.count { it == TvCommands.SERIAL })
+        assertTrue(r.fake.sent.count { it == TvCommands.STATUS_QUERY } >= 2)
+        r.vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
+    fun serialProbeDiscoveryStillStreamsFound() = runTest(UnconfinedTestDispatcher()) {
+        val hosts = listOf(ip("192.168.5.30"), ip("192.168.5.31"))
+        val innerLan = FakeLan(hosts.associateWith { listOf(ProbeResult.AdbOpen) })
+        val source = HostSource { hosts }
+        val r = Rig(this, InMemoryCompanionStore(networks = listOf(homeNet)), tv(), home)
+        val vm = CompanionViewModel(
+            r.store,
+            r.source,
+            r.upkeep,
+            r.connector,
+            Discovery(listOf(source), SerialProbe(innerLan)),
+            this,
+            { 1_000_000L },
+            { "tv-1" },
+        )
+        advanceUntilIdle()
+        vm.findTvs()
+        advanceUntilIdle()
+        assertEquals(listOf("192.168.5.30", "192.168.5.31"), vm.state.value.found)
+    }
+
+    @Test
+    fun findSweepStopsWhenTrustIsLostMidScan() = runTest(UnconfinedTestDispatcher()) {
+        val hosts = listOf(ip("192.168.5.30"), ip("192.168.5.31"), ip("192.168.5.32"), ip("192.168.5.33"))
+        val script = hosts.associateWith { listOf(ProbeResult.AdbOpen) }
+        val innerLan = FakeLan(script)
+        val lan = SerialProbe(innerLan, yieldMs = 1)
+        val cafe = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        val switching = object : FingerprintSource {
+            override suspend fun current() = if (innerLan.calls.size >= 3) cafe else home
+        }
+        val source = HostSource { hosts }
+        val r = Rig(this, InMemoryCompanionStore(networks = listOf(homeNet)), tv(), home)
+        val vm = CompanionViewModel(
+            r.store,
+            switching,
+            r.upkeep,
+            r.connector,
+            Discovery(listOf(source), lan),
+            this,
+            clock = { if (innerLan.calls.size >= 3) 1_500L else 0L },
+            idGenerator = { "tv-1" },
+        )
+        advanceUntilIdle()
+        vm.findTvs()
+        advanceTimeBy(50)
+        advanceUntilIdle()
+        assertEquals(Copy.NOT_TRUSTED_ERROR, vm.state.value.error)
+        assertEquals(false, vm.state.value.scanning)
+        assertEquals(listOf("192.168.5.30", "192.168.5.31"), vm.state.value.found)
+        assertEquals(3, innerLan.calls.size)
     }
 }

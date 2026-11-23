@@ -18,7 +18,10 @@ class Datagram(val from: Ipv4, val bytes: ByteArray)
  * multicast group is joined: replies come back to the ephemeral sender port.
  */
 fun interface DatagramQuery {
-    /** Sends [payload] once to [target]:[port], collects every reply until [listenMs] passes; empty on any I/O failure. */
+    /**
+     * Sends [payload] once to [target]:[port], collects replies until [listenMs] passes or
+     * [MAX_DATAGRAMS] replies or [MAX_DATAGRAM_BYTES] total are kept; empty on any I/O failure.
+     */
     suspend fun query(target: Ipv4, port: Int, payload: ByteArray, listenMs: Long, via: Ipv4?): List<Datagram>
 }
 
@@ -57,6 +60,7 @@ class SocketDatagramQuery : DatagramQuery {
         listenMs: Long,
     ): List<Datagram> {
         val out = mutableListOf<Datagram>()
+        val budget = ReplyBudget()
         val address = InetAddress.getByName(target.toString())
         socket.send(DatagramPacket(payload, payload.size, address, port))
         val end = System.currentTimeMillis() + listenMs
@@ -71,6 +75,7 @@ class SocketDatagramQuery : DatagramQuery {
             } catch (_: Exception) {
                 break
             }
+            if (!budget.accept(p.length)) break
             val from = Ipv4.parse(p.address.hostAddress) ?: continue
             out += Datagram(from, p.data.copyOf(p.length))
         }
