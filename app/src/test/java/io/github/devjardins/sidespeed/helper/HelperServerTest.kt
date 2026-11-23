@@ -32,6 +32,8 @@ class HelperServerTest {
     private val bringBackCalls = AtomicInteger()
     private val acks: MutableList<String> = Collections.synchronizedList(mutableListOf())
 
+    private val nonce = "abcdefghijklmnop1234"
+
     @After fun tearDown() = server.close()
 
     private fun start(
@@ -97,56 +99,75 @@ class HelperServerTest {
 
     @Test fun pingFromSideSpeed() {
         start()
-        assertEquals(listOf("pong v=1 uid=2000 apk=/data/app/x/base.apk", "__END__:0"), exchange("ping\n"))
+        assertEquals(
+            listOf(HelperProtocol.PROVEN, "pong v=2 uid=2000 apk=/data/app/x/base.apk", "__END__:0"),
+            exchange("$nonce ping\n"),
+        )
     }
 
-    @Test fun plainPingWritesNoAck() {
+    @Test fun everyRequestIsProvenEvenPlainPing() {
         start()
-        exchange("ping\n")
-        assertTrue(acks.isEmpty())
+        exchange("$nonce ping\n")
+        assertEquals(listOf(nonce), acks.toList())
     }
 
     @Test fun noncePingWritesAckBeforeReplying() {
-        val nonce = "abcdefghijklmnop1234"
         start(writeAck = { acks += it; Thread.sleep(100) })
-        assertEquals(listOf("pong v=1 uid=2000 apk=/data/app/x/base.apk", "__END__:0"), exchange("ping $nonce\n"))
+        assertEquals(
+            listOf(HelperProtocol.PROVEN, "pong v=2 uid=2000 apk=/data/app/x/base.apk", "__END__:0"),
+            exchange("$nonce ping\n"),
+        )
         assertEquals(listOf(nonce), acks.toList())
         assertTrue(ran.isEmpty())
     }
 
-    @Test fun ackFailureIsAHelperErrorWithoutPong() {
+    @Test fun ackFailureIsAHelperErrorWithoutProof() {
         start(writeAck = { throw java.io.IOException("read-only") })
-        val lines = exchange("ping abcdefghijklmnop1234\n")
+        val lines = exchange("$nonce ping\n")
+        assertTrue(lines.first(), lines.first().startsWith("error:"))
         assertEquals("__END__:125", lines.last())
+        assertFalse(lines.toString(), lines.any { it == HelperProtocol.PROVEN })
         assertFalse(lines.toString(), lines.any { it.startsWith("pong") })
     }
 
-    @Test fun badNoncePingRefused() {
+    @Test fun missingNonceRefused() {
         start()
-        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("ping short\n"))
-        assertEquals("__END__:126", exchange("ping " + "a".repeat(65) + "\n").last())
+        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("ping\n"))
         assertTrue(acks.isEmpty())
+        assertTrue(logs.toString(), logs.any { it.startsWith("REFUSED") && it.contains("nonce") })
+    }
+
+    @Test fun badNonceRefused() {
+        start()
+        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("short ping\n"))
+        assertEquals("__END__:126", exchange("a".repeat(65) + " ping\n").last())
+        assertEquals("__END__:126", exchange("$nonce \n").last())
+        assertTrue(acks.isEmpty())
+        assertTrue(logs.toString(), logs.any { it.startsWith("REFUSED") && it.contains("nonce") })
+        assertTrue(ran.isEmpty())
     }
 
     @Test fun pingWithoutNewlineEndedByEof() {
         start()
         Socket(loopback, server.localPort).use { c ->
-            c.getOutputStream().write("ping".toByteArray())
+            c.getOutputStream().write("$nonce ping".toByteArray())
             c.shutdownOutput()
-            assertEquals("__END__:0", c.getInputStream().bufferedReader().readLines().last())
+            val lines = c.getInputStream().bufferedReader().readLines()
+            assertEquals(HelperProtocol.PROVEN, lines.first())
+            assertEquals("__END__:0", lines.last())
         }
     }
 
     @Test fun otherUidRefusedWithNoOutputAndNothingRun() {
         start(uid = 2000)
-        assertEquals(emptyList<String>(), exchange("pm compile -m speed -f com.nuvio.tv\n"))
+        assertEquals(emptyList<String>(), exchange("$nonce pm compile -m speed -f com.nuvio.tv\n"))
         assertTrue(ran.isEmpty())
         assertTrue(logs.toString(), logs.any { it.startsWith("REFUSED connection") && it.contains("uid=2000") })
     }
 
     @Test fun unknownUidRefused() {
         start(uid = null)
-        assertEquals(emptyList<String>(), exchange("ping\n"))
+        assertEquals(emptyList<String>(), exchange("$nonce ping\n"))
         assertTrue(logs.any { it.contains("uid=unknown") })
     }
 
@@ -154,35 +175,71 @@ class HelperServerTest {
         // All of the client's bytes are still unread when the caller check runs.
         val unread = AtomicInteger(-1)
         start(unreadAtCallerCheck = unread)
-        assertEquals("__END__:0", exchange("ping\n").last())
-        assertEquals(5, unread.get())
+        assertEquals("__END__:0", exchange("$nonce ping\n").last())
+        assertEquals("$nonce ping\n".length, unread.get())
     }
 
-    @Test fun allowedCommandRunsExactArgv() {
+    @Test fun allowedCommandRunsExactArgvAfterProof() {
         start()
-        assertEquals(listOf("Success", "__END__:0"), exchange("pm compile -m speed -f com.nuvio.tv\n"))
+        assertEquals(
+            listOf(HelperProtocol.PROVEN, "Success", "__END__:0"),
+            exchange("$nonce pm compile -m speed -f com.nuvio.tv\n"),
+        )
         assertEquals(listOf(listOf("/system/bin/pm", "compile", "-m", "speed", "-f", "com.nuvio.tv")), ran.toList())
+        assertEquals(listOf(nonce), acks.toList())
     }
 
     @Test fun commandExitCodeIsPassedThrough() {
         start(runner = { _, onLine -> onLine("Failure: x"); 1 })
-        assertEquals(listOf("Failure: x", "__END__:1"), exchange("dumpsys package dexopt\n"))
+        assertEquals(
+            listOf(HelperProtocol.PROVEN, "Failure: x", "__END__:1"),
+            exchange("$nonce dumpsys package dexopt\n"),
+        )
     }
 
     @Test fun disallowedRequestRefused() {
         start()
-        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("sh -c id\n"))
-        assertEquals(listOf("error: request not allowed", "__END__:126"), exchange("pm compile -m speed -f com.foo;reboot\n"))
+        assertEquals(
+            listOf(HelperProtocol.PROVEN, "error: request not allowed", "__END__:126"),
+            exchange("$nonce sh -c id\n"),
+        )
+        assertEquals("__END__:126", exchange("$nonce pm compile -m speed -f com.foo;reboot\n").last())
         assertTrue(ran.isEmpty())
     }
 
     @Test fun overlongAndNonAsciiRequestsRefused() {
         start()
-        assertEquals("__END__:126", exchange("dumpsys package com." + "a".repeat(600) + "\n").last())
+        assertEquals("__END__:126", exchange("$nonce dumpsys package com." + "a".repeat(600) + "\n").last())
         assertEquals("__END__:126", exchange("pingé\n").last())
         assertEquals("__END__:126", exchange("ping\r\n").last())
         assertEquals("__END__:126", exchange("\n").last())
         assertTrue(ran.isEmpty())
+    }
+
+    @Test fun concurrentNoncesAreProvenIndependently() {
+        start()
+        val nonces = listOf("firstnonce12345678", "secondnonce1234567")
+        val results = Collections.synchronizedMap(mutableMapOf<String, List<String>>())
+        val ready = CountDownLatch(1)
+        val done = CountDownLatch(nonces.size)
+        nonces.forEach { n ->
+            thread(isDaemon = true) {
+                try {
+                    ready.await(5, TimeUnit.SECONDS)
+                    results[n] = exchange("$n ping\n")
+                } finally {
+                    done.countDown()
+                }
+            }
+        }
+        ready.countDown()
+        assertTrue(done.await(5, TimeUnit.SECONDS))
+        nonces.forEach { n ->
+            val lines = results[n]!!
+            assertEquals(HelperProtocol.PROVEN, lines.first())
+            assertTrue(lines.toString(), lines.any { it.startsWith("pong") })
+        }
+        assertEquals(nonces.sorted(), acks.toList().sorted())
     }
 
     @Test fun silentClientTimesOut() {
@@ -192,7 +249,9 @@ class HelperServerTest {
 
     @Test fun runnerExceptionReported() {
         start(runner = { _, _ -> throw java.io.IOException("boom") })
-        assertEquals("__END__:125", exchange("dumpsys package dexopt\n").last())
+        val lines = exchange("$nonce dumpsys package dexopt\n")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals("__END__:125", lines.last())
     }
 
     @Test fun connectionsBeyondCapRefused() {
@@ -203,14 +262,14 @@ class HelperServerTest {
             release.await(10, TimeUnit.SECONDS)
             0
         })
-        val first = thread { exchange("dumpsys package dexopt\n") }
+        val first = thread { exchange("$nonce dumpsys package dexopt\n") }
         assertTrue(running.await(5, TimeUnit.SECONDS))
-        assertEquals(emptyList<String>(), exchange("ping\n"))
+        assertEquals(emptyList<String>(), exchange("$nonce ping\n"))
         assertTrue(logs.any { it.contains("connections already open") })
         release.countDown()
         first.join(5_000)
         // Slot is free again.
-        assertEquals("__END__:0", exchange("ping\n").last())
+        assertEquals("__END__:0", exchange("$nonce ping\n").last())
     }
 
     @Test fun readRequestLineStopsAtNewline() {
@@ -218,8 +277,27 @@ class HelperServerTest {
         assertEquals("ping", HelperServer.readRequestLine(input))
         assertEquals('r'.code, input.read())
         assertNull(HelperServer.readRequestLine(ByteArrayInputStream("a\tb\n".toByteArray())))
-        assertEquals("x".repeat(512), HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(512).toByteArray())))
-        assertNull(HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(513).toByteArray())))
+        assertEquals(
+            "x".repeat(HelperProtocol.MAX_REQUEST_LINE_CHARS),
+            HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(HelperProtocol.MAX_REQUEST_LINE_CHARS).toByteArray())),
+        )
+        assertNull(HelperServer.readRequestLine(ByteArrayInputStream("x".repeat(HelperProtocol.MAX_REQUEST_LINE_CHARS + 1).toByteArray())))
+    }
+
+    @Test fun readRequestLineWithSmallCapKeepsOldLimit() {
+        assertEquals(
+            "x".repeat(HelperProtocol.MAX_REQUEST_CHARS),
+            HelperServer.readRequestLine(
+                ByteArrayInputStream("x".repeat(HelperProtocol.MAX_REQUEST_CHARS).toByteArray()),
+                HelperProtocol.MAX_REQUEST_CHARS,
+            ),
+        )
+        assertNull(
+            HelperServer.readRequestLine(
+                ByteArrayInputStream("x".repeat(HelperProtocol.MAX_REQUEST_CHARS + 1).toByteArray()),
+                HelperProtocol.MAX_REQUEST_CHARS,
+            ),
+        )
     }
 
     @Test fun server_install_self_streams_exact_bytes_then_brings_back() {
@@ -235,7 +313,8 @@ class HelperServerTest {
                 0
             },
         )
-        val lines = exchange("install-self 5\nhelloXYZ")
+        val lines = exchange("$nonce install-self 5\nhelloXYZ")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
         assertEquals(
             listOf("/system/bin/cmd", "package", "install", "-r",
                 "--pkg", "io.github.devjardins.sidespeed", "-S", "5"),
@@ -257,11 +336,12 @@ class HelperServerTest {
         )
         val lines = Socket(loopback, server.localPort).use { c ->
             c.soTimeout = 5_000
-            c.getOutputStream().write("install-self 5\nhel".toByteArray())
+            c.getOutputStream().write("$nonce install-self 5\nhel".toByteArray())
             c.getOutputStream().flush()
             c.shutdownOutput()
             c.getInputStream().bufferedReader().readLines()
         }
+        assertEquals(HelperProtocol.PROVEN, lines.first())
         assertEquals(3, gotBytes)
         assertEquals("__END__:125", lines.last())
         assertEquals(0, bringBackCalls.get())
@@ -279,7 +359,7 @@ class HelperServerTest {
             },
         )
         Socket(loopback, server.localPort).use { c ->
-            c.getOutputStream().write("install-self 5\nhello".toByteArray())
+            c.getOutputStream().write("$nonce install-self 5\nhello".toByteArray())
             c.getOutputStream().flush()
         }
         assertTrue(finished.await(5, TimeUnit.SECONDS))
@@ -307,7 +387,7 @@ class HelperServerTest {
         )
         val lines = Socket(loopback, server.localPort).use { c ->
             c.soTimeout = 5_000
-            c.getOutputStream().write("install-self 5\nhe".toByteArray())
+            c.getOutputStream().write("$nonce install-self 5\nhe".toByteArray())
             c.getOutputStream().flush()
             // Stay open but send nothing more: the server must time out the body.
             c.getInputStream().bufferedReader().readLines()
@@ -403,7 +483,7 @@ class HelperServerTest {
             uid = 2000,
             installRunner = { _, _, _, _ -> invoked = true; 0 },
         )
-        assertEquals(emptyList<String>(), exchange("install-self 5\nhello"))
+        assertEquals(emptyList<String>(), exchange("$nonce install-self 5\nhello"))
         assertFalse(invoked)
         assertEquals(0, bringBackCalls.get())
     }
