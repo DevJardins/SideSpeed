@@ -48,16 +48,11 @@ data class SavedTv(
     }
 }
 
-/**
- * Notifications, "Start when I log in" and the Wi-Fi name are off by default; checks run every 15 minutes
- * (option: 60). [useWifiName] is the opt-in to recognise a Trusted Network by its Wi-Fi name and access
- * point on top of the router (Android only; it needs location permission to read them).
- */
+/** Notifications and "Start when I log in" are off by default; checks run every 15 minutes (option: 60). */
 data class CompanionSettings(
     val notifications: Boolean = false,
     val intervalMinutes: Int = 15,
     val startAtLogin: Boolean = false,
-    val useWifiName: Boolean = false,
 )
 
 /**

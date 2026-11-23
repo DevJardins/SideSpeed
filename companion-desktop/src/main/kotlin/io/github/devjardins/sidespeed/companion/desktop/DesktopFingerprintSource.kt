@@ -11,8 +11,7 @@ import java.net.NetworkInterface
 /**
  * Reads the current network's fingerprint with fixed read-only OS commands (no prompts, no permissions).
  * Gateway and DNS come from the OS's own tools; the address and prefix come from Java's [NetworkInterface],
- * the same on every OS. The Wi-Fi name is never read here: a laptop moving between Wi-Fi and Ethernet on
- * one network would lose trust once its record held one, so desktop hardening is the gateway MAC alone.
+ * the same on every OS.
  */
 class DesktopFingerprintSource(private val os: String = System.getProperty("os.name").orEmpty().lowercase()) : FingerprintSource {
     private val mac = os.startsWith("mac") || os.startsWith("darwin")
@@ -46,7 +45,7 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             },
             gateway,
         )
-        NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp = ownIp)
+        NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp)
     }
 
     /** One ICMP echo to the gateway; fixed argv, and the gateway is a validated IPv4 literal. */

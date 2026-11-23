@@ -228,8 +228,6 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                         "subnet" to n.fingerprint.subnet,
                         "dnsServers" to n.fingerprint.dnsServers.toList(),
                         "gatewayMac" to n.fingerprint.gatewayMac,
-                        "wifiSsid" to n.fingerprint.wifiSsid,
-                        "wifiBssid" to n.fingerprint.wifiBssid,
                     ),
                 )
             },
@@ -243,7 +241,6 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 "notifications" to s.settings.notifications,
                 "intervalMinutes" to s.settings.intervalMinutes,
                 "startAtLogin" to s.settings.startAtLogin,
-                "useWifiName" to s.settings.useWifiName,
             ),
         ),
     )
@@ -259,7 +256,6 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 notifications = m["notifications"] as? Boolean ?: defaults.notifications,
                 intervalMinutes = m.int("intervalMinutes")?.takeIf { it > 0 } ?: defaults.intervalMinutes,
                 startAtLogin = m["startAtLogin"] as? Boolean ?: defaults.startAtLogin,
-                useWifiName = m["useWifiName"] as? Boolean ?: defaults.useWifiName,
             )
         } ?: defaults
         val prompted = (root["promptedHosts"] as? List<*>).orEmpty().mapNotNull { v ->
@@ -316,8 +312,6 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 subnet = fp["subnet"] as? String ?: return null,
                 dnsServers = (fp["dnsServers"] as? List<*>)?.map { it as? String ?: return null }?.toSet() ?: return null,
                 gatewayMac = fp["gatewayMac"] as? String,
-                wifiSsid = fp["wifiSsid"] as? String,
-                wifiBssid = fp["wifiBssid"] as? String,
             ),
         )
     }
@@ -334,9 +328,8 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
          * The schema version this build writes. Bump it whenever a saved field is added or a saved
          * field's meaning changes, so older builds go read-only instead of dropping what they don't
          * know. History: v1 was the original schema; v2 added `trustedOverlays`, the TV's
-         * `overlayPeerId` binding, and `reach`; v3 added the fingerprint's `wifiSsid`/`wifiBssid` and
-         * the settings' `useWifiName`.
+         * `overlayPeerId` binding, and `reach`.
          */
-        private const val VERSION = 3
+        private const val VERSION = 2
     }
 }

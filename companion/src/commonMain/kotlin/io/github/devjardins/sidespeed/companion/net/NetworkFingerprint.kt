@@ -1,9 +1,8 @@
 package io.github.devjardins.sidespeed.companion.net
 
 /**
- * What identifies a Trusted Network: gateway IP, subnet, DNS servers and, on desktop where readable
- * without prompts, the gateway MAC. The Wi-Fi name ([wifiSsid]) and access point ([wifiBssid]) only
- * on Android with the opt-in; stored only in the local settings file, never sent.
+ * What identifies a Trusted Network without any location permission: gateway IP, subnet, DNS servers and,
+ * on desktop where readable without prompts, the gateway MAC.
  *
  * [subnet] is "network-address/prefix" (see [Subnets.normalize]).
  */
@@ -12,8 +11,6 @@ data class NetworkFingerprint(
     val subnet: String,
     val dnsServers: Set<String>,
     val gatewayMac: String? = null,
-    val wifiSsid: String? = null,
-    val wifiBssid: String? = null,
     /**
      * The device's own address on this network right now, when the source knows it. Never part of trust
      * matching (DHCP reassigns it): discovery uses it only to skip itself and to sweep its own /24 first.
