@@ -82,6 +82,9 @@ object Copy {
         "SideSpeed recognises this network by its router. " +
             "Turning on the Wi-Fi name makes that harder to fake."
     const val WIFI_NAME_REVOKE = "To stop it fully, turn off location access for SideSpeed in Android settings."
+    const val WIFI_NAME_UNREADABLE =
+        "SideSpeed can't read the Wi-Fi name, so it can't confirm this network. " +
+            "Turn location back on, or turn off the Wi-Fi name in Settings."
     const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
     const val NOT_CHECKED_HERE = "Not checked: not on its network"
     const val OLDER_COPY =
@@ -142,6 +145,18 @@ data class CompanionUiState(
     val firstRun: Boolean = true,
     val currentNetwork: NetworkFingerprint? = null,
     val trustedNetworkName: String? = null,
+    /**
+     * The Wi-Fi name opt-in is on but the current fingerprint carries no Wi-Fi name, while some record
+     * would match with the Wi-Fi fields ignored: the network stays untrusted (fail closed) and Home and
+     * Settings say why ([Copy.WIFI_NAME_UNREADABLE]).
+     */
+    val wifiNameUnreadable: Boolean = false,
+    /**
+     * Whether reading the Wi-Fi name would return a real name now (the location permission is granted).
+     * The view model refreshes it in [CompanionViewModel.refresh], so the Settings revoke line follows
+     * grants made outside the app; screens read this instead of calling `wifiName.granted()`.
+     */
+    val wifiNameGranted: Boolean = false,
     val trustedNetworks: List<TrustedNetwork> = emptyList(),
     val trustedOverlays: List<TrustedOverlay> = emptyList(),
     /** Null when there is no Tailscale to ask (Android, not installed, logged out). */
@@ -545,6 +560,14 @@ class CompanionViewModel(
             val s = store.settings()
             if (!enabled) {
                 if (s.useWifiName) store.saveSettings(s.copy(useWifiName = false))
+                // Records the opt-in hardened keep their SSID/BSSID, which the SSID-less fingerprint
+                // would no longer match: clear both (the gateway MAC is untouched).
+                store.trustedNetworks().forEach { n ->
+                    val fp = n.fingerprint
+                    if (fp.wifiSsid != null || fp.wifiBssid != null) {
+                        store.saveTrustedNetwork(n.copy(fingerprint = fp.copy(wifiSsid = null, wifiBssid = null)))
+                    }
+                }
                 refresh()
                 return@locked
             }
@@ -675,11 +698,21 @@ class CompanionViewModel(
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
+        val settings = store.settings()
         val matched = TrustMatcher.currentTrusted(fp, networks)
         // A match on a record made before the gateway MAC or Wi-Fi name was read hardens that record.
         val upgraded = if (fp != null && matched != null) TrustMatcher.upgraded(matched, fp) else null
         if (upgraded != null) store.saveTrustedNetwork(upgraded)
         val trusted = upgraded ?: matched
+        // The opt-in is on but the fingerprint carries no Wi-Fi name, while some record would match with
+        // the Wi-Fi fields ignored: still fail closed (not trusted) and say why.
+        val wifiNameUnreadable = trusted == null && fp != null && fp.wifiSsid == null && settings.useWifiName &&
+            networks.any {
+                TrustMatcher.matches(
+                    fp.copy(wifiSsid = null, wifiBssid = null),
+                    it.fingerprint.copy(wifiSsid = null, wifiBssid = null),
+                )
+            }
         // The upgrade above rewrote the record, so the state reads the saved copy.
         val networksNow = if (upgraded != null) store.trustedNetworks() else networks
         val overlays = store.trustedOverlays()
@@ -715,11 +748,13 @@ class CompanionViewModel(
                 firstRun = networks.isEmpty() && overlays.isEmpty(),
                 currentNetwork = fp,
                 trustedNetworkName = trusted?.displayName,
+                wifiNameUnreadable = wifiNameUnreadable,
+                wifiNameGranted = wifiName.granted(),
                 trustedNetworks = networksNow,
                 trustedOverlays = overlays,
                 tailnet = tailnet,
                 tvs = cards,
-                settings = store.settings(),
+                settings = settings,
                 busy = if (settleBusy) false else it.busy,
                 lastRestart = if (updateLastRestart) lastRestart else it.lastRestart,
                 error = error,

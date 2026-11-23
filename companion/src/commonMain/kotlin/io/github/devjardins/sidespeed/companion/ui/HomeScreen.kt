@@ -94,7 +94,7 @@ fun HomeScreen(
         ) {
             SsStatusDot(if (trusted) StatusKind.GOOD else StatusKind.WAITING)
             SsText(
-                banner ?: "Not on a Trusted Network",
+                banner ?: if (state.wifiNameUnreadable) Copy.WIFI_NAME_UNREADABLE else "Not on a Trusted Network",
                 Ss.body.copy(color = if (trusted) Ss.okText else Ss.warnText),
             )
         }

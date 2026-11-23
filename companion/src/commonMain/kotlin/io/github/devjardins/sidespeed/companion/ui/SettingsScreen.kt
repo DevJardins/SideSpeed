@@ -86,7 +86,8 @@ fun SettingsScreen(
             SsSwitchRow(Copy.WIFI_NAME_TITLE, s.useWifiName, onWifiNameChange)
             SsText(Copy.WIFI_NAME_CAVEAT, Ss.caption)
             if (!s.useWifiName) SsText(Copy.WIFI_NAME_OFF, Ss.caption)
-            if (!s.useWifiName && wifiNameAccess.granted()) SsText(Copy.WIFI_NAME_REVOKE, Ss.caption)
+            if (!s.useWifiName && state.wifiNameGranted) SsText(Copy.WIFI_NAME_REVOKE, Ss.caption)
+            if (state.wifiNameUnreadable) SsText(Copy.WIFI_NAME_UNREADABLE, Ss.caption)
         }
         SsCard {
             SsText("Notifications", Ss.heading)

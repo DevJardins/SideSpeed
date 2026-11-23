@@ -11,7 +11,8 @@ import java.net.NetworkInterface
 /**
  * Reads the current network's fingerprint with fixed read-only OS commands (no prompts, no permissions).
  * Gateway and DNS come from the OS's own tools; the address and prefix come from Java's [NetworkInterface],
- * the same on every OS.
+ * the same on every OS. The Wi-Fi name is never read here: a laptop moving between Wi-Fi and Ethernet on
+ * one network would lose trust once its record held one, so desktop hardening is the gateway MAC alone.
  */
 class DesktopFingerprintSource(private val os: String = System.getProperty("os.name").orEmpty().lowercase()) : FingerprintSource {
     private val mac = os.startsWith("mac") || os.startsWith("darwin")
@@ -45,8 +46,7 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             },
             gateway,
         )
-        val (ssid, bssid) = wifiName()
-        NetworkFingerprint(gateway, subnet, dns, macAddr, ssid, bssid, ownIp)
+        NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp = ownIp)
     }
 
     /** One ICMP echo to the gateway; fixed argv, and the gateway is a validated IPv4 literal. */
@@ -54,18 +54,6 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
         mac -> arrayOf("ping", "-c", "1", "-W", "1000", gateway)
         windows -> arrayOf("ping", "-n", "1", "-w", "1000", gateway)
         else -> arrayOf("ping", "-c", "1", "-W", "1", gateway)
-    }
-
-    /** The Wi-Fi name and access point where readable without prompts, else nulls (wired, off or denied). */
-    private fun wifiName(): Pair<String?, String?> = when {
-        mac -> {
-            val device = FingerprintParsers.macWifiDevice(runCommand("networksetup", "-listallhardwareports"))
-            val ssid = device?.let { FingerprintParsers.macSsid(runCommand("networksetup", "-getairportnetwork", it)) }
-            // macOS gives no BSSID without privileges, so only the name is read.
-            ssid to null
-        }
-        windows -> FingerprintParsers.windowsWifi(runCommand("netsh", "wlan", "show", "interfaces")) ?: (null to null)
-        else -> FingerprintParsers.linuxWifi(runCommand("nmcli", "-t", "-f", "ACTIVE,SSID,BSSID", "dev", "wifi")) ?: (null to null)
     }
 
     /** The interface address inside the gateway's subnet, with that subnet's normalized form. */

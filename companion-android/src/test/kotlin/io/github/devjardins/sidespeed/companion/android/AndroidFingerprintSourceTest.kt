@@ -98,37 +98,60 @@ class AndroidFingerprintSourceTest {
 
     @Test fun vpnActiveFallsBackToTheWifiUnderneath() {
         val active = NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn)
-        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = wifi))
-        assertEquals(homeFingerprint, FingerprintMapping.map(FingerprintMapping.pickLan(active, all)))
+        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi))
+        assertEquals(homeFingerprint, FingerprintMapping.map(FingerprintMapping.pickLan(active, all)?.link))
     }
 
     @Test fun exitNodeVpnIsSkippedToo() {
         val active = NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = exitVpn)
-        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = wifi))
-        assertEquals(homeFingerprint, FingerprintMapping.map(FingerprintMapping.pickLan(active, all)))
+        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi))
+        assertEquals(homeFingerprint, FingerprintMapping.map(FingerprintMapping.pickLan(active, all)?.link))
     }
 
     @Test fun activeWifiWins() {
         val ethernet = LinkData(listOf("10.0.0.1"), listOf("10.0.0.7/24"), listOf("10.0.0.1"))
-        val active = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = wifi)
+        val active = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi)
         val all = listOf(NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = ethernet), active)
-        assertEquals(wifi, FingerprintMapping.pickLan(active, all))
+        assertEquals(wifi, FingerprintMapping.pickLan(active, all)?.link)
     }
 
     @Test fun vpnOverMobileDataGivesNothing() {
         val active = NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn)
         val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = false, link = cell))
-        assertNull(FingerprintMapping.pickLan(active, all))
+        assertNull(FingerprintMapping.pickLan(active, all)?.link)
     }
 
     @Test fun nullLinksAreSkipped() {
         val active = NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn)
-        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = null), NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = wifi))
-        assertEquals(wifi, FingerprintMapping.pickLan(active, all))
+        val all = listOf(active, NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = null), NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi))
+        assertEquals(wifi, FingerprintMapping.pickLan(active, all)?.link)
     }
 
     @Test fun noActiveNetworkStillFindsTheWifi() {
-        val all = listOf(NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn), NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = wifi))
-        assertEquals(wifi, FingerprintMapping.pickLan(null, all))
+        val all = listOf(NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn), NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi))
+        assertEquals(wifi, FingerprintMapping.pickLan(null, all)?.link)
+    }
+
+    @Test fun pickedLinkKnowsWhetherItIsWifi() {
+        val wifiCandidate = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi)
+        val ethernet = LinkData(listOf("10.0.0.1"), listOf("10.0.0.7/24"), listOf("10.0.0.1"))
+        val ethernetCandidate = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = ethernet)
+        val vpnCandidate = NetworkCandidate(isVpn = true, isWifiOrEthernet = false, link = vpn)
+        assertEquals(true, FingerprintMapping.pickLan(wifiCandidate, listOf(ethernetCandidate, wifiCandidate))?.isWifi)
+        assertEquals(false, FingerprintMapping.pickLan(ethernetCandidate, listOf(wifiCandidate, ethernetCandidate))?.isWifi)
+        assertEquals(true, FingerprintMapping.pickLan(vpnCandidate, listOf(vpnCandidate, wifiCandidate))?.isWifi)
+        assertEquals(false, FingerprintMapping.pickLan(vpnCandidate, listOf(vpnCandidate, ethernetCandidate))?.isWifi)
+    }
+
+    @Test fun wifiNameNeedsOptInPermissionLocationAndAWifiLink() {
+        val wifiCandidate = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, isWifi = true, link = wifi)
+        val ethernet = LinkData(listOf("10.0.0.1"), listOf("10.0.0.7/24"), listOf("10.0.0.1"))
+        val ethernetCandidate = NetworkCandidate(isVpn = false, isWifiOrEthernet = true, link = ethernet)
+        assertEquals(true, FingerprintMapping.wifiNameAllowed(useWifiName = true, permissionGranted = true, locationOn = true, picked = wifiCandidate))
+        assertEquals(false, FingerprintMapping.wifiNameAllowed(useWifiName = false, permissionGranted = true, locationOn = true, picked = wifiCandidate))
+        assertEquals(false, FingerprintMapping.wifiNameAllowed(useWifiName = true, permissionGranted = false, locationOn = true, picked = wifiCandidate))
+        assertEquals(false, FingerprintMapping.wifiNameAllowed(useWifiName = true, permissionGranted = true, locationOn = false, picked = wifiCandidate))
+        assertEquals(false, FingerprintMapping.wifiNameAllowed(useWifiName = true, permissionGranted = true, locationOn = true, picked = ethernetCandidate))
+        assertEquals(false, FingerprintMapping.wifiNameAllowed(useWifiName = true, permissionGranted = true, locationOn = true, picked = null))
     }
 }

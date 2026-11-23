@@ -3,14 +3,15 @@ package io.github.devjardins.sidespeed.companion.android
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.RouteInfo
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.provider.Settings
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.Subnets
@@ -30,7 +31,12 @@ data class LinkData(
 )
 
 /** One network Android knows about, reduced to what picking the LAN needs. */
-data class NetworkCandidate(val isVpn: Boolean, val isWifiOrEthernet: Boolean, val link: LinkData?)
+data class NetworkCandidate(
+    val isVpn: Boolean,
+    val isWifiOrEthernet: Boolean,
+    val link: LinkData?,
+    val isWifi: Boolean = false,
+)
 
 object FingerprintMapping {
     /**
@@ -54,14 +60,22 @@ object FingerprintMapping {
     }
 
     /**
-     * The link to fingerprint. The active network wins unless it is a VPN: with Tailscale (or any VPN) up,
+     * The network to fingerprint. The active network wins unless it is a VPN: with Tailscale (or any VPN) up,
      * Android reports the VPN as active, and a VPN never maps to a fingerprint, so the Wi-Fi or Ethernet
      * network underneath is used instead. Mobile data is never picked.
      */
-    fun pickLan(active: NetworkCandidate?, all: List<NetworkCandidate>): LinkData? {
-        if (active != null && !active.isVpn) return active.link
-        return all.firstOrNull { !it.isVpn && it.isWifiOrEthernet && map(it.link) != null }?.link
+    fun pickLan(active: NetworkCandidate?, all: List<NetworkCandidate>): NetworkCandidate? {
+        if (active != null && !active.isVpn) return active
+        return all.firstOrNull { !it.isVpn && it.isWifiOrEthernet && map(it.link) != null }
     }
+
+    /**
+     * Whether the Wi-Fi name may be read for [picked]: the opt-in is on, location permission is granted,
+     * location services are on (without them Android reports only redacted names), and the picked link is
+     * Wi-Fi (an Ethernet link has no Wi-Fi name to read).
+     */
+    fun wifiNameAllowed(useWifiName: Boolean, permissionGranted: Boolean, locationOn: Boolean, picked: NetworkCandidate?): Boolean =
+        useWifiName && permissionGranted && locationOn && picked?.isWifi == true
 
     /** "address/prefix" for an IPv4 host address; null for IPv6 or a missing address. */
     fun ipv4Cidr(hostAddress: String?, prefixLength: Int): String? =
@@ -85,8 +99,9 @@ object FingerprintMapping {
 }
 
 /**
- * [wifiNameEnabled] is the user's opt-in (Settings): the Wi-Fi name is read only when it is true and
- * [Manifest.permission.ACCESS_FINE_LOCATION] is granted.
+ * [wifiNameEnabled] is the user's opt-in (Settings): the Wi-Fi name is read only when it is true,
+ * [Manifest.permission.ACCESS_FINE_LOCATION] is granted, location services are on, and the picked
+ * link is Wi-Fi (see [FingerprintMapping.wifiNameAllowed]).
  */
 class AndroidFingerprintSource(
     private val app: Context,
@@ -99,21 +114,38 @@ class AndroidFingerprintSource(
         val active = cm.activeNetwork?.let(::candidate)
         @Suppress("DEPRECATION") // allNetworks is the only synchronous list; a callback-tracked set would add state.
         val all = cm.allNetworks.mapNotNull(::candidate)
-        val link = FingerprintMapping.pickLan(active, all)
-        val name = wifiName()
-        return FingerprintMapping.map(link?.copy(wifiSsid = name?.first, wifiBssid = name?.second))
+        val picked = FingerprintMapping.pickLan(active, all)
+        val allowed = FingerprintMapping.wifiNameAllowed(wifiNameEnabled(), permissionGranted(), locationOn(), picked)
+        val name = if (allowed) wifiName() else null
+        return FingerprintMapping.map(picked?.link?.copy(wifiSsid = name?.first, wifiBssid = name?.second))
     }
 
-    /** The raw SSID and BSSID, or null when the opt-in is off, permission is missing or Wi-Fi is down. */
-    private suspend fun wifiName(): Pair<String?, String?>? {
-        if (!wifiNameEnabled()) return null
-        if (app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return null
-        val active = cm.activeNetwork ?: return null
-        if (Build.VERSION.SDK_INT >= 29) {
-            val info = cm.getNetworkCapabilities(active)?.transportInfo as? WifiInfo ?: return null
-            return info.ssid to info.bssid
+    private fun permissionGranted(): Boolean =
+        app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * The location services master switch: with it off Android reports only redacted Wi-Fi names.
+     * API 28+ has [LocationManager.isLocationEnabled]; on 26–27 the secure setting is read instead.
+     */
+    private fun locationOn(): Boolean {
+        val lm = app.getSystemService(LocationManager::class.java) ?: return false
+        return if (Build.VERSION.SDK_INT >= 28) {
+            lm.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION") // LOCATION_MODE is the only read on API 26-27.
+            Settings.Secure.getInt(app.contentResolver, Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF) !=
+                Settings.Secure.LOCATION_MODE_OFF
         }
-        @Suppress("DEPRECATION") // connectionInfo is the only read on API 26-28.
+    }
+
+    /**
+     * The raw SSID and BSSID from [WifiManager.getConnectionInfo], or null when Wi-Fi is down. It is
+     * deprecated but still returns the real values with fine location and location services on, on every
+     * API level we support; the NetworkCapabilities transportInfo path redacts them on API 31+ and
+     * misfires under VPNs, so it is not used. Callers gate this on [FingerprintMapping.wifiNameAllowed].
+     */
+    @Suppress("DEPRECATION") // connectionInfo is the only read that returns real values on every API level.
+    private fun wifiName(): Pair<String?, String?>? {
         val info = wifi?.connectionInfo ?: return null
         return info.ssid to info.bssid
     }
@@ -121,11 +153,12 @@ class AndroidFingerprintSource(
     /** Null when the network vanished between calls (no capabilities). */
     private fun candidate(network: Network): NetworkCandidate? {
         val caps = cm.getNetworkCapabilities(network) ?: return null
+        val isWifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
         return NetworkCandidate(
             isVpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
-            isWifiOrEthernet = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
+            isWifiOrEthernet = isWifi || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
             link = linkData(cm.getLinkProperties(network)),
+            isWifi = isWifi,
         )
     }
 

@@ -3,8 +3,7 @@ package io.github.devjardins.sidespeed.companion.net
 /**
  * What identifies a Trusted Network: gateway IP, subnet, DNS servers and, on desktop where readable
  * without prompts, the gateway MAC. The Wi-Fi name ([wifiSsid]) and access point ([wifiBssid]) only
- * when the user allowed it on Android, or readable without prompts on desktop; stored only in the
- * local settings file, never sent.
+ * on Android with the opt-in; stored only in the local settings file, never sent.
  *
  * [subnet] is "network-address/prefix" (see [Subnets.normalize]).
  */
