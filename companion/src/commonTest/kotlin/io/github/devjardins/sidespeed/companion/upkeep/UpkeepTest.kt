@@ -111,6 +111,20 @@ class UpkeepTest {
         assertTrue(scanner.calls.isEmpty())
     }
 
+    @Test fun runOnceUpgradesTheTrustedRecordWithNewFields() = runTest {
+        val store = InMemoryCompanionStore(emptyList(), listOf(homeNet))
+        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(wifiSsid = "Home") }).runOnce(Trigger.BACKGROUND)
+        assertFalse(report.gated)
+        assertEquals("Home", store.trustedNetworks().single().fingerprint.wifiSsid)
+    }
+
+    @Test fun runOnceNeverUpgradesAReadOnlyStore() = runTest {
+        val store = InMemoryCompanionStore(emptyList(), listOf(homeNet), savedByNewerVersion = true)
+        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(wifiSsid = "Home") }).runOnce(Trigger.BACKGROUND)
+        assertFalse(report.gated)
+        assertEquals(null, store.trustedNetworks().single().fingerprint.wifiSsid)
+    }
+
     @Test fun nullFingerprintIsGated() = runTest {
         val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
         val net = FakeNet().also { it.sessions["192.168.5.50"] = runningTv("SER-a") }

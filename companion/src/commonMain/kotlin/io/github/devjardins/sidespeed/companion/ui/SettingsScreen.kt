@@ -33,6 +33,8 @@ fun SettingsScreen(
     onRemoveTailnet: (String) -> Unit,
     onAbout: () -> Unit,
     onBack: () -> Unit,
+    wifiNameAccess: WifiNameAccess = WifiNameAccess.Unsupported,
+    onWifiNameChange: (Boolean) -> Unit = {},
 ) {
     val s = state.settings
     Column(
@@ -78,6 +80,13 @@ fun SettingsScreen(
             }
             val t = state.tailnet
             if (t == null || !t.ready) SsText("Tailscale is not connected.", Ss.caption)
+        }
+        // Android only: the Wi-Fi name needs a permission the desktop never asks for.
+        if (wifiNameAccess.supported) SsCard {
+            SsSwitchRow(Copy.WIFI_NAME_TITLE, s.useWifiName, onWifiNameChange)
+            SsText(Copy.WIFI_NAME_CAVEAT, Ss.caption)
+            if (!s.useWifiName) SsText(Copy.WIFI_NAME_OFF, Ss.caption)
+            if (!s.useWifiName && wifiNameAccess.granted()) SsText(Copy.WIFI_NAME_REVOKE, Ss.caption)
         }
         SsCard {
             SsText("Notifications", Ss.heading)

@@ -44,6 +44,8 @@ fun CompanionApp(
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
+    wifiNameAccess: WifiNameAccess = WifiNameAccess.Unsupported,
+    onWifiNameChange: (Boolean) -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
@@ -96,6 +98,7 @@ fun CompanionApp(
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
+                    wifiNameAccess, onWifiNameChange,
                 )
                 Screen.ABOUT -> AboutScreen(
                     aboutText = aboutText,

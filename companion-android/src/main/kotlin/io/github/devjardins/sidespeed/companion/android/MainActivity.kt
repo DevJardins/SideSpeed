@@ -31,6 +31,12 @@ class MainActivity : ComponentActivity() {
         skipNextOpen = savedInstanceState != null
         setContent {
             val state by vm.state.collectAsState()
+            val graph = (application as CompanionApplication).graph
+            // The Wi-Fi name permission dialog answers into the shared view-model flow (see WifiNamePermission).
+            val askWifiName = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+                graph.wifiName.deliver(grants[Manifest.permission.ACCESS_FINE_LOCATION] == true)
+            }
+            LaunchedEffect(Unit) { graph.wifiName.bind { askWifiName.launch(it) } }
             val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
             // The notification permission is asked only when the user turns notifications on (Android 13+).
             val previous = remember { arrayOf<Boolean?>(null) }
@@ -58,6 +64,8 @@ class MainActivity : ComponentActivity() {
                 updateState = updateState,
                 onCheckUpdates = updater::checkNow,
                 updateAction = { AndroidUpdateAction(updateState, updater) },
+                wifiNameAccess = vm.wifiName,
+                onWifiNameChange = vm::setUseWifiName,
             )
         }
     }

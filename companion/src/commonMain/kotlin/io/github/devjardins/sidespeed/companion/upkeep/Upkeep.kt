@@ -107,7 +107,14 @@ class Upkeep(
     private data class Checked(val tv: SavedTv, val gateClosed: Boolean = false, val attempted: Boolean = true)
 
     suspend fun runOnce(trigger: Trigger, onlyTvId: String? = null): UpkeepReport = mutex.withLock {
-        val lan = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
+        // A store saved by a newer copy is read-only: upkeep still checks and restarts, but saves nothing.
+        val readOnly = store.savedByNewerVersion
+        val fp = fingerprints.current()
+        val matched = TrustMatcher.currentTrusted(fp, store.trustedNetworks())
+        // A match on a record made before the gateway MAC or Wi-Fi name was read hardens that record.
+        val lan = if (fp != null && matched != null && !readOnly) {
+            TrustMatcher.upgraded(matched, fp)?.let { store.saveTrustedNetwork(it); it } ?: matched
+        } else matched
         val tailnet = currentOverlay()
         if (lan == null && tailnet == null) {
             return@withLock UpkeepReport(gated = true, visited = emptyMap(), restartedNames = emptyList())
@@ -118,8 +125,6 @@ class Upkeep(
         var overlayClosed = false
         var lanClosed = false
         val userAction = trigger == Trigger.APP_OPEN || trigger == Trigger.RESTART_NOW
-        // A store saved by a newer copy is read-only: upkeep still checks and restarts, but saves nothing.
-        val readOnly = store.savedByNewerVersion
         if (userAction && !readOnly && store.promptedHosts().isNotEmpty()) store.savePromptedHosts(emptyList())
 
         val scopeIds = setOfNotNull(lan?.id, tailnet?.id)

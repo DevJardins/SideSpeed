@@ -74,6 +74,14 @@ object Copy {
     const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
     const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
     const val UNREACHABLE = "Couldn't reach that address on this network"
+    const val WIFI_NAME_TITLE = "Use the Wi-Fi name to recognise this network"
+    const val WIFI_NAME_CAVEAT =
+        "Android calls this location access. " +
+            "SideSpeed only reads the Wi-Fi name and access point. It stays on this device."
+    const val WIFI_NAME_OFF =
+        "SideSpeed recognises this network by its router. " +
+            "Turning on the Wi-Fi name makes that harder to fake."
+    const val WIFI_NAME_REVOKE = "To stop it fully, turn off location access for SideSpeed in Android settings."
     const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
     const val NOT_CHECKED_HERE = "Not checked: not on its network"
     const val OLDER_COPY =
@@ -177,6 +185,7 @@ class CompanionViewModel(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { "tv-" + clock() + "-" + (counter++) },
     private val overlay: OverlayAccess? = null,
+    val wifiName: WifiNameAccess = WifiNameAccess.Unsupported,
 ) {
     private val overlayGate = overlay?.let(::OverlayGate)
 
@@ -526,6 +535,24 @@ class CompanionViewModel(
         }
     }
 
+    /**
+     * Turns the Wi-Fi name on (asking for location permission first) or off. Turning on without the
+     * permission leaves the switch off; turning off keeps the Android permission, which the user removes
+     * in system settings (Settings says so).
+     */
+    fun setUseWifiName(enabled: Boolean) {
+        locked {
+            val s = store.settings()
+            if (!enabled) {
+                if (s.useWifiName) store.saveSettings(s.copy(useWifiName = false))
+                refresh()
+                return@locked
+            }
+            if (wifiName.supported && wifiName.request()) store.saveSettings(s.copy(useWifiName = true))
+            refresh()
+        }
+    }
+
     /** Re-reads the store and network into [state], for callers that ran upkeep themselves (the tray timers). */
     fun refreshNow() {
         locked { refresh() }
@@ -648,7 +675,13 @@ class CompanionViewModel(
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
-        val trusted = TrustMatcher.currentTrusted(fp, networks)
+        val matched = TrustMatcher.currentTrusted(fp, networks)
+        // A match on a record made before the gateway MAC or Wi-Fi name was read hardens that record.
+        val upgraded = if (fp != null && matched != null) TrustMatcher.upgraded(matched, fp) else null
+        if (upgraded != null) store.saveTrustedNetwork(upgraded)
+        val trusted = upgraded ?: matched
+        // The upgrade above rewrote the record, so the state reads the saved copy.
+        val networksNow = if (upgraded != null) store.trustedNetworks() else networks
         val overlays = store.trustedOverlays()
         val tailnet = overlay?.source?.snapshot()?.let { snap ->
             TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
@@ -682,7 +715,7 @@ class CompanionViewModel(
                 firstRun = networks.isEmpty() && overlays.isEmpty(),
                 currentNetwork = fp,
                 trustedNetworkName = trusted?.displayName,
-                trustedNetworks = networks,
+                trustedNetworks = networksNow,
                 trustedOverlays = overlays,
                 tailnet = tailnet,
                 tvs = cards,

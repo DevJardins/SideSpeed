@@ -6,6 +6,30 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AndroidFingerprintSourceTest {
+    @Test fun mapsQuotedSsidAndBssid() {
+        val data = LinkData(listOf("192.168.5.1"), listOf("192.168.5.23/24"), listOf("192.168.5.1"), "\"Home\"", "AA-BB-CC-DD-EE-FF")
+        assertEquals("Home", FingerprintMapping.map(data)?.wifiSsid)
+        assertEquals("aa:bb:cc:dd:ee:ff", FingerprintMapping.map(data)?.wifiBssid)
+    }
+
+    @Test fun redactedWifiValuesAreNull() {
+        assertNull(FingerprintMapping.cleanSsid("<unknown ssid>"))
+        assertNull(FingerprintMapping.cleanSsid("\"<unknown ssid>\""))
+        assertNull(FingerprintMapping.cleanSsid(null))
+        assertNull(FingerprintMapping.cleanSsid(""))
+        assertNull(FingerprintMapping.cleanBssid("02:00:00:00:00:00"))
+        assertNull(FingerprintMapping.cleanBssid(null))
+        assertNull(FingerprintMapping.cleanBssid("not-a-mac"))
+        assertEquals("aa:bb:cc:dd:ee:ff", FingerprintMapping.cleanBssid("AA-BB-CC-DD-EE-FF"))
+    }
+
+    @Test fun redactedWifiValuesMapToNulls() {
+        val data = LinkData(listOf("192.168.5.1"), listOf("192.168.5.23/24"), listOf("192.168.5.1"), "<unknown ssid>", "02:00:00:00:00:00")
+        val fp = FingerprintMapping.map(data)
+        assertNull(fp?.wifiSsid)
+        assertNull(fp?.wifiBssid)
+    }
+
     @Test fun mapsGatewaySubnetAndDns() {
         val data = LinkData(listOf("192.168.5.1"), listOf("192.168.5.23/24"), listOf("192.168.5.1"))
         assertEquals(NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"), ownIp = "192.168.5.23"), FingerprintMapping.map(data))

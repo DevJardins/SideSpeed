@@ -41,7 +41,8 @@ import kotlinx.coroutines.launch
 class Graph(app: Application, scope: CoroutineScope) {
     // The store keeps its own subdirectory; nothing outside it is touched.
     val store = JsonFileCompanionStore(java.io.File(app.filesDir, "companion"))
-    val fingerprints = AndroidFingerprintSource(app)
+    val wifiName = WifiNamePermission(app)
+    val fingerprints = AndroidFingerprintSource(app) { store.settings().useWifiName }
     val connector = KadbTvConnector(AndroidDirs.keyDir(app))
     @OptIn(ExperimentalCoroutinesApi::class)
     val scanner: Scanner = ProbeScanner(SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
@@ -56,7 +57,7 @@ class Graph(app: Application, scope: CoroutineScope) {
     )
 
     /** One view model for the whole process: rotating or recreating the Activity doesn't restart it. */
-    val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
+    val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope, wifiName = wifiName)
 
     /** Self-update: check state and installer for the About screen. */
     val updater = CompanionUpdater(
