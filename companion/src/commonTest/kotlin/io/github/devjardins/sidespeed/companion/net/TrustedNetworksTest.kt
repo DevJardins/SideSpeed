@@ -12,9 +12,7 @@ class TrustedNetworksTest {
         subnet: String = "192.168.5.0/24",
         dns: Set<String> = setOf("1.1.1.1", "192.168.5.1"),
         mac: String? = null,
-        ssid: String? = null,
-        bssid: String? = null,
-    ) = NetworkFingerprint(gw, subnet, dns, mac, ssid, bssid)
+    ) = NetworkFingerprint(gw, subnet, dns, mac)
 
     @Test fun identicalMatches() = assertTrue(TrustMatcher.matches(fp(), fp()))
     @Test fun differentGateway() = assertFalse(TrustMatcher.matches(fp(gw = "192.168.5.2"), fp()))
@@ -30,46 +28,24 @@ class TrustedNetworksTest {
     @Test fun currentMacMissingWhenTrustedHasOneFails() =
         assertFalse(TrustMatcher.matches(fp(), fp(mac = "aa:bb:cc:dd:ee:01")))
 
-
-    @Test fun ssidEqualMatches() = assertTrue(TrustMatcher.matches(fp(ssid = "Home"), fp(ssid = "Home")))
-    @Test fun ssidMissingOnCurrentFails() = assertFalse(TrustMatcher.matches(fp(), fp(ssid = "Home")))
-    @Test fun ssidDifferingFails() = assertFalse(TrustMatcher.matches(fp(ssid = "Home"), fp(ssid = "Work")))
-    @Test fun ssidCaseDiffersFails() = assertFalse(TrustMatcher.matches(fp(ssid = "home"), fp(ssid = "Home")))
-    @Test fun ssidUntrimmedDiffersFails() = assertFalse(TrustMatcher.matches(fp(ssid = "Home "), fp(ssid = "Home")))
-    @Test fun ssidMissingOnTrustedIgnoresCurrent() =
-        assertTrue(TrustMatcher.matches(fp(ssid = "Home"), fp()))
-
-    @Test fun bssidAloneEqualMatches() =
-        assertTrue(TrustMatcher.matches(fp(bssid = "AA-BB-CC-DD-EE-FF"), fp(bssid = "aa:bb:cc:dd:ee:ff")))
-    @Test fun bssidAloneMissingOnCurrentFails() =
-        assertFalse(TrustMatcher.matches(fp(), fp(bssid = "aa:bb:cc:dd:ee:ff")))
-    @Test fun bssidAloneDifferingFails() =
-        assertFalse(TrustMatcher.matches(fp(bssid = "aa:bb:cc:dd:ee:01"), fp(bssid = "aa:bb:cc:dd:ee:02")))
-    @Test fun bssidIgnoredWhenTrustedHasSsid() =
-        assertTrue(TrustMatcher.matches(fp(ssid = "Home", bssid = "aa:bb:cc:dd:ee:02"), fp(ssid = "Home", bssid = "aa:bb:cc:dd:ee:01")))
-    @Test fun bssidMissingIgnoredWhenTrustedHasSsid() =
-        assertTrue(TrustMatcher.matches(fp(ssid = "Home"), fp(ssid = "Home", bssid = "aa:bb:cc:dd:ee:01")))
-    @Test fun bssidMissingOnTrustedIgnoresCurrent() =
-        assertTrue(TrustMatcher.matches(fp(bssid = "aa:bb:cc:dd:ee:ff"), fp()))
-
-    @Test fun upgradeAddsMissingFieldsOnly() {
+    @Test fun upgradeAddsMissingMac() {
         val record = TrustedNetwork("n", "N", fp())
-        val current = fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home", bssid = "11:22:33:44:55:66")
+        val current = fp(mac = "aa:bb:cc:dd:ee:ff")
         val upgraded = TrustMatcher.upgraded(record, current)
-        assertEquals(fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home", bssid = "11:22:33:44:55:66"), upgraded?.fingerprint)
+        assertEquals(fp(mac = "aa:bb:cc:dd:ee:ff"), upgraded?.fingerprint)
         assertEquals("n", upgraded?.id)
         assertEquals("N", upgraded?.name)
     }
 
-    @Test fun upgradeKeepsExistingFields() {
-        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home"))
-        val current = fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home", bssid = "11:22:33:44:55:66")
-        assertEquals(record.copy(fingerprint = record.fingerprint.copy(wifiBssid = "11:22:33:44:55:66")), TrustMatcher.upgraded(record, current))
+    @Test fun upgradeKeepsTheRecordedMac() {
+        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff"))
+        val current = fp(mac = "00:11:22:33:44:55")
+        assertNull(TrustMatcher.upgraded(record, current))
     }
 
     @Test fun upgradeIsNullWhenNothingToAdd() {
-        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home"))
-        val current = fp(mac = "aa:bb:cc:dd:ee:ff", ssid = "Home")
+        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff"))
+        val current = fp(mac = "aa:bb:cc:dd:ee:ff")
         assertNull(TrustMatcher.upgraded(record, current))
     }
     @Test fun macFormatsEqual() =

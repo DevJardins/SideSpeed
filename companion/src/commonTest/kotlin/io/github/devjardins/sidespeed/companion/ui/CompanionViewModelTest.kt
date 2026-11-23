@@ -13,7 +13,6 @@ import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
-import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvStatus
@@ -61,23 +60,12 @@ class CompanionViewModelTest {
         val fake: FakeTvSession,
         var fp: NetworkFingerprint?,
         val lan: FakeLan = FakeLan(),
-        wifiName: WifiNameAccess = WifiNameAccess.Unsupported,
     ) {
         val source = FingerprintSource { fp }
         val connector = fake.connector()
         val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner()) { 1_000_000L }
         val discovery = Discovery(listOf(SweepSource), lan)
-        val vm = CompanionViewModel(store, source, upkeep, connector, discovery, scope, { 1_000_000L }, { "tv-1" }, wifiName = wifiName)
-    }
-
-    /** A [WifiNameAccess] whose grant the test flips; requesting grants it. */
-    private class FakeWifiNameAccess(var allowed: Boolean = false) : WifiNameAccess {
-        override val supported = true
-        override fun granted() = allowed
-        override suspend fun request(): Boolean {
-            allowed = true
-            return true
-        }
+        val vm = CompanionViewModel(store, source, upkeep, connector, discovery, scope, { 1_000_000L }, { "tv-1" })
     }
 
     private fun TestScope.rig(trusted: Boolean, fake: FakeTvSession = tv()) = Rig(
@@ -96,91 +84,21 @@ class CompanionViewModelTest {
     }
 
     @Test
-    fun refreshUpgradesTheTrustedRecordWithNewFields() = runTest(UnconfinedTestDispatcher()) {
+    fun refreshUpgradesTheTrustedRecordWithTheGatewayMac() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.fp = home.copy(gatewayMac = "00:11:22:33:44:55", wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff")
+        r.fp = home.copy(gatewayMac = "00:11:22:33:44:55")
         r.vm.refreshNow()
         runCurrent()
-        assertEquals("Home", r.store.trustedNetworks().single().fingerprint.wifiSsid)
-        assertEquals("aa:bb:cc:dd:ee:ff", r.store.trustedNetworks().single().fingerprint.wifiBssid)
         assertEquals("00:11:22:33:44:55", r.store.trustedNetworks().single().fingerprint.gatewayMac)
     }
 
     @Test
     fun refreshNeverChangesExistingRecordFields() = runTest(UnconfinedTestDispatcher()) {
-        val stored = homeNet.copy(fingerprint = home.copy(wifiSsid = "Cabin"))
-        val r = Rig(this, InMemoryCompanionStore(networks = listOf(stored)), FakeTvSession(mapOf()), home.copy(wifiSsid = "Cabin"))
+        val stored = homeNet.copy(fingerprint = home.copy(gatewayMac = "00:11:22:33:44:55"))
+        val r = Rig(this, InMemoryCompanionStore(networks = listOf(stored)), FakeTvSession(mapOf()), home.copy(gatewayMac = "00:11:22:33:44:55"))
         r.vm.refreshNow()
         runCurrent()
         assertEquals(stored, r.store.trustedNetworks().single())
-    }
-
-    @Test
-    fun turningWifiNameOffClearsSsidAndBssidSoRecordsStillMatch() = runTest(UnconfinedTestDispatcher()) {
-        val record = homeNet.copy(
-            fingerprint = home.copy(gatewayMac = "00:11:22:33:44:55", wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff"),
-        )
-        val store = InMemoryCompanionStore(networks = listOf(record))
-        store.saveSettings(CompanionSettings(useWifiName = true))
-        val r = Rig(this, store, FakeTvSession(mapOf()), home.copy(gatewayMac = "00:11:22:33:44:55"))
-        r.vm.refreshNow()
-        runCurrent()
-        assertNull(r.vm.state.value.trustedNetworkName, "the SSID record does not match the SSID-less fingerprint")
-        r.vm.setUseWifiName(false)
-        runCurrent()
-        val saved = r.store.trustedNetworks().single().fingerprint
-        assertNull(saved.wifiSsid)
-        assertNull(saved.wifiBssid)
-        assertEquals("00:11:22:33:44:55", saved.gatewayMac, "the gateway MAC is untouched")
-        assertEquals(false, r.vm.state.value.settings.useWifiName)
-        assertEquals("Living room", r.vm.state.value.trustedNetworkName)
-    }
-
-    @Test
-    fun unreadableWifiNameFailsClosedWithAnExplanationFlag() = runTest(UnconfinedTestDispatcher()) {
-        val record = homeNet.copy(fingerprint = home.copy(wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff"))
-        val store = InMemoryCompanionStore(networks = listOf(record))
-        store.saveSettings(CompanionSettings(useWifiName = true))
-        val r = Rig(this, store, FakeTvSession(mapOf()), home)
-        r.vm.refreshNow()
-        runCurrent()
-        assertNull(r.vm.state.value.trustedNetworkName, "an SSID-less fingerprint never matches an SSID record")
-        assertEquals(true, r.vm.state.value.wifiNameUnreadable)
-    }
-
-    @Test
-    fun readableWifiNameLeavesNoFlagAndTrusts() = runTest(UnconfinedTestDispatcher()) {
-        val record = homeNet.copy(fingerprint = home.copy(wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff"))
-        val store = InMemoryCompanionStore(networks = listOf(record))
-        store.saveSettings(CompanionSettings(useWifiName = true))
-        val r = Rig(this, store, FakeTvSession(mapOf()), home.copy(wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff"))
-        r.vm.refreshNow()
-        runCurrent()
-        assertEquals("Living room", r.vm.state.value.trustedNetworkName)
-        assertEquals(false, r.vm.state.value.wifiNameUnreadable)
-    }
-
-    @Test
-    fun wifiNameGrantedFollowsThePermission() = runTest(UnconfinedTestDispatcher()) {
-        val access = FakeWifiNameAccess()
-        val r = Rig(this, InMemoryCompanionStore(), FakeTvSession(mapOf()), home, wifiName = access)
-        r.vm.refreshNow()
-        runCurrent()
-        assertEquals(false, r.vm.state.value.wifiNameGranted)
-        access.allowed = true
-        r.vm.refreshNow()
-        runCurrent()
-        assertEquals(true, r.vm.state.value.wifiNameGranted)
-    }
-
-    @Test
-    fun optInOffLeavesNoUnreadableFlag() = runTest(UnconfinedTestDispatcher()) {
-        val record = homeNet.copy(fingerprint = home.copy(wifiSsid = "Home"))
-        val r = Rig(this, InMemoryCompanionStore(networks = listOf(record)), FakeTvSession(mapOf()), home)
-        r.vm.refreshNow()
-        runCurrent()
-        assertNull(r.vm.state.value.trustedNetworkName)
-        assertEquals(false, r.vm.state.value.wifiNameUnreadable)
     }
 
     @Test

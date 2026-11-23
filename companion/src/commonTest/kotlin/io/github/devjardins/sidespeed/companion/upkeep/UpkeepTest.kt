@@ -111,18 +111,18 @@ class UpkeepTest {
         assertTrue(scanner.calls.isEmpty())
     }
 
-    @Test fun runOnceUpgradesTheTrustedRecordWithNewFields() = runTest {
+    @Test fun runOnceUpgradesTheTrustedRecordWithTheGatewayMac() = runTest {
         val store = InMemoryCompanionStore(emptyList(), listOf(homeNet))
-        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(wifiSsid = "Home") }).runOnce(Trigger.BACKGROUND)
+        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(gatewayMac = "00:11:22:33:44:55") }).runOnce(Trigger.BACKGROUND)
         assertFalse(report.gated)
-        assertEquals("Home", store.trustedNetworks().single().fingerprint.wifiSsid)
+        assertEquals("00:11:22:33:44:55", store.trustedNetworks().single().fingerprint.gatewayMac)
     }
 
     @Test fun runOnceNeverUpgradesAReadOnlyStore() = runTest {
         val store = InMemoryCompanionStore(emptyList(), listOf(homeNet), savedByNewerVersion = true)
-        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(wifiSsid = "Home") }).runOnce(Trigger.BACKGROUND)
+        val report = upkeep(store, FakeNet(), source = FingerprintSource { home.copy(gatewayMac = "00:11:22:33:44:55") }).runOnce(Trigger.BACKGROUND)
         assertFalse(report.gated)
-        assertEquals(null, store.trustedNetworks().single().fingerprint.wifiSsid)
+        assertEquals(null, store.trustedNetworks().single().fingerprint.gatewayMac)
     }
 
     @Test fun nullFingerprintIsGated() = runTest {

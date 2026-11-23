@@ -41,6 +41,23 @@ class JsonFileCompanionStoreTest {
         assertEquals(false, CompanionSettings().startAtLogin)
     }
 
+    @Test fun branchWifiFieldsAreIgnoredWhenLoading() = runBlocking {
+        // A file saved by this branch while it recorded the Wi-Fi name (schema v3): the trimmed
+        // build reads the record and settings without the Wi-Fi keys.
+        file.writeText(
+            """{"version":3,"trustedNetworks":[{"id":"n","name":"N","fingerprint":{"gatewayIp":"192.168.5.1","subnet":"192.168.5.0/24","dnsServers":["192.168.5.1"],"gatewayMac":"aa:bb:cc:dd:ee:ff","wifiSsid":"Home","wifiBssid":"aa:bb:cc:dd:ee:ff"}}],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false,"useWifiName":true}}""",
+        )
+        val s = JsonFileCompanionStore(dir)
+        assertEquals(
+            TrustedNetwork(
+                "n", "N",
+                NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"), "aa:bb:cc:dd:ee:ff"),
+            ),
+            s.trustedNetworks().single(),
+        )
+        assertEquals(CompanionSettings(), s.settings())
+    }
+
     @Test fun roundTripsAcrossInstances() = runBlocking {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv)
@@ -55,25 +72,6 @@ class JsonFileCompanionStoreTest {
         assertEquals(s.trustedNetworks(), r.trustedNetworks())
         assertEquals(CompanionSettings(true, 60, true), r.settings())
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".tmp") })
-    }
-
-    @Test fun wifiFingerprintFieldsAndSettingRoundTripAndOldFilesLoadWithNulls() = runBlocking {
-        val s = JsonFileCompanionStore(dir)
-        val withWifi = network.copy(fingerprint = network.fingerprint.copy(wifiSsid = "Home", wifiBssid = "aa:bb:cc:dd:ee:ff"))
-        s.saveTrustedNetwork(withWifi)
-        s.saveSettings(CompanionSettings(useWifiName = true))
-        val r = JsonFileCompanionStore(dir)
-        assertEquals(withWifi, r.trustedNetworks().single())
-        assertEquals(true, r.settings().useWifiName)
-
-        // A store written before the Wi-Fi fields existed has neither key.
-        file.writeText(
-            """{"version":2,"trustedNetworks":[{"id":"n","name":"N","fingerprint":{"gatewayIp":"192.168.5.1","subnet":"192.168.5.0/24","dnsServers":[],"gatewayMac":null}}],"settings":{}}""",
-        )
-        val old = JsonFileCompanionStore(dir)
-        assertEquals(null, old.trustedNetworks().single().fingerprint.wifiSsid)
-        assertEquals(null, old.trustedNetworks().single().fingerprint.wifiBssid)
-        assertEquals(false, old.settings().useWifiName)
     }
 
     @Test fun renamedAndClearedLabelsSurviveRestart() = runBlocking {
@@ -218,10 +216,10 @@ class JsonFileCompanionStoreTest {
     }
 
     @Test fun newerFileIsNeverRewrittenAndFlagIsSet() = runBlocking {
-        val original = """{"version":4,"tvs":[{"id":"tv1","name":"TV","address":"192.168.5.50","serial":"S","trustedNetworkId":"net1","status":"RUNNING"}],"trustedNetworks":[],"trustedOverlays":[],"promptedHosts":[],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false}}"""
+        val original = """{"version":3,"tvs":[{"id":"tv1","name":"TV","address":"192.168.5.50","serial":"S","trustedNetworkId":"net1","status":"RUNNING"}],"trustedNetworks":[],"trustedOverlays":[],"promptedHosts":[],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false}}"""
         file.writeText(original)
         val s = JsonFileCompanionStore(dir)
-        assertTrue(s.savedByNewerVersion, "a v4 file sets the newer-data flag")
+        assertTrue(s.savedByNewerVersion, "a v3 file sets the newer-data flag")
         assertEquals(listOf("tv1"), s.tvs().map { it.id }, "a newer file still loads what can be read")
         s.saveTv(tv.copy(id = "tv2", serial = "S2"))
         assertFalse(s.updateTv("tv1") { it.copy(name = "Renamed") })
@@ -233,7 +231,7 @@ class JsonFileCompanionStoreTest {
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") }, "no backup is taken for a newer file")
     }
 
-    @Test fun olderFileIsBackedUpOnFirstSaveThenWrittenAsV3() = runBlocking {
+    @Test fun olderFileIsBackedUpOnFirstSaveThenWrittenAsV2() = runBlocking {
         val original = """{"version":1,"tvs":[],"trustedNetworks":[],"settings":{}}"""
         file.writeText(original)
         File(dir, "companion.json.v9.bak").writeText("stale")
@@ -244,7 +242,7 @@ class JsonFileCompanionStoreTest {
         assertEquals(original, bak.readText(), "the original v1 file is kept next to the new one")
         assertEquals(null, dir.listFiles()!!.firstOrNull { it.name.endsWith(".v9.bak") }, "only the most recent backup is kept")
         val text = file.readText()
-        assertTrue(text.contains("\"version\":3"), "the upgraded file says v3: $text")
+        assertTrue(text.contains("\"version\":2"), "the upgraded file says v2: $text")
         assertEquals(60, JsonFileCompanionStore(dir).settings().intervalMinutes)
         s.saveSettings(CompanionSettings(intervalMinutes = 30))
         assertEquals(original, bak.readText(), "the backup is taken only on the first save")
@@ -258,7 +256,7 @@ class JsonFileCompanionStoreTest {
         assertFalse(s.savedByNewerVersion)
         s.saveSettings(CompanionSettings())
         assertEquals(original, File(dir, "${JsonFileCompanionStore.FILE_NAME}.v1.bak").readText())
-        assertTrue(file.readText().contains("\"version\":3"))
+        assertTrue(file.readText().contains("\"version\":2"))
     }
 
     @Test fun invalidVersionIsTreatedAsV1() = runBlocking {
@@ -274,7 +272,7 @@ class JsonFileCompanionStoreTest {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv)
         s.saveSettings(CompanionSettings(intervalMinutes = 60))
-        assertTrue(file.readText().contains("\"version\":3"), "fresh saves say v3")
+        assertTrue(file.readText().contains("\"version\":2"), "fresh saves say v2")
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") }, "no backup for a current file")
         val r = JsonFileCompanionStore(dir)
         assertFalse(r.savedByNewerVersion)
