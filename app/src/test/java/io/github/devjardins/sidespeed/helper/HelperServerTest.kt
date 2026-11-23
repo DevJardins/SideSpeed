@@ -209,6 +209,21 @@ class HelperServerTest {
         assertTrue(ran.isEmpty())
     }
 
+    @Test fun refusedRequestLoggedSanitized() {
+        start()
+        assertEquals("__END__:126", exchange("$nonce sh -c id\n").last())
+        assertTrue(
+            logs.toString(),
+            logs.any { it == "REFUSED request from uid=$allowed: 'sh -c id'" },
+        )
+        val big = "y".repeat(200)
+        assertEquals("__END__:126", exchange("$nonce $big\n").last())
+        assertTrue(
+            logs.toString(),
+            logs.any { it == "REFUSED request from uid=$allowed: '${"y".repeat(80)}…(200 bytes)'" },
+        )
+    }
+
     @Test fun overlongAndNonAsciiRequestsRefused() {
         start()
         assertEquals("__END__:126", exchange("$nonce dumpsys package com." + "a".repeat(600) + "\n").last())
