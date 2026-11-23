@@ -121,7 +121,7 @@ class AppUpdateCheckTest {
         store.setCheck(1_000L, good, "etag-1")
         val now = 1_000L + APP_UPDATES_INTERVAL_MS
         val check = AppUpdateCheck(
-            fetch = { AppUpdateOutcome.Data("""{"schema":2,"apps":{}}""", "etag-2") },
+            fetch = { AppUpdateOutcome.Data("""{"schema":3,"apps":{}}""", "etag-2") },
             store = store,
             clock = { now },
         )
@@ -129,6 +129,31 @@ class AppUpdateCheckTest {
         assertEquals(good, store.json.first())
         assertEquals("etag-1", store.etag.first())
         assertEquals(now, store.lastCheckMs.first())
+    }
+
+    @Test fun schema2BodyIsAccepted() = runTest {
+        val store = FakeAppUpdateStore()
+        val body = """{"schema":2,"apps":{"a.b":{"name":"A","versionName":"2"}}}"""
+        val check = AppUpdateCheck(
+            fetch = { AppUpdateOutcome.Data(body, "etag-1") },
+            store = store,
+            clock = { APP_UPDATES_INTERVAL_MS },
+        )
+        check.checkIfDue()
+        assertEquals(body, store.json.first())
+    }
+
+    @Test fun threeAndAHalfMBBodyIsAccepted() = runTest {
+        val store = FakeAppUpdateStore()
+        val padding = "x".repeat(3_600_000)
+        val body = """{"schema":2,"apps":{"a.b":{"name":"A","versionName":"2","page":"https://example.com/$padding"}}}"""
+        val check = AppUpdateCheck(
+            fetch = { AppUpdateOutcome.Data(body, "etag-1") },
+            store = store,
+            clock = { APP_UPDATES_INTERVAL_MS },
+        )
+        check.checkIfDue()
+        assertEquals(body, store.json.first())
     }
 
     @Test fun firstSuccessStoresEmptyCatalogBody() = runTest {

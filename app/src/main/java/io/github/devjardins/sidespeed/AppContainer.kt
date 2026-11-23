@@ -136,7 +136,7 @@ class AppContainer(context: Context) {
     /** Sideloaded-app update catalog: notify-only state, refreshed at most once per 24 h. */
     val appUpdateStore: AppUpdateStore by lazy { DataStoreAppUpdateStore(appContext) }
 
-    /** Fetches updates.json with the stored ETag; failures stay silent and keep the last good copy. */
+    /** Fetches updates-v2.json with the stored ETag; failures stay silent and keep the last good copy. */
     val appUpdateCheck: AppUpdateCheck by lazy {
         AppUpdateCheck(httpAppUpdateFetch(), appUpdateStore, System::currentTimeMillis)
     }
@@ -146,7 +146,8 @@ class AppContainer(context: Context) {
      * installs it through the helper, or the system installer when the helper is down.
      */
     val appUpdater: AppUpdater by lazy {
-        val fallback = FallbackInstaller(appContext)
+        // The Compile screen's retry button says "Try again", so the fallback names that.
+        val fallback = FallbackInstaller(appContext, "Try again")
         AppUpdater(
             download = UpdateDownload(UpdateDownload::httpOpen),
             readApkFacts = { readApkFacts(appContext.packageManager, it) },

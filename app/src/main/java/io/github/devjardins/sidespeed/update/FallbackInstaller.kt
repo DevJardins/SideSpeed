@@ -21,11 +21,18 @@ fun fallbackAction(sdk: Int, canRequest: Boolean): FallbackAction =
     if (sdk >= 26 && !canRequest) FallbackAction.OpenSettings else FallbackAction.Install
 
 /**
+ * The unknown-sources prompt, naming the flow's own retry button ("Retry" for
+ * self-updates, "Try again" for app updates), so the words match the button below.
+ */
+fun unknownSourcesMessage(retryLabel: String): String =
+    "Allow SideSpeed to install apps, then press $retryLabel."
+
+/**
  * System-installer fallback for when the helper is down: hands the verified APK to a
  * PackageInstaller session. Android shows its own confirmation, so [InstallOutcome.Started]
  * means the session was committed, not that the install finished.
  */
-class FallbackInstaller(private val context: Context) {
+class FallbackInstaller(private val context: Context, private val retryLabel: String = "Retry") {
     suspend fun install(apk: File): InstallOutcome = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val canRequest = if (Build.VERSION.SDK_INT >= 26) pm.canRequestPackageInstalls() else true
@@ -37,7 +44,7 @@ class FallbackInstaller(private val context: Context) {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     },
                 )
-                InstallOutcome.Failed(0, "Allow SideSpeed to install apps, then press Retry.")
+                InstallOutcome.Failed(0, unknownSourcesMessage(retryLabel))
             } catch (_: Exception) {
                 // No settings screen (some rooted ROMs): only the Downloader caption remains.
                 InstallOutcome.Failed(0, null)

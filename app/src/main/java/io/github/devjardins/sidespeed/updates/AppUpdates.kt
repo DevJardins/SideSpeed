@@ -10,13 +10,13 @@ import org.json.JSONObject
 const val APP_UPDATES_INTERVAL_MS = 24 * 60 * 60 * 1000L
 
 /**
- * Cap for the updates.json body: the real catalog holds thousands of
- * F-Droid/IzzyOnDroid entries (~0.6-1 MB), so allow 3 MB before calling it a glitch.
+ * Cap for the updates-v2.json body: the real catalog holds thousands of
+ * F-Droid/IzzyOnDroid entries (~3.05 MB), so allow 8 MB before calling it a glitch.
  */
-const val APP_UPDATES_MAX_BYTES = 3 * 1024 * 1024L
+const val APP_UPDATES_MAX_BYTES = 8 * 1024 * 1024L
 
 /**
- * One catalog entry from updates.json. Only the version name is required;
+ * One catalog entry from updates-v2.json. Only the version name is required;
  * the source and links are all optional. The catalog's version code, when
  * present, is ignored: catalog codes can differ from the installed build
  * (e.g. per-ABI codes), so the version name alone decides.
@@ -65,9 +65,10 @@ data class AvailableUpdate(
 }
 
 /**
- * Parses the updates.json catalog. Unknown fields are ignored. Returns null
- * when the payload is not a schema-1 catalog (wrong or missing schema,
- * truncated JSON), so callers keep the last good copy instead.
+ * Parses the updates-v2.json catalog. Unknown fields are ignored. Returns null
+ * when the payload is not a schema-1 or schema-2 catalog (wrong or missing schema,
+ * truncated JSON), so callers keep the last good copy instead. updates.json stays
+ * schema 1 with no `apk` for old apps; v2 adds `apk` with the same entry shape.
  *
  * When [installedPackages] is given, only entries for those packages are
  * kept, so the in-memory map stays small against a thousand-entry catalog.
@@ -78,7 +79,7 @@ fun parseAppUpdates(json: String, installedPackages: Set<String>? = null): Map<S
     } catch (_: JSONException) {
         return null
     }
-    if (root.optInt("schema", -1) != 1) return null
+    if (root.optInt("schema", -1) != 1 && root.optInt("schema", -1) != 2) return null
     val apps = try {
         root.getJSONObject("apps")
     } catch (_: JSONException) {

@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.updates
 
+import io.github.devjardins.sidespeed.helper.HelperMain
 import io.github.devjardins.sidespeed.helper.InstallOutcome
 import io.github.devjardins.sidespeed.update.ApkFacts
 import io.github.devjardins.sidespeed.update.CONFIRM_POLL_MS
@@ -56,9 +57,20 @@ class AppUpdater(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val confirmTimeoutMs: Long = CONFIRM_TIMEOUT_MS,
     private val confirmPollMs: Long = CONFIRM_POLL_MS,
+    // How long a cut connection still gets to land: big APKs can install for minutes
+    // after the stream ends, so this shares the helper's own install deadline.
+    private val disconnectTimeoutMs: Long = HelperMain.INSTALL_WAIT_MS,
 ) {
     private val _state = MutableStateFlow<AppUpdateUiState>(AppUpdateUiState.Idle)
     val state: StateFlow<AppUpdateUiState> = _state.asStateFlow()
+
+    /**
+     * The package the state belongs to, or null when no update has started.
+     * Reopening the same app keeps its live state; the Compile screen resets
+     * only when a different package's update is idle or finished.
+     */
+    private val _pkg = MutableStateFlow<String?>(null)
+    val pkg: StateFlow<String?> = _pkg.asStateFlow()
 
     private var job: Job? = null
 
@@ -66,6 +78,7 @@ class AppUpdater(
     @Synchronized
     fun start(pkg: String, variant: ApkVariant, versionName: String) {
         if (job?.isActive == true) return
+        _pkg.value = pkg
         job = scope.launch {
             try {
                 execute(pkg, variant, versionName)
@@ -88,6 +101,7 @@ class AppUpdater(
     /** Back to idle, e.g. when the Compile screen opens for another app. Cancels a running update. */
     fun reset() {
         job?.cancel()
+        _pkg.value = null
         _state.value = AppUpdateUiState.Idle
     }
 
@@ -124,23 +138,25 @@ class AppUpdater(
         // runs exactly once whether the helper was never up or died on this attempt.
         val outcome = if (helperUp()) helperInstall(pkg, apk) else InstallOutcome.HelperDown
         when (outcome) {
-            // The helper died before or during the stream, or an impostor read the body and
-            // closed: the APK is untouched, so hand it to the fallback installer as-is.
+            // The helper died before any body byte: the APK is untouched, so hand it to the
+            // system installer instead. This fallback is only for HelperDown, never for a cut
+            // connection, where the helper's install may still be running.
             is InstallOutcome.HelperDown -> return finishFallback(apk)
             is InstallOutcome.Disconnected -> {
-                // A real install still lands as a version rise; otherwise fall back while the
-                // verified APK is still here.
-                if (awaitVersionRise(pkg, variant.versionCode)) {
+                // The install may still land minutes later (big APKs install slowly), so wait
+                // it out: only a risen versionCode makes Done, otherwise Failed, never the
+                // system installer on top of a running helper install.
+                if (awaitVersionRise(pkg, variant.versionCode, disconnectTimeoutMs)) {
                     deleteUpdateFiles()
                     _state.value = AppUpdateUiState.Done(versionName)
                 } else {
-                    return finishFallback(apk)
+                    return fail("Couldn't confirm the update. Check the app's version, then try again.")
                 }
             }
             is InstallOutcome.Started -> {
                 // END:0 is the helper's word, not proof: only a risen versionCode means the
                 // update landed; anything else is a failure.
-                if (awaitVersionRise(pkg, variant.versionCode)) {
+                if (awaitVersionRise(pkg, variant.versionCode, confirmTimeoutMs)) {
                     deleteUpdateFiles()
                     _state.value = AppUpdateUiState.Done(versionName)
                 } else {
@@ -153,8 +169,8 @@ class AppUpdater(
 
     /**
      * Hands [apk] to the system installer. The APK must still be present: this runs only when
-     * the helper path reported [InstallOutcome.HelperDown]/[InstallOutcome.Disconnected] without
-     * a confirmed install, and nothing above deletes files first.
+     * the helper was down before any body byte ([InstallOutcome.HelperDown]), and nothing
+     * above deletes files first.
      */
     private suspend fun finishFallback(apk: File) {
         when (val fb = fallbackInstall(apk)) {
@@ -169,11 +185,11 @@ class AppUpdater(
     }
 
     /**
-     * True when the installed versionCode reaches [target] within [confirmTimeoutMs].
+     * True when the installed versionCode reaches [target] within [timeoutMs].
      * Only a rise counts, never the helper's word alone.
      */
-    private suspend fun awaitVersionRise(pkg: String, target: Long): Boolean {
-        val deadline = System.currentTimeMillis() + confirmTimeoutMs
+    private suspend fun awaitVersionRise(pkg: String, target: Long, timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
         while (true) {
             val current = try {
                 installed(pkg).first

@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,6 +54,8 @@ import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
+import io.github.devjardins.sidespeed.updates.ApkVariant
+import io.github.devjardins.sidespeed.updates.AppUpdateUiState
 import io.github.devjardins.sidespeed.ui.setup.SetupScreen
 import io.github.devjardins.sidespeed.ui.setup.SetupViewModel
 import io.github.devjardins.sidespeed.ui.setup.StrategyReadier
@@ -379,26 +382,43 @@ class MainActivity : ComponentActivity() {
                         val container = (application as SideSpeedApp).container
                         val catalog by container.appUpdateCatalog.collectAsState(initial = emptyMap())
                         val available = updateFor(app, app.versionName, catalog[app.packageName])
-                        // A fresh screen starts the per-app flow idle; a running update from
-                        // another app is cancelled so the card never shows its progress.
+                        // Reopening the same app keeps its live update: reset only when a
+                        // different package's update is idle or finished, never while it runs.
+                        // Leaving the screen (Back) cancels nothing and is never blocked.
                         LaunchedEffect(app.packageName) {
-                            container.appUpdater.reset()
+                            val updater = container.appUpdater
+                            val current = updater.pkg.value
+                            if (current != null && current != app.packageName) {
+                                when (updater.state.value) {
+                                    is AppUpdateUiState.Downloading,
+                                    is AppUpdateUiState.Checking,
+                                    is AppUpdateUiState.Installing,
+                                        -> Unit // Another app is updating: leave it running.
+                                    else -> updater.reset()
+                                }
+                            }
                         }
-                        val pickedVariant = remember(available, app.packageName) {
-                            val variants = available?.apk.orEmpty()
-                            if (variants.isEmpty()) {
-                                null
-                            } else {
-                                pickVariant(
-                                    variants,
-                                    android.os.Build.SUPPORTED_ABIS.toList(),
-                                    android.os.Build.VERSION.SDK_INT,
-                                    app.versionCode,
-                                    installedSignerSha256(packageManager, app.packageName),
-                                )
+                        // Signer reads go through PackageManager: off the main thread.
+                        val pickedVariant by produceState<ApkVariant?>(
+                            null, available?.apk, app.packageName to app.versionCode,
+                        ) {
+                            value = withContext(Dispatchers.IO) {
+                                val variants = available?.apk.orEmpty()
+                                if (variants.isEmpty()) {
+                                    null
+                                } else {
+                                    pickVariant(
+                                        variants,
+                                        android.os.Build.SUPPORTED_ABIS.toList(),
+                                        android.os.Build.VERSION.SDK_INT,
+                                        app.versionCode,
+                                        installedSignerSha256(packageManager, app.packageName),
+                                    )
+                                }
                             }
                         }
                         val appUpdateState by container.appUpdater.state.collectAsState()
+                        val updatePkg by container.appUpdater.pkg.collectAsState()
                         CompileScreen(
                             compileVm, app, selectedMode,
                             icon = icons,
@@ -409,6 +429,7 @@ class MainActivity : ComponentActivity() {
                             availableUpdate = available,
                             pickedVariant = pickedVariant,
                             appUpdateState = appUpdateState,
+                            updatePkg = updatePkg,
                             onUpdateNow = {
                                 pickedVariant?.let { variant ->
                                     available?.let { update ->

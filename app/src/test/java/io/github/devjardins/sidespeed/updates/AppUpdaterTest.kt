@@ -59,6 +59,7 @@ class AppUpdaterTest {
         installed: (String) -> Pair<Long, Set<String>> = { 2L to signer },
         confirmTimeoutMs: Long = 200,
         confirmPollMs: Long = 5,
+        disconnectTimeoutMs: Long = 200,
         throttleMs: Long = 0,
         helperCalls: MutableList<String> = Collections.synchronizedList(mutableListOf()),
         fallbackCalls: MutableList<File> = Collections.synchronizedList(mutableListOf()),
@@ -90,6 +91,7 @@ class AppUpdaterTest {
             scope = scope,
             confirmTimeoutMs = confirmTimeoutMs,
             confirmPollMs = confirmPollMs,
+            disconnectTimeoutMs = disconnectTimeoutMs,
         )
     }
 
@@ -181,7 +183,7 @@ class AppUpdaterTest {
         assertFalse(updateFile().exists())
     }
 
-    @Test fun disconnected_without_rise_falls_back() = runBlocking {
+    @Test fun disconnected_without_rise_is_failed_not_fallback() = runBlocking {
         val bytes = "apk-bytes".toByteArray()
         val v = testVariant(bytes)
         val fallbackCalls = Collections.synchronizedList(mutableListOf<File>())
@@ -192,8 +194,86 @@ class AppUpdaterTest {
             fallbackCalls = fallbackCalls,
         )
         u.start(pkg, v, "2")
-        u.awaitState { it is AppUpdateUiState.AwaitingConfirmation }
-        awaitCalls(fallbackCalls)
+        val end = u.awaitState { it is AppUpdateUiState.Failed }
+        assertEquals(
+            "Couldn't confirm the update. Check the app's version, then try again.",
+            (end as AppUpdateUiState.Failed).reason,
+        )
+        assertTrue(fallbackCalls.isEmpty())
+        assertFalse(updateFile().exists())
+    }
+
+    @Test fun start_tracks_package() {
+        runBlocking {
+            val bytes = "apk-bytes".toByteArray()
+            val v = testVariant(bytes)
+            val u = updater(apkBytes = bytes, variant = v, throttleMs = 10)
+            u.start(pkg, v, "2")
+            u.awaitState { it is AppUpdateUiState.Downloading }
+            assertEquals(pkg, u.pkg.value)
+            u.cancel()
+            u.awaitState { it is AppUpdateUiState.Idle }
+        }
+    }
+
+    @Test fun done_keeps_package_until_reset() = runBlocking {
+        val bytes = "apk-bytes".toByteArray()
+        val v = testVariant(bytes)
+        val reads = AtomicInteger()
+        val u = updater(apkBytes = bytes, variant = v, installed = { (if (reads.incrementAndGet() <= 2) 2L else 3L) to signer })
+        u.start(pkg, v, "2")
+        u.awaitState { it is AppUpdateUiState.Done }
+        assertEquals(pkg, u.pkg.value)
+        u.reset()
+        assertEquals(AppUpdateUiState.Idle, u.state.value)
+        assertEquals(null, u.pkg.value)
+    }
+
+    @Test fun reset_cancels_running_update() = runBlocking {
+        val bytes = ByteArray(4 * 1024 * 1024) { it.toByte() }
+        val v = testVariant(bytes)
+        val u = updater(apkBytes = bytes, variant = v, throttleMs = 10)
+        u.start(pkg, v, "2")
+        u.awaitState { it is AppUpdateUiState.Downloading }
+        u.reset()
+        assertEquals(AppUpdateUiState.Idle, u.state.value)
+        assertEquals(null, u.pkg.value)
+        assertFalse(updateFile().exists())
+    }
+
+    @Test fun start_other_package_while_running_is_noop() = runBlocking {
+        val bytes = "apk-bytes".toByteArray()
+        val v = testVariant(bytes)
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val helperCalls = Collections.synchronizedList(mutableListOf<String>())
+        val installed = AtomicInteger(2)
+        val u = AppUpdater(
+            download = UpdateDownload(open = { url -> UpdateDownload.Opened(url, bytes.size.toLong(), bytes.inputStream()) }),
+            readApkFacts = { ApkFacts(pkg, v.versionCode, signer) },
+            installed = { installed.get().toLong() to signer },
+            helperUp = { true },
+            helperInstall = { p, _ ->
+                helperCalls += p
+                entered.complete(Unit)
+                release.await()
+                installed.set(3)
+                InstallOutcome.Started
+            },
+            fallbackInstall = { InstallOutcome.Started },
+            cacheDir = tmp.root,
+            freeSpace = { Long.MAX_VALUE },
+            confirmTimeoutMs = 2_000,
+            confirmPollMs = 5,
+        )
+        u.start(pkg, v, "2")
+        withTimeout(5_000) { entered.await() }
+        u.start("com.other.app", v, "2")
+        release.complete(Unit)
+        val end = u.awaitState { it is AppUpdateUiState.Done }
+        assertEquals(AppUpdateUiState.Done("2"), end)
+        assertEquals(pkg, u.pkg.value)
+        assertEquals(1, helperCalls.size)
     }
 
     @Test fun version_that_never_rises_is_failed_not_done() = runBlocking {

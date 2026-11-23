@@ -12,8 +12,9 @@ const val HELPER_PROTOCOL_VERSION = 2
  * its write side). One request per connection. The nonce matches [NONCE]: it lets this connection prove
  * it reached the real helper (see [PROVEN] and [ACK_DIR]).
  * Response: a first line [PROVEN], then the command's output lines (stdout and stderr merged),
- * then "__END__:<exit>". Requests the helper refuses get an "error: ..." line and [EXIT_REFUSED]
- * with no [PROVEN] line first.
+ * then "__END__:<exit>". Bad or missing nonces and malformed lines are refused with an "error: ..."
+ * line and [EXIT_REFUSED] with no [PROVEN] line first. Allowlist refusals (unknown commands and
+ * failed install-update package checks) come after [PROVEN] instead; see HelperServer.
  * `ping` is answered with [pong]; its proof is the same per-connection mechanism as every request.
  */
 object HelperProtocol {

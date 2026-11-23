@@ -41,6 +41,7 @@ import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
+import io.github.devjardins.sidespeed.ui.theme.SsRow
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsDimens
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
@@ -79,6 +80,7 @@ fun CompileScreen(
     availableUpdate: AvailableUpdate? = null,
     pickedVariant: ApkVariant? = null,
     appUpdateState: AppUpdateUiState = AppUpdateUiState.Idle,
+    updatePkg: String? = null,
     onUpdateNow: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
@@ -130,6 +132,7 @@ fun CompileScreen(
                     installedVersion = app.versionName ?: "unknown",
                     pickedVariant = pickedVariant,
                     updateState = appUpdateState,
+                    updatePkg = updatePkg,
                     onUpdateNow = onUpdateNow,
                 )
             }
@@ -256,8 +259,15 @@ private fun UpdateAvailableCard(
     installedVersion: String,
     pickedVariant: ApkVariant?,
     updateState: AppUpdateUiState,
+    updatePkg: String?,
     onUpdateNow: () -> Unit,
 ) {
+    // Another app's update is running: say so in plain text instead of offering
+    // Update now, and keep this card's QR below as the manual way.
+    val elsewhereRunning = updatePkg != null && updatePkg != update.packageName &&
+        (updateState is AppUpdateUiState.Downloading ||
+            updateState is AppUpdateUiState.Checking ||
+            updateState is AppUpdateUiState.Installing)
     SsCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Update available", style = SsType.Title, color = SsColors.TextPrimary)
@@ -269,7 +279,13 @@ private fun UpdateAvailableCard(
             updateSourceLine(update.source)?.let {
                 Text(it, style = SsType.Body, color = SsColors.TextBody)
             }
-            if (pickedVariant != null) {
+            if (elsewhereRunning) {
+                Text(
+                    "Another app is updating. Wait for it to finish.",
+                    style = SsType.Body,
+                    color = SsColors.TextBody,
+                )
+            } else if (pickedVariant != null) {
                 UpdateNowSection(pickedVariant, updateState, onUpdateNow)
             }
             val link = update.link
@@ -294,6 +310,8 @@ private fun UpdateAvailableCard(
  * The one-press update: a caveat plus Update now above the QR, then progress
  * while it runs. The button carries no focus requester, so opening the screen
  * still focuses Start compile first; it stays reachable by D-pad like the rest.
+ * Pressing it removes the focused button, so the progress line is focusable and
+ * takes focus instead; Try again takes focus on failure, the done line on success.
  */
 @Composable
 private fun UpdateNowSection(
@@ -301,6 +319,17 @@ private fun UpdateNowSection(
     updateState: AppUpdateUiState,
     onUpdateNow: () -> Unit,
 ) {
+    val progressFocus = remember { FocusRequester() }
+    val retryFocus = remember { FocusRequester() }
+    val doneFocus = remember { FocusRequester() }
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is AppUpdateUiState.Idle -> Unit
+            is AppUpdateUiState.Failed -> runCatching { retryFocus.requestFocus() }
+            is AppUpdateUiState.Done -> runCatching { doneFocus.requestFocus() }
+            else -> runCatching { progressFocus.requestFocus() }
+        }
+    }
     when (updateState) {
         is AppUpdateUiState.Idle -> {
             Text(
@@ -313,26 +342,36 @@ private fun UpdateNowSection(
             SsButton("Update now", onClick = onUpdateNow)
         }
         is AppUpdateUiState.Downloading -> {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SsSpinner(24.dp)
-                Text("Downloading… ${updateState.percent}%", style = SsType.Title, color = SsColors.TextPrimary)
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SsSpinner(24.dp)
+                    Text("Downloading… ${updateState.percent}%", style = SsType.Title, color = SsColors.TextPrimary)
+                }
             }
         }
         is AppUpdateUiState.Checking -> {
-            Text("Checking the download…", style = SsType.Title, color = SsColors.TextPrimary)
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Checking the download…", style = SsType.Title, color = SsColors.TextPrimary)
+            }
         }
         is AppUpdateUiState.Installing -> {
-            Text("Installing…", style = SsType.Title, color = SsColors.TextPrimary)
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Installing…", style = SsType.Title, color = SsColors.TextPrimary)
+            }
         }
         is AppUpdateUiState.AwaitingConfirmation -> {
-            Text("Your TV will ask you to confirm the install.", style = SsType.Body, color = SsColors.TextBody)
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
+                Text("Your TV will ask you to confirm the install.", style = SsType.Body, color = SsColors.TextBody)
+            }
         }
         is AppUpdateUiState.Done -> {
-            Text("Updated to ${updateState.versionName}.", style = SsType.Title, color = SsColors.Accent)
+            SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(doneFocus)) {
+                Text("Updated to ${updateState.versionName}.", style = SsType.Title, color = SsColors.Accent)
+            }
         }
         is AppUpdateUiState.Failed -> {
             Text(updateState.reason, style = SsType.Body, color = SsColors.TextBody)
-            SsButton("Try again", onClick = onUpdateNow)
+            SsButton("Try again", onClick = onUpdateNow, modifier = Modifier.focusRequester(retryFocus))
         }
     }
 }

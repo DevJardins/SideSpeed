@@ -19,4 +19,15 @@ class FallbackInstallerTest {
         assertEquals(FallbackAction.Install, fallbackAction(26, true))
         assertEquals(FallbackAction.Install, fallbackAction(36, true))
     }
+
+    @Test fun settings_message_names_the_flows_retry_button() {
+        assertEquals(
+            "Allow SideSpeed to install apps, then press Retry.",
+            unknownSourcesMessage("Retry"),
+        )
+        assertEquals(
+            "Allow SideSpeed to install apps, then press Try again.",
+            unknownSourcesMessage("Try again"),
+        )
+    }
 }

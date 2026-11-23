@@ -69,11 +69,26 @@ class AppUpdatesTest {
         assertEquals("2", parseAppUpdates(json)!!["a.b"]!!.versionName)
     }
 
+    @Test fun parseAcceptsSchema1And2() {
+        val one = parseAppUpdates(fixture)!!
+        val two = parseAppUpdates(fixture.replace("\"schema\": 1", "\"schema\": 2"))!!
+        assertEquals(one, two)
+    }
+
+    @Test fun parseAcceptsSchema2WithApk() {
+        val json = """{"schema":2,"apps":{"a.b":{"name":"A","versionName":"2","apk":[${variantJson()}]}}}"""
+        assertEquals(3L, parseAppUpdates(json)!!["a.b"]!!.apk.single().versionCode)
+    }
+
     @Test fun parseRejectsSchemaMismatch() {
-        assertNull(parseAppUpdates(fixture.replace("\"schema\": 1", "\"schema\": 2")))
+        assertNull(parseAppUpdates(fixture.replace("\"schema\": 1", "\"schema\": 3")))
         assertNull(parseAppUpdates("""{"apps": {}}"""))
         assertNull(parseAppUpdates("not json at all"))
         assertNull(parseAppUpdates(""))
+    }
+
+    @Test fun catalogCapIs8MB() {
+        assertEquals(8 * 1024 * 1024L, APP_UPDATES_MAX_BYTES)
     }
 
     @Test fun parseRejectsTruncatedBody() {
