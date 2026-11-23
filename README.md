@@ -83,6 +83,8 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 
 **Limits:** IPv6-only networks are never trusted. Find TVs sweeps the Trusted Network's own subnet (a large network shrinks to the /16 around this device or the gateway). You can also type a range from /16 to /30 on the same network instead.
 
+**Keeping the Companion up to date:** its About screen shows the installed version and checks for updates when it opens, or when you press **Check for updates**. On Android, **Update now** downloads the new APK, checks it, and installs it. On desktop, **Download** gets the installer for your system.
+
 ## Requirements and caveats
 
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
