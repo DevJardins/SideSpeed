@@ -26,6 +26,7 @@ kotlin {
             api(project(":shared"))
             api(libs.kotlinx.coroutines.core)
             implementation(libs.kadb)
+            implementation(libs.kadb.mdns)
             implementation(libs.jb.compose.runtime)
             implementation(libs.jb.compose.foundation)
             implementation(libs.jb.compose.ui)
@@ -33,6 +34,12 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+        }
+        getByName("desktopMain").dependencies {
+            implementation(libs.conscrypt.openjdk)
+        }
+        getByName("androidMain").dependencies {
+            implementation(libs.conscrypt.android)
         }
         getByName("desktopTest").dependencies {
             // Skiko natives for the host, so a desktop test can render a screen offscreen (screenshot check).

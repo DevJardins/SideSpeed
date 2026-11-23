@@ -116,7 +116,7 @@ class Discovery(
             DiscoveryEvent.Done(
                 DiscoverySummary(
                     scanned = targets.toSet(),
-                    // TLS answers, but this companion can't use it: it is reported as unsupported, not counted here.
+                    // A TLS answer is ADB, so it is not counted as a host that doesn't speak ADB.
                     liveNonAdb = results.count { (_, r) -> r.hostIsLive && !r.isAdb },
                     truncated = truncated,
                 ),

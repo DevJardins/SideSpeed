@@ -14,6 +14,7 @@ coreKtx = "1.17.0"
 libadbAndroid = "3.1.1"
 sunSecurityAndroid = "1.1"
 conscrypt = "2.5.3"
+conscryptOpenjdk = "2.5.2"
 hiddenapibypass = "6.1"
 zxing = "3.5.4"
 junit = "4.13.2"
@@ -45,6 +46,7 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 libadb-android = { module = "com.github.MuntashirAkon:libadb-android", version.ref = "libadbAndroid" }
 sun-security-android = { module = "com.github.MuntashirAkon:sun-security-android", version.ref = "sunSecurityAndroid" }
 conscrypt-android = { module = "org.conscrypt:conscrypt-android", version.ref = "conscrypt" }
+conscrypt-openjdk = { module = "org.conscrypt:conscrypt-openjdk-uber", version.ref = "conscryptOpenjdk" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -58,6 +60,7 @@ androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro
 androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "testExtJunit" }
 kadb = { module = "com.flyfishxu:kadb", version.ref = "kadb" }
+kadb-mdns = { module = "com.flyfishxu:kadb-mdns", version.ref = "kadb" }
 bouncycastle-bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bouncycastle" }
 bouncycastle-bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 bouncycastle-bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }

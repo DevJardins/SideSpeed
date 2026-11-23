@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.PromptedHost
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
@@ -33,7 +34,10 @@ class UpkeepTest {
     private val hour = 60 * 60 * 1000L
 
     private fun tv(id: String, address: String, serial: String = "SER-$id", net: String = "home", name: String = "TV $id") =
-        SavedTv(id = id, name = name, address = address, serial = serial, trustedNetworkId = net)
+        SavedTv(
+            id = id, name = name, address = address, serial = serial, trustedNetworkId = net,
+            link = TvLink.Classic(ackAtEpochMs = 1L),
+        )
 
     /** A TV whose helper runs and is current. */
     private fun runningTv(serial: String) = FakeTvSession(
@@ -618,5 +622,44 @@ class UpkeepTest {
         val scanner = FakeScanner(listOf("8.8.8.77"))
         upkeep(store, FakeNet(), scanner, FingerprintSource { pub }).runOnce(Trigger.BACKGROUND)
         assertTrue(scanner.calls.isEmpty(), "scanned ${scanner.calls}")
+    }
+
+    @Test fun anUnacknowledgedClassicTvIsNotContacted() = runTest {
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Classic(null))),
+            listOf(homeNet),
+        )
+        val net = FakeNet()
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertTrue(net.opened.isEmpty())
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
+    }
+
+    @Test fun classicIsLeftAloneWhenTheTvOffersTls() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = runningTv("SER-a") }
+        val check = Upkeep(
+            store, FingerprintSource { home }, net.connector, HelperKeeper(), FakeScanner(),
+            classicTls = { true },
+        ) { now }
+        check.runOnce(Trigger.BACKGROUND)
+        assertTrue(net.opened.isEmpty())
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
+    }
+
+    @Test fun anEncryptedTvWithNoPortNeedsAttentionAndIsNotRefound() = runTest {
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(null), offlineCount = 5)),
+            listOf(homeNet),
+        )
+        val net = FakeNet()
+        val scanner = FakeScanner(listOf("192.168.5.77"))
+        upkeep(store, net, scanner).runOnce(Trigger.BACKGROUND)
+        assertTrue(net.opened.isEmpty())
+        assertTrue(scanner.calls.isEmpty())
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
     }
 }

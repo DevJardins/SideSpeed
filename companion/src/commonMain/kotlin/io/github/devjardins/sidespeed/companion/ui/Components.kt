@@ -171,6 +171,37 @@ fun SsIconButton(onClick: () -> Unit, contentDescription: String, content: @Comp
     ) { content() }
 }
 
+/** Label on the left, a checkbox on the right. Focus and a press both toggle it. */
+@Composable
+fun SsCheckRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val hovered by source.collectIsHoveredAsState()
+    val ring by animateColorAsState(if (focused) Ss.accent else Color.Transparent, tween(150))
+    val rowShape = RoundedCornerShape(12.dp)
+    val boxShape = RoundedCornerShape(4.dp)
+    Row(
+        Modifier.fillMaxWidth()
+            .background(if (hovered) Ss.focusButton.copy(alpha = 0.5f) else Color.Transparent, rowShape)
+            .border(2.dp, ring, rowShape)
+            .hoverable(source)
+            .clickable(interactionSource = source, indication = null) { onChange(!checked) }
+            .focusable(true, source)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SsText(label, Ss.body.copy(color = Ss.textPrimary), Modifier.weight(1f))
+        Box(
+            Modifier.size(22.dp)
+                .background(if (checked) Ss.accent.copy(alpha = 0.35f) else Ss.raised, boxShape)
+                .border(2.dp, if (checked) Ss.accent else Ss.textSecondary, boxShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (checked) SsText("✓", Ss.body.copy(color = Ss.textPrimary))
+        }
+    }
+}
+
 /** Label on the left, an animated pill switch on the right. */
 @Composable
 fun SsSwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {

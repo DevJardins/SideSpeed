@@ -6,9 +6,14 @@ import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import com.flyfishxu.kadb.mdns.KadbMdnsAndroid
+import com.flyfishxu.kadb.mdns.MdnsConfig
+import com.flyfishxu.kadb.mdns.MdnsServiceType
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.KadbMdnsConnectPorts
 import io.github.devjardins.sidespeed.companion.discovery.MdnsSource
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.StlsOffer
 import io.github.devjardins.sidespeed.companion.discovery.SocketDatagramQuery
 import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
@@ -22,6 +27,7 @@ import io.github.devjardins.sidespeed.companion.android.update.readApkFacts
 import io.github.devjardins.sidespeed.companion.tv.AndroidDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
+import io.github.devjardins.sidespeed.companion.tv.kadbPairer
 import io.github.devjardins.sidespeed.companion.upkeep.Scanner
 import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
@@ -43,9 +49,17 @@ class Graph(app: Application, scope: CoroutineScope) {
     val store = JsonFileCompanionStore(java.io.File(app.filesDir, "companion"))
     val fingerprints = AndroidFingerprintSource(app)
     val connector = KadbTvConnector(AndroidDirs.keyDir(app))
+    val ports = KadbMdnsConnectPorts(open = {
+        KadbMdnsAndroid(app, MdnsConfig(serviceTypes = setOf(MdnsServiceType.TLS_CONNECT)))
+    })
+    val linkOffer = StlsOffer(SocketAdbProbe())
+    val pairer = kadbPairer(AndroidDirs.keyDir(app)) { store.tvs().map { it.address }.toSet() }
     @OptIn(ExperimentalCoroutinesApi::class)
     val scanner: Scanner = ProbeScanner(SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
-    val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner) { System.currentTimeMillis() }
+    val upkeep = Upkeep(
+        store, fingerprints, connector, HelperKeeper(), scanner,
+        ports = ports, classicTls = { linkOffer.encryptedAvailable(it) },
+    ) { System.currentTimeMillis() }
     val notifier = Notifier(app)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -56,7 +70,10 @@ class Graph(app: Application, scope: CoroutineScope) {
     )
 
     /** One view model for the whole process: rotating or recreating the Activity doesn't restart it. */
-    val viewModel = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope)
+    val viewModel = CompanionViewModel(
+        store, fingerprints, upkeep, connector, discovery, scope,
+        pairer = pairer, ports = ports, linkOffer = linkOffer,
+    )
 
     /** Self-update: check state and installer for the About screen. */
     val updater = CompanionUpdater(

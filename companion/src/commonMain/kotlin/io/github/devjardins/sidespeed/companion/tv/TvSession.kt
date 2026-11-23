@@ -22,7 +22,7 @@ fun interface TvConnector {
     suspend fun open(address: String, port: Int): TvSession
 
     companion object {
-        /** Classic ADB over TCP; the companion never pairs or uses TLS. */
+        /** Cleartext ADB. Encrypted TVs use a wireless-debugging port instead of this one. */
         const val DEFAULT_PORT = 5555
     }
 }

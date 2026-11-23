@@ -19,6 +19,8 @@ java {
 
 dependencies {
     implementation(project(":companion"))
+    implementation(libs.kadb.mdns)
+    implementation(libs.conscrypt.openjdk)
     implementation(compose.desktop.currentOs)
     implementation(libs.jb.compose.runtime)
     implementation(libs.jb.compose.foundation)
@@ -94,8 +96,8 @@ compose.desktop {
             description = "Keeps the SideSpeed helper running on your Fire TVs"
             vendor = "SideSpeed"
             licenseFile.set(rootProject.file("LICENSE"))
-            // Kadb and its crypto need these JDK modules in the trimmed runtime.
-            modules("java.naming", "java.sql", "jdk.crypto.ec", "jdk.unsupported")
+            // Kadb, Conscrypt and their crypto need these JDK modules in the trimmed runtime.
+            modules("java.instrument", "java.naming", "java.sql", "jdk.crypto.ec", "jdk.unsupported")
             macOS {
                 bundleID = "io.github.devjardins.sidespeed.companion"
                 dockName = "SideSpeed Companion"

@@ -218,6 +218,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                     "isFireTv" to t.isFireTv,
                     "overlayPeerId" to t.overlayPeerId,
                     "reach" to t.reach?.name,
+                    "link" to encodeLink(t.link),
                 )
             },
             "trustedNetworks" to s.networks.map { n ->
@@ -285,6 +286,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             isFireTv = m["isFireTv"] as? Boolean ?: true,
             overlayPeerId = (m["overlayPeerId"] as? String)?.takeIf { it.isNotEmpty() },
             reach = (m["reach"] as? String)?.let { name -> Reach.entries.firstOrNull { it.name == name } },
+            link = decodeLink(m["link"]),
         )
         return if (tv.id.isBlank() || tv.serial.isBlank()) null else tv
     }
@@ -316,6 +318,21 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
         )
     }
 
+    /** A missing or unrecognised link is the legacy classic connection, still waiting for the user. */
+    private fun decodeLink(v: Any?): TvLink {
+        val m = v as? Map<*, *> ?: return TvLink.Classic(ackAtEpochMs = null)
+        return when (m["type"]) {
+            "classic" -> TvLink.Classic(ackAtEpochMs = m.long("ackAtEpochMs"))
+            "encrypted" -> TvLink.Encrypted(lastPort = m.int("lastPort")?.takeIf { it in 1..65535 })
+            else -> TvLink.Classic(ackAtEpochMs = null)
+        }
+    }
+
+    private fun encodeLink(link: TvLink): Map<String, Any?> = when (link) {
+        is TvLink.Classic -> mapOf("type" to "classic", "ackAtEpochMs" to link.ackAtEpochMs)
+        is TvLink.Encrypted -> mapOf("type" to "encrypted", "lastPort" to link.lastPort)
+    }
+
     private fun Map<*, *>.long(key: String): Long? = this[key] as? Long
 
     private fun Map<*, *>.int(key: String): Int? =
@@ -328,8 +345,8 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
          * The schema version this build writes. Bump it whenever a saved field is added or a saved
          * field's meaning changes, so older builds go read-only instead of dropping what they don't
          * know. History: v1 was the original schema; v2 added `trustedOverlays`, the TV's
-         * `overlayPeerId` binding, and `reach`.
+         * `overlayPeerId` binding, and `reach`; v3 added the TV's `link`.
          */
-        private const val VERSION = 2
+        private const val VERSION = 3
     }
 }

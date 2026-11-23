@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.companion.discovery.AdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.ConnectPortFinder
 import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.FakeLan
@@ -15,9 +16,12 @@ import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ActivityPhase
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
+import io.github.devjardins.sidespeed.companion.tv.PairResult
+import io.github.devjardins.sidespeed.companion.tv.Pairer
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
@@ -70,6 +74,10 @@ class CompanionViewModelTest {
         val discovery = Discovery(listOf(SweepSource), lan)
         val vm = CompanionViewModel(store, source, upkeep, connector, discovery, scope, { 1_000_000L }, { "tv-1" })
     }
+
+    private fun CompanionViewModel.addSaved(address: String) = addTvByAddress(address, acknowledged = true)
+
+    private val allowed = TvLink.Classic(ackAtEpochMs = 1L)
 
     private fun TestScope.rig(trusted: Boolean, fake: FakeTvSession = tv()) = Rig(
         this,
@@ -159,7 +167,7 @@ class CompanionViewModelTest {
     @Test
     fun addTvSavesSerialAndModelThenRunsUpkeep() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         val saved = r.store.tvs().single()
         assertEquals("SER-1", saved.serial)
         assertEquals("Fire TV Cube", saved.name)
@@ -172,7 +180,7 @@ class CompanionViewModelTest {
     @Test
     fun restartNowRunsRestartUpkeepClearingAllowFlag() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         r.store.updateTv("tv-1") { it.copy(skipBackgroundUntilUserAction = true) }
         r.vm.restartNow()
         assertEquals(false, r.store.tv("tv-1").skipBackgroundUntilUserAction)
@@ -181,7 +189,7 @@ class CompanionViewModelTest {
     @Test
     fun nonAmazonTvIsSavedWithGoogleTvNote() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true, fake = tv("Google"))
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertEquals(1, r.store.tvs().size)
         assertEquals(
             "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
@@ -193,7 +201,7 @@ class CompanionViewModelTest {
     @Test
     fun addingAnOverlayAddressIsAllowedAndConnects() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("100.101.102.103")
+        r.vm.addSaved("100.101.102.103")
         assertTrue("100.101.102.103:5555" in r.fake.opened)
         assertEquals("100.101.102.103", r.store.tvs().single().address)
     }
@@ -202,10 +210,10 @@ class CompanionViewModelTest {
     fun addPublicOrBadAddressConnectsToNothing() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         for (publicAddress in listOf("8.8.8.8", "172.32.0.1", "100.128.0.1", "127.0.0.1")) {
-            r.vm.addTvByAddress(publicAddress)
+            r.vm.addSaved(publicAddress)
             assertEquals(Copy.OUTSIDE_NETWORK, r.vm.state.value.error, publicAddress)
         }
-        r.vm.addTvByAddress("not-an-ip")
+        r.vm.addSaved("not-an-ip")
         assertEquals(Copy.BAD_ADDRESS, r.vm.state.value.error)
         assertTrue(r.fake.opened.isEmpty())
         assertTrue(r.store.tvs().isEmpty())
@@ -216,7 +224,7 @@ class CompanionViewModelTest {
         // 192.168.9.20 and 10.9.9.9 are private but outside the trusted 192.168.5.0/24 (a /22 or a second subnet).
         for (address in listOf("192.168.9.20", "10.9.9.9", "172.16.4.4")) {
             val r = rig(trusted = true)
-            r.vm.addTvByAddress(address)
+            r.vm.addSaved(address)
             assertEquals(setOf("$address:5555"), r.fake.opened.toSet(), address)
             assertEquals(address, r.store.tvs().single().address)
         }
@@ -226,7 +234,7 @@ class CompanionViewModelTest {
     fun privateAddressIsStillRefusedOffATrustedNetwork() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertEquals(Copy.NOT_TRUSTED_ADD, r.vm.state.value.error)
         assertTrue(r.fake.opened.isEmpty())
     }
@@ -234,13 +242,13 @@ class CompanionViewModelTest {
     @Test
     fun addErrorPathsShowMessagesAndSaveNothing() = runTest(UnconfinedTestDispatcher()) {
         val pending = rig(trusted = true, fake = tv().also { it.authPending = true })
-        pending.vm.addTvByAddress("192.168.5.20")
+        pending.vm.addSaved("192.168.5.20")
         assertEquals(Copy.ALLOW_STEP, pending.vm.state.value.error)
         val down = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
-        down.vm.addTvByAddress("192.168.5.20")
+        down.vm.addSaved("192.168.5.20")
         assertEquals(Copy.UNREACHABLE, down.vm.state.value.error)
         val blank = rig(trusted = true, fake = tv().also { it.outputs[TvCommands.SERIAL] = "" })
-        blank.vm.addTvByAddress("192.168.5.20")
+        blank.vm.addSaved("192.168.5.20")
         assertEquals(Copy.NO_SERIAL, blank.vm.state.value.error)
         assertTrue(pending.store.tvs().isEmpty() && down.store.tvs().isEmpty() && blank.store.tvs().isEmpty())
         assertEquals(false, blank.vm.state.value.busy)
@@ -249,7 +257,7 @@ class CompanionViewModelTest {
     @Test
     fun restartNowWithTvIdChecksOnlyThatTv() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         r.store.saveTv(r.store.tv("tv-1").copy(id = "tv-2", serial = "OTHER", address = "192.168.5.21"))
         r.fake.opened.clear()
         r.vm.restartNow("tv-1")
@@ -259,7 +267,7 @@ class CompanionViewModelTest {
     @Test
     fun restartNowOffTheTrustedNetworkIsNotChecked() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING))
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING, link = allowed))
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
         r.fake.opened.clear()
         r.vm.restartNow("tv-1")
@@ -270,7 +278,7 @@ class CompanionViewModelTest {
     @Test
     fun restartNowThatReachesARunningTvIsRestarted() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home"))
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", link = allowed))
         r.vm.restartNow("tv-1")
         assertEquals(RestartResult("tv-1", RestartOutcome.RESTARTED), r.vm.state.value.lastRestart)
         assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
@@ -279,7 +287,7 @@ class CompanionViewModelTest {
     @Test
     fun restartNowThatReachesAnOfflineTvIsChecked() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
-        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.NOT_RUNNING))
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.NOT_RUNNING, link = allowed))
         r.vm.restartNow("tv-1")
         assertEquals(RestartResult("tv-1", RestartOutcome.CHECKED), r.vm.state.value.lastRestart)
         assertEquals(listOf("192.168.5.20:5555"), r.fake.opened)
@@ -299,7 +307,7 @@ class CompanionViewModelTest {
     @Test
     fun removingOneTvKeepsTheOtherTvsAndTheNetwork() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         r.store.saveTv(r.store.tv("tv-1").copy(id = "tv-2", serial = "OTHER", address = "192.168.5.21"))
         r.vm.refreshNow()
         r.vm.removeTv("tv-1")
@@ -311,7 +319,7 @@ class CompanionViewModelTest {
     @Test
     fun removingTrustedNetworkRemovesItsTvsAndRetrustKeepsName() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         r.vm.trustCurrentNetwork("Renamed")
         assertEquals("Living room", r.store.trustedNetworks().single().name)
         r.vm.removeTrustedNetwork("home")
@@ -348,7 +356,7 @@ class CompanionViewModelTest {
     @Test
     fun successfulAddRecordsTheAddressAndClearsPending() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertEquals("192.168.5.20", r.vm.state.value.addedAddress)
         assertTrue(r.vm.state.value.adding.isEmpty())
         assertTrue(r.vm.state.value.addErrors.isEmpty())
@@ -357,9 +365,9 @@ class CompanionViewModelTest {
     @Test
     fun pressingAnAlreadyAddedAddressAgainDoesNothing() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         val opens = r.fake.opened.size
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertEquals(opens, r.fake.opened.size)
         assertEquals(1, r.store.tvs().size)
         assertEquals("192.168.5.20", r.vm.state.value.addedAddress)
@@ -368,12 +376,12 @@ class CompanionViewModelTest {
     @Test
     fun failedAddShowsAnErrorForThatAddressAndCanBeRetried() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true, fake = tv().also { it.failOnOpen = true })
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertEquals(Copy.UNREACHABLE, r.vm.state.value.addErrors["192.168.5.20"])
         assertTrue(r.vm.state.value.adding.isEmpty())
         assertNull(r.vm.state.value.addedAddress)
         r.fake.failOnOpen = false
-        r.vm.addTvByAddress("192.168.5.20")
+        r.vm.addSaved("192.168.5.20")
         assertTrue(r.vm.state.value.addErrors.isEmpty())
         assertEquals(1, r.store.tvs().size)
     }
@@ -648,7 +656,7 @@ class CompanionViewModelTest {
     }
 
     @Test
-    fun tlsHostIsListedAsUnsupportedNotAddable() = runTest(UnconfinedTestDispatcher()) {
+    fun tlsHostIsListedForPairing() = runTest(UnconfinedTestDispatcher()) {
         val script = allRefused("192.168.5.0/24")
         script[ip("192.168.5.10")] = listOf(ProbeResult.AdbTls)
         script[ip("192.168.5.11")] = listOf(ProbeResult.AdbAuthRequired)
@@ -656,20 +664,20 @@ class CompanionViewModelTest {
         vm.findTvs()
         runCurrent()
         assertEquals(listOf("192.168.5.11"), vm.state.value.found)
-        assertEquals(listOf("192.168.5.10"), vm.state.value.unsupported)
+        assertEquals(listOf("192.168.5.10"), vm.state.value.tlsHosts)
         assertEquals(Diagnosis.FOUND, vm.state.value.diagnosis)
     }
 
     @Test
-    fun tlsOnlySweepSaysTheDeviceNeedsTlsNotThatNothingHasAdb() = runTest(UnconfinedTestDispatcher()) {
+    fun tlsOnlySweepListsTheTvForPairing() = runTest(UnconfinedTestDispatcher()) {
         val script = allRefused("192.168.5.0/24")
         script[ip("192.168.5.10")] = listOf(ProbeResult.AdbTls)
         val vm = discoveryRig(FakeLan(script))
         vm.findTvs()
         runCurrent()
         assertTrue(vm.state.value.found.isEmpty())
-        assertEquals(listOf("192.168.5.10"), vm.state.value.unsupported)
-        assertEquals(Diagnosis.TLS_ONLY, vm.state.value.diagnosis)
+        assertEquals(listOf("192.168.5.10"), vm.state.value.tlsHosts)
+        assertEquals(Diagnosis.FOUND, vm.state.value.diagnosis)
     }
 
     @Test
@@ -761,7 +769,7 @@ class CompanionViewModelTest {
         val gate = CompletableDeferred<Unit>()
         val gated = TvConnector { address, port -> gate.await(); r.connector.open(address, port) }
         val vm = CompanionViewModel(r.store, r.source, r.upkeep, gated, Discovery(listOf(SweepSource), FakeLan(allRefused("192.168.5.0/24"))), this, { 1_000_000L }, { "tv-1" })
-        vm.addTvByAddress("192.168.5.77")
+        vm.addSaved("192.168.5.77")
         assertTrue(vm.state.value.busy)
         vm.findTvs()
         runCurrent()
@@ -800,7 +808,7 @@ class CompanionViewModelTest {
         val fake = tv()
         if (statusRow != null) fake.outputs[TvCommands.STATUS_QUERY] = statusRow
         val r = Rig(this, InMemoryCompanionStore(networks = if (trusted) listOf(homeNet) else emptyList()), fake, home)
-        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = status))
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = status, link = allowed))
         r.vm.refreshNow()
         runCurrent()
         return r
@@ -1017,5 +1025,72 @@ class CompanionViewModelTest {
         assertEquals(false, vm.state.value.scanning)
         assertEquals(listOf("192.168.5.30", "192.168.5.31"), vm.state.value.found)
         assertEquals(3, innerLan.calls.size)
+    }
+
+    @Test
+    fun classicHostIsNotSavedUntilTheAcknowledgementIsChecked() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.vm.addTvByAddress("192.168.5.20")
+        assertTrue(r.store.tvs().isEmpty())
+        assertTrue(r.fake.opened.isEmpty())
+        assertEquals(ClassicAck("192.168.5.20", checked = false), r.vm.state.value.classicAck)
+        r.vm.addTvByAddress("192.168.5.20", acknowledged = false)
+        assertTrue(r.store.tvs().isEmpty())
+        r.vm.addTvByAddress("192.168.5.20", acknowledged = true)
+        assertEquals(TvLink.Classic(1_000_000L), r.store.tvs().single().link)
+        assertTrue(r.fake.opened.any { it == "192.168.5.20:5555" })
+    }
+
+    @Test
+    fun tlsHostIsPairedThenSavedOnTheEncryptedPort() = runTest(UnconfinedTestDispatcher()) {
+        val seen = mutableListOf<String>()
+        val r = rig(trusted = true)
+        val vm = CompanionViewModel(
+            r.store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { host, port, code ->
+                seen += "$host:$port:$code"
+                PairResult.Paired
+            },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.addTvByAddress("192.168.5.20", acknowledged = true)
+        assertTrue(r.store.tvs().isEmpty())
+        assertEquals("192.168.5.20", vm.state.value.pairing?.address)
+        vm.submitPair("123456", "37000")
+        assertEquals(listOf("192.168.5.20:37000:123456"), seen)
+        assertEquals(TvLink.Encrypted(37_123), r.store.tvs().single().link)
+        assertTrue(r.fake.opened.none { it.endsWith(":5555") })
+        assertTrue(r.fake.opened.any { it == "192.168.5.20:37123" })
+    }
+
+    @Test
+    fun typedConnectPortIsSavedWhenMdnsFindsNone() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        val vm = CompanionViewModel(
+            r.store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { null },
+        )
+        vm.startPairing("192.168.5.20")
+        vm.submitPair("123456", "37000")
+        assertEquals(true, vm.state.value.pairing?.askConnectPort)
+        assertTrue(r.store.tvs().isEmpty())
+        vm.submitConnectPort("41000")
+        assertEquals(TvLink.Encrypted(41_000), r.store.tvs().single().link)
+        assertTrue(r.fake.opened.none { it.endsWith(":5555") })
+        assertTrue(r.fake.opened.any { it == "192.168.5.20:41000" })
+    }
+
+    @Test
+    fun aLegacyTvIsNotContactedUntilItIsAcknowledged() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", link = TvLink.Classic(null)))
+        r.vm.refreshNow()
+        assertEquals(TvAttention.LEGACY_ACK, r.vm.state.value.tvs.single().attention)
+        r.vm.onOpen()
+        assertTrue(r.fake.opened.isEmpty())
+        r.vm.acknowledgeClassic("tv-1")
+        assertEquals(TvLink.Classic(1_000_000L), r.store.tv("tv-1").link)
+        assertTrue(r.fake.opened.any { it == "192.168.5.20:5555" })
     }
 }

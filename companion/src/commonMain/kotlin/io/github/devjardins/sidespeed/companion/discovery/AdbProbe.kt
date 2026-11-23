@@ -24,7 +24,7 @@ enum class ProbeResult {
     /** Speaks ADB and accepted us without asking (CNXN banner). */
     AdbOpen,
 
-    /** Speaks ADB over TLS (STLS): debugging is on, but this companion can't use it. */
+    /** Speaks ADB over TLS (STLS): wireless debugging is on. */
     AdbTls,
 
     /** Something answered on the port but it isn't ADB (or said nothing, or hung up). */

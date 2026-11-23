@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryEvent
 import io.github.devjardins.sidespeed.companion.discovery.DiscoveryPlan
 import io.github.devjardins.sidespeed.companion.discovery.DiscoverySummary
+import io.github.devjardins.sidespeed.companion.discovery.ConnectPortFinder
 import io.github.devjardins.sidespeed.companion.discovery.ProbeResult
 import io.github.devjardins.sidespeed.companion.discovery.RangeChoice
 import io.github.devjardins.sidespeed.companion.discovery.diagnose
@@ -25,14 +26,23 @@ import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
+import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
+import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
+import io.github.devjardins.sidespeed.companion.tv.LinkOffer
+import io.github.devjardins.sidespeed.companion.tv.PairCopy
+import io.github.devjardins.sidespeed.companion.tv.PairResult
+import io.github.devjardins.sidespeed.companion.tv.Pairer
 import io.github.devjardins.sidespeed.companion.tv.TvActivity
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvSession
+import io.github.devjardins.sidespeed.companion.tv.TvSessions
+import io.github.devjardins.sidespeed.companion.tv.TvTarget
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
-import io.github.devjardins.sidespeed.companion.tv.open
 import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
@@ -60,7 +70,6 @@ object Copy {
     fun checkedAgo(diffMs: Long): String = "Checked ${(diffMs / 60_000).coerceAtLeast(0)} min ago"
 
     const val NO_TVS_FOUND = "No TVs found"
-    const val TLS_UNSUPPORTED = "needs TLS pairing, not supported yet"
     const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
     const val NOT_TRUSTED_ADD = "Join a Trusted Network to add a TV"
     const val NOT_FIRE_TV_NOTE =
@@ -69,6 +78,7 @@ object Copy {
     const val ALLOW_STEP = "Tick Always allow on your TV"
     const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
     const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
+    const val DIFFERENT_DEVICE = "A different device answered at that address."
     const val NO_OVERLAY = "Tailscale isn't running with a network connection, so there is no tailnet to trust"
     const val SHARED_PEER = "That device is shared in from another tailnet, so it can't be added"
     const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
@@ -79,6 +89,23 @@ object Copy {
     const val OLDER_COPY =
         "This copy of SideSpeed Companion is older than the one that saved your TVs. " +
             "Changes won't be saved; open the newest copy instead."
+    const val PAIR_STEPS =
+        "On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code."
+    const val PAIR_CODE = "Pairing code"
+    const val PAIR_PORT = "Port"
+    const val PAIR = "Pair"
+    const val CONNECT_PORT_HINT =
+        "Type the port shown on the TV's Wireless debugging screen (after the colon in the IP address)."
+    const val CLASSIC_ACK =
+        "This TV can't use an encrypted connection. SideSpeed can still connect the older way. " +
+            "Anyone on your network could see the commands it sends."
+    const val CLASSIC_ACK_CHECK = "I understand. Connect the older way."
+    const val PAIR_OFFER = "This TV can use an encrypted connection. Pair it to keep checking it."
+    const val NOT_CONTACTED = "SideSpeed isn't checking this TV until you choose."
+    const val WIRELESS_OFF = "Turn wireless debugging back on to keep this TV up to date."
+    const val TRY_AGAIN = "Try again"
+    const val TYPE_THE_PORT = "Type the port"
+    const val BAD_CONNECT_PORT = "Enter the port shown on the TV's Wireless debugging screen."
 
     fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
 
@@ -93,6 +120,7 @@ object Copy {
         TvStatus.NOT_INSTALLED -> "SideSpeed isn't installed"
         TvStatus.WRONG_DEVICE -> "Different device at this address"
         TvStatus.START_FAILED -> "Couldn't start the helper"
+        TvStatus.NEEDS_ATTENTION -> "Not checking"
         TvStatus.UNKNOWN -> "Not checked yet"
     }
 }
@@ -102,6 +130,20 @@ enum class RestartOutcome { RESTARTED, CHECKED, NOT_CHECKED }
 
 /** The outcome of the latest Restart-now press for [tvId]; cleared when the screen has shown it. */
 data class RestartResult(val tvId: String, val outcome: RestartOutcome)
+
+/** Why a saved TV is waiting on the user instead of being checked. */
+enum class TvAttention { NONE, LEGACY_ACK, LEGACY_PAIR, WIRELESS_OFF }
+
+/** Pairing a TV that speaks wireless debugging. [tvId] is set when this replaces a saved TV's link. */
+data class PairingForm(
+    val address: String,
+    val tvId: String? = null,
+    val error: String? = null,
+    val askConnectPort: Boolean = false,
+)
+
+/** The cleartext acknowledgment, shown before a classic TV is added. */
+data class ClassicAck(val address: String, val checked: Boolean = false)
 
 data class TvCardState(
     val id: String,
@@ -118,6 +160,8 @@ data class TvCardState(
     val reach: Reach? = null,
     /** The latest live compile status, while the Home screen polls for it; null when unknown. */
     val activity: TvActivity? = null,
+    /** What the Home card asks the user to do before this TV is checked again. */
+    val attention: TvAttention = TvAttention.NONE,
 )
 
 /** What Tailscale reports on this computer: its tailnet, whether it is trusted, and whether it can reach peers. */
@@ -145,8 +189,12 @@ data class CompanionUiState(
     val error: String? = null,
     /** Addresses of TVs found by "Find TVs" that aren't saved yet. */
     val found: List<String> = emptyList(),
-    /** Addresses that answer ADB over TLS: listed, but not offered as addable TVs. */
-    val unsupported: List<String> = emptyList(),
+    /** Addresses that answered with wireless debugging. Picking one opens pairing. */
+    val tlsHosts: List<String> = emptyList(),
+    /** Pairing in progress, or null when the form is closed. */
+    val pairing: PairingForm? = null,
+    /** A classic add waiting for the acknowledgment checkbox. */
+    val classicAck: ClassicAck? = null,
     /** Addresses whose add is in progress: their rows show "Adding…" and ignore presses. */
     val adding: Set<String> = emptyList<String>().toSet(),
     /** Per-address add failures, shown on the row that was pressed. */
@@ -177,8 +225,19 @@ class CompanionViewModel(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { "tv-" + clock() + "-" + (counter++) },
     private val overlay: OverlayAccess? = null,
+    private val pairer: Pairer = Pairer { _, _, _ -> PairResult.Failed(PairCopy.FAILED) },
+    private val ports: ConnectPortFinder = ConnectPortFinder { null },
+    private val linkOffer: LinkOffer = LinkOffer { false },
 ) {
     private val overlayGate = overlay?.let(::OverlayGate)
+    private val sessions = TvSessions(
+        connector,
+        store,
+        classicTls = { address -> linkOffer.encryptedAvailable(address) },
+        ports = ports,
+    )
+    /** Whether a saved classic TV offered TLS the last time Home asked. Avoids asking on every refresh. */
+    private val tlsOffer = mutableMapOf<String, Boolean>()
 
     private val _state = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
@@ -277,7 +336,11 @@ class CompanionViewModel(
      * Adds the TV at [address]. A press while that address is being added, or right after it was added, does
      * nothing. Success sets [CompanionUiState.addedAddress]; failure sets [CompanionUiState.addErrors] for it.
      */
-    fun addTvByAddress(address: String) {
+    /**
+     * Starts adding the TV at [address]. A classic TV is not contacted until [acknowledged] is true.
+     * A TV that offers wireless debugging opens the pairing form instead.
+     */
+    fun addTvByAddress(address: String, acknowledged: Boolean = false) {
         val a = address.trim()
         var accepted = false
         _state.update {
@@ -287,14 +350,97 @@ class CompanionViewModel(
         if (!accepted) return
         locked {
             try {
-                addTv(a)
+                addTv(a, acknowledged)
                 val failure = _state.value.error
+                val waiting = failure == null &&
+                    (_state.value.classicAck?.address == a || _state.value.pairing?.address == a)
                 _state.update {
-                    if (failure != null) it.copy(addErrors = it.addErrors + (a to failure)) else it.copy(addedAddress = a)
+                    when {
+                        failure != null -> it.copy(addErrors = it.addErrors + (a to failure))
+                        waiting -> it
+                        else -> it.copy(addedAddress = a)
+                    }
                 }
             } finally {
                 _state.update { it.copy(adding = it.adding - a) }
             }
+        }
+    }
+
+    /** The acknowledgment checkbox on the Add screen. */
+    fun setClassicChecked(checked: Boolean) {
+        _state.update { s -> s.classicAck?.let { s.copy(classicAck = it.copy(checked = checked)) } ?: s }
+    }
+
+    /** The Home card's Pair button: pair the saved TV at its current address. */
+    fun pairSaved(tvId: String) {
+        val tv = _state.value.tvs.firstOrNull { it.id == tvId } ?: return
+        startPairing(tv.address, tvId)
+    }
+
+    /** Opens the pairing form for [address]. [tvId] is set when pairing replaces a saved TV's link. */
+    fun startPairing(address: String, tvId: String? = null) {
+        _state.update { it.copy(pairing = PairingForm(address.trim(), tvId), classicAck = null, error = null) }
+    }
+
+    fun cancelPairing() {
+        _state.update { it.copy(pairing = null) }
+    }
+
+    /** Sends the 6-digit code and the pairing port, then looks up the connect port. */
+    fun submitPair(code: String, portText: String) {
+        val form = _state.value.pairing ?: return
+        locked {
+            val port = portText.trim().toIntOrNull()
+            val result = if (port == null) PairResult.Failed(PairCopy.BAD_PORT) else pairer.pair(form.address, port, code.trim())
+            if (result !is PairResult.Paired) {
+                _state.update { it.copy(pairing = form.copy(error = result.message())) }
+                return@locked
+            }
+            val connect = ports.find(form.address)?.takeIf { it != TvConnector.DEFAULT_PORT }
+            if (connect == null) {
+                _state.update { it.copy(pairing = form.copy(error = null, askConnectPort = true)) }
+                return@locked
+            }
+            saveEncrypted(form, connect)
+        }
+    }
+
+    /** The connect port typed from the TV's wireless debugging screen, after mDNS found none. */
+    fun submitConnectPort(portText: String) {
+        val form = _state.value.pairing ?: return
+        val port = portText.trim().toIntOrNull()
+        if (port == null || port !in 1..65535 || port == TvConnector.DEFAULT_PORT) {
+            _state.update { it.copy(pairing = form.copy(error = Copy.BAD_CONNECT_PORT)) }
+            return
+        }
+        locked { saveEncrypted(form, port) }
+    }
+
+    /** The one-time acknowledgment for a saved classic TV. Then it can be checked. */
+    fun acknowledgeClassic(tvId: String) {
+        locked {
+            val tv = store.tvs().firstOrNull { it.id == tvId } ?: return@locked
+            val link = tv.link
+            if (link !is TvLink.Classic || link.ackAtEpochMs != null) return@locked
+            store.updateTv(tvId) { it.copy(link = TvLink.Classic(clock())) }
+            tlsOffer.remove(tv.address)
+            runUpkeep(Trigger.APP_OPEN, tvId)
+        }
+    }
+
+    /** Stores a connect port the user typed for an encrypted TV, then checks it. */
+    fun useTypedPort(tvId: String, portText: String) {
+        val port = portText.trim().toIntOrNull()
+        if (port == null || port !in 1..65535 || port == TvConnector.DEFAULT_PORT) {
+            _state.update { it.copy(error = Copy.BAD_CONNECT_PORT) }
+            return
+        }
+        locked {
+            store.updateTv(tvId) { current ->
+                if (current.link is TvLink.Encrypted) current.copy(link = TvLink.Encrypted(port)) else current
+            }
+            runUpkeep(Trigger.APP_OPEN, tvId)
         }
     }
 
@@ -337,7 +483,7 @@ class CompanionViewModel(
                 scanning = true,
                 noneFound = false,
                 found = if (clearFound) emptyList() else it.found,
-                unsupported = if (clearFound) emptyList() else it.unsupported,
+                tlsHosts = if (clearFound) emptyList() else it.tlsHosts,
                 scanProgress = null,
                 scanStopped = false,
                 scanTruncated = false,
@@ -370,9 +516,8 @@ class CompanionViewModel(
                         // A run that never swept (no network, plan refused) has nothing to diagnose.
                         diagnosis = if (!swept && !cancelled) null else diagnose(
                             lastSummary.copy(liveNonAdb = liveNonAdbSinceFind.size),
-                            found = it.found.isNotEmpty(),
+                            found = it.found.isNotEmpty() || it.tlsHosts.isNotEmpty(),
                             complete = !cancelled,
-                            tlsOnly = it.found.isEmpty() && it.unsupported.isNotEmpty(),
                         ),
                     )
                 }
@@ -418,8 +563,8 @@ class CompanionViewModel(
                 is DiscoveryEvent.Found -> {
                     val host = event.address.toString()
                     _state.update { s ->
-                        if (host in saved || host in s.found || host in s.unsupported) s
-                        else if (event.result == ProbeResult.AdbTls) s.copy(unsupported = s.unsupported + host)
+                        if (host in saved || host in s.found || host in s.tlsHosts) s
+                        else if (event.result == ProbeResult.AdbTls) s.copy(tlsHosts = s.tlsHosts + host)
                         else s.copy(found = s.found + host)
                     }
                 }
@@ -435,17 +580,17 @@ class CompanionViewModel(
         }
         } catch (_: FindTrustLost) {
             val keptFound = _state.value.found
-            val keptUnsupported = _state.value.unsupported
+            val keptTls = _state.value.tlsHosts
             refresh(
                 error = Copy.NOT_TRUSTED_ERROR,
                 settleBusy = false,
                 retainFound = keptFound,
-                retainUnsupported = keptUnsupported,
+                retainTlsHosts = keptTls,
             )
             return false
         }
         refresh(error = if (swept) null else Copy.CANT_SCAN, settleBusy = false)
-        if (swept) _state.update { it.copy(noneFound = it.found.isEmpty()) }
+        if (swept) _state.update { it.copy(noneFound = it.found.isEmpty() && it.tlsHosts.isEmpty()) }
         return swept
     }
 
@@ -523,12 +668,12 @@ class CompanionViewModel(
 
     private suspend fun pollOneTv(tv: TvCardState) {
         try {
-            val saved = store.tvs().find { it.id == tv.id }
+            val saved = store.tvs().firstOrNull { it.id == tv.id } ?: return
             val newSession = tv.id !in pollSessions
-            val session = pollSessions.getOrPut(tv.id) { connector.open(tv.address) }
+            val session = pollSessions.getOrPut(tv.id) { sessions.open(saved) }
             if (newSession) {
                 val serial = session.run(TvCommands.SERIAL).trim()
-                if (serial != saved?.serial) {
+                if (serial != saved.serial) {
                     runCatching { pollSessions.remove(tv.id)?.close() }
                     pollFailures.remove(tv.id)
                     parkedTvIds += tv.id
@@ -612,7 +757,7 @@ class CompanionViewModel(
         return gate.verdict(bound, tv) is OverlayVerdict.Open
     }
 
-    private suspend fun addTv(address: String) {
+    private suspend fun addTv(address: String, acknowledged: Boolean) {
         if (!isIpv4(address)) return refresh(error = Copy.BAD_ADDRESS)
         val ip = Ipv4.parse(address)
         // A tailnet peer's address binds the TV to that peer on the trusted tailnet, which also works away from home.
@@ -633,23 +778,16 @@ class CompanionViewModel(
         // While on a Trusted Network any private (RFC 1918) or overlay (100.64.0.0/10) address may be tried; public addresses never are.
         if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
         val scopeId = binding?.overlay?.id ?: trusted!!.id
-        _state.update { it.copy(busy = true, error = null) }
-        val identity = try {
-            connector.open(address).use { session ->
-                // Fixed identity reads only; the serial is what upkeep later checks before anything else.
-                Triple(
-                    session.run(TvCommands.SERIAL),
-                    session.run(TvCommands.MODEL),
-                    session.run(TvCommands.MANUFACTURER),
-                )
-            }
-        } catch (e: TvAuthPending) {
-            return refresh(error = Copy.ALLOW_STEP)
-        } catch (e: TvUnreachable) {
-            return refresh(error = Copy.UNREACHABLE)
-        } catch (e: AdbConnectionLost) {
-            return refresh(error = Copy.UNREACHABLE)
+        if (address in _state.value.tlsHosts || linkOffer.encryptedAvailable(address) || ports.find(address) != null) {
+            _state.update { it.copy(pairing = PairingForm(address), classicAck = null, error = null) }
+            return
         }
+        if (!acknowledged) {
+            _state.update { it.copy(classicAck = ClassicAck(address), pairing = null, error = null) }
+            return
+        }
+        _state.update { it.copy(busy = true, error = null, classicAck = null) }
+        val identity = readIdentity(TvTarget("pending", address, TvLink.Classic(clock()))) ?: return
         val (serial, model, maker) = identity
         // The network may have changed during the connect: don't record a TV for a network we've left.
         val stillHere = if (binding != null) {
@@ -673,9 +811,101 @@ class CompanionViewModel(
                 trustedNetworkId = scopeId,
                 overlayPeerId = binding?.peer?.id,
                 isFireTv = maker.equals("Amazon", ignoreCase = true),
+                link = TvLink.Classic(clock()),
             ),
         )
+        _state.update { it.copy(classicAck = null, pairing = null) }
         runUpkeep(Trigger.APP_OPEN)
+    }
+
+    private suspend fun saveEncrypted(form: PairingForm, port: Int) {
+        if (!isIpv4(form.address)) return refresh(error = Copy.BAD_ADDRESS)
+        val ip = Ipv4.parse(form.address)
+        if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
+        val existing = form.tvId?.let { id -> store.tvs().firstOrNull { it.id == id } }
+        if (existing == null) {
+            val binding = overlayGate?.bindingFor(ip, store.trustedOverlays())
+            if (binding == null && AddressPolicy.isOverlay(ip) &&
+                overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
+            ) return refresh(error = Copy.SHARED_PEER)
+            if (binding == null && currentTrusted() == null) return refresh(error = Copy.NOT_TRUSTED_ADD)
+        }
+        _state.update { it.copy(busy = true, error = null) }
+        val identity = readIdentity(TvTarget(existing?.id ?: "pending", form.address, TvLink.Encrypted(port))) ?: run {
+            val message = _state.value.error
+            _state.update { it.copy(pairing = form.copy(error = message)) }
+            return
+        }
+        val (serial, model, maker) = identity
+        if (serial.isBlank()) {
+            _state.update { it.copy(pairing = form.copy(error = Copy.NO_SERIAL), error = Copy.NO_SERIAL, busy = false) }
+            return
+        }
+        if (existing != null) {
+            if (existing.serial != serial) {
+                _state.update { it.copy(pairing = form.copy(error = Copy.DIFFERENT_DEVICE), error = Copy.DIFFERENT_DEVICE, busy = false) }
+                return
+            }
+            store.updateTv(existing.id) {
+                it.copy(address = form.address, link = TvLink.Encrypted(port), status = TvStatus.UNKNOWN)
+            }
+            tlsOffer.remove(form.address)
+            _state.update { it.copy(pairing = null, addedAddress = form.address) }
+            runUpkeep(Trigger.APP_OPEN, existing.id)
+            return
+        }
+        val binding = overlayGate?.bindingFor(ip, store.trustedOverlays())
+        if (binding == null && AddressPolicy.isOverlay(ip) &&
+            overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
+        ) return refresh(error = Copy.SHARED_PEER)
+        val trusted = if (binding == null) currentTrusted() ?: return refresh(error = Copy.NOT_TRUSTED_ADD) else null
+        val scopeId = binding?.overlay?.id ?: trusted!!.id
+        val prior = store.tvs().firstOrNull {
+            it.serial == serial && (it.trustedNetworkId == scopeId || (binding == null && it.overlayPeerId == null))
+        }
+        store.saveTv(
+            SavedTv(
+                id = prior?.id ?: idGenerator(),
+                name = model.ifBlank { "TV at ${form.address}" },
+                address = form.address,
+                serial = serial,
+                trustedNetworkId = scopeId,
+                overlayPeerId = binding?.peer?.id,
+                isFireTv = maker.equals("Amazon", ignoreCase = true),
+                link = TvLink.Encrypted(port),
+            ),
+        )
+        _state.update { it.copy(pairing = null, classicAck = null, addedAddress = form.address) }
+        runUpkeep(Trigger.APP_OPEN)
+    }
+
+    /** Opens [target] and reads the fixed identity fields. On failure, records the error and returns null. */
+    private suspend fun readIdentity(target: TvTarget): Triple<String, String, String>? = try {
+        sessions.open(target).use { session ->
+            Triple(
+                session.run(TvCommands.SERIAL),
+                session.run(TvCommands.MODEL),
+                session.run(TvCommands.MANUFACTURER),
+            )
+        }
+    } catch (e: TvAuthPending) {
+        refresh(error = Copy.ALLOW_STEP)
+        null
+    } catch (e: EncryptedAvailable) {
+        _state.update { it.copy(pairing = PairingForm(target.address), classicAck = null, error = null, busy = false) }
+        null
+    } catch (e: ClassicNotAcknowledged) {
+        _state.update { it.copy(classicAck = ClassicAck(target.address), pairing = null, error = null, busy = false) }
+        null
+    } catch (e: TvUnreachable) {
+        refresh(error = Copy.UNREACHABLE)
+        null
+    } catch (e: EncryptedPortUnknown) {
+        refresh(error = Copy.UNREACHABLE)
+        null
+    } catch (e: AdbConnectionLost) {
+        refresh(error = Copy.UNREACHABLE)
+        null
     }
 
     private suspend fun refresh(
@@ -684,7 +914,7 @@ class CompanionViewModel(
         lastRestart: RestartResult? = null,
         updateLastRestart: Boolean = false,
         retainFound: List<String>? = null,
-        retainUnsupported: List<String>? = null,
+        retainTlsHosts: List<String>? = null,
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
@@ -697,8 +927,10 @@ class CompanionViewModel(
         activities.keys.retainAll(tvs.map { it.id }.toSet())
         val saved = tvs.map { it.address }.toSet()
         val cards = ArrayList<TvCardState>(tvs.size)
+        tlsOffer.keys.retainAll(tvs.map { it.address }.toSet())
         for (tv in tvs) {
             val here = checkableHere(tv, trusted, overlays)
+            val attention = attentionFor(tv)
             cards += TvCardState(
                 id = tv.id,
                 name = tv.name,
@@ -713,6 +945,7 @@ class CompanionViewModel(
                 scopeNote = if (tv.overlayPeerId == null && Ipv4.parse(tv.address)?.let(AddressPolicy::isOverlay) == true)
                     networks.firstOrNull { it.id == tv.trustedNetworkId }?.displayName?.let(Copy::keptAliveWhileOn)
                 else null,
+                attention = attention,
             )
         }
         _state.update {
@@ -731,9 +964,27 @@ class CompanionViewModel(
                 lastRestart = if (updateLastRestart) lastRestart else it.lastRestart,
                 error = error,
                 found = retainFound ?: if (trusted == null) emptyList() else it.found.filter { h -> h !in saved },
-                unsupported = retainUnsupported ?: it.unsupported,
+                tlsHosts = retainTlsHosts ?: if (trusted == null) emptyList() else it.tlsHosts.filter { h -> h !in saved },
             )
         }
+    }
+
+    private suspend fun attentionFor(tv: SavedTv): TvAttention {
+        val link = tv.link
+        return when {
+            link is TvLink.Encrypted && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.WIRELESS_OFF
+            link is TvLink.Classic && link.ackAtEpochMs == null ->
+                if (offersTls(tv.address)) TvAttention.LEGACY_PAIR else TvAttention.LEGACY_ACK
+            link is TvLink.Classic && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.LEGACY_PAIR
+            else -> TvAttention.NONE
+        }
+    }
+
+    private suspend fun offersTls(address: String): Boolean {
+        tlsOffer[address]?.let { return it }
+        val offered = linkOffer.encryptedAvailable(address) || ports.find(address) != null
+        tlsOffer[address] = offered
+        return offered
     }
 
     private fun isIpv4(s: String): Boolean {

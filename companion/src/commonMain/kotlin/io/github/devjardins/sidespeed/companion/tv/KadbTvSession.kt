@@ -17,9 +17,12 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 
 /**
- * Opens classic TCP ADB connections (`<ip>:5555`, no pairing or TLS) with Kadb (pinned to 2.1.4: 2.1.5 ships
- * Java 25 bytecode), using one key generated
- * on first use and persisted under [keyDir] (see [CompanionKeys]).
+ * Opens a TCP ADB connection with Kadb (pinned to 2.1.4: 2.1.5 ships Java 25 bytecode), using one key
+ * generated on first use and persisted under [keyDir] (see [CompanionKeys]).
+ *
+ * `Kadb.create` against a wireless-debugging connect port does the STLS handshake itself when the peer
+ * answers STLS, using the key [CompanionKeys] configured. Pairing ([kadbPairer]) writes that same key,
+ * so a paired TV accepts the connection without a separate TLS call.
  *
  * Failure mapping:
  * - anything that fails the connect or handshake (refused, no route, connect timeout, peer closed) → [TvUnreachable];

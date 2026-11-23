@@ -44,6 +44,12 @@ fun HomeScreen(
     onRemove: (String) -> Unit = {},
     onAcknowledgeRestart: () -> Unit = {},
     onVisibleChange: (Boolean) -> Unit = {},
+    onAcknowledge: (String) -> Unit = {},
+    onPair: (String) -> Unit = {},
+    onPort: (String, String) -> Unit = { _, _ -> },
+    onSubmitPair: (String, String) -> Unit = { _, _ -> },
+    onSubmitConnectPort: (String) -> Unit = {},
+    onCancelPair: () -> Unit = {},
 ) {
     DisposableEffect(Unit) {
         onVisibleChange(true)
@@ -126,8 +132,15 @@ fun HomeScreen(
                         tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
                         tv.scopeNote?.let { SsText(it, Ss.caption) }
                         TvActivityBlock(tv, now)
+                        if (tv.attention != TvAttention.NONE) {
+                            AttentionBlock(tv, state.pairing, onAcknowledge, onPair, onRestart, onPort, onSubmitPair, onSubmitConnectPort, onCancelPair)
+                        }
                         Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            SsButton("Restart now", { restartingId = tv.id; onRestart(tv.id) }, enabled = restartingId == null)
+                            SsButton(
+                                "Restart now",
+                                { restartingId = tv.id; onRestart(tv.id) },
+                                enabled = restartingId == null && tv.attention == TvAttention.NONE,
+                            )
                             if (restarting) SsSpinner()
                             when (messages[tv.id]?.outcome) {
                                 RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
@@ -149,5 +162,53 @@ fun HomeScreen(
             }
             SsButton("Add a TV", onAdd, primary = true, modifier = Modifier.fillMaxWidth())
         }
+    }
+}
+
+@Composable
+private fun AttentionBlock(
+    tv: TvCardState,
+    pairing: PairingForm?,
+    onAcknowledge: (String) -> Unit,
+    onPair: (String) -> Unit,
+    onRestart: (String?) -> Unit,
+    onPort: (String, String) -> Unit,
+    onSubmitPair: (String, String) -> Unit,
+    onSubmitConnectPort: (String) -> Unit,
+    onCancelPair: () -> Unit,
+) {
+    val form = pairing?.takeIf { it.tvId == tv.id }
+    if (form != null) {
+        PairingBlock(form, onSubmitPair, onSubmitConnectPort, onCancelPair)
+        return
+    }
+    when (tv.attention) {
+        TvAttention.LEGACY_ACK -> {
+            var checked by remember(tv.id) { mutableStateOf(false) }
+            SsText(Copy.NOT_CONTACTED, Ss.caption)
+            SsText(Copy.CLASSIC_ACK, Ss.caption)
+            SsCheckRow(Copy.CLASSIC_ACK_CHECK, checked) { checked = it }
+            SsButton("Continue", { onAcknowledge(tv.id) }, enabled = checked)
+        }
+        TvAttention.LEGACY_PAIR -> {
+            SsText(Copy.NOT_CONTACTED, Ss.caption)
+            SsText(Copy.PAIR_OFFER, Ss.caption)
+            SsButton(Copy.PAIR, { onPair(tv.id) })
+        }
+        TvAttention.WIRELESS_OFF -> {
+            var typing by remember(tv.id) { mutableStateOf(false) }
+            var port by remember(tv.id) { mutableStateOf("") }
+            SsText(Copy.WIRELESS_OFF, Ss.caption)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SsButton(Copy.TRY_AGAIN, { onRestart(tv.id) })
+                if (!typing) SsButton(Copy.TYPE_THE_PORT, { typing = true })
+            }
+            if (typing) {
+                SsText(Copy.CONNECT_PORT_HINT, Ss.caption)
+                SsTextField(port, { port = it }, "37123")
+                SsButton("Add", { onPort(tv.id, port) }, enabled = port.isNotBlank())
+            }
+        }
+        TvAttention.NONE -> Unit
     }
 }

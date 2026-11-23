@@ -86,10 +86,24 @@ fun CompanionApp(
                 Screen.HOME -> HomeScreen(
                     state, { vm.restartNow(it) }, { page = Page.ADD }, { page = Page.SETTINGS },
                     vm::removeTv, vm::acknowledgeRestart, onVisibleChange = vm::setHomeVisible,
+                    onAcknowledge = vm::acknowledgeClassic,
+                    onPair = vm::pairSaved,
+                    onPort = vm::useTypedPort,
+                    onSubmitPair = vm::submitPair,
+                    onSubmitConnectPort = vm::submitConnectPort,
+                    onCancelPair = vm::cancelPairing,
                 )
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
-                    AddTvScreen(state, vm::findTvsIn, vm::addTvByAddress, vm::cancelFind, vm::keepScanning) { page = Page.HOME }
+                    AddTvScreen(
+                        state, vm::findTvsIn, vm::addTvByAddress, vm::cancelFind, vm::keepScanning,
+                        onBack = { page = Page.HOME },
+                        onClassicCheck = vm::setClassicChecked,
+                        onStartPair = { vm.startPairing(it) },
+                        onSubmitPair = vm::submitPair,
+                        onSubmitConnectPort = vm::submitConnectPort,
+                        onCancelPair = vm::cancelPairing,
+                    )
                 }
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
