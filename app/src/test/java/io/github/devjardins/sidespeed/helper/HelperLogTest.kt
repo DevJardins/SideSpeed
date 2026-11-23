@@ -72,4 +72,55 @@ class HelperLogTest {
         assertEquals(listOf(rotated to "600".toInt(8)), calls)
         assertTrue(rotated.isFile)
     }
+
+    @Test fun existingLogChmoddedOnFirstWriteOnly() {
+        val log = tmp.root.resolve("sidespeed_helper.log")
+        log.writeText("old\n")
+        val rotated = tmp.root.resolve("sidespeed_helper.log.1")
+        val calls = mutableListOf<Pair<File, Int>>()
+        val privacy = HelperLog.LogPrivacy({ file, mode -> calls += file to mode })
+
+        privacy.afterWrite(log, rotated, created = false, didRotate = false)
+
+        assertEquals(listOf(log to "600".toInt(8)), calls)
+
+        privacy.afterWrite(log, rotated, created = false, didRotate = false)
+
+        assertEquals(1, calls.size)
+    }
+
+    @Test fun existingRotatedChmoddedOnFirstWrite() {
+        val log = tmp.root.resolve("sidespeed_helper.log")
+        log.writeText("old\n")
+        val rotated = tmp.root.resolve("sidespeed_helper.log.1")
+        rotated.writeText("older\n")
+        val calls = mutableListOf<Pair<File, Int>>()
+        val privacy = HelperLog.LogPrivacy({ file, mode -> calls += file to mode })
+
+        privacy.afterWrite(log, rotated, created = false, didRotate = false)
+
+        assertEquals(listOf(log to "600".toInt(8), rotated to "600".toInt(8)), calls)
+    }
+
+    @Test fun newFileChmoddedAfterCreation() {
+        val log = tmp.root.resolve("sidespeed_helper.log")
+        val rotated = tmp.root.resolve("sidespeed_helper.log.1")
+        val calls = mutableListOf<Pair<File, Int>>()
+        val privacy = HelperLog.LogPrivacy({ file, mode -> calls += file to mode })
+
+        privacy.afterWrite(log, rotated, created = true, didRotate = false)
+
+        assertEquals(listOf(log to "600".toInt(8)), calls)
+    }
+
+    @Test fun rotatedChmoddedAfterRotate() {
+        val log = tmp.root.resolve("sidespeed_helper.log")
+        val rotated = tmp.root.resolve("sidespeed_helper.log.1")
+        val calls = mutableListOf<Pair<File, Int>>()
+        val privacy = HelperLog.LogPrivacy({ file, mode -> calls += file to mode })
+
+        privacy.afterWrite(log, rotated, created = true, didRotate = true)
+
+        assertEquals(listOf(rotated to "600".toInt(8), log to "600".toInt(8)), calls)
+    }
 }

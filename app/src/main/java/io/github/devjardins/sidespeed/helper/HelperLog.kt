@@ -33,4 +33,29 @@ object HelperLog {
     fun ensurePrivate(file: File, chmod: (file: File, mode: Int) -> Unit) {
         chmod(file, LOG_MODE)
     }
+
+    /**
+     * Chmods after one log write. [created] is whether this write created the log;
+     * [didRotate] whether this write moved the log to [rotated]. The log stays
+     * owner-only after creation and after rotation, and once on the first write of
+     * the process (so a log an older helper left world-readable is locked down);
+     * an existing [rotated] is locked down on that first write too.
+     * [chmod] and [exists] are injected so tests use fakes.
+     */
+    class LogPrivacy(
+        private val chmod: (file: File, mode: Int) -> Unit,
+        private val exists: (file: File) -> Boolean = { it.exists() },
+    ) {
+        private var firstWritePending = true
+
+        fun afterWrite(log: File, rotated: File, created: Boolean, didRotate: Boolean) {
+            if (didRotate) ensurePrivate(rotated, chmod)
+            if (created) ensurePrivate(log, chmod)
+            if (firstWritePending) {
+                firstWritePending = false
+                if (!created) ensurePrivate(log, chmod)
+                if (!didRotate && exists(rotated)) ensurePrivate(rotated, chmod)
+            }
+        }
+    }
 }

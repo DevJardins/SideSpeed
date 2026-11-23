@@ -337,6 +337,9 @@ object HelperMain {
         Os.chmod(file.path, mode)
     }
 
+    /** First-write lockdown for a log an older helper may have left world-readable. */
+    private val logPrivacy = HelperLog.LogPrivacy(::chmodLogFile)
+
     private val ackLock = Any()
 
     /**
@@ -365,13 +368,11 @@ object HelperMain {
             println(line)
             try {
                 val f = File(HelperProtocol.LOG_FILE)
-                if (f.length() >= LOG_MAX_BYTES) {
-                    val rotated = File(HelperProtocol.LOG_FILE + ".1")
-                    if (f.renameTo(rotated)) HelperLog.ensurePrivate(rotated, ::chmodLogFile)
-                }
+                val rotated = File(HelperProtocol.LOG_FILE + ".1")
+                val didRotate = f.length() >= LOG_MAX_BYTES && f.renameTo(rotated)
                 val created = !f.exists()
                 FileOutputStream(f, true).use { it.write((line + "\n").toByteArray()) }
-                if (created) HelperLog.ensurePrivate(f, ::chmodLogFile)
+                logPrivacy.afterWrite(f, rotated, created, didRotate)
             } catch (_: Throwable) {
                 // Log file unwritable: stdout only (which the launch command discards).
             }
