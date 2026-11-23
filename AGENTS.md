@@ -2,7 +2,8 @@
 
 Read this before any change. Every rule below is true of the current code;
 each cites the file or class that proves it. If a rule and the code disagree,
-the code wins: say so and do not follow the rule.
+stop and tell the owner which one is wrong before changing either;
+the code may have a bug.
 
 ## 1. Project map
 
@@ -31,8 +32,9 @@ the code wins: say so and do not follow the rule.
 - Use short sentences.
 - Use sentence case.
 - Say what is true and nothing more.
-- Never name third-party launchers anywhere:
-  not in UI copy, README, site, or notes.
+- Never name third-party home screen apps (launchers) anywhere:
+  UI copy, README, site or notes. Downloader (code 3503400),
+  the app used to get SideSpeed onto the TV, is not a launcher and may be named.
 - When no other home screen app is installed, the whole message is
   `ui/tools/HomeCard.kt`'s line:
   "Install another home screen app first, then come back here."
@@ -45,6 +47,8 @@ the code wins: say so and do not follow the rule.
 - SideSpeed tells the user what is out of date; it does not install other apps
   (see "Updates for sideloaded apps" in `README.md`).
 - The feature is "Trusted Network", never "home network".
+  In UI labels and titles it is "Trusted Network";
+  in running prose "trusted network" is fine.
   See `companion/.../ui/FirstRunScreen.kt`, `SettingsScreen.kt`, `HomeScreen.kt`.
 - State caveats plainly, next to the choice they qualify.
 - Setup warns that ADB debugging must stay on and that anyone
@@ -138,7 +142,7 @@ the code wins: say so and do not follow the rule.
 - The draft carries versioned files, `SHA256SUMS.txt`, and fixed-name copies
   (`SideSpeed.apk`, `SideSpeed-Companion.apk`, `.dmg`, `.msi`, `.deb`, `.rpm`)
   for the Downloader code and sidespeed.app links.
-- Publishing the draft is manual, by the owner.
+- Publishing the draft is manual and needs the owner's go-ahead.
 - Every release also updates sidespeed.app (separate repo:
   `/tv`, `/companion.apk`, `/mac`, `/windows`, `/linux` links and changelog).
 - Every release also updates the `README.md` feature and release sections.
@@ -169,5 +173,5 @@ the code wins: say so and do not follow the rule.
 - Never commit key material (`*.jks`, `*.keystore`, `keystore.properties`,
   passwords); keystores are gitignored and only the owner handles signing.
 - One PR per task, against `main`.
-- Never merge, tag, or publish: opening the PR is where agent work stops,
-  and releases are the owner's calls.
+- Never merge, tag, or publish unless the owner asked for it in this session.
+  Opening the PR is where worker tasks stop.
