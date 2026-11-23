@@ -156,7 +156,7 @@ internal class HelperServer(
         }
         val argv = CommandAllowlist.toArgv(request)
         if (argv == null) {
-            log("REFUSED request from uid=$uid: '$request'")
+            log("REFUSED request from uid=$uid: '${HelperLog.sanitize(request)}'")
             out.line("error: request not allowed")
             out.end(HelperProtocol.EXIT_REFUSED)
             return

@@ -332,6 +332,11 @@ object HelperMain {
         }
     }
 
+    /** Owner-only (0600) for the log and its rotation; failures stay inside log()'s catch. */
+    private fun chmodLogFile(file: File, mode: Int) {
+        Os.chmod(file.path, mode)
+    }
+
     private val ackLock = Any()
 
     /**
@@ -360,8 +365,13 @@ object HelperMain {
             println(line)
             try {
                 val f = File(HelperProtocol.LOG_FILE)
-                if (f.length() >= LOG_MAX_BYTES) f.renameTo(File(HelperProtocol.LOG_FILE + ".1"))
+                if (f.length() >= LOG_MAX_BYTES) {
+                    val rotated = File(HelperProtocol.LOG_FILE + ".1")
+                    if (f.renameTo(rotated)) HelperLog.ensurePrivate(rotated, ::chmodLogFile)
+                }
+                val created = !f.exists()
                 FileOutputStream(f, true).use { it.write((line + "\n").toByteArray()) }
+                if (created) HelperLog.ensurePrivate(f, ::chmodLogFile)
             } catch (_: Throwable) {
                 // Log file unwritable: stdout only (which the launch command discards).
             }
