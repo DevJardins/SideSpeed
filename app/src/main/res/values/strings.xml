@@ -147,7 +147,7 @@
     <string name="compile_launch_verdict_same">about the same</string>
     <!-- Launch time comparison verdict when after is at least 5% faster. %1$d is the percentage. -->
     <string name="compile_launch_verdict_faster">%1$d%% faster</string>
-    <!-- Launch time comparison verdict when after is at least 5% slower. -->
+    <!-- Launch time comparison verdict when after is at least 5% slower. English deliberately says "no faster", not "slower"; translate the meaning "not faster". -->
     <string name="compile_launch_verdict_slower">no faster</string>
     <!-- Keep: SideSpeed -->
     <string name="compile_launch_not_launchable">This app can\'t be opened from SideSpeed</string>
@@ -315,7 +315,7 @@
     <string name="tools_helper_down">Helper not running. Start the helper, then try again.</string>
     <!-- Error shown when the running helper binary is older than the app expects. -->
     <string name="tools_helper_outdated">Restart the helper to use this.</string>
-    <!-- Storage or memory size in megabytes. %1$s is the formatted integer. -->
+    <!-- Storage or memory size in megabytes. %1$s is a whole or one-decimal number, used on Tools and for update download sizes. -->
     <string name="tools_bytes_mb">%1$s MB</string>
     <!-- Storage or memory size in gigabytes. %1$s is the formatted decimal number. -->
     <string name="tools_bytes_gb">%1$s GB</string>

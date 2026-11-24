@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -277,15 +276,24 @@ fun CompileScreen(
 }
 
 /** "12 MB", "12.5 MB": the update download size in whole or one-decimal megabytes. */
-fun formatUpdateSize(size: Long): String {
+fun formatUpdateSize(size: Long): UiText {
     val tenths = ((size / 1_048_576.0) * 10).roundToInt()
-    return if (tenths % 10 == 0) "${tenths / 10} MB" else "${tenths / 10}.${tenths % 10} MB"
+    val number = if (tenths % 10 == 0) "${tenths / 10}" else "${tenths / 10}.${tenths % 10}"
+    return uiText(R.string.tools_bytes_mb, UiText.Ltr(number))
 }
 
 /** The host of an update URL ("f-droid.org"), or the URL itself when it has none. */
 fun updateHost(url: String): String =
     runCatching { java.net.URI(url).host?.takeIf { it.isNotBlank() } }.getOrNull()
         ?: url.substringAfter("https://").substringBefore('/')
+
+/** Update summary line with LTR-isolated size number and host name. */
+fun updateSummaryText(size: Long, url: String): UiText =
+    uiText(R.string.compile_update_summary, formatUpdateSize(size), UiText.Ltr(updateHost(url)))
+
+/** Update completion line with LTR-isolated version name. */
+fun updateDoneText(versionName: String): UiText =
+    uiText(R.string.compile_update_done, UiText.Ltr(versionName))
 
 /**
  * Update notice above the launch-time card: what is out, what is installed,
@@ -373,7 +381,7 @@ private fun UpdateNowSection(
     when (updateState) {
         is AppUpdateUiState.Idle -> {
             Text(
-                stringResource(R.string.compile_update_summary, formatUpdateSize(variant.size), updateHost(variant.url)),
+                updateSummaryText(variant.size, variant.url).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
@@ -409,7 +417,7 @@ private fun UpdateNowSection(
         is AppUpdateUiState.Done -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(doneFocus)) {
                 Text(
-                    stringResource(R.string.compile_update_done, updateState.versionName),
+                    updateDoneText(updateState.versionName).resolve(),
                     style = SsType.Title,
                     color = SsColors.Accent,
                 )
