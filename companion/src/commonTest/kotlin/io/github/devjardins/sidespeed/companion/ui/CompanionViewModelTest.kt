@@ -317,6 +317,32 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun refreshOnAnotherNetworkDoesNotProbeSavedTvs() = runTest(UnconfinedTestDispatcher()) {
+        var probes = 0
+        var lookups = 0
+        val store = InMemoryCompanionStore(networks = listOf(homeNet))
+        store.saveTv(
+            SavedTv(
+                "tv-1", "Cube", "192.168.5.20", "SER-1", "home",
+                status = TvStatus.NEEDS_ATTENTION, link = TvLink.Classic(null),
+            ),
+        )
+        val away = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        val source = FingerprintSource { away }
+        val connector = tv().connector()
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner()) { 1_000_000L }
+        CompanionViewModel(
+            store, source, upkeep, connector, Discovery(listOf(SweepSource), FakeLan()), this,
+            { 1_000_000L }, { "tv-1" },
+            ports = ConnectPortFinder { lookups += 1; null },
+            linkOffer = LinkOffer { probes += 1; false },
+        )
+        runCurrent()
+        assertEquals(0, probes)
+        assertEquals(0, lookups)
+    }
+
+    @Test
     fun aTvOnAnotherNetworkIsNotCheckableHere() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = true)
         r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home"))

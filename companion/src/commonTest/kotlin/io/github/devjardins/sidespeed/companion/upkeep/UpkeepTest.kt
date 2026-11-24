@@ -675,6 +675,23 @@ class UpkeepTest {
         assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
     }
 
+    @Test fun anEncryptedTvThatAnswersWithoutTlsNeedsAttentionAndIsNotCommanded() = runTest {
+        val session = runningTv("SER-a").also { it.tlsNegotiated = false }
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(37_000))),
+            listOf(homeNet),
+        )
+        val net = FakeNet().also {
+            it.anyPort = true
+            it.sessions["192.168.5.50"] = session
+        }
+        upkeep(store, net).runOnce(Trigger.BACKGROUND)
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        assertTrue(session.sent.isEmpty(), session.sent.joinToString())
+        assertTrue(session.closed)
+        assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
+    }
+
     @Test fun anEncryptedTvWithNoPortNeedsAttentionAndIsNotRefound() = runTest {
         val store = InMemoryCompanionStore(
             listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(null), offlineCount = 5)),

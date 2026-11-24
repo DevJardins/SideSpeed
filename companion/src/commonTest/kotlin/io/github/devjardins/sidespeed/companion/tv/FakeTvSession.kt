@@ -18,6 +18,9 @@ class FakeTvSession(
 ) : TvSession {
     val outputs: MutableMap<String, String> = outputs.toMutableMap()
 
+    /** Encrypted opens require this. Tests that stand in for a finished TLS handshake leave it true. */
+    override var tlsNegotiated: Boolean = true
+
     private val _sent = mutableListOf<String>()
     val sent: List<String> get() = _sent.toList()
 

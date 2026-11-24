@@ -20,7 +20,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.rules.Timeout
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.net.ConnectException
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -742,5 +745,84 @@ class HelperClientTest {
             handler = ::realHelper
         }
         assertEquals("runs that lost the last line", 0, lost)
+    }
+
+    @Test fun aNormalProofStillWorksAndAnEndlessLineStopsAtFourKiB() = runBlocking {
+        writePort()
+        val endless = EndlessNoNewline()
+        val closed = AtomicInteger()
+        var useEndless = false
+        val c = client(
+            connect = { port ->
+                connectPorts += port
+                if (!useEndless) Socket(loopback, server.localPort)
+                else CappedSocket(endless, closed)
+            },
+            retryDelaysMs = emptyList(),
+        )
+        assertEquals(HelperPing(2, "/x"), c.ping())
+        useEndless = true
+        val started = System.nanoTime()
+        assertNull(c.ping())
+        val tookMs = (System.nanoTime() - started) / 1_000_000
+        assertTrue("took $tookMs ms and read ${endless.reads} bytes", tookMs < 2_000 && endless.reads <= 4 * 1024)
+        assertEquals(1, closed.get())
+    }
+
+    @Test fun anEndlessInstallProofWritesNoBodyAndStopsAtFourKiB() = runBlocking {
+        writePort()
+        val endless = EndlessNoNewline()
+        val written = ByteArrayOutputStream()
+        var useEndless = false
+        val c = client(
+            connect = { port ->
+                connectPorts += port
+                if (!useEndless) Socket(loopback, server.localPort) else CappedSocket(endless, written = written)
+            },
+            retryDelaysMs = emptyList(),
+        )
+        assertEquals(HelperPing(2, "/x"), c.ping())
+        useEndless = true
+        val apk = tmp.newFile("update.apk")
+        apk.writeBytes("HELLO-APK".toByteArray())
+        assertEquals(InstallOutcome.HelperDown, c.installSelf(apk))
+        assertTrue("read ${endless.reads} bytes", endless.reads <= 4 * 1024)
+        assertFalse(written.toString(Charsets.US_ASCII.name()).contains("HELLO-APK"))
+    }
+
+    /** Never sends a newline. Throws past 64 KiB so a missing cap fails the test instead of filling the heap. */
+    private class EndlessNoNewline : InputStream() {
+        var reads = 0
+            private set
+
+        override fun read(): Int {
+            count(1)
+            return 'A'.code
+        }
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if (len <= 0) return 0
+            count(len)
+            java.util.Arrays.fill(b, off, off + len, 'A'.code.toByte())
+            return len
+        }
+
+        private fun count(n: Int) {
+            reads += n
+            if (reads > 64 * 1024) throw IOException("read past 4 KiB")
+        }
+    }
+
+    private class CappedSocket(
+        private val input: InputStream,
+        private val closed: AtomicInteger? = null,
+        private val written: ByteArrayOutputStream = ByteArrayOutputStream(),
+    ) : Socket() {
+        override fun getInputStream(): InputStream = input
+        override fun getOutputStream() = written
+        override fun setSoTimeout(timeout: Int) {}
+        override fun close() {
+            closed?.incrementAndGet()
+        }
     }
 }

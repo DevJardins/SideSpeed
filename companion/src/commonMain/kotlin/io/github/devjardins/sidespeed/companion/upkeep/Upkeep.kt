@@ -20,6 +20,7 @@ import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
 import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
 import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
+import io.github.devjardins.sidespeed.companion.tv.TlsNotNegotiated
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
@@ -82,7 +83,8 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   resets.
  * - A completed visit (other than WrongDevice) resets `offlineCount` and sets the status from the
  *   [VisitResult]; Started and Restarted add the TV's name to `restartedNames`.
- * - [ClassicNotAcknowledged], [EncryptedAvailable] and [EncryptedPortUnknown] are [TvStatus.NEEDS_ATTENTION].
+ * - [ClassicNotAcknowledged], [EncryptedAvailable], [EncryptedPortUnknown] and [TlsNotNegotiated]
+ *   are [TvStatus.NEEDS_ATTENTION]. A cleartext answer on an encrypted link is not treated as classic.
  *   Nothing is prompted: the Allow skip stays clear, and a subnet re-find is not started. The Home screen
  *   says what to do. Encrypted TVs are never re-found by a subnet sweep. A new connect port at the saved
  *   address comes from mDNS. When that address is gone, the same advertisement is matched by serial
@@ -389,6 +391,8 @@ class Upkeep(
     } catch (e: EncryptedAvailable) {
         Attempt.NeedsAttention
     } catch (e: EncryptedPortUnknown) {
+        Attempt.NeedsAttention
+    } catch (e: TlsNotNegotiated) {
         Attempt.NeedsAttention
     } catch (e: TvUnproven) {
         Attempt.Unproven
