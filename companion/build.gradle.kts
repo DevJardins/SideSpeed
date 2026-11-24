@@ -36,7 +36,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
         getByName("desktopMain").dependencies {
-            implementation(libs.conscrypt.openjdk)
+            implementation(libs.bouncycastle.bctls.jdk18on)
         }
         getByName("androidMain").dependencies {
             implementation(libs.conscrypt.android)
@@ -50,9 +50,9 @@ kotlin {
 
 // Dependabot: kadb 2.1.4 pulls bcprov/bcpkix/bcutil-jdk18on 1.84, and bcprov < 1.85
 // is flagged. The sibling app modules already force 1.85; do the same here for
-// the android, desktop and test graphs (this module's alignment keeps the
-// dependency-submission snapshot clean; companion-desktop's own constraint only
-// covers its own graph).
+// the android, desktop and test graphs, including bctls-jdk18on. This module's
+// alignment keeps the dependency-submission snapshot clean; companion-desktop's
+// own constraint only covers its own graph.
 val bouncyCastle = libs.versions.bouncycastle.get()
 configurations.matching { it.isCanBeResolved }.configureEach {
     resolutionStrategy.eachDependency {
