@@ -3,7 +3,12 @@ package io.github.devjardins.sidespeed.companion.store
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 
-enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, NEEDS_ATTENTION, UNKNOWN }
+enum class TvStatus {
+    RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, NEEDS_ATTENTION,
+    /** The identity check failed. Nothing opens this TV again; the user removes it and adds it again. */
+    CHECK_FAILED,
+    UNKNOWN,
+}
 
 /**
  * How the last check reached a TV: on the home network (a LAN address), over Tailscale (a 100.64.0.0/10

@@ -93,6 +93,16 @@ class TvIdentityTest {
         assertTrue(failed.closed)
     }
 
+    @Test fun aParkedTvIsNotOpened() = runBlocking {
+        val fake = FakeTvSession(mapOf(proveCommand() to goodLine(), TvCommands.SERIAL to "SER-1"))
+        val store = InMemoryCompanionStore(listOf(saved(unproven = true)))
+        assertFailsWith<TvUnproven> {
+            TvSessions(fake.connector(), store, identity = checker(nonce)).open(store.tv("tv-1"))
+        }
+        assertTrue(fake.opened.isEmpty())
+        assertTrue(fake.sent.isEmpty())
+    }
+
     @Test fun firstUseDoesNotWriteWhenTheSerialDoesNotMatch() = runBlocking {
         val fake = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER"))
         val store = InMemoryCompanionStore(listOf(saved(secret = null)))

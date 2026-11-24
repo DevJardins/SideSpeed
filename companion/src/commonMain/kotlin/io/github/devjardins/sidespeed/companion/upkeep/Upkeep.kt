@@ -89,6 +89,7 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   (`adb-<serial>-` plus a suffix). The new address and port are saved only while [gateOpen] is open,
  *   the host is a private IPv4 address, the connection works, and the serial there matches. A mismatch
  *   saves nothing.
+ * - A failed proof is [TvStatus.CHECK_FAILED]. The TV is parked and is not opened again.
  *
  * Runs are serialised: a second [runOnce] waits for the first.
  */
@@ -253,7 +254,7 @@ class Upkeep(
         return when (val r = refind(scanned, trusted, now)) {
             Refind.NotFound -> Checked(scanned)
             Refind.GateClosed -> Checked(scanned, gateClosed = true)
-            Refind.Unproven -> Checked(scanned.copy(unproven = true))
+            Refind.Unproven -> Checked(scanned.copy(unproven = true, status = TvStatus.CHECK_FAILED))
             is Refind.Found -> {
                 // The proof passed, so the new address is safe to keep even if the visit can't happen now.
                 // Reload the secret a proof just stored; [scanned] was copied before that write.
@@ -430,7 +431,12 @@ class Upkeep(
                 lastCheckedEpochMs = now,
                 reach = Reach.UNREACHABLE,
             )
-            Attempt.Unproven -> tv.copy(unproven = true, lastCheckedEpochMs = now, reach = Reach.UNREACHABLE)
+            Attempt.Unproven -> tv.copy(
+                unproven = true,
+                status = TvStatus.CHECK_FAILED,
+                lastCheckedEpochMs = now,
+                reach = Reach.UNREACHABLE,
+            )
             is Attempt.Visited -> if (a.result == VisitResult.WrongDevice) {
                 // Something else answers at this address: count it toward a re-find, but say what we saw.
                 tv.copy(status = TvStatus.WRONG_DEVICE, offlineCount = tv.offlineCount + 1, lastCheckedEpochMs = now, reach = reach)

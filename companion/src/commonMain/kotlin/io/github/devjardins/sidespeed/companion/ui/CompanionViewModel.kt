@@ -57,6 +57,8 @@ import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -132,6 +134,7 @@ object Copy {
         TvStatus.WRONG_DEVICE -> "Different device at this address"
         TvStatus.START_FAILED -> "Couldn't start the helper"
         TvStatus.NEEDS_ATTENTION -> "Not checking"
+        TvStatus.CHECK_FAILED -> "Stopped: check failed"
         TvStatus.UNKNOWN -> "Not checked yet"
     }
 }
@@ -144,6 +147,14 @@ data class RestartResult(val tvId: String, val outcome: RestartOutcome)
 
 /** Why a saved TV is waiting on the user instead of being checked. */
 enum class TvAttention { NONE, LEGACY_ACK, LEGACY_PAIR, WIRELESS_OFF }
+
+/** What a Home card offers. A parked TV offers only [REMOVE]. */
+enum class TvCardAction { RESTART, REMOVE }
+
+/** A parked TV can only be removed. Every other card still offers restart. */
+fun cardActions(card: TvCardState): List<TvCardAction> =
+    if (card.status == TvStatus.CHECK_FAILED) listOf(TvCardAction.REMOVE)
+    else listOf(TvCardAction.RESTART, TvCardAction.REMOVE)
 
 /** Pairing a TV that speaks wireless debugging. [tvId] is set when this replaces a saved TV's link. */
 data class PairingForm(
@@ -627,15 +638,21 @@ class CompanionViewModel(
     }
 
     fun removeTv(id: String) {
-        locked {
-            val tv = store.tvs().firstOrNull { it.id == id }
+        scope.launch {
+            val tv = work.withLock {
+                val found = store.tvs().firstOrNull { it.id == id }
+                store.removeTv(id)
+                refresh()
+                found
+            }
             if (tv != null) forgetQuietly(tv)
-            store.removeTv(id)
-            refresh()
         }
     }
 
-    /** Best effort. A TV that cannot be reached is still removed. */
+    /**
+     * Best effort, after the record is already gone, and outside [work] so a powered-off TV cannot hold the UI.
+     * Gives up after [FORGET_TIMEOUT_MS].
+     */
     private suspend fun forgetQuietly(tv: SavedTv) {
         val checker = identity ?: return
         val port = when (val link = tv.link) {
@@ -643,7 +660,11 @@ class CompanionViewModel(
             is TvLink.Encrypted -> link.lastPort ?: return
         }
         try {
-            connector.open(tv.address, port).use { checker.forget(it) }
+            withTimeout(FORGET_TIMEOUT_MS) {
+                connector.open(tv.address, port).use { checker.forget(it) }
+            }
+        } catch (_: TimeoutCancellationException) {
+            // The TV did not answer in time. The record is already gone.
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -724,11 +745,9 @@ class CompanionViewModel(
             throw e
         } catch (_: TvUnproven) {
             runCatching { pollSessions.remove(tv.id)?.close() }
-            store.updateTv(tv.id) { it.copy(unproven = true) }
+            store.updateTv(tv.id) { it.copy(unproven = true, status = TvStatus.CHECK_FAILED, reach = Reach.UNREACHABLE) }
             parkedTvIds += tv.id
-            _state.update { s ->
-                s.copy(tvs = s.tvs.map { card -> if (card.id == tv.id) card.copy(note = Copy.TV_UNPROVEN) else card })
-            }
+            refresh()
         } catch (_: Exception) {
             runCatching { pollSessions.remove(tv.id)?.close() }
             val count = (pollFailures[tv.id] ?: 0) + 1
@@ -985,6 +1004,9 @@ class CompanionViewModel(
     } catch (e: AdbConnectionLost) {
         refresh(error = Copy.UNREACHABLE)
         null
+    } catch (_: TvUnproven) {
+        refresh()
+        null
     }
 
     private suspend fun refresh(
@@ -1008,6 +1030,13 @@ class CompanionViewModel(
         val tailnet = overlay?.source?.snapshot()?.let { snap ->
             TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
         }
+        for (tv in store.tvs()) {
+            if (!tv.unproven || tv.status == TvStatus.CHECK_FAILED) continue
+            store.updateTv(tv.id) { current ->
+                if (!current.unproven || current.status == TvStatus.CHECK_FAILED) current
+                else current.copy(status = TvStatus.CHECK_FAILED, reach = Reach.UNREACHABLE)
+            }
+        }
         val tvs = store.tvs()
         activities.keys.retainAll(tvs.map { it.id }.toSet())
         val saved = tvs.map { it.address }.toSet()
@@ -1015,20 +1044,26 @@ class CompanionViewModel(
         val addresses = tvs.map { it.address }.toSet()
         offerMutex.withLock { tlsOffer.keys.retainAll(addresses) }
         for (tv in tvs) {
+            val parked = tv.unproven
             val here = checkableHere(tv, trusted, overlays)
-            val attention = attentionFor(tv)
+            val status = if (parked) TvStatus.CHECK_FAILED else tv.status
+            val attention = if (parked) TvAttention.NONE else attentionFor(tv)
             cards += TvCardState(
                 id = tv.id,
                 name = tv.name,
                 address = tv.address,
-                status = tv.status,
-                statusLabel = Copy.statusLabel(tv.status),
+                status = status,
+                statusLabel = Copy.statusLabel(status),
                 checkableHere = here,
                 activity = activities[tv.id],
-                reach = if (here) tv.reach else null,
+                reach = when {
+                    !here -> null
+                    parked -> Reach.UNREACHABLE
+                    else -> tv.reach
+                },
                 checkedAtEpochMs = tv.lastCheckedEpochMs,
                 note = when {
-                    tv.unproven -> Copy.TV_UNPROVEN
+                    parked -> Copy.TV_UNPROVEN
                     tv.isFireTv -> null
                     else -> Copy.NOT_FIRE_TV_NOTE
                 },
@@ -1088,7 +1123,7 @@ class CompanionViewModel(
             val claimed = ArrayList<String>()
             for (tv in tvs) {
                 val link = tv.link
-                if (link !is TvLink.Classic || link.ackAtEpochMs != null) continue
+                if (tv.unproven || link !is TvLink.Classic || link.ackAtEpochMs != null) continue
                 val address = tv.address
                 if (address in tlsOffer || address in offersInFlight) continue
                 offersInFlight += address
@@ -1158,6 +1193,8 @@ class CompanionViewModel(
         const val ACTIVITY_POLL_MS = 3_000L
         /** Consecutive poll failures that park a TV until the next screen visit. */
         const val MAX_ACTIVITY_FAILURES = 3
+        /** How long a remove waits, in the background, for the TV to forget this companion. */
+        const val FORGET_TIMEOUT_MS = 5_000L
         /** Legacy TVs asked at once whether they can use an encrypted link. The screen does not wait for them. */
         const val OFFER_LOOKUP_LIMIT = 4
     }

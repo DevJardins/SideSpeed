@@ -739,13 +739,17 @@ class UpkeepTest {
         val id = "0123456789abcdef"
         val prove = TvCommands.proveSecret(id, nonce)
         val fake = runningTv("SER-a").also { it.outputs[prove] = "" }
-        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(identitySecret = secret)), listOf(homeNet))
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(identitySecret = secret, status = TvStatus.RUNNING)),
+            listOf(homeNet),
+        )
         val net = FakeNet().also { it.sessions["192.168.5.50"] = fake }
         val identity = TvIdentity(id) { nonce.hexToBytes() }
         val u = upkeep(store, net, identity = identity)
         u.runOnce(Trigger.BACKGROUND)
         assertEquals(listOf(prove), fake.sent)
         assertTrue(store.tv("a").unproven)
+        assertEquals(TvStatus.CHECK_FAILED, store.tv("a").status)
         val opens = net.opened.size
         u.runOnce(Trigger.BACKGROUND)
         assertEquals(opens, net.opened.size)

@@ -66,7 +66,16 @@ class TvSessions(
 
     suspend fun open(target: TvTarget): TvSession = open(target, saved = null)
 
-    private suspend fun open(target: TvTarget, saved: SavedTv?): TvSession = when (val link = target.link) {
+    /**
+     * A parked TV is refused here, before any connection, for every caller: upkeep, the activity poll,
+     * and a user action that still has the saved id.
+     */
+    private suspend fun open(target: TvTarget, saved: SavedTv?): TvSession {
+        if (saved?.unproven == true || store.tvs().any { it.id == target.id && it.unproven }) throw TvUnproven()
+        return openLink(target, saved)
+    }
+
+    private suspend fun openLink(target: TvTarget, saved: SavedTv?): TvSession = when (val link = target.link) {
         is TvLink.Classic -> openClassic(target, link, saved)
         is TvLink.Encrypted -> openEncrypted(target, link, saved)
     }

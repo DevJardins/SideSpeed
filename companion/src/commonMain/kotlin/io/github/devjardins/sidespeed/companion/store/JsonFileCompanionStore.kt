@@ -350,7 +350,9 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
          * field's meaning changes, so older builds go read-only instead of dropping what they don't
          * know. History: v1 was the original schema; v2 added `trustedOverlays`, the TV's
          * `overlayPeerId` binding, and `reach`; v3 added the TV's `link`; v4 added
-         * `identitySecret` and `unproven`.
+         * `identitySecret` and `unproven`. A new [TvStatus] name is not a new version:
+         * an unknown status already loads as [TvStatus.UNKNOWN], and a copy older than
+         * v4 is already read-only when it sees this file.
          */
         private const val VERSION = 4
 
