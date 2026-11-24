@@ -183,7 +183,7 @@ Keep it true when you change anything below.
   `export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   (it may be unset in a fresh shell).
 - Test tasks (also what CI runs):
-  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test`
+  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test && ./gradlew -p build-logic test`
 - Release builds per module (see "Building" in `README.md`):
   `./gradlew :app:assembleRelease`
   `./gradlew :companion-android:assembleRelease`
