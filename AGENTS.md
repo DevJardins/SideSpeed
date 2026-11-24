@@ -139,8 +139,15 @@ Keep it true when you change anything below.
   as in `CommandAllowlist.kt`.
 - Every Companion session proves the TV before any other command
   (`TvIdentity.prepare` in `TvSessions.open`). A TV saved before this check
-  existed gets a secret only after its serial still matches. A failed proof
+  existed gets a secret only after its serial still matches; a wrong serial
+  closes the session (`TvWrongDevice`). A failed proof
   closes the session and is not retried in the background.
+- A Trusted Network matches on router address and subnet, then
+  (`TrustMatcher` in `companion/.../net/TrustedNetworks.kt`): with a recorded
+  router hardware address, one shared DNS server (or none on both sides) and
+  that address; without one,
+  exactly the same IPv4 DNS servers, ignoring IPv6 and Tailscale's
+  100.64.0.0/10. A recorded hardware address is never changed.
 
 ## 6. Versions and releases
 
