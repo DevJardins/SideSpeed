@@ -21,10 +21,10 @@ object SsTokens {
     const val DANGER_CARD_BG = 0xFF2E1F22
     const val DANGER_CARD_TEXT = 0xFFE3B1B1
 
-    /** TV card reach accents: calm, at ACCENT's lightness, for dark rooms. */
+    /** TV card reach accents for dark rooms. The red is as strong as the trust orange, so a TV that can't be reached never looks calmer than one waiting for you. */
     const val GLOW_LAN = ACCENT
     const val GLOW_TAILNET = 0xFF8FAACC
-    const val GLOW_UNREACHABLE = 0xFFC98A8A
+    const val GLOW_UNREACHABLE = 0xFFE0565E
     /** Muted coral orange for a card waiting to be trusted. */
     const val GLOW_TRUST = 0xFFD97757
 
