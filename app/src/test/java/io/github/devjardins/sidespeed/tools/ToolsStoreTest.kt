@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.testing.english
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -10,8 +11,27 @@ class ToolsStoreTest {
         val full = CleanupRecord(atMs = 1_764_000_000_000, freedBytes = 840_000_000, skipped = null)
         assertEquals(full, parseCleanupRecord(encodeCleanupRecord(full)))
 
-        val skipped = CleanupRecord(atMs = 42, freedBytes = null, skipped = "Helper not running")
+        val skipped = CleanupRecord(atMs = 42, freedBytes = null, skipped = SkipReason.HELPER_DOWN.name)
         assertEquals(skipped, parseCleanupRecord(encodeCleanupRecord(skipped)))
+    }
+
+    @Test fun old_cleanup_record_shows_stored_reason() {
+        val legacy = CleanupRecord(atMs = 42, freedBytes = null, skipped = "Helper not running")
+        assertEquals("Helper not running", legacy.skipText()?.english())
+
+        val enumRecord = CleanupRecord(atMs = 42, freedBytes = null, skipped = SkipReason.HELPER_DOWN.name)
+        assertEquals("Helper not running", enumRecord.skipText()?.english())
+        assertEquals(
+            "Restart the helper to use this",
+            CleanupRecord(atMs = 42, freedBytes = null, skipped = SkipReason.HELPER_OUTDATED.name).skipText()?.english(),
+        )
+        assertEquals(
+            "Helper refused the command",
+            CleanupRecord(atMs = 42, freedBytes = null, skipped = SkipReason.REFUSED.name).skipText()?.english(),
+        )
+
+        val custom = CleanupRecord(atMs = 42, freedBytes = null, skipped = "exit 1")
+        assertEquals("exit 1", custom.skipText()?.english())
     }
 
     @Test fun cleanupRecordMalformedIsNull() {

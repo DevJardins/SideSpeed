@@ -302,4 +302,181 @@
     <string name="update_error_install_failed">Install failed.</string>
     <!-- Failure reason when the fallback installer cannot run because the helper is down. -->
     <string name="update_error_helper_down">Helper not running.</string>
+
+    <!-- Tools and Extras -->
+    <!-- Screen headline for Tools. -->
+    <string name="tools_title">Tools</string>
+    <!-- Placeholder text for an unimplemented Tools card. %1$s is the card title. -->
+    <string name="tools_placeholder">%1$s — coming soon</string>
+    <!-- Button label for the currently active option. %1$s is the option label. -->
+    <string name="tools_selected">✓ %1$s</string>
+    <string name="tools_cancel">Cancel</string>
+    <!-- Error shown when an action requires the background helper and it is not running. -->
+    <string name="tools_helper_down">Helper not running. Start the helper, then try again.</string>
+    <!-- Error shown when the running helper binary is older than the app expects. -->
+    <string name="tools_helper_outdated">Restart the helper to use this.</string>
+    <!-- Storage or memory size in megabytes. %1$s is the formatted integer. -->
+    <string name="tools_bytes_mb">%1$s MB</string>
+    <!-- Storage or memory size in gigabytes. %1$s is the formatted decimal number. -->
+    <string name="tools_bytes_gb">%1$s GB</string>
+    <!-- Automatic cleanup threshold button meaning automatic cleanup is disabled. -->
+    <string name="tools_threshold_off">Off</string>
+    <!-- Automatic cleanup threshold button for 500 MB. -->
+    <string name="tools_threshold_500_mb">500 MB</string>
+    <!-- Automatic cleanup threshold button for 1 GB. -->
+    <string name="tools_threshold_1_gb">1 GB</string>
+    <!-- Automatic cleanup threshold button for 2 GB. -->
+    <string name="tools_threshold_2_gb">2 GB</string>
+    <!-- Short reason recorded when cleanup could not run because the helper was down. -->
+    <string name="tools_skip_helper_down">Helper not running</string>
+    <!-- Short reason recorded when cleanup could not run because the helper needed a restart. -->
+    <string name="tools_skip_helper_outdated">Restart the helper to use this</string>
+    <!-- Short reason recorded when cleanup was refused by the helper allowlist. -->
+    <string name="tools_skip_refused">Helper refused the command</string>
+    <!-- Box health card title on Tools. -->
+    <string name="tools_health_title">Box health</string>
+    <!-- Device summary line on Box health. %1$s is the device name/model, %2$s is the Android version. Keep: Android -->
+    <string name="tools_health_device">%1$s · Android %2$s</string>
+    <!-- RAM usage line on Box health. %1$s is free RAM, %2$s is total RAM. -->
+    <string name="tools_health_ram">%1$s free of %2$s RAM</string>
+    <!-- Storage usage line on Box health. %1$s is free storage, %2$s is total storage. -->
+    <string name="tools_health_storage">%1$s free of %2$s storage</string>
+    <!-- Helper status line on Box health when the helper responds. -->
+    <string name="tools_health_helper_running">Helper: Running</string>
+    <!-- Helper status line on Box health when the helper does not respond. -->
+    <string name="tools_health_helper_not_running">Helper: Not running</string>
+    <!-- Helper status line on Box health while checking. -->
+    <string name="tools_health_helper_checking">Helper: …</string>
+    <!-- Free up space card title on Tools. -->
+    <string name="tools_space_title">Free up space</string>
+    <!-- Storage summary on Free up space. %1$s is free space, %2$s is total space. -->
+    <string name="tools_space_free_of">%1$s free of %2$s</string>
+    <!-- Placeholder while storage numbers are loading. -->
+    <string name="tools_space_loading">…</string>
+    <string name="tools_space_clean_now">Clean up now</string>
+    <!-- Button label while cache cleanup is running. -->
+    <string name="tools_space_cleaning">Cleaning…</string>
+    <!-- Brief feedback shown on the Clean up now button after freeing space. %1$s is the freed size. -->
+    <string name="tools_space_freed">Freed %1$s</string>
+    <!-- Subheading above the automatic cleanup threshold buttons. -->
+    <string name="tools_space_auto_title">Automatic cleanup</string>
+    <string name="tools_space_auto_caption">Clears app caches only when free space drops below this. Checked every few hours while the helper is running.</string>
+    <!-- Outcome part of the Last cleanup line when caches were trimmed. %1$s is the freed size. -->
+    <string name="tools_space_last_freed">freed %1$s</string>
+    <!-- Summary of the most recent cleanup run. %1$s is the day and time, %2$s is the outcome or skip reason. -->
+    <string name="tools_space_last_cleanup">Last cleanup: %1$s · %2$s</string>
+    <string name="tools_space_last_never">Last cleanup: never</string>
+    <!-- Animations card title on Tools. -->
+    <string name="tools_animations_title">Animations</string>
+    <!-- Keep the caveat that this does not make apps load faster. Do not name or suggest any app. -->
+    <string name="tools_animations_body">Makes menus and screen changes move faster. It does not make apps load faster. Off removes animations completely; a few apps may look odd.</string>
+    <string name="tools_animations_unreadable">Current values couldn\'t be read — the helper may not be running.</string>
+    <string name="tools_animations_normal">Normal (1×)</string>
+    <string name="tools_animations_faster">Faster (0.5×)</string>
+    <string name="tools_animations_off">Off</string>
+    <!-- Keep: Fire TV -->
+    <string name="tools_animations_fire_tv_note">On Fire TV, app animations stay at normal speed so the Settings menu keeps working.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="tools_animations_restore_note">Restores the values from before SideSpeed changed them.</string>
+    <string name="tools_animations_restore">Restore original</string>
+    <string name="tools_animations_refused">The helper refused this setting.</string>
+    <!-- Home screen card title on Tools. -->
+    <string name="tools_home_title">Home screen</string>
+    <!-- Shown on the Home screen card while checking installed home apps. -->
+    <string name="tools_home_checking">Checking…</string>
+    <!-- Keep: Fire TV. Do not name or suggest any app. -->
+    <string name="tools_home_fire_os">Fire TV doesn\'t allow other home screens.</string>
+    <!-- Shown when no other home screen app is installed. Do not name or suggest any app. -->
+    <string name="tools_home_no_other">Install another home screen app first, then come back here.</string>
+    <string name="tools_home_drifted">Your home screen changed back on its own. The first home screen is still saved below.</string>
+    <!-- Line showing the active home screen app. %1$s is the app name or package. -->
+    <string name="tools_home_current">Current Home: %1$s</string>
+    <string name="tools_home_current_unknown">Current Home: unknown</string>
+    <!-- Pill badge next to the currently active home screen app. -->
+    <string name="tools_home_current_pill">Current</string>
+    <string name="tools_home_make_home">Make this Home</string>
+    <!-- Confirmation prompt before switching Home. %1$s is the chosen app name. -->
+    <string name="tools_home_confirm_make">Make %1$s your home screen?</string>
+    <string name="tools_home_back_to_stock">Back to stock</string>
+    <!-- Confirmation prompt before restoring the original home screen. Keep: SideSpeed -->
+    <string name="tools_home_confirm_back">Go back to the home screen this TV had before SideSpeed changed it?</string>
+    <string name="tools_home_changed">Home screen changed. Your remote\'s Home button may still open the previous home screen on some TVs.</string>
+    <string name="tools_home_restored">Back to your first home screen.</string>
+    <!-- Keep: Google TV. Keep the exact name "Turn off extras". -->
+    <string name="tools_home_couldnt_change_google_tv">Google TV keeps its own home screen while it\'s turned on. Turn it off in Turn off extras first.</string>
+    <string name="tools_home_couldnt_change">Couldn\'t change Home</string>
+    <string name="tools_home_no_original">No earlier home screen was saved.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="tools_home_stock_disabled_elsewhere">Your first home screen was turned off by something else, so SideSpeed can\'t turn it back on.</string>
+    <string name="tools_home_refused">The helper refused this change.</string>
+    <string name="tools_home_excluded">That app can\'t be the home screen.</string>
+    <string name="tools_home_not_a_home_app">That app isn\'t a home screen app.</string>
+    <string name="tools_home_invalid_saved">The saved home screen isn\'t valid any more.</string>
+    <!-- Title of the Turn off extras card and screen. -->
+    <string name="extras_title">Turn off extras</string>
+    <string name="extras_card_body">Turn off apps your TV maker added that you don\'t use. You can turn them back on any time.</string>
+    <!-- Button on the Turn off extras card opening the screen. -->
+    <string name="extras_card_open">Open</string>
+    <string name="extras_no_list">No list for this TV yet.</string>
+    <!-- Keep: CleanYourTV -->
+    <string name="extras_source_note">Lists come from the CleanYourTV project.</string>
+    <string name="extras_ambiguous">More than one list matches this TV.</string>
+    <!-- Prompt asking if a matched extras list fits the user's TV. %1$s is the list header. -->
+    <string name="extras_suggested_prompt">This list looks like your TV: %1$s. Check the model before turning anything off.</string>
+    <string name="extras_use_this_list">Use this list</string>
+    <string name="extras_not_my_tv">Not my TV</string>
+    <!-- Attribution line above the extras list. %1$s is the short commit hash. Keep: CleanYourTV -->
+    <string name="extras_list_credit">List from CleanYourTV, %1$s.</string>
+    <string name="extras_protection_check_failed">Couldn\'t check which apps are safe to turn off. Try again.</string>
+    <string name="extras_turn_off_selected">Turn off selected</string>
+    <string name="extras_turn_on_selected">Turn on selected</string>
+    <string name="extras_restore_everything">Restore everything</string>
+    <!-- Fallback label for the active home screen inside the confirm-turn-off message. -->
+    <string name="extras_current_home_fallback">your current home screen</string>
+    <string name="extras_confirm_home_off_title">Turn off a home screen app?</string>
+    <!-- Body of the confirm-turn-off prompt for a home screen app. %1$s is the active home screen name. -->
+    <string name="extras_confirm_home_off_body">Your TV will keep using %1$s. You can turn it back on with Restore everything.</string>
+    <string name="extras_turn_off">Turn off</string>
+    <string name="extras_confirm_home_on_title">Turn on a home screen app?</string>
+    <!-- Body of the confirm-turn-on prompt for a home screen app. %1$s is the app being turned back on. -->
+    <string name="extras_confirm_home_on_body">Your TV may go back to %1$s as its home screen. You can pick your home screen in Tools → Home screen.</string>
+    <string name="extras_turn_on">Turn on</string>
+    <!-- Caption under a row on Turn off extras that is a home screen app. -->
+    <string name="extras_row_home_caption">This is a home screen app.</string>
+    <!-- Caption under a home screen row when it cannot be turned off yet. -->
+    <string name="extras_row_home_blocked">Choose another home screen first in Tools → Home screen.</string>
+    <!-- Short reason shown after "Failed: " when the helper refuses an action on a package. -->
+    <string name="extras_row_refused">refused</string>
+    <!-- Per-row failure line on Turn off extras. %1$s is the error reason. -->
+    <string name="extras_row_failed">Failed: %1$s</string>
+    <!-- Status pill on Turn off extras for an enabled app. -->
+    <string name="extras_pill_on">On</string>
+    <!-- Status pill on Turn off extras for a disabled app. -->
+    <string name="extras_pill_off">Off</string>
+    <!-- Status pill on Turn off extras for an app not installed on this TV. -->
+    <string name="extras_pill_not_installed">Not installed</string>
+    <!-- Status pill on Turn off extras for a protected app that cannot be disabled. -->
+    <string name="extras_pill_protected">Protected</string>
+    <!-- Summary after turning off selected extras. %1$d is the number turned off. -->
+    <plurals name="extras_turned_off">
+        <item quantity="one">Turned off %1$d.</item>
+        <item quantity="other">Turned off %1$d.</item>
+    </plurals>
+    <!-- Summary after restoring disabled extras. %1$d is the number turned back on. -->
+    <plurals name="extras_turned_back_on">
+        <item quantity="one">Turned back on %1$d.</item>
+        <item quantity="other">Turned back on %1$d.</item>
+    </plurals>
+    <!-- Summary after turning on selected extras. %1$d is the number turned on. -->
+    <plurals name="extras_turned_on">
+        <item quantity="one">Turned on %1$d.</item>
+        <item quantity="other">Turned on %1$d.</item>
+    </plurals>
+    <!-- Failure count appended to an extras summary when at least one app failed. %1$d is the failure count. -->
+    <plurals name="extras_failed_count">
+        <item quantity="one">Failed %1$d.</item>
+        <item quantity="other">Failed %1$d.</item>
+    </plurals>
+    <!-- Combines an extras action count (%1$s) with its failure count (%2$s). -->
+    <string name="extras_outcome_with_failed">%1$s %2$s</string>
 </resources>

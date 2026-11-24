@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.UiText
 import java.util.concurrent.Executors
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -245,7 +247,7 @@ class ExtrasTest {
         val e = extras(commands = commands)
         val meta = sampleIndex().lists.first()
         val result = e.refresh(meta)
-        assertEquals(Extras.HELPER_DOWN_MSG, result.helperMessage)
+        assertEquals("Helper not running. Start the helper, then try again.", result.helperMessage?.english())
         assertTrue(result.rows.isEmpty())
     }
 
@@ -253,7 +255,7 @@ class ExtrasTest {
         val commands = FakeExtrasCommands().apply { disabledResult = ToolResult.HelperOutdated }
         val e = extras(commands = commands)
         val result = e.refresh(sampleIndex().lists.first())
-        assertEquals(Extras.HELPER_OUTDATED_MSG, result.helperMessage)
+        assertEquals("Restart the helper to use this.", result.helperMessage?.english())
     }
 
     @Test fun runRecordsAfterEachSuccess() = runTest {
@@ -275,15 +277,15 @@ class ExtrasTest {
         val e = extras(commands = commands)
         val (outcome, _) = e.turnOffSelected(setOf("com.example.bloat"), ONN_ENTRIES, emptySet(), false, NO_PROTECTION)
         assertEquals(1, outcome.failed)
-        assertEquals("Cannot disable a protected package", outcome.failedByPkg["com.example.bloat"])
+        assertEquals("Cannot disable a protected package", outcome.failedByPkg["com.example.bloat"]?.english())
     }
 
     @Test fun failedRowsShownUntilNextRun() = runTest {
         val meta = sampleIndex().lists.first()
         val e = extras()
-        val failures = mapOf("com.example.bloat" to "oops")
+        val failures = mapOf("com.example.bloat" to UiText.Raw("oops"))
         val rows = e.rows(meta, emptySet(), NO_PROTECTION, failures)
-        assertEquals("oops", rows.first { it.entry.pkg == "com.example.bloat" }.failedLine)
+        assertEquals("oops", rows.first { it.entry.pkg == "com.example.bloat" }.failedLine?.english())
     }
 
     @Test fun helperDownStopsRun() = runTest {
@@ -318,8 +320,8 @@ class ExtrasTest {
         val (outcome, _) = e.restoreEverything()
         assertEquals(0, outcome.restored)
         assertEquals(1, outcome.failed)
-        assertEquals("package missing", outcome.failedByPkg["com.a"])
-        assertEquals("Turned back on 0. Failed 1.", formatRestoreOutcome(outcome))
+        assertEquals("package missing", outcome.failedByPkg["com.a"]?.english())
+        assertEquals("Turned back on 0. Failed 1.", formatRestoreOutcome(outcome).english())
         assertEquals(listOf("com.a"), store.disabled.first().map { it.pkg })
     }
 
@@ -335,12 +337,12 @@ class ExtrasTest {
         )
         assertEquals(0, outcome.turnedOff)
         assertTrue(commands.disableCalls.isEmpty())
-        assertEquals("Turned off 0.", formatRunOutcome(outcome))
+        assertEquals("Turned off 0.", formatRunOutcome(outcome).english())
     }
 
     @Test fun homeCouldntChangeMessage() {
-        assertTrue(homeCouldntChangeMessage("com.google.android.apps.tv.launcherx").contains("Turn off extras"))
-        assertEquals("Couldn't change Home", homeCouldntChangeMessage("com.example.other"))
+        assertTrue(homeCouldntChangeMessage("com.google.android.apps.tv.launcherx").english().contains("Turn off extras"))
+        assertEquals("Couldn't change Home", homeCouldntChangeMessage("com.example.other").english())
     }
 
     @Test fun displayLabelFallsBackToPackage() {
@@ -407,7 +409,7 @@ class ExtrasTest {
             .first { it.entry.pkg == "com.example.launcher" }
         assertEquals(ExtrasRowKind.Off, row.kind)
         assertTrue(row.selectable)
-        assertEquals("This is a home screen app.", row.caption)
+        assertEquals("This is a home screen app.", row.caption?.english())
     }
 
     @Test fun turnOnSelectedEnablesOnlyTickedOffRows() = runTest {
@@ -467,8 +469,8 @@ class ExtrasTest {
         assertEquals(null, stop)
         assertEquals(0, outcome.turnedOn)
         assertEquals(2, outcome.failed)
-        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.bloat"])
-        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.second"])
+        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.bloat"]?.english())
+        assertEquals("Cannot enable package", outcome.failedByPkg["com.example.second"]?.english())
         assertEquals(setOf("com.example.bloat", "com.example.second"), commands.enableCalls.toSet())
     }
 
@@ -483,7 +485,7 @@ class ExtrasTest {
         )
         assertEquals(0, outcome.turnedOn)
         assertEquals(1, outcome.failed)
-        assertEquals("refused", outcome.failedByPkg["com.example.bloat"])
+        assertEquals("refused", outcome.failedByPkg["com.example.bloat"]?.english())
     }
 
     @Test fun turnOnHelperDownStops() = runTest {
@@ -499,8 +501,25 @@ class ExtrasTest {
     }
 
     @Test fun formatTurnOnOutcomeTexts() {
-        assertEquals("Turned on 2.", formatTurnOnOutcome(ExtrasTurnOnOutcome(2, 0)))
-        assertEquals("Turned on 1. Failed 1.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 1)))
+        assertEquals("Turned on 0.", formatTurnOnOutcome(ExtrasTurnOnOutcome(0, 0)).english())
+        assertEquals("Turned on 1.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 0)).english())
+        assertEquals("Turned on 2.", formatTurnOnOutcome(ExtrasTurnOnOutcome(2, 0)).english())
+        assertEquals("Turned on 1. Failed 1.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 1)).english())
+        assertEquals("Turned on 1. Failed 2.", formatTurnOnOutcome(ExtrasTurnOnOutcome(1, 2)).english())
+    }
+
+    @Test fun formatRunAndRestoreOutcomePluralCounts() {
+        assertEquals("Turned off 0.", formatRunOutcome(ExtrasRunOutcome(0, 0)).english())
+        assertEquals("Turned off 1.", formatRunOutcome(ExtrasRunOutcome(1, 0)).english())
+        assertEquals("Turned off 2.", formatRunOutcome(ExtrasRunOutcome(2, 0)).english())
+        assertEquals("Turned off 2. Failed 1.", formatRunOutcome(ExtrasRunOutcome(2, 1)).english())
+        assertEquals("Turned off 2. Failed 2.", formatRunOutcome(ExtrasRunOutcome(2, 2)).english())
+
+        assertEquals("Turned back on 0.", formatRestoreOutcome(ExtrasRestoreOutcome(0, 0)).english())
+        assertEquals("Turned back on 1.", formatRestoreOutcome(ExtrasRestoreOutcome(1, 0)).english())
+        assertEquals("Turned back on 2.", formatRestoreOutcome(ExtrasRestoreOutcome(2, 0)).english())
+        assertEquals("Turned back on 1. Failed 1.", formatRestoreOutcome(ExtrasRestoreOutcome(1, 1)).english())
+        assertEquals("Turned back on 1. Failed 2.", formatRestoreOutcome(ExtrasRestoreOutcome(1, 2)).english())
     }
 
     // Verbatim `tv` headers copied from app/src/main/assets/extras/index.json.

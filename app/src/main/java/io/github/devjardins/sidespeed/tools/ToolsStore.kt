@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -8,7 +9,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,7 +22,18 @@ enum class CleanupThreshold(val bytes: Long?) {
     GB_2(2_000_000_000),
 }
 
+enum class SkipReason(@StringRes val res: Int) {
+    HELPER_DOWN(R.string.tools_skip_helper_down),
+    HELPER_OUTDATED(R.string.tools_skip_helper_outdated),
+    REFUSED(R.string.tools_skip_refused),
+}
+
 data class CleanupRecord(val atMs: Long, val freedBytes: Long?, val skipped: String?)
+
+/** Resolves a stored [CleanupRecord.skipped] key or legacy raw text for display. */
+fun CleanupRecord.skipText(): UiText? = skipped?.let { raw ->
+    SkipReason.entries.firstOrNull { it.name == raw }?.let { UiText.Res(it.res) } ?: UiText.Raw(raw)
+}
 
 data class LaunchResult(
     val pkg: String,

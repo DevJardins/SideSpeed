@@ -1,2 +1,3 @@
 # Path relative to app/src/main/java/io/github/devjardins/sidespeed/ and literal, separated by |
 # Format: path|"literal"
+ui/tools/SpaceCard.kt|"EEE HH:mm"
