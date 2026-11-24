@@ -71,15 +71,15 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 - **Windows:** run the `.msi`. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
 - **Linux:** install the `.deb` or the `.rpm`.
 
-**First use:** open the companion and choose your Trusted Network (**Trust this network**). Then **Add a TV**: type its address or use **Find TVs**, and tick **Always allow** when the TV asks.
+**First use:** open the companion and choose your Trusted Network (**Trust this network**). Then **Add a TV**: type its address or use **Find TVs**, and tick **Always allow** when the TV asks. A TV with Wireless debugging pairs once with a code and then uses an encrypted connection. A TV that can't still connects the older way after you agree to it: anyone on your network could see or change the commands it sends. Before any other command, each TV proves it is the one you added.
 
-**Trusted Networks:** you choose which networks the companion may act on. On any other network it does nothing and sends nothing. It needs no location permission; a network is recognised by its gateway, subnet and DNS settings.
+**Trusted Networks:** you choose which networks the companion may act on. On any other network it does nothing and sends nothing. It needs no location permission. A network is recognised by its router's address, subnet and DNS servers, and by the router's hardware address once the companion has read it. Without the hardware address (always on Android, and often on a Mac), the DNS servers must be exactly the ones you saved. [SECURITY.md](SECURITY.md) explains the limits.
 
 **Tailscale (desktop only).** Adding a TV by its Tailscale address trusts your own tailnet automatically, and the TV is kept alive wherever Tailscale is connected. TVs shared in from another tailnet are refused. **Settings > Tailnets** lists your tailnets, and removing a tailnet removes its TVs. Anyone who administers the tailnet can reach the TV. The Android companion has no Tailscale support.
 
 **Live status:** while the companion's home screen is open, each TV card shows what SideSpeed is compiling right now, how many apps are waiting, and the last result. The TV needs SideSpeed 0.4.0 or later.
 
-**TV card borders** show how the last check reached the TV: green on the home network, blue over Tailscale, red when it could not be reached. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
+**TV card borders** show how the last check reached the TV: green on a Trusted Network, blue over Tailscale, red when it could not be reached. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
 
 **Limits:** IPv6-only networks are never trusted. Find TVs sweeps the Trusted Network's own subnet (a large network shrinks to the /16 around this device or the gateway). You can also type a range from /16 to /30 on the same network instead.
 
@@ -88,7 +88,7 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 ## Requirements and caveats
 
 - ADB debugging (Fire TV) or Wireless debugging (Google TV) must stay on.
-- Enabling it exposes ADB on your local network. Only use it on a network you trust; the app asks you to acknowledge this first.
+- Enabling it exposes ADB on your local network. Only use it on a network you trust; the app asks you to acknowledge this first. [SECURITY.md](SECURITY.md) explains what SideSpeed protects and its known limits.
 - Restarting the TV, turning ADB off, or updating SideSpeed stops the helper (or leaves it out of date) and you must start it again. The onn turns Wireless debugging off after a reboot.
 - `speed` compilation adds tens of MB of storage per app.
 - A compile can take several minutes for large apps (about 3 min on a Fire TV Cube).
@@ -98,7 +98,7 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 | Device | Status |
 |---|---|
 | Fire TV Cube Gen 3, Fire OS 7.7.1.7 | Helper started from PC, compile verified |
-| onn 4K Pro, Android 14 | Wireless debugging on + "Always allow" (classic connection on port 5555), helper auto-start and compile verified (no PC needed). Pairing with a code works; connecting over the paired TLS link is not yet verified |
+| onn 4K Pro, Android 14 | Wireless debugging on + "Always allow" (classic connection on port 5555), helper auto-start and compile verified (no PC needed). Pairing with a code and the encrypted connection verified with the macOS companion |
 | Other Android TV, Google TV and Fire TV devices | Should work |
 | Android companion app with the Fire TV Cube Gen 3 | First run, add by address, and restarting an out-of-date helper verified over the LAN |
 | macOS companion app with the onn 4K Pro | Adding, checks and card borders verified over the LAN and over Tailscale (the onn starts its own helper) |
