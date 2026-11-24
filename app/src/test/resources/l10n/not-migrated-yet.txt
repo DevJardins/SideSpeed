@@ -1,6 +1,7 @@
 # Files relative to app/src/main/java/io/github/devjardins/sidespeed/ pending migration to strings.xml.
 AppContainer.kt
 adb/ConnectionStrategy.kt
+adb/LibAdbBackend.kt
 compile/CompileRunner.kt
 maintenance/MaintenanceService.kt
 status/TvAddress.kt

@@ -1,12 +1,52 @@
 package io.github.devjardins.sidespeed.l10n
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 class NoHardCodedTextTest {
-    private val sentenceLiteral = Regex(""""[A-Z][a-z']*(?: [^"]+)+"""")
+    private val sentenceLiteral = Regex(""""[A-Z][A-Za-z']*(?: [^"]+)+"""")
     private val ignoredLineTokens = listOf("Log.", "HelperLog", "error(", "require(", "check(")
+
+    internal fun findViolations(
+        line: String,
+        relPath: String = "",
+        allowlist: Set<String> = emptySet(),
+    ): List<String> {
+        val trimmed = line.trimStart()
+        if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+            return emptyList()
+        }
+        if (ignoredLineTokens.any { line.contains(it) }) return emptyList()
+
+        val hits = mutableListOf<String>()
+        for (match in sentenceLiteral.findAll(line)) {
+            val literal = match.value
+            val unquoted = literal.removeSurrounding("\"")
+            if ("$relPath|$literal" !in allowlist && "$relPath|$unquoted" !in allowlist) {
+                hits += literal
+            }
+        }
+        return hits
+    }
+
+    @Test
+    fun findViolations_pins_guard_regex_and_exclusions() {
+        assertEquals(listOf("\"Back to home\""), findViolations("""Text("Back to home")"""))
+        assertEquals(listOf("\"ADB debugging must stay on\""), findViolations("""Text("ADB debugging must stay on")"""))
+        assertEquals(listOf("\"SideSpeed is ready\""), findViolations("""Text("SideSpeed is ready")"""))
+        assertEquals(listOf("\"TV settings\""), findViolations("""Text("TV settings")"""))
+        assertEquals(
+            listOf("\"Fire TV doesn't allow other home screens.\""),
+            findViolations("""label = "Fire TV doesn't allow other home screens.""""),
+        )
+
+        assertEquals(emptyList<String>(), findViolations("""Log.d(TAG, "Some message here")"""))
+        assertEquals(emptyList<String>(), findViolations("""Text("Settings")"""))
+        assertEquals(emptyList<String>(), findViolations("""shell("pm disable-user --user 0")"""))
+        assertEquals(emptyList<String>(), findViolations("""// Text("Back to home")"""))
+    }
 
     @Test
     fun no_sentence_literals_in_kotlin() {
@@ -24,18 +64,8 @@ class NoHardCodedTextTest {
                 if (relPath.startsWith("helper/") || relPath in notMigrated) return@forEach
 
                 file.readLines().forEachIndexed { zeroBasedLine, line ->
-                    val trimmed = line.trimStart()
-                    if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
-                        return@forEachIndexed
-                    }
-                    if (ignoredLineTokens.any { line.contains(it) }) return@forEachIndexed
-
-                    for (match in sentenceLiteral.findAll(line)) {
-                        val literal = match.value
-                        val unquoted = literal.removeSurrounding("\"")
-                        if ("$relPath|$literal" !in allowlist && "$relPath|$unquoted" !in allowlist) {
-                            violations += "$relPath:${zeroBasedLine + 1}: $literal"
-                        }
+                    for (literal in findViolations(line, relPath, allowlist)) {
+                        violations += "$relPath:${zeroBasedLine + 1}: $literal"
                     }
                 }
             }

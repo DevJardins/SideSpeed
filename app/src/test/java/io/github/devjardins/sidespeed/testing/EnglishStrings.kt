@@ -125,6 +125,17 @@ internal fun unescapeAndroidString(raw: String): String {
                 '\\' -> sb.append('\\')
                 '@' -> sb.append('@')
                 '?' -> sb.append('?')
+                'u' -> {
+                    require(i + 5 < raw.length) { "Incomplete unicode escape in '$raw' at index $i" }
+                    val hex = raw.substring(i + 2, i + 6)
+                    require(hex.all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }) {
+                        "Invalid unicode escape '\\u$hex' in '$raw'"
+                    }
+                    sb.append(hex.toInt(16).toChar())
+                    seenContent = true
+                    i += 6
+                    continue
+                }
                 else -> sb.append(next)
             }
             seenContent = true

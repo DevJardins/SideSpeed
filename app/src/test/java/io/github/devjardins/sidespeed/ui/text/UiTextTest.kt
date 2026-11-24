@@ -100,4 +100,12 @@ class UiTextTest {
         assertEquals("a\\nb", unescapeAndroidString("a\\\\nb"))
         assertEquals("Line one line two", unescapeAndroidString("\n    Line one\n    line two\n"))
     }
+
+    @Test
+    fun android_string_unescaping_decodes_unicode_escapes() {
+        assertEquals("Waiting\u2026", unescapeAndroidString("""Waiting\u2026"""))
+        assertEquals("\u2066192.168.1.1\u2069", unescapeAndroidString("""\u2066192.168.1.1\u2069"""))
+        assertEquals("A\u00a0B", unescapeAndroidString("""A\u00a0B"""))
+        assertEquals("""\u2026""", unescapeAndroidString("""\\u2026"""))
+    }
 }
