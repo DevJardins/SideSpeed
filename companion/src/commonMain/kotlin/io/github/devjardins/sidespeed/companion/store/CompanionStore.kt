@@ -62,7 +62,7 @@ data class SavedTv(
     val link: TvLink = TvLink.Classic(ackAtEpochMs = null),
     /**
      * 64 lowercase hex characters: the secret this companion wrote on the TV.
-     * Null for a TV saved before the check existed, until the first session that still matches writes one.
+     * Null for a TV saved before the check existed, until the person confirms it and the serial still matches.
      */
     val identitySecret: String? = null,
     /**

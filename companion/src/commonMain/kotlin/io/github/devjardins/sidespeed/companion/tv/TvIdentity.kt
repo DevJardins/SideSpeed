@@ -10,6 +10,9 @@ class TvUnproven : Exception("This TV didn't prove it's the one you added")
 /** The first serial did not match the saved TV. The session is already closed. */
 class TvWrongDevice : Exception("A different device answered at that address")
 
+/** A saved TV has no secret yet, and this call was not allowed to enroll it. Nothing was sent. */
+class NeedsConfirmation : Exception("Confirm this TV before SideSpeed uses it")
+
 /** Writing or proving the secret failed, so the TV was not added. The session is already closed. */
 class TvCheckNotSaved : Exception("SideSpeed couldn't save its check on this TV")
 
@@ -23,6 +26,9 @@ sealed class Prepared {
 
     /** The proof failed and the session is closed. */
     data object Failed : Prepared()
+
+    /** No secret is saved, and this call was not allowed to write one. The session is closed. Nothing was sent. */
+    data object NeedsConfirm : Prepared()
 }
 
 /**
@@ -65,9 +71,11 @@ class TvIdentity(
     /**
      * The check for a TV we already mean to talk to.
      * A saved secret is proved before anything else, including [TvCommands.SERIAL].
-     * No secret yet: the serial must still match, and only then is a secret written and proved.
+     * No secret yet, and [mayEnroll] is false: nothing is sent, the session is closed, and the result is
+     * [Prepared.NeedsConfirm]. No secret yet, and [mayEnroll] is true: the serial must still match, and only
+     * then is a secret written and proved.
      */
-    suspend fun prepare(session: TvSession, tv: SavedTv): Prepared {
+    suspend fun prepare(session: TvSession, tv: SavedTv, mayEnroll: Boolean = false): Prepared {
         if (tv.unproven && tv.identitySecret == null) {
             session.close()
             return Prepared.Failed
@@ -80,6 +88,10 @@ class TvIdentity(
             }
             return Prepared.Ready(secret, enrolled = false)
         }
+        if (!mayEnroll) {
+            session.close()
+            return Prepared.NeedsConfirm
+        }
         val serial = session.run(TvCommands.SERIAL).trim()
         if (serial != tv.serial) {
             session.close()
@@ -90,23 +102,29 @@ class TvIdentity(
     }
 
     /**
-     * A host whose serial already matched. Proves the saved secret, or writes one when there is none.
-     * Returns the secret, or null after closing [session].
+     * A host whose serial already matched. Proves the saved secret, or writes one when [mayEnroll] is true
+     * and there is none. A TV with no secret and [mayEnroll] false is closed with [Prepared.NeedsConfirm]
+     * and nothing is sent.
      */
-    suspend fun acceptMatched(session: TvSession, tv: SavedTv): String? {
+    suspend fun acceptMatched(session: TvSession, tv: SavedTv, mayEnroll: Boolean = false): Prepared {
         if (tv.unproven && tv.identitySecret == null) {
             session.close()
-            return null
+            return Prepared.Failed
         }
         val secret = tv.identitySecret
         if (secret != null) {
             if (!prove(session, secret)) {
                 session.close()
-                return null
+                return Prepared.Failed
             }
-            return secret
+            return Prepared.Ready(secret, enrolled = false)
         }
-        return enroll(session)
+        if (!mayEnroll) {
+            session.close()
+            return Prepared.NeedsConfirm
+        }
+        val created = enroll(session) ?: return Prepared.Failed
+        return Prepared.Ready(created, enrolled = true)
     }
 
     private fun nextHex(): String {

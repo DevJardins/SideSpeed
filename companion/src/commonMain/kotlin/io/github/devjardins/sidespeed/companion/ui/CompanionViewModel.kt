@@ -29,6 +29,7 @@ import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
+import io.github.devjardins.sidespeed.companion.tv.NeedsConfirmation
 import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
 import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
 import io.github.devjardins.sidespeed.companion.tv.TlsNotNegotiated
@@ -118,6 +119,8 @@ object Copy {
     const val CLASSIC_ACK_CHECK = "I understand. Connect the older way."
     const val PAIR_OFFER = "This TV can use an encrypted connection. Pair it to keep checking it."
     const val NOT_CONTACTED = "SideSpeed isn't checking this TV until you choose."
+    const val CONFIRM_TV = "Confirm this is your TV before SideSpeed uses it."
+    const val CONFIRM = "Confirm"
     const val WIRELESS_OFF = "Turn wireless debugging back on to keep this TV up to date."
     const val TRY_AGAIN = "Try again"
     const val TYPE_THE_PORT = "Type the port"
@@ -149,7 +152,7 @@ enum class RestartOutcome { RESTARTED, CHECKED, NOT_CHECKED }
 data class RestartResult(val tvId: String, val outcome: RestartOutcome)
 
 /** Why a saved TV is waiting on the user instead of being checked. */
-enum class TvAttention { NONE, LEGACY_ACK, LEGACY_PAIR, WIRELESS_OFF }
+enum class TvAttention { NONE, LEGACY_ACK, LEGACY_PAIR, WIRELESS_OFF, CONFIRM }
 
 /** What a Home card offers. A parked TV offers only [REMOVE]. */
 enum class TvCardAction { RESTART, REMOVE }
@@ -464,7 +467,16 @@ class CompanionViewModel(
             if (link !is TvLink.Classic || link.ackAtEpochMs != null) return@locked
             store.updateTv(tvId) { it.copy(link = TvLink.Classic(clock())) }
             offerMutex.withLock { tlsOffer.remove(tv.address) }
-            runUpkeep(Trigger.APP_OPEN, tvId)
+            runUpkeep(Trigger.APP_OPEN, tvId, mayEnroll = true)
+        }
+    }
+
+    /** The person confirmed a TV that was saved before it had a secret. Then it can be checked. */
+    fun confirmTv(tvId: String) {
+        locked {
+            val tv = store.tvs().firstOrNull { it.id == tvId } ?: return@locked
+            if (tv.unproven || tv.identitySecret != null) return@locked
+            runUpkeep(Trigger.APP_OPEN, tvId, mayEnroll = true)
         }
     }
 
@@ -724,6 +736,7 @@ class CompanionViewModel(
                 if (!checkableHere(saved, trusted, overlays)) return@mapNotNull null
                 val card = cards[saved.id] ?: return@mapNotNull null
                 if (saved.unproven || card.status != TvStatus.RUNNING || saved.id in parkedTvIds) return@mapNotNull null
+                if (identity != null && saved.identitySecret == null) return@mapNotNull null
                 card
             }
             val ids = eligible.map { it.id }.toSet()
@@ -745,6 +758,7 @@ class CompanionViewModel(
     private suspend fun pollOneTv(tv: TvCardState) {
         try {
             val saved = store.tvs().firstOrNull { it.id == tv.id } ?: return
+            if (identity != null && saved.identitySecret == null) return
             val newSession = tv.id !in pollSessions
             val session = pollSessions.getOrPut(tv.id) { sessions.open(saved) }
             if (newSession) {
@@ -761,6 +775,8 @@ class CompanionViewModel(
             if (parsed != null) setActivity(tv.id, parsed)
         } catch (e: CancellationException) {
             throw e
+        } catch (_: NeedsConfirmation) {
+            runCatching { pollSessions.remove(tv.id)?.close() }
         } catch (_: TvUnproven) {
             runCatching { pollSessions.remove(tv.id)?.close() }
             store.updateTv(tv.id) { it.copy(unproven = true, status = TvStatus.CHECK_FAILED, reach = Reach.UNREACHABLE) }
@@ -808,11 +824,11 @@ class CompanionViewModel(
         scope.launch { work.withLock { block() } }
     }
 
-    private suspend fun runUpkeep(trigger: Trigger, onlyTvId: String? = null) {
+    private suspend fun runUpkeep(trigger: Trigger, onlyTvId: String? = null, mayEnroll: Boolean = false) {
         _state.update { it.copy(busy = true) }
         var report: UpkeepReport? = null
         try {
-            report = upkeep.runOnce(trigger, onlyTvId)
+            report = upkeep.runOnce(trigger, onlyTvId, mayEnroll)
         } finally {
             val finished = report
             if (onlyTvId == null || finished == null) {
@@ -998,7 +1014,7 @@ class CompanionViewModel(
         saved: SavedTv? = null,
         accept: (String) -> Boolean = { true },
     ): Identified? = try {
-        val opened = if (saved != null) sessions.open(saved) else sessions.open(target)
+        val opened = if (saved != null) sessions.open(saved, mayEnroll = true) else sessions.open(target)
         opened.use { session ->
             val serial = session.run(TvCommands.SERIAL).trim()
             val model = session.run(TvCommands.MODEL).trim()
@@ -1173,9 +1189,11 @@ class CompanionViewModel(
     private suspend fun attentionFor(tv: SavedTv): TvAttention {
         val link = tv.link
         return when {
-            link is TvLink.Encrypted && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.WIRELESS_OFF
             link is TvLink.Classic && link.ackAtEpochMs == null ->
                 if (cachedOffer(tv.address) == true) TvAttention.LEGACY_PAIR else TvAttention.LEGACY_ACK
+            link is TvLink.Encrypted && link.lastPort == null -> TvAttention.WIRELESS_OFF
+            identity != null && tv.identitySecret == null -> TvAttention.CONFIRM
+            link is TvLink.Encrypted && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.WIRELESS_OFF
             link is TvLink.Classic && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.LEGACY_PAIR
             else -> TvAttention.NONE
         }
