@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
@@ -83,7 +84,7 @@ fun HomeScreen(
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.savedByNewerVersion) {
             SsText(
-                Copy.OLDER_COPY,
+                Copy.OLDER_COPY.resolve(),
                 Ss.body.copy(color = Ss.dangerText),
                 Modifier.fillMaxWidth().background(Ss.dangerBg, RoundedCornerShape(12.dp)).padding(14.dp),
             )
@@ -108,7 +109,7 @@ fun HomeScreen(
         }
 
         state.error?.let {
-            SsText(it, Ss.body.copy(color = Ss.dangerText), Modifier.fillMaxWidth().background(Ss.dangerBg, RoundedCornerShape(12.dp)).padding(14.dp))
+            SsText(it.resolve(), Ss.body.copy(color = Ss.dangerText), Modifier.fillMaxWidth().background(Ss.dangerBg, RoundedCornerShape(12.dp)).padding(14.dp))
         }
 
         if (state.tvs.isEmpty()) {
@@ -130,11 +131,11 @@ fun HomeScreen(
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         SsText(tv.address, Ss.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        SsText(if (restarting) "Restarting…" else if (tv.checkableHere) tv.statusLabel else Copy.lastSeen(tv.statusLabel))
+                        SsText(if (restarting) "Restarting…" else if (tv.checkableHere) tv.statusLabel.resolve() else Copy.lastSeen(tv.statusLabel).resolve())
                         cardCheckedLine(tv.attention, tv.checkableHere, tv.checkedAtEpochMs, now, parked)
-                            ?.let { SsText(it, Ss.caption) }
-                        tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
-                        tv.scopeNote?.let { SsText(it, Ss.caption) }
+                            ?.let { SsText(it.resolve(), Ss.caption) }
+                        tv.note?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.warnText)) }
+                        tv.scopeNote?.let { SsText(it.resolve(), Ss.caption) }
                         TvActivityBlock(tv, now)
                         if (tv.attention != TvAttention.NONE) {
                             AttentionBlock(
@@ -152,7 +153,7 @@ fun HomeScreen(
                                 if (restarting) SsSpinner()
                                 when (messages[tv.id]?.outcome) {
                                     RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
-                                    RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE, Ss.body.copy(color = Ss.warnText))
+                                    RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE.resolve(), Ss.body.copy(color = Ss.warnText))
                                     else -> Unit
                                 }
                             }
@@ -195,30 +196,30 @@ private fun AttentionBlock(
     when (tv.attention) {
         TvAttention.LEGACY_ACK -> {
             var checked by remember(tv.id) { mutableStateOf(false) }
-            SsText(Copy.NOT_CONTACTED, Ss.caption)
-            SsText(Copy.CLASSIC_ACK, Ss.caption)
-            SsCheckRow(Copy.CLASSIC_ACK_CHECK, checked) { checked = it }
+            SsText(Copy.NOT_CONTACTED.resolve(), Ss.caption)
+            SsText(Copy.CLASSIC_ACK.resolve(), Ss.caption)
+            SsCheckRow(Copy.CLASSIC_ACK_CHECK.resolve(), checked) { checked = it }
             SsButton("Continue", { onAcknowledge(tv.id) }, enabled = checked)
         }
         TvAttention.LEGACY_PAIR -> {
-            SsText(Copy.NOT_CONTACTED, Ss.caption)
-            SsText(Copy.PAIR_OFFER, Ss.caption)
-            SsButton(Copy.PAIR, { onPair(tv.id) })
+            SsText(Copy.NOT_CONTACTED.resolve(), Ss.caption)
+            SsText(Copy.PAIR_OFFER.resolve(), Ss.caption)
+            SsButton(Copy.PAIR.resolve(), { onPair(tv.id) })
         }
         TvAttention.CONFIRM -> {
-            SsText(Copy.CONFIRM_TV, Ss.caption)
-            SsButton(Copy.CONFIRM, { onConfirm(tv.id) })
+            SsText(Copy.CONFIRM_TV.resolve(), Ss.caption)
+            SsButton(Copy.CONFIRM.resolve(), { onConfirm(tv.id) })
         }
         TvAttention.WIRELESS_OFF -> {
             var typing by remember(tv.id) { mutableStateOf(false) }
             var port by remember(tv.id) { mutableStateOf("") }
-            SsText(Copy.WIRELESS_OFF, Ss.caption)
+            SsText(Copy.WIRELESS_OFF.resolve(), Ss.caption)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SsButton(Copy.TRY_AGAIN, { onRestart(tv.id) })
-                if (!typing) SsButton(Copy.TYPE_THE_PORT, { typing = true })
+                SsButton(Copy.TRY_AGAIN.resolve(), { onRestart(tv.id) })
+                if (!typing) SsButton(Copy.TYPE_THE_PORT.resolve(), { typing = true })
             }
             if (typing) {
-                SsText(Copy.CONNECT_PORT_HINT, Ss.caption)
+                SsText(Copy.CONNECT_PORT_HINT.resolve(), Ss.caption)
                 SsTextField(port, { port = it }, "37123")
                 SsButton("Add", { onPort(tv.id, port) }, enabled = port.isNotBlank())
             }

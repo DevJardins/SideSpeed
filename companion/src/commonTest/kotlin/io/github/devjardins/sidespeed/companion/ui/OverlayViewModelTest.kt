@@ -14,6 +14,7 @@ import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.testing.english
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
@@ -273,7 +274,7 @@ class OverlayViewModelTest {
     @Test fun aBareTailscaleAddressSaysWhichNetworkKeepsItAlive() = runTest(UnconfinedTestDispatcher()) {
         val r = rig()
         r.vm.addSaved("100.101.1.9")   // no peer has it: saved under "home"
-        assertEquals("Kept alive while on Home", r.vm.state.value.tvs.single().scopeNote)
+        assertEquals("Kept alive while on Home", r.vm.state.value.tvs.single().scopeNote?.english())
     }
 
     @Test fun peerBoundAndLanTvsCarryNoScopeNote() = runTest(UnconfinedTestDispatcher()) {

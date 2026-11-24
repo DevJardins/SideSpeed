@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.testing.english
 import io.github.devjardins.sidespeed.theme.SsTokens
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,8 +104,8 @@ class StatusKindTest {
         for (attention in trustAttentions) {
             val line = cardCheckedLine(attention, checkableHere = true, checkedAtEpochMs = 0L, nowMs = 60_000L)
             assertEquals(Copy.WAITING_FOR_YOU, line, attention.name)
-            assertEquals("Waiting for you", line)
-            assertFalse(line!!.contains("Checked"), line)
+            assertEquals("Waiting for you", line!!.english())
+            assertFalse(line.english().contains("Checked"), line.english())
             assertEquals(
                 Copy.WAITING_FOR_YOU,
                 cardCheckedLine(attention, checkableHere = true, checkedAtEpochMs = null, nowMs = 0L),
@@ -114,10 +115,10 @@ class StatusKindTest {
     }
 
     @Test fun otherCardsStillSayWhenTheyWereChecked() {
-        assertEquals("Checked 2 min ago", cardCheckedLine(TvAttention.NONE, true, 0L, 120_000L))
-        assertEquals("Checked 0 min ago", cardCheckedLine(TvAttention.WIRELESS_OFF, true, 60_000L, 90_000L))
-        assertEquals("Checked 1 min ago", cardCheckedLine(TvAttention.CONFIRM, checkableHere = false, 0L, 60_000L))
-        assertEquals("Checked 1 min ago", cardCheckedLine(TvAttention.CONFIRM, true, 0L, 60_000L, parked = true))
+        assertEquals("Checked 2 min ago", cardCheckedLine(TvAttention.NONE, true, 0L, 120_000L)!!.english())
+        assertEquals("Checked 0 min ago", cardCheckedLine(TvAttention.WIRELESS_OFF, true, 60_000L, 90_000L)!!.english())
+        assertEquals("Checked 1 min ago", cardCheckedLine(TvAttention.CONFIRM, checkableHere = false, 0L, 60_000L)!!.english())
+        assertEquals("Checked 1 min ago", cardCheckedLine(TvAttention.CONFIRM, true, 0L, 60_000L, parked = true)!!.english())
         assertNull(cardCheckedLine(TvAttention.NONE, true, checkedAtEpochMs = null, nowMs = 0L))
     }
 

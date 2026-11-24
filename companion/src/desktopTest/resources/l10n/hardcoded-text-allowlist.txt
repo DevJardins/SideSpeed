@@ -49,6 +49,15 @@ companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSe
 companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"The encrypted port is not known"
 companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"This connection did not use TLS"
 
+# never user-visible: Kadb pairing error substring checks mapped to PairResult
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Exchanging message wasn't successful"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Could not exchange peer info"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Connection closed with errors"
+
+# never user-visible: Android content-query error substring checks mapped to ActivityPhase.NEEDS_UPDATE
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvActivity.kt|"Could not find provider"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvActivity.kt|"Error while accessing provider"
+
 # never user-visible: on-disk OS app-data folder name
 companion/src/desktopMain/kotlin/io/github/devjardins/sidespeed/companion/tv/DesktopDirs.kt|"Library/Application Support/SideSpeed Companion"
 companion/src/desktopMain/kotlin/io/github/devjardins/sidespeed/companion/tv/DesktopDirs.kt|"SideSpeed Companion"

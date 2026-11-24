@@ -11,6 +11,7 @@ import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.testing.english
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.PairCopy
@@ -202,8 +203,8 @@ class TvIdentityViewModelTest {
         )
         val vm = model(fake, store)
         assertEquals(TvAttention.CONFIRM, vm.state.value.tvs.single().attention)
-        assertEquals("Confirm this is your TV before SideSpeed uses it.", Copy.CONFIRM_TV)
-        assertEquals("Confirm", Copy.CONFIRM)
+        assertEquals("Confirm this is your TV before SideSpeed uses it.", Copy.CONFIRM_TV.english())
+        assertEquals("Confirm", Copy.CONFIRM.english())
         vm.confirmTv("tv-1")
         val write = TvCommands.writeSecret(companionId, secret)
         val prove = TvCommands.proveSecret(companionId, nonce)
@@ -294,7 +295,7 @@ class TvIdentityViewModelTest {
         val cards = vm.state.value.tvs
         assertEquals(listOf("tv-1", "tv-2"), cards.map { it.id })
         for (card in cards) {
-            assertEquals("Stopped: check failed", card.statusLabel)
+            assertEquals("Stopped: check failed", card.statusLabel.english())
             assertEquals(Glow.RED, cardGlow(card.reach, card.checkableHere, card.attention, parked = true))
             assertEquals(StatusKind.BAD, cardDot(card.status, card.checkableHere, card.attention, parked = true))
             assertEquals(Copy.TV_UNPROVEN, card.note)
@@ -330,7 +331,7 @@ class TvIdentityViewModelTest {
         for (card in cards) {
             val line = cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, nowMs = 60_000L)
             assertEquals(Copy.WAITING_FOR_YOU, line, card.id)
-            assertFalse(line!!.contains("Checked"), line)
+            assertFalse(line!!.english().contains("Checked"), line.english())
             assertEquals(Glow.ORANGE, cardGlow(card.reach, card.checkableHere, card.attention), card.id)
             assertEquals(StatusKind.TRUST, cardDot(card.status, card.checkableHere, card.attention), card.id)
         }
@@ -353,7 +354,7 @@ class TvIdentityViewModelTest {
         assertEquals(TvAttention.WIRELESS_OFF, card.attention)
         assertEquals(Glow.RED, cardGlow(card.reach, card.checkableHere, card.attention))
         assertEquals(StatusKind.WAITING, cardDot(card.status, card.checkableHere, card.attention))
-        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L))
+        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L)!!.english())
     }
 
     @Test fun trustOffThisNetworkKeepsTheLastSeenCard() = runTest(UnconfinedTestDispatcher()) {
@@ -373,7 +374,7 @@ class TvIdentityViewModelTest {
         assertEquals(false, card.checkableHere)
         assertNull(cardGlow(card.reach, card.checkableHere, card.attention))
         assertEquals(StatusKind.UNKNOWN, cardDot(card.status, card.checkableHere, card.attention))
-        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L))
+        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L)!!.english())
     }
 
     @Test fun confirmThenASuccessfulCheckIsGreenAndRunning() = runTest(UnconfinedTestDispatcher()) {
@@ -513,7 +514,7 @@ class TvIdentityViewModelTest {
         assertEquals(true, saved.unproven)
         assertEquals(TvStatus.CHECK_FAILED, saved.status)
         val card = vm.state.value.tvs.single()
-        assertEquals("Stopped: check failed", card.statusLabel)
+        assertEquals("Stopped: check failed", card.statusLabel.english())
         assertEquals(Copy.TV_UNPROVEN, card.note)
         assertEquals(true, fake.closed)
     }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.helpFor
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 
 @Composable
 fun AddTvScreen(
@@ -39,9 +40,9 @@ fun AddTvScreen(
             PairingBlock(form, onSubmitPair, onSubmitConnectPort, onCancelPair)
             return@Column
         }
-        SsText(Copy.ALLOW_STEP, Ss.caption)
+        SsText(Copy.ALLOW_STEP.resolve(), Ss.caption)
         SsTextField(address, { address = it }, "192.168.1.50")
-        if (state.addErrors.isEmpty()) state.error?.let { SsText(it, Ss.body.copy(color = Ss.dangerText)) }
+        if (state.addErrors.isEmpty()) state.error?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.dangerText)) }
         val typedAck = state.classicAck?.takeIf { it.address == address.trim() }
         if (typedAck != null) ClassicAckBlock(typedAck, onClassicCheck)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -61,7 +62,7 @@ fun AddTvScreen(
         }
         SsText("Range to scan (optional)", Ss.caption)
         SsTextField(range, { range = it }, state.currentNetwork?.subnet ?: "192.168.1.0/24")
-        state.scanProgress?.let { SsText(it, Ss.caption) }
+        state.scanProgress?.let { SsText(it.resolve(), Ss.caption) }
         if (state.scanning) {
             SsButton("Stop", onStop)
         } else if (state.scanStopped || state.scanTruncated || state.diagnosis == Diagnosis.PARTIAL) {
@@ -78,21 +79,21 @@ fun AddTvScreen(
                     enabled = !adding && ack?.checked != false,
                 )
                 if (ack != null) ClassicAckBlock(ack, onClassicCheck)
-                state.addErrors[host]?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
+                state.addErrors[host]?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.dangerText)) }
             }
         }
         state.tlsHosts.forEach { host ->
             SsButton(host, { onStartPair(host) }, modifier = Modifier.fillMaxWidth())
         }
-        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
-        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
+        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND.resolve(), Ss.caption)
+        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it).resolve(), Ss.caption) }
     }
 }
 
 @Composable
 private fun ClassicAckBlock(ack: ClassicAck, onCheck: (Boolean) -> Unit) {
-    SsText(Copy.CLASSIC_ACK, Ss.caption)
-    SsCheckRow(Copy.CLASSIC_ACK_CHECK, ack.checked, onCheck)
+    SsText(Copy.CLASSIC_ACK.resolve(), Ss.caption)
+    SsCheckRow(Copy.CLASSIC_ACK_CHECK.resolve(), ack.checked, onCheck)
 }
 
 @Composable
@@ -105,20 +106,20 @@ fun PairingBlock(
     var code by remember(form.address) { mutableStateOf("") }
     var port by remember(form.address) { mutableStateOf("") }
     var connect by remember(form.address) { mutableStateOf("") }
-    SsText(Copy.PAIR_STEPS, Ss.caption)
-    form.error?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
+    SsText(Copy.PAIR_STEPS.resolve(), Ss.caption)
+    form.error?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.dangerText)) }
     if (!form.askConnectPort) {
-        SsText(Copy.PAIR_CODE, Ss.caption)
+        SsText(Copy.PAIR_CODE.resolve(), Ss.caption)
         SsTextField(code, { code = it }, "123456")
-        SsText(Copy.PAIR_PORT, Ss.caption)
+        SsText(Copy.PAIR_PORT.resolve(), Ss.caption)
         SsTextField(port, { port = it }, "37123")
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SsButton(Copy.PAIR, { onSubmit(code, port) }, primary = true)
+            SsButton(Copy.PAIR.resolve(), { onSubmit(code, port) }, primary = true)
             SsButton("Cancel", onCancel)
         }
     } else {
-        SsText(Copy.CONNECT_PORT_HINT, Ss.caption)
-        SsText(Copy.PAIR_PORT, Ss.caption)
+        SsText(Copy.CONNECT_PORT_HINT.resolve(), Ss.caption)
+        SsText(Copy.PAIR_PORT.resolve(), Ss.caption)
         SsTextField(connect, { connect = it }, "37123")
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SsButton("Add", { onConnectPort(connect) }, primary = true)

@@ -41,6 +41,7 @@ import io.github.devjardins.sidespeed.companion.tv.SelfState
 import io.github.devjardins.sidespeed.companion.tv.TvActivity
 import io.github.devjardins.sidespeed.companion.tv.formatActivityElapsed
 import io.github.devjardins.sidespeed.companion.tv.lastCaption
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
 
 /**
@@ -157,7 +158,7 @@ private fun IdleRow(a: TvActivity, nowMs: Long) {
         }
         SsText("All caught up", Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    lastCaption(a.lastLabel.ifEmpty { a.lastPkg }, a.lastMs, nowMs)?.let { SsText(it, Ss.caption) }
+    lastCaption(a.lastLabel.ifEmpty { a.lastPkg }, a.lastMs, nowMs)?.let { SsText(it.resolve(), Ss.caption) }
 }
 
 @Composable

@@ -1,5 +1,12 @@
 package io.github.devjardins.sidespeed.companion.tv
 
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.activity_last_day_ago
+import io.github.devjardins.sidespeed.companion.resources.activity_last_hour_ago
+import io.github.devjardins.sidespeed.companion.resources.activity_last_just_now
+import io.github.devjardins.sidespeed.companion.resources.activity_last_min_ago
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+
 /** SideSpeed's own package on the TV: its self-compile shows up as a normal compiling row. */
 const val SIDESPEED_PACKAGE = "io.github.devjardins.sidespeed"
 
@@ -114,14 +121,23 @@ fun formatActivityElapsed(elapsedMs: Long): String {
 }
 
 /** `"Last: <label> · 3 min ago"`, or null when there is no finished compile to show. */
-fun lastCaption(label: String, lastMs: Long, nowMs: Long): String? {
+fun lastCaption(label: String, lastMs: Long, nowMs: Long, labelIsLtr: Boolean = false): UiText? {
     if (label.isEmpty() || lastMs <= 0L) return null
     val diff = (nowMs - lastMs).coerceAtLeast(0L)
-    val ago = when {
-        diff < 60_000L -> "just now"
-        diff < 3_600_000L -> "${diff / 60_000L} min ago"
-        diff < 86_400_000L -> "${diff / 3_600_000L} h ago"
-        else -> "${diff / 86_400_000L} d ago"
+    val labelArg: UiText = if (labelIsLtr) UiText.Ltr(label) else UiText.Raw(label)
+    return when {
+        diff < 60_000L -> UiText.Res(Res.string.activity_last_just_now, listOf(labelArg))
+        diff < 3_600_000L -> {
+            val mins = (diff / 60_000L).toInt()
+            UiText.Plural(Res.plurals.activity_last_min_ago, mins, listOf(labelArg, mins))
+        }
+        diff < 86_400_000L -> {
+            val hours = (diff / 3_600_000L).toInt()
+            UiText.Plural(Res.plurals.activity_last_hour_ago, hours, listOf(labelArg, hours))
+        }
+        else -> {
+            val days = (diff / 86_400_000L).toInt()
+            UiText.Plural(Res.plurals.activity_last_day_ago, days, listOf(labelArg, days))
+        }
     }
-    return "Last: $label · $ago"
 }

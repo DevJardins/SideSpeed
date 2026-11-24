@@ -19,6 +19,7 @@ import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.testing.english
 import io.github.devjardins.sidespeed.companion.tv.ActivityPhase
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.PairResult
@@ -133,7 +134,7 @@ class CompanionViewModelTest {
         val r = rig(trusted = true)
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
         r.vm.findTvs()
-        assertEquals("Join a Trusted Network to find TVs", r.vm.state.value.error)
+        assertEquals("Join a Trusted Network to find TVs", r.vm.state.value.error?.english())
         assertEquals(0, r.lan.calls.size)
     }
 
@@ -217,7 +218,7 @@ class CompanionViewModelTest {
         assertEquals(
             "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
                 "On Google TV the helper is optional; Home shows what's compiling.",
-            r.vm.state.value.tvs.single().note,
+            r.vm.state.value.tvs.single().note?.english(),
         )
     }
 
@@ -489,7 +490,7 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(false, vm.state.value.scanning)
         assertTrue(vm.state.value.noneFound)
-        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress)
+        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress?.english())
         script[ip("192.168.5.30")] = listOf(ProbeResult.AdbOpen)
         vm.findTvs()
         runCurrent()
@@ -515,7 +516,7 @@ class CompanionViewModelTest {
         assertEquals(setOf("192.168.5.10", "192.168.5.11", "192.168.5.12"), vm.state.value.found.toSet())
         assertEquals(false, vm.state.value.scanning)
         // The silent host's second pass is not counted again: a /24 has 254 hosts.
-        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress)
+        assertEquals("Scanned 254 of 254", vm.state.value.scanProgress?.english())
     }
 
     @Test
@@ -552,7 +553,7 @@ class CompanionViewModelTest {
         assertEquals(false, vm.state.value.scanning)
         assertEquals(false, vm.state.value.scanStopped)
         assertEquals(Diagnosis.PARTIAL, vm.state.value.diagnosis)
-        assertEquals("Scanned 4096 of 4096", vm.state.value.scanProgress)
+        assertEquals("Scanned 4096 of 4096", vm.state.value.scanProgress?.english())
     }
 
     @Test
@@ -628,7 +629,7 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(253, lan.calls.map { it.address }.toSet().size)
         assertTrue(lan.calls.none { it.address == ip("192.168.5.7") })
-        assertEquals("Scanned 253 of 253", vm.state.value.scanProgress)
+        assertEquals("Scanned 253 of 253", vm.state.value.scanProgress?.english())
     }
 
     @Test
@@ -653,7 +654,7 @@ class CompanionViewModelTest {
         runCurrent()
         assertEquals(Diagnosis.NO_ADB_ON_LIVE_HOSTS, vm.state.value.diagnosis)
         assertTrue(
-            helpFor(vm.state.value.diagnosis!!).endsWith("or type the address shown in SideSpeed on the TV"),
+            helpFor(vm.state.value.diagnosis!!).english().endsWith("or type the address shown in SideSpeed on the TV"),
         )
     }
 
@@ -837,7 +838,7 @@ class CompanionViewModelTest {
         assertEquals(
             "This copy of SideSpeed Companion is older than the one that saved your TVs. " +
                 "Changes won't be saved; open the newest copy instead.",
-            Copy.OLDER_COPY,
+            Copy.OLDER_COPY.english(),
         )
         val plain = rig(trusted = true)
         runCurrent()
@@ -1154,7 +1155,7 @@ class CompanionViewModelTest {
         assertEquals(
             "This TV can't use an encrypted connection. SideSpeed can still connect the older way. " +
                 "Anyone on your network could see or change the commands it sends.",
-            Copy.CLASSIC_ACK,
+            Copy.CLASSIC_ACK.english(),
         )
     }
 

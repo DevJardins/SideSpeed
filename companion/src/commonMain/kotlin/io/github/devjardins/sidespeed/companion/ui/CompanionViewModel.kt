@@ -22,6 +22,59 @@ import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.add_allow_step
+import io.github.devjardins.sidespeed.companion.resources.add_bad_address
+import io.github.devjardins.sidespeed.companion.resources.add_bad_range
+import io.github.devjardins.sidespeed.companion.resources.add_cant_scan
+import io.github.devjardins.sidespeed.companion.resources.add_default_tv_name
+import io.github.devjardins.sidespeed.companion.resources.add_no_serial
+import io.github.devjardins.sidespeed.companion.resources.add_no_tvs_found
+import io.github.devjardins.sidespeed.companion.resources.add_not_trusted_add
+import io.github.devjardins.sidespeed.companion.resources.add_not_trusted_error
+import io.github.devjardins.sidespeed.companion.resources.add_outside_network
+import io.github.devjardins.sidespeed.companion.resources.add_scan_progress
+import io.github.devjardins.sidespeed.companion.resources.add_shared_peer
+import io.github.devjardins.sidespeed.companion.resources.add_tv_check_not_saved
+import io.github.devjardins.sidespeed.companion.resources.add_unreachable
+import io.github.devjardins.sidespeed.companion.resources.common_try_again
+import io.github.devjardins.sidespeed.companion.resources.home_checked_min_ago
+import io.github.devjardins.sidespeed.companion.resources.home_confirm_button
+import io.github.devjardins.sidespeed.companion.resources.home_confirm_tv
+import io.github.devjardins.sidespeed.companion.resources.home_different_device
+import io.github.devjardins.sidespeed.companion.resources.home_kept_alive_while_on
+import io.github.devjardins.sidespeed.companion.resources.home_last_seen
+import io.github.devjardins.sidespeed.companion.resources.home_not_checked_here
+import io.github.devjardins.sidespeed.companion.resources.home_not_contacted
+import io.github.devjardins.sidespeed.companion.resources.home_not_fire_tv_note
+import io.github.devjardins.sidespeed.companion.resources.home_older_copy
+import io.github.devjardins.sidespeed.companion.resources.home_pair_offer
+import io.github.devjardins.sidespeed.companion.resources.home_status_check_failed
+import io.github.devjardins.sidespeed.companion.resources.home_status_needs_attention
+import io.github.devjardins.sidespeed.companion.resources.home_status_not_installed
+import io.github.devjardins.sidespeed.companion.resources.home_status_not_running
+import io.github.devjardins.sidespeed.companion.resources.home_status_offline
+import io.github.devjardins.sidespeed.companion.resources.home_status_running
+import io.github.devjardins.sidespeed.companion.resources.home_status_start_failed
+import io.github.devjardins.sidespeed.companion.resources.home_status_unknown
+import io.github.devjardins.sidespeed.companion.resources.home_status_waiting_for_allow
+import io.github.devjardins.sidespeed.companion.resources.home_status_wrong_device
+import io.github.devjardins.sidespeed.companion.resources.home_tv_unproven
+import io.github.devjardins.sidespeed.companion.resources.home_type_the_port
+import io.github.devjardins.sidespeed.companion.resources.home_waiting_for_you
+import io.github.devjardins.sidespeed.companion.resources.home_wireless_off
+import io.github.devjardins.sidespeed.companion.resources.network_default_name
+import io.github.devjardins.sidespeed.companion.resources.pair_bad_connect_port
+import io.github.devjardins.sidespeed.companion.resources.pair_button
+import io.github.devjardins.sidespeed.companion.resources.pair_classic_ack
+import io.github.devjardins.sidespeed.companion.resources.pair_classic_ack_check
+import io.github.devjardins.sidespeed.companion.resources.pair_code_label
+import io.github.devjardins.sidespeed.companion.resources.pair_connect_port_hint
+import io.github.devjardins.sidespeed.companion.resources.pair_port_label
+import io.github.devjardins.sidespeed.companion.resources.pair_steps
+import io.github.devjardins.sidespeed.companion.resources.settings_no_network_to_trust
+import io.github.devjardins.sidespeed.companion.resources.settings_no_overlay
+import io.github.devjardins.sidespeed.companion.resources.tailnet_default_name
 import io.github.devjardins.sidespeed.companion.store.CompanionSettings
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.Reach
@@ -50,6 +103,8 @@ import io.github.devjardins.sidespeed.companion.tv.TvUnproven
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.TvWrongDevice
 import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.encryptedMoveAllowed
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
@@ -80,69 +135,73 @@ import kotlinx.coroutines.sync.withPermit
 
 object Copy {
     /** Shown under a TV; the screen re-evaluates it on a timer so it never freezes. */
-    fun checkedAgo(diffMs: Long): String = "Checked ${(diffMs / 60_000).coerceAtLeast(0)} min ago"
+    fun checkedAgo(diffMs: Long): UiText {
+        val mins = (diffMs / 60_000).coerceAtLeast(0).toInt()
+        return UiText.Plural(Res.plurals.home_checked_min_ago, mins, listOf(mins))
+    }
 
-    const val NO_TVS_FOUND = "No TVs found"
-    const val NOT_TRUSTED_ERROR = "Join a Trusted Network to find TVs"
-    const val NOT_TRUSTED_ADD = "Join a Trusted Network to add a TV"
-    const val NOT_FIRE_TV_NOTE =
-        "Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. " +
-            "On Google TV the helper is optional; Home shows what's compiling."
-    const val ALLOW_STEP = "Tick Always allow on your TV"
-    const val BAD_ADDRESS = "Enter the TV's address, like 192.168.1.50"
-    const val NO_SERIAL = "That device didn't identify itself, so it can't be added"
-    const val DIFFERENT_DEVICE = "A different device answered at that address."
-    const val NO_OVERLAY = "Tailscale isn't running with a network connection, so there is no tailnet to trust"
-    const val SHARED_PEER = "That device is shared in from another tailnet, so it can't be added"
-    const val CANT_SCAN = "This network can't be scanned, so type the TV's address instead"
-    const val OUTSIDE_NETWORK = "That isn't a private or Tailscale address"
-    const val UNREACHABLE = "Couldn't reach that address on this network"
-    const val TV_CHECK_NOT_SAVED = "SideSpeed couldn't save its check on this TV, so it wasn't added."
-    const val TV_UNPROVEN =
-        "This TV didn't prove it's the one you added, so SideSpeed stopped talking to it. " +
-            "If the TV was reset, remove it and add it again."
-    const val BAD_RANGE = "Enter a range on this network, like 192.168.1.0/24"
-    const val NOT_CHECKED_HERE = "Not checked: not on its network"
-    const val OLDER_COPY =
-        "This copy of SideSpeed Companion is older than the one that saved your TVs. " +
-            "Changes won't be saved; open the newest copy instead."
-    const val PAIR_STEPS =
-        "On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code."
-    const val PAIR_CODE = "Pairing code"
-    const val PAIR_PORT = "Port"
-    const val PAIR = "Pair"
-    const val CONNECT_PORT_HINT =
-        "Type the port shown on the TV's Wireless debugging screen (after the colon in the IP address)."
-    const val CLASSIC_ACK =
-        "This TV can't use an encrypted connection. SideSpeed can still connect the older way. " +
-            "Anyone on your network could see or change the commands it sends."
-    const val CLASSIC_ACK_CHECK = "I understand. Connect the older way."
-    const val PAIR_OFFER = "This TV can use an encrypted connection. Pair it to keep checking it."
-    const val NOT_CONTACTED = "SideSpeed isn't checking this TV until you choose."
-    const val CONFIRM_TV = "Confirm this is your TV before SideSpeed uses it."
-    const val CONFIRM = "Confirm"
-    const val WAITING_FOR_YOU = "Waiting for you"
-    const val WIRELESS_OFF = "Turn wireless debugging back on to keep this TV up to date."
-    const val TRY_AGAIN = "Try again"
-    const val TYPE_THE_PORT = "Type the port"
-    const val BAD_CONNECT_PORT = "Enter the port shown on the TV's Wireless debugging screen."
+    val NO_TVS_FOUND: UiText = UiText.Res(Res.string.add_no_tvs_found)
+    val NOT_TRUSTED_ERROR: UiText = UiText.Res(Res.string.add_not_trusted_error)
+    val NOT_TRUSTED_ADD: UiText = UiText.Res(Res.string.add_not_trusted_add)
+    val NOT_FIRE_TV_NOTE: UiText = UiText.Res(Res.string.home_not_fire_tv_note)
+    val ALLOW_STEP: UiText = UiText.Res(Res.string.add_allow_step)
+    val BAD_ADDRESS: UiText = UiText.Res(Res.string.add_bad_address, listOf(UiText.Ltr("192.168.1.50")))
+    val NO_SERIAL: UiText = UiText.Res(Res.string.add_no_serial)
+    val DIFFERENT_DEVICE: UiText = UiText.Res(Res.string.home_different_device)
+    val NO_OVERLAY: UiText = UiText.Res(Res.string.settings_no_overlay)
+    val SHARED_PEER: UiText = UiText.Res(Res.string.add_shared_peer)
+    val CANT_SCAN: UiText = UiText.Res(Res.string.add_cant_scan)
+    val OUTSIDE_NETWORK: UiText = UiText.Res(Res.string.add_outside_network)
+    val UNREACHABLE: UiText = UiText.Res(Res.string.add_unreachable)
+    val TV_CHECK_NOT_SAVED: UiText = UiText.Res(Res.string.add_tv_check_not_saved)
+    val TV_UNPROVEN: UiText = UiText.Res(Res.string.home_tv_unproven)
+    val BAD_RANGE: UiText = UiText.Res(Res.string.add_bad_range, listOf(UiText.Ltr("192.168.1.0/24")))
+    val NOT_CHECKED_HERE: UiText = UiText.Res(Res.string.home_not_checked_here)
+    val OLDER_COPY: UiText = UiText.Res(Res.string.home_older_copy)
+    val PAIR_STEPS: UiText = UiText.Res(Res.string.pair_steps)
+    val PAIR_CODE: UiText = UiText.Res(Res.string.pair_code_label)
+    val PAIR_PORT: UiText = UiText.Res(Res.string.pair_port_label)
+    val PAIR: UiText = UiText.Res(Res.string.pair_button)
+    val CONNECT_PORT_HINT: UiText = UiText.Res(Res.string.pair_connect_port_hint)
+    val CLASSIC_ACK: UiText = UiText.Res(Res.string.pair_classic_ack)
+    val CLASSIC_ACK_CHECK: UiText = UiText.Res(Res.string.pair_classic_ack_check)
+    val PAIR_OFFER: UiText = UiText.Res(Res.string.home_pair_offer)
+    val NOT_CONTACTED: UiText = UiText.Res(Res.string.home_not_contacted)
+    val CONFIRM_TV: UiText = UiText.Res(Res.string.home_confirm_tv)
+    val CONFIRM: UiText = UiText.Res(Res.string.home_confirm_button)
+    val WAITING_FOR_YOU: UiText = UiText.Res(Res.string.home_waiting_for_you)
+    val WIRELESS_OFF: UiText = UiText.Res(Res.string.home_wireless_off)
+    val TRY_AGAIN: UiText = UiText.Res(Res.string.common_try_again)
+    val TYPE_THE_PORT: UiText = UiText.Res(Res.string.home_type_the_port)
+    val BAD_CONNECT_PORT: UiText = UiText.Res(Res.string.pair_bad_connect_port)
+    val NO_NETWORK_TO_TRUST: UiText = UiText.Res(Res.string.settings_no_network_to_trust)
 
-    fun keptAliveWhileOn(network: String) = "Kept alive while on $network"
+    fun scanProgress(scanned: Int, total: Int): UiText =
+        UiText.Plural(Res.plurals.add_scan_progress, total, listOf(scanned, total))
+
+    fun keptAliveWhileOn(network: String): UiText =
+        UiText.Res(Res.string.home_kept_alive_while_on, listOf(UiText.Ltr(network)))
 
     /** A saved status shown where the TV can't be checked from here: it may be stale. */
-    fun lastSeen(label: String): String = "Last seen: $label"
+    fun lastSeen(label: UiText): UiText = UiText.Res(Res.string.home_last_seen, listOf(label))
 
-    fun statusLabel(s: TvStatus): String = when (s) {
-        TvStatus.RUNNING -> "Helper running"
-        TvStatus.NOT_RUNNING -> "Not running"
-        TvStatus.OFFLINE -> "Offline"
-        TvStatus.WAITING_FOR_ALLOW -> "Waiting for you to allow"
-        TvStatus.NOT_INSTALLED -> "SideSpeed isn't installed"
-        TvStatus.WRONG_DEVICE -> "Different device at this address"
-        TvStatus.START_FAILED -> "Couldn't start the helper"
-        TvStatus.NEEDS_ATTENTION -> "Not checking"
-        TvStatus.CHECK_FAILED -> "Stopped: check failed"
-        TvStatus.UNKNOWN -> "Not checked yet"
+    fun defaultNetworkName(index: Int): UiText = UiText.Res(Res.string.network_default_name, listOf(index))
+
+    fun defaultTailnetName(index: Int): UiText = UiText.Res(Res.string.tailnet_default_name, listOf(index))
+
+    fun defaultTvName(address: String): UiText = UiText.Res(Res.string.add_default_tv_name, listOf(UiText.Ltr(address)))
+
+    fun statusLabel(s: TvStatus): UiText = when (s) {
+        TvStatus.RUNNING -> UiText.Res(Res.string.home_status_running)
+        TvStatus.NOT_RUNNING -> UiText.Res(Res.string.home_status_not_running)
+        TvStatus.OFFLINE -> UiText.Res(Res.string.home_status_offline)
+        TvStatus.WAITING_FOR_ALLOW -> UiText.Res(Res.string.home_status_waiting_for_allow)
+        TvStatus.NOT_INSTALLED -> UiText.Res(Res.string.home_status_not_installed)
+        TvStatus.WRONG_DEVICE -> UiText.Res(Res.string.home_status_wrong_device)
+        TvStatus.START_FAILED -> UiText.Res(Res.string.home_status_start_failed)
+        TvStatus.NEEDS_ATTENTION -> UiText.Res(Res.string.home_status_needs_attention)
+        TvStatus.CHECK_FAILED -> UiText.Res(Res.string.home_status_check_failed)
+        TvStatus.UNKNOWN -> UiText.Res(Res.string.home_status_unknown)
     }
 }
 
@@ -167,7 +226,7 @@ fun cardActions(card: TvCardState): List<TvCardAction> =
 data class PairingForm(
     val address: String,
     val tvId: String? = null,
-    val error: String? = null,
+    val error: UiText? = null,
     val askConnectPort: Boolean = false,
 )
 
@@ -179,12 +238,12 @@ data class TvCardState(
     val name: String,
     val address: String,
     val status: TvStatus,
-    val statusLabel: String,
+    val statusLabel: UiText,
     /** Whether upkeep could contact this TV right now; when false the card shows the saved status as last-seen. */
     val checkableHere: Boolean,
     val checkedAtEpochMs: Long?,
-    val note: String?,
-    val scopeNote: String? = null,
+    val note: UiText?,
+    val scopeNote: UiText? = null,
     /** How the last check reached this TV; null when never checked, or when it can't be checked from here. */
     val reach: Reach? = null,
     /** The latest live compile status, while the Home screen polls for it; null when unknown. */
@@ -215,7 +274,7 @@ data class CompanionUiState(
     val settings: CompanionSettings = CompanionSettings(),
     val busy: Boolean = false,
     val lastRestart: RestartResult? = null,
-    val error: String? = null,
+    val error: UiText? = null,
     /** Addresses of TVs found by "Find TVs" that aren't saved yet. */
     val found: List<String> = emptyList(),
     /** Addresses that answered with wireless debugging. Picking one opens pairing. */
@@ -227,7 +286,7 @@ data class CompanionUiState(
     /** Addresses whose add is in progress: their rows show "Adding…" and ignore presses. */
     val adding: Set<String> = emptyList<String>().toSet(),
     /** Per-address add failures, shown on the row that was pressed. */
-    val addErrors: Map<String, String> = emptyMap(),
+    val addErrors: Map<String, UiText> = emptyMap(),
     /** The address of the TV just added; the Add screen returns Home on it (see [CompanionViewModel.acknowledgeAdded]). */
     val addedAddress: String? = null,
     /** A Find TVs scan is running: the button shows a spinner and ignores presses. */
@@ -235,7 +294,7 @@ data class CompanionUiState(
     /** The last scan finished with no new TVs. */
     val noneFound: Boolean = false,
     /** "Scanned N of M" for the running or latest scan; null before the first one. */
-    val scanProgress: String? = null,
+    val scanProgress: UiText? = null,
     /** The latest scan finished but the probe cap cut it short: the Add screen offers "Keep scanning". */
     val scanTruncated: Boolean = false,
     /** The latest scan was stopped before it finished: the Add screen offers "Keep scanning". */
@@ -258,6 +317,7 @@ class CompanionViewModel(
     private val ports: ConnectPortFinder = ConnectPortFinder { null },
     private val linkOffer: LinkOffer = LinkOffer { false },
     private val identity: TvIdentity? = null,
+    private val formatText: suspend (UiText) -> String = { it.resolveSuspend() },
 ) {
     private val overlayGate = overlay?.let(::OverlayGate)
     private val sessions = TvSessions(
@@ -311,12 +371,13 @@ class CompanionViewModel(
         locked {
             val fp = fingerprints.current()
             val clean = name.trim()
-            if (fp == null) return@locked refresh(error = "No network to trust")
+            if (fp == null) return@locked refresh(error = Copy.NO_NETWORK_TO_TRUST)
             val existing = store.trustedNetworks()
             // Already trusted: keep that entry untouched (name and fingerprint) rather than rewriting it.
             if (TrustMatcher.currentTrusted(fp, existing) == null) {
                 val id = "net-" + clock() + "-" + existing.size
-                store.saveTrustedNetwork(TrustedNetwork(id, clean.ifEmpty { "Trusted Network ${existing.size + 1}" }, fp))
+                val label = clean.ifEmpty { formatText(Copy.defaultNetworkName(existing.size + 1)) }
+                store.saveTrustedNetwork(TrustedNetwork(id, label, fp))
             }
             refresh()
         }
@@ -338,7 +399,7 @@ class CompanionViewModel(
         val existing = store.trustedOverlays()
         if (OverlayTrustMatcher.currentTrusted(snapshot, existing) == null) {
             val id = "overlay-" + clock() + "-" + existing.size
-            val label = name.trim().ifEmpty { "Tailnet ${existing.size + 1}" }
+            val label = name.trim().ifEmpty { formatText(Copy.defaultTailnetName(existing.size + 1)) }
             store.saveTrustedOverlay(TrustedOverlay(id, label, snapshot.tailnet, snapshot.selfId))
         }
     }
@@ -613,7 +674,7 @@ class CompanionViewModel(
                         val live = currentTrusted()
                         if (live == null || live.id != trustedIdAtStart) throw FindTrustLost()
                     }
-                    _state.update { it.copy(scanProgress = "Scanned ${event.scanned} of ${event.total}") }
+                    _state.update { it.copy(scanProgress = Copy.scanProgress(event.scanned, event.total)) }
                 }
                 is DiscoveryEvent.Found -> {
                     val host = event.address.toString()
@@ -875,7 +936,7 @@ class CompanionViewModel(
             // Our own tailnet is trusted automatically when a TV is added on it.
             val current = overlayGate.peerOnCurrentTailnet(ip)
             if (current != null) {
-                trustSnapshot(current.snapshot, "Tailnet ${store.trustedOverlays().size + 1}")
+                trustSnapshot(current.snapshot, "")
                 binding = overlayGate.bindingFor(ip, store.trustedOverlays())
             }
         }
@@ -909,10 +970,11 @@ class CompanionViewModel(
         val existing = store.tvs().firstOrNull {
             it.serial == serial && (it.trustedNetworkId == scopeId || (binding == null && it.overlayPeerId == null))
         }
+        val tvName = model.ifBlank { formatText(Copy.defaultTvName(address)) }
         store.saveTv(
             SavedTv(
                 id = existing?.id ?: idGenerator(),
-                name = model.ifBlank { "TV at $address" },
+                name = tvName,
                 address = address,
                 serial = serial,
                 trustedNetworkId = scopeId,
@@ -986,10 +1048,11 @@ class CompanionViewModel(
         val prior = store.tvs().firstOrNull {
             it.serial == serial && (it.trustedNetworkId == scopeId || (binding == null && it.overlayPeerId == null))
         }
+        val tvName = model.ifBlank { formatText(Copy.defaultTvName(form.address)) }
         store.saveTv(
             SavedTv(
                 id = prior?.id ?: idGenerator(),
-                name = model.ifBlank { "TV at ${form.address}" },
+                name = tvName,
                 address = form.address,
                 serial = serial,
                 trustedNetworkId = scopeId,
@@ -1077,7 +1140,7 @@ class CompanionViewModel(
      * A private or overlay address, and either this tailnet or a Trusted Network.
      * A saved TV must also be on its own Trusted Network or overlay. A shared-in peer is refused.
      */
-    private suspend fun contactRefusal(address: String, existing: SavedTv?): String? {
+    private suspend fun contactRefusal(address: String, existing: SavedTv?): UiText? {
         if (!isIpv4(address)) return Copy.BAD_ADDRESS
         val ip = Ipv4.parse(address) ?: return Copy.BAD_ADDRESS
         if (!AddressPolicy.contactable(ip)) return Copy.OUTSIDE_NETWORK
@@ -1094,13 +1157,13 @@ class CompanionViewModel(
         return null
     }
 
-    private suspend fun rejectPairing(form: PairingForm, message: String) {
+    private suspend fun rejectPairing(form: PairingForm, message: UiText) {
         _state.update { it.copy(pairing = form.copy(error = message), busy = false) }
         refresh(error = message)
     }
 
     private suspend fun refresh(
-        error: String? = null,
+        error: UiText? = null,
         settleBusy: Boolean = true,
         lastRestart: RestartResult? = null,
         updateLastRestart: Boolean = false,
