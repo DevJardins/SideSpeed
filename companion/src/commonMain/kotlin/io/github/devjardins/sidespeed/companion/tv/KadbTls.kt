@@ -12,7 +12,12 @@ import javax.net.ssl.SSLEngineResult
  * [com.flyfishxu.kadb.transport.TlsNioChannel] only after that channel's handshake returns.
  * TlsNioChannel wraps an [SSLEngine], not an [javax.net.ssl.SSLSocket], so the socket type
  * cannot answer the question. The channel lives in Kadb's private `connection` pair. This
- * reads that pair. A missing field, a plain channel, or a session that is not valid is not TLS.
+ * reads that pair. A missing field, a plain channel, no agreed protocol, or a handshake still
+ * running is not TLS.
+ *
+ * `SSLSession.isValid` is not checked: it says whether a session may be resumed, not whether
+ * TLS ran. BouncyCastle JSSE, which the desktop app gives Kadb, reports every finished TLS 1.3
+ * session as not valid because it never resumes one.
  */
 internal object KadbTls {
     fun negotiated(kadb: Kadb): Boolean = try {
@@ -20,7 +25,6 @@ internal object KadbTls {
         if (channel.javaClass.name != TLS_CHANNEL) return false
         val engine = engine(channel) ?: return false
         val session = engine.session ?: return false
-        if (!session.isValid) return false
         val protocol = session.protocol
         if (protocol.isNullOrEmpty() || protocol == "NONE") return false
         val status = engine.handshakeStatus

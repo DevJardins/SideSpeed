@@ -71,8 +71,46 @@ class KadbTlsTest {
         }
     }
 
-    @Test fun aFinishedTlsChannelCountsAsTls() {
-        val client = finishedClientEngine()
+    @Test fun aFinishedTlsChannelCountsAsTls() = assertFinishedEngineCounts(finishedClientEngine(provider = null))
+
+    /**
+     * The desktop app's own provider (BouncyCastle JSSE behind `org.conscrypt.OpenSSLProvider`, which Kadb
+     * picks). BC reports a finished TLS 1.3 session as not valid, because it never resumes one.
+     */
+    @Test fun aFinishedTlsChannelFromTheAppsProviderCountsAsTls() {
+        val provider = Class.forName("org.conscrypt.OpenSSLProvider").getDeclaredConstructor().newInstance()
+            as java.security.Provider
+        assertFinishedEngineCounts(finishedClientEngine(provider))
+    }
+
+    @Test fun anEngineThatNeverHandshookIsNotTls() {
+        val engine = SSLContext.getInstance("TLS").apply { init(null, null, SecureRandom()) }
+            .createSSLEngine("127.0.0.1", 1).apply { useClientMode = true }
+        val kadb = kadbWith(tlsChannel(engine))
+        assertFalse(KadbTls.negotiated(kadb))
+        kadb.close()
+    }
+
+    private fun assertFinishedEngineCounts(client: SSLEngine) {
+        val kadb = kadbWith(tlsChannel(client))
+        assertTrue(KadbTls.negotiated(kadb))
+
+        val field = Kadb::class.java.getDeclaredField("connection")
+        field.isAccessible = true
+        field.set(kadb, Pair(null, "plain"))
+        assertFalse(KadbTls.negotiated(kadb))
+        kadb.close()
+    }
+
+    private fun kadbWith(channel: Any): Kadb {
+        val kadb = Kadb("127.0.0.1", 9, 1_000, 1_000)
+        val field = Kadb::class.java.getDeclaredField("connection")
+        field.isAccessible = true
+        field.set(kadb, Pair(null, channel))
+        return kadb
+    }
+
+    private fun tlsChannel(client: SSLEngine): Any {
         val transportClass = Class.forName("com.flyfishxu.kadb.transport.TransportChannel")
         val transport = java.lang.reflect.Proxy.newProxyInstance(
             transportClass.classLoader,
@@ -84,21 +122,12 @@ class KadbTlsTest {
                 else -> null
             }
         }
-        val channel = Class.forName("com.flyfishxu.kadb.transport.TlsNioChannel")
+        return Class.forName("com.flyfishxu.kadb.transport.TlsNioChannel")
             .getConstructor(transportClass, SSLEngine::class.java)
             .newInstance(transport, client)
-        val kadb = Kadb("127.0.0.1", 9, 1_000, 1_000)
-        val field = Kadb::class.java.getDeclaredField("connection")
-        field.isAccessible = true
-        field.set(kadb, Pair(null, channel))
-        assertTrue(KadbTls.negotiated(kadb))
-
-        field.set(kadb, Pair(null, "plain"))
-        assertFalse(KadbTls.negotiated(kadb))
-        kadb.close()
     }
 
-    private fun finishedClientEngine(): SSLEngine {
+    private fun finishedClientEngine(provider: java.security.Provider?): SSLEngine {
         val dir = createTempDirectory("kadb-p12").toFile()
         val file = File(dir, "test.p12")
         val password = "changeit".toCharArray()
@@ -117,19 +146,20 @@ class KadbTlsTest {
             file.inputStream().use { store.load(it, password) }
             val managers = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
             managers.init(store, password)
-            return clientEngine(managers)
+            return clientEngine(managers, provider)
         } finally {
             dir.deleteRecursively()
         }
     }
 
-    private fun clientEngine(managers: KeyManagerFactory): SSLEngine {
+    private fun clientEngine(managers: KeyManagerFactory, provider: java.security.Provider?): SSLEngine {
         val trust = arrayOf<TrustManager>(object : X509TrustManager {
             override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
             override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
             override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) = Unit
         })
-        fun context(server: Boolean): SSLContext = SSLContext.getInstance("TLS").apply {
+        fun context(server: Boolean): SSLContext =
+            (if (provider == null) SSLContext.getInstance("TLS") else SSLContext.getInstance("TLSv1.3", provider)).apply {
             init(if (server) managers.keyManagers else null, trust, SecureRandom())
         }
         val client = context(false).createSSLEngine("127.0.0.1", 1)
