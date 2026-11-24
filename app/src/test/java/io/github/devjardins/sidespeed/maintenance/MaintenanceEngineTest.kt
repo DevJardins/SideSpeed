@@ -564,6 +564,7 @@ class MaintenanceEngineTest {
         val h = Harness(this)
         h.source.put("ok.app")
         h.source.put("fail.app")
+        h.source.put("conn.lost.app")
         h.source.put("ex.msg.app")
         h.source.put("ex.null.app")
         h.source.put("empty.app")
@@ -571,12 +572,13 @@ class MaintenanceEngineTest {
             when (pkg) {
                 "ok.app" -> h.success()
                 "fail.app" -> h.failure("Failure")
+                "conn.lost.app" -> h.failure("Connection lost")
                 "ex.msg.app" -> flow { throw IllegalStateException("boom") }
                 "ex.null.app" -> flow { throw IllegalStateException() }
                 else -> flow { }
             }
         }
-        listOf("ok.app", "fail.app", "ex.msg.app", "ex.null.app", "empty.app").forEach {
+        listOf("ok.app", "fail.app", "conn.lost.app", "ex.msg.app", "ex.null.app", "empty.app").forEach {
             h.store.setMaintained(it, true)
         }
         runCurrent()
@@ -588,6 +590,10 @@ class MaintenanceEngineTest {
         assertEquals(JobMessage.FAILURE.name, byPkg.getValue("fail.app").messageKey)
         assertNull(byPkg.getValue("fail.app").detail)
         assertEquals("Failure", byPkg.getValue("fail.app").display.english())
+
+        assertEquals(JobMessage.CONNECTION_LOST.name, byPkg.getValue("conn.lost.app").messageKey)
+        assertNull(byPkg.getValue("conn.lost.app").detail)
+        assertEquals("Connection lost", byPkg.getValue("conn.lost.app").display.english())
 
         assertEquals(JobMessage.ERROR.name, byPkg.getValue("ex.msg.app").messageKey)
         assertEquals("boom", byPkg.getValue("ex.msg.app").detail)

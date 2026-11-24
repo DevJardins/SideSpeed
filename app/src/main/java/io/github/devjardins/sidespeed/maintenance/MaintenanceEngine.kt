@@ -248,7 +248,9 @@ class MaintenanceEngine(
         if (exceptionDetail != null) return JobMessage.ERROR to exceptionDetail
         return when (message) {
             "Failure" -> JobMessage.FAILURE to null
+            "Connection lost" -> JobMessage.CONNECTION_LOST to null
             "Error" -> JobMessage.ERROR to null
+            // Unknown text is kept as ERROR + raw detail.
             else -> JobMessage.ERROR to message.takeIf { it.isNotEmpty() }
         }
     }
