@@ -3,13 +3,26 @@ package io.github.devjardins.sidespeed.companion.store
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 
-enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, UNKNOWN }
+enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, NEEDS_ATTENTION, UNKNOWN }
 
 /**
  * How the last check reached a TV: on the home network (a LAN address), over Tailscale (a 100.64.0.0/10
  * address), or not at all. Null when the TV was never checked.
  */
 enum class Reach { REACHED_LAN, REACHED_TAILNET, UNREACHABLE }
+
+/**
+ * How the companion reaches a TV.
+ *
+ * [Classic] is cleartext ADB on port 5555. [ackAtEpochMs] is when the user agreed to that, or null when the TV
+ * was saved before that choice existed and has not been asked yet.
+ * [Encrypted] is wireless debugging. [lastPort] is the connect port that worked last time, or null when it is
+ * not known. The companion never falls back to 5555 for an encrypted TV.
+ */
+sealed class TvLink {
+    data class Classic(val ackAtEpochMs: Long?) : TvLink()
+    data class Encrypted(val lastPort: Int?) : TvLink()
+}
 
 /**
  * A TV the user added. [serial] is the TV's `ro.serialno` recorded at add time; it is never blank, because the
@@ -38,6 +51,10 @@ data class SavedTv(
     val overlayPeerId: String? = null,
     /** How the last check reached this TV; null when it was never checked. */
     val reach: Reach? = null,
+    /**
+     * Classic, unacknowledged, until a save says otherwise. Files written before links existed load this way.
+     */
+    val link: TvLink = TvLink.Classic(ackAtEpochMs = null),
 ) {
     companion object {
         /** @throws IllegalArgumentException if [tv] has a blank id or serial. */

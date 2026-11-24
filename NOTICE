@@ -17,6 +17,7 @@ Conscrypt (https://github.com/google/conscrypt)
 
 Bouncy Castle (https://www.bouncycastle.org/)
   Copyright (c) The Legion of the Bouncy Castle Inc. MIT-style license.
+  Includes the TLS library (bctls) used for encrypted ADB on the desktop.
 
 sun-security-android (https://github.com/MuntashirAkon/sun-security-android)
   Derived from OpenJDK sun.security. GPL-2.0 (version 2 only) with the Oracle "Classpath"

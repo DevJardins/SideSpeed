@@ -10,15 +10,21 @@ import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
+import io.github.devjardins.sidespeed.companion.discovery.ConnectPortFinder
 import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.PromptedHost
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
+import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
+import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
+import io.github.devjardins.sidespeed.companion.tv.TvSessions
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.VisitResult
 import io.github.devjardins.sidespeed.companion.tv.open
@@ -72,6 +78,13 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   resets.
  * - A completed visit (other than WrongDevice) resets `offlineCount` and sets the status from the
  *   [VisitResult]; Started and Restarted add the TV's name to `restartedNames`.
+ * - [ClassicNotAcknowledged], [EncryptedAvailable] and [EncryptedPortUnknown] are [TvStatus.NEEDS_ATTENTION].
+ *   Nothing is prompted: the Allow skip stays clear, and a subnet re-find is not started. The Home screen
+ *   says what to do. Encrypted TVs are never re-found by a subnet sweep. A new connect port at the saved
+ *   address comes from mDNS. When that address is gone, the same advertisement is matched by serial
+ *   (`adb-<serial>-` plus a suffix). The new address and port are saved only while [gateOpen] is open,
+ *   the host is a private IPv4 address, the connection works, and the serial there matches. A mismatch
+ *   saves nothing.
  *
  * Runs are serialised: a second [runOnce] waits for the first.
  */
@@ -82,16 +95,27 @@ class Upkeep(
     private val keeper: HelperKeeper,
     private val scanner: Scanner,
     private val overlay: OverlayAccess? = null,
+    private val ports: ConnectPortFinder = ConnectPortFinder { null },
+    private val classicTls: suspend (String) -> Boolean = { false },
     private val clock: () -> Long,
 ) {
     private val mutex = Mutex()
     private val overlayGate = overlay?.let(::OverlayGate)
+    private val sessions = TvSessions(
+        connector,
+        store,
+        classicTls,
+        ports,
+        clock,
+        relocateAllowed = { encryptedMoveAllowed(fingerprints, store, it.id) },
+    )
 
     private sealed interface Attempt {
         data class Visited(val result: VisitResult) : Attempt
         data object Unreachable : Attempt
         data object AuthPending : Attempt
         data object Lost : Attempt
+        data object NeedsAttention : Attempt
     }
 
     private sealed interface Refind {
@@ -182,7 +206,7 @@ class Upkeep(
             )
             is OverlayVerdict.Open -> v.address
         }
-        val attempt = attempt(address, tv.serial)
+        val attempt = attempt(tv.copy(address = address))
         val result = apply(tv.copy(skipBackgroundUntilUserAction = false), attempt, clock(), restarted, dialled = address)
         val verified = attempt is Attempt.Visited && attempt.result != VisitResult.WrongDevice
         return Checked(if (verified) result.copy(address = address) else result)
@@ -205,11 +229,13 @@ class Upkeep(
     /** Checks one TV and, when due, re-finds it. */
     private suspend fun check(tv: SavedTv, trusted: TrustedNetwork, restarted: MutableList<String>): Checked {
         val now = clock()
-        val first = attempt(tv.address, tv.serial)
+        val first = attempt(tv)
         val afterFirst = apply(tv.copy(skipBackgroundUntilUserAction = false), first, now, restarted, dialled = tv.address)
         val addressFailed = first == Attempt.Unreachable ||
             (first is Attempt.Visited && first.result == VisitResult.WrongDevice)
-        if (!addressFailed || !refindDue(afterFirst, now)) return Checked(afterFirst)
+        // An encrypted TV's new port, or a new address confirmed by serial, was already handled by the open.
+        // Only a classic TV is re-found by sweeping the subnet.
+        if (!addressFailed || !refindDue(afterFirst, now) || tv.link !is TvLink.Classic) return Checked(afterFirst)
 
         if (!gateOpen(trusted)) return Checked(afterFirst, gateClosed = true)
         val scanned = afterFirst.copy(lastRefindEpochMs = now)
@@ -220,7 +246,7 @@ class Upkeep(
                 // The serial matched, so the new address is safe to keep even if the visit can't happen now.
                 val moved = scanned.copy(address = r.host)
                 if (!gateOpen(trusted)) return Checked(moved, gateClosed = true)
-                Checked(apply(moved, attempt(r.host, moved.serial), now, restarted, dialled = r.host))
+                Checked(apply(moved, attempt(moved), now, restarted, dialled = r.host))
             }
         }
     }
@@ -306,14 +332,20 @@ class Upkeep(
         store.savePromptedHosts(kept + PromptedHost(networkId, host, now))
     }
 
-    private suspend fun attempt(address: String, serial: String): Attempt = try {
-        connector.open(address).use { Attempt.Visited(keeper.visit(it, serial)) }
+    private suspend fun attempt(tv: SavedTv): Attempt = try {
+        sessions.open(tv).use { Attempt.Visited(keeper.visit(it, tv.serial)) }
     } catch (e: TvUnreachable) {
         Attempt.Unreachable
     } catch (e: TvAuthPending) {
         Attempt.AuthPending
     } catch (e: AdbConnectionLost) {
         Attempt.Lost
+    } catch (e: ClassicNotAcknowledged) {
+        Attempt.NeedsAttention
+    } catch (e: EncryptedAvailable) {
+        Attempt.NeedsAttention
+    } catch (e: EncryptedPortUnknown) {
+        Attempt.NeedsAttention
     }
 
     /**
@@ -347,6 +379,12 @@ class Upkeep(
                 lastCheckedEpochMs = now,
                 reach = reach,
             )
+            Attempt.NeedsAttention -> tv.copy(
+                status = TvStatus.NEEDS_ATTENTION,
+                skipBackgroundUntilUserAction = false,
+                lastCheckedEpochMs = now,
+                reach = Reach.UNREACHABLE,
+            )
             is Attempt.Visited -> if (a.result == VisitResult.WrongDevice) {
                 // Something else answers at this address: count it toward a re-find, but say what we saw.
                 tv.copy(status = TvStatus.WRONG_DEVICE, offlineCount = tv.offlineCount + 1, lastCheckedEpochMs = now, reach = reach)
@@ -364,7 +402,7 @@ class Upkeep(
     }
 
     private suspend fun gateOpen(trusted: TrustedNetwork): Boolean =
-        TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())?.id == trusted.id
+        stillOnTrustedNetwork(fingerprints, store, trusted)
 
     private companion object {
         const val OFFLINE_AFTER = 3
@@ -372,4 +410,26 @@ class Upkeep(
         /** How often a running re-find sweep rechecks that the network is still the Trusted Network. */
         const val REFIND_GATE_RECHECK_MS = 10_000L
     }
+}
+
+/** True when the current fingerprint is still [trusted]. This is the classic re-find gate. */
+internal suspend fun stillOnTrustedNetwork(
+    fingerprints: FingerprintSource,
+    store: CompanionStore,
+    trusted: TrustedNetwork,
+): Boolean = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())?.id == trusted.id
+
+/**
+ * Whether an encrypted TV may be saved at a newly advertised address. Same gate as a classic
+ * re-find: the TV's Trusted Network is the one the computer is on now. An overlay TV has no such
+ * network, so it is not moved here.
+ */
+internal suspend fun encryptedMoveAllowed(
+    fingerprints: FingerprintSource,
+    store: CompanionStore,
+    tvId: String,
+): Boolean {
+    val saved = store.tvs().firstOrNull { it.id == tvId } ?: return false
+    val trusted = store.trustedNetworks().firstOrNull { it.id == saved.trustedNetworkId } ?: return false
+    return stillOnTrustedNetwork(fingerprints, store, trusted)
 }

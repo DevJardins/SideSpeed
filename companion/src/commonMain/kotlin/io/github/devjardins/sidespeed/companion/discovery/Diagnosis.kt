@@ -19,7 +19,7 @@ enum class Diagnosis {
     /** A VPN is active, so the sweep can't see the home network. */
     VPN_ACTIVE,
 
-    /** A device answered with ADB over TLS, which this companion can't use yet, and nothing else was found. */
+    /** A device answered with wireless debugging and nothing else was found. */
     TLS_ONLY,
 
     /** The sweep stopped early or the probe cap cut it short: only part of the network was covered. */
@@ -31,7 +31,7 @@ enum class Diagnosis {
 data class DiscoverySummary(
     /** Every host this run probed, so a resumed run can skip them. */
     val scanned: Set<Ipv4> = emptySet(),
-    /** Hosts that answered but don't speak ADB (a TLS answer is reported on its own, as unsupported). */
+    /** Hosts that answered but don't speak ADB. A TLS answer is reported with the TVs that can be paired. */
     val liveNonAdb: Int = 0,
     /** The probe cap cut the sweep short: only part of the subnet was covered. */
     val truncated: Boolean = false,
@@ -69,8 +69,7 @@ fun helpFor(diagnosis: Diagnosis): String = when (diagnosis) {
         "Devices answered on this network, but none has ADB open. Turn on ADB or Network debugging on the TV, " +
             "accept the prompt, then scan again, $MANUAL_ADDRESS_COPY"
     Diagnosis.TLS_ONLY ->
-        "A device answered with ADB over TLS pairing, which the companion can't use yet. Use classic ADB " +
-            "over the network on that TV, then scan again, $MANUAL_ADDRESS_COPY"
+        "A TV answered over an encrypted connection. Pair it from the list, $MANUAL_ADDRESS_COPY"
     Diagnosis.NOTHING_ANSWERED ->
         "Nothing answered on this network. Check the TV is on and on the same Wi-Fi, then scan again, " +
             MANUAL_ADDRESS_COPY

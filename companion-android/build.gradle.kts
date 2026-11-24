@@ -73,6 +73,8 @@ kotlin {
 
 dependencies {
     implementation(project(":companion"))
+    implementation(libs.kadb.mdns)
+    implementation(libs.conscrypt.android)
     implementation(libs.jb.compose.runtime)
     implementation(libs.jb.compose.foundation)
     implementation(libs.jb.compose.ui)

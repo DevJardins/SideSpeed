@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
+import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
@@ -31,9 +32,10 @@ class OverlayUpkeepTest {
     private val overlay = TrustedOverlay("overlay-1", "Home tailnet", "me@example.com", "nSELF")
     private var now = 1_000_000L
 
-    private fun lanTv(id: String, address: String) = SavedTv(id, "TV $id", address, "SER-$id", "home")
+    private fun lanTv(id: String, address: String) =
+        SavedTv(id, "TV $id", address, "SER-$id", "home", link = TvLink.Classic(1L))
     private fun ovTv(id: String, address: String, peer: String) =
-        SavedTv(id, "TV $id", address, "SER-$id", overlay.id, overlayPeerId = peer)
+        SavedTv(id, "TV $id", address, "SER-$id", overlay.id, overlayPeerId = peer, link = TvLink.Classic(1L))
 
     private fun peer(id: String, vararg ips: String, shared: Boolean = false) =
         OverlayPeer(id, "host-$id", "android", ips.map(::ip), online = true, shared = shared)
@@ -296,7 +298,7 @@ class OverlayUpkeepTest {
     }
 
     @Test fun anOverlayTvWithoutAPeerBindingIsNeverContacted() = runTest {
-        val unbound = SavedTv("a", "TV a", "100.101.1.1", "SER-a", overlay.id)
+        val unbound = SavedTv("a", "TV a", "100.101.1.1", "SER-a", overlay.id, link = TvLink.Classic(1L))
         val net = Net().also { it.sessions["100.101.1.1"] = running("SER-a") }
         val report = upkeep(store(unbound), net, Snapshots(snap(peer("nA", "100.101.1.1")))).runOnce(Trigger.BACKGROUND)
         assertTrue(net.opened.isEmpty())

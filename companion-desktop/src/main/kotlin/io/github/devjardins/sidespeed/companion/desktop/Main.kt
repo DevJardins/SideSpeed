@@ -17,9 +17,14 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
 import androidx.compose.ui.window.rememberWindowState
+import com.flyfishxu.kadb.mdns.KadbMdnsJvm
+import com.flyfishxu.kadb.mdns.MdnsConfig
+import com.flyfishxu.kadb.mdns.MdnsServiceType
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
+import io.github.devjardins.sidespeed.companion.discovery.KadbMdnsConnectPorts
 import io.github.devjardins.sidespeed.companion.discovery.MdnsSource
 import io.github.devjardins.sidespeed.companion.discovery.SocketAdbProbe
+import io.github.devjardins.sidespeed.companion.discovery.StlsOffer
 import io.github.devjardins.sidespeed.companion.discovery.SocketDatagramQuery
 import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
@@ -30,6 +35,7 @@ import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.DesktopDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
+import io.github.devjardins.sidespeed.companion.tv.kadbPairer
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
@@ -74,12 +80,25 @@ fun main() {
     val store = JsonFileCompanionStore(File(appData, "store"))
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
+    // kadb-mdns 2.1.4 has no public way to choose interfaces.
+    // KadbMdnsJvm(MdnsConfig) opens one JmDNS per address via createDefaultJmDnsBackends:
+    // every up, non-loopback, non-virtual interface, IPv4 and IPv6.
+    // MdnsConfig only has serviceTypes and preferIpv4. preferIpv4 is not read when those
+    // JmDNS instances are opened. The constructor that takes a backend factory is internal.
+    val ports = KadbMdnsConnectPorts(open = {
+        KadbMdnsJvm(MdnsConfig(serviceTypes = setOf(MdnsServiceType.TLS_CONNECT)))
+    })
+    val linkOffer = StlsOffer(SocketAdbProbe())
+    val pairer = kadbPairer(DesktopDirs.keyDir()) { store.tvs().map { it.address }.toSet() }
     @OptIn(ExperimentalCoroutinesApi::class)
     val scanner = ProbeScanner(SocketAdbProbe(), Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM))
     val tailscale = TailscaleCli()
     // Desktop only (design decision D1): the tailnet's administrators are trusted to reach the TV.
     val overlay = OverlayAccess({ tailscale.statusJson()?.let(TailscaleStatus::snapshot) }, DesktopEgressCheck())
-    val upkeep = Upkeep(store, fingerprints, connector, HelperKeeper(), scanner, overlay) { System.currentTimeMillis() }
+    val upkeep = Upkeep(
+        store, fingerprints, connector, HelperKeeper(), scanner, overlay,
+        ports = ports, classicTls = { linkOffer.encryptedAvailable(it) },
+    ) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     // Hints first, so the 4096-probe cap on the sweep can never push them out; the ARP table is read on IO.
     val osName = System.getProperty("os.name").orEmpty().lowercase()
@@ -109,7 +128,10 @@ fun main() {
         SocketAdbProbe(),
         Dispatchers.IO.limitedParallelism(Discovery.PARALLELISM),
     )
-    val vm = CompanionViewModel(store, fingerprints, upkeep, connector, discovery, scope, overlay = overlay)
+    val vm = CompanionViewModel(
+        store, fingerprints, upkeep, connector, discovery, scope,
+        overlay = overlay, pairer = pairer, ports = ports, linkOffer = linkOffer,
+    )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
 
     application {
