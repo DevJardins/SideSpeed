@@ -201,12 +201,14 @@ class MaintenanceEngine(
         val start = clock()
         status?.onStart(pkg, app.label, mode.arg)
         var finished: CompileEvent.Finished? = null
+        var exceptionDetail: String? = null
         try {
             runCompile(name, mode).collect { if (it is CompileEvent.Finished) finished = it }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            finished = CompileEvent.Finished(false, false, e.message ?: "Error")
+            exceptionDetail = e.message?.takeIf { it.isNotEmpty() }
+            finished = CompileEvent.Finished(false, false, exceptionDetail ?: "Error")
         }
         val result = finished ?: CompileEvent.Finished(false, false, "Failure")
         when {
@@ -218,7 +220,7 @@ class MaintenanceEngine(
                     done[pkg] = app.lastUpdateTime
                     failures.remove(pkg)
                 }
-                store.addHistory(JobRecord(pkg, app.label, clock(), true, result.message))
+                store.addHistory(JobRecord(pkg, app.label, clock(), true, result.message, JobMessage.SUCCESS.name))
             }
             !helperUp() -> {
                 status?.onHelperLost()
@@ -229,7 +231,8 @@ class MaintenanceEngine(
                 val attempts = synchronized(lock) {
                     ((failures[pkg]?.attempts ?: 0) + 1).also { failures[pkg] = Failure(app.lastUpdateTime, it, false) }
                 }
-                store.addHistory(JobRecord(pkg, app.label, clock(), false, result.message))
+                val (jobMessage, detail) = classifyJobFailure(result.message, exceptionDetail)
+                store.addHistory(JobRecord(pkg, app.label, clock(), false, result.message, jobMessage.name, detail))
                 if (attempts <= maxRetries) {
                     scope.launch {
                         delay(retryDelayMs)
@@ -238,6 +241,15 @@ class MaintenanceEngine(
                     }
                 }
             }
+        }
+    }
+
+    private fun classifyJobFailure(message: String, exceptionDetail: String?): Pair<JobMessage, String?> {
+        if (exceptionDetail != null) return JobMessage.ERROR to exceptionDetail
+        return when (message) {
+            "Failure" -> JobMessage.FAILURE to null
+            "Error" -> JobMessage.ERROR to null
+            else -> JobMessage.ERROR to message.takeIf { it.isNotEmpty() }
         }
     }
 

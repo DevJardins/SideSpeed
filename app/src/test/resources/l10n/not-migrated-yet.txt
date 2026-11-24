@@ -3,7 +3,6 @@ AppContainer.kt
 adb/ConnectionStrategy.kt
 adb/LibAdbBackend.kt
 compile/CompileRunner.kt
-maintenance/MaintenanceService.kt
 status/TvAddress.kt
 tools/Cleanup.kt
 tools/Extras.kt
@@ -12,13 +11,11 @@ tools/LaunchRunner.kt
 ui/about/AboutScreen.kt
 ui/apps/AppsScreen.kt
 ui/apps/AppsViewModel.kt
-ui/apps/AutoOptimizeScreen.kt
 ui/apps/MyApps.kt
 ui/apps/UpdateBanner.kt
 ui/compile/CompileScreen.kt
 ui/compile/LaunchTimeSection.kt
 ui/compile/ResultText.kt
-ui/home/HomeScreen.kt
 ui/setup/SetupScreen.kt
 ui/setup/SetupViewModel.kt
 ui/tools/AnimationsCard.kt

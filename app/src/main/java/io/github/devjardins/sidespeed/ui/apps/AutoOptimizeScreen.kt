@@ -23,11 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.JobRecord
+import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsPill
@@ -68,9 +71,9 @@ fun AutoOptimizeScreen(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // Back sits beside the title, as on About, so a long history can't push it off screen.
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    SsButton("‹ Back", onClick = { showHistory = false }, modifier = Modifier.focusRequester(historyBackFocus))
+                    SsButton(stringResource(R.string.common_back), onClick = { showHistory = false }, modifier = Modifier.focusRequester(historyBackFocus))
                     Spacer(Modifier.width(16.dp))
-                    Text("Auto-optimize history", style = SsType.Headline, color = SsColors.TextPrimary)
+                    Text(stringResource(R.string.maint_history_title), style = SsType.Headline, color = SsColors.TextPrimary)
                 }
                 HistoryList(history)
             }
@@ -82,14 +85,15 @@ fun AutoOptimizeScreen(
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SsButton("‹ Back", onClick = onBack)
+                SsButton(stringResource(R.string.common_back), onClick = onBack)
                 Spacer(Modifier.width(16.dp))
-                Text("Auto-optimize", style = SsType.Headline, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.maint_auto_optimize_title), style = SsType.Headline, color = SsColors.TextPrimary)
             }
             current?.let {
                 AutoOptimizeMode.entries.forEach { m ->
+                    val optionTitle = autoOptimizeOption(m).title
                     SsButton(
-                        (if (m == it) "✓ " else "") + autoOptimizeOption(m).title,
+                        if (m == it) stringResource(R.string.maint_mode_selected, optionTitle) else optionTitle,
                         onClick = { onMode(m) },
                         selected = m == it,
                         modifier = if (m == it) Modifier.focusRequester(modeFocus) else Modifier,
@@ -101,7 +105,7 @@ fun AutoOptimizeScreen(
                     color = SsColors.TextSecondary,
                 )
             }
-            SsButton("History", onClick = { showHistory = true })
+            SsButton(stringResource(R.string.maint_history_button), onClick = { showHistory = true })
         }
     }
 }
@@ -110,7 +114,7 @@ fun AutoOptimizeScreen(
 private fun HistoryList(history: Flow<List<JobRecord>>) {
     val records by history.collectAsState(initial = emptyList())
     if (records.isEmpty()) {
-        Text("Nothing has been optimized automatically yet.", style = SsType.Body, color = SsColors.TextSecondary)
+        Text(stringResource(R.string.maint_history_empty), style = SsType.Body, color = SsColors.TextSecondary)
         return
     }
     val format = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
@@ -130,8 +134,8 @@ private fun HistoryList(history: Flow<List<JobRecord>>) {
                         Text(r.label, style = SsType.Body, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(format.format(Date(r.epochMs)), style = SsType.Caption, color = SsColors.TextSecondary)
                     }
-                    if (r.success) SsPill("Optimized", SsColors.OkPillBg, SsColors.OkPillText)
-                    else SsPill("Failed: ${r.message}", SsColors.WarnPillBg, SsColors.WarnPillText)
+                    if (r.success) SsPill(stringResource(R.string.maint_history_optimized), SsColors.OkPillBg, SsColors.OkPillText)
+                    else SsPill(stringResource(R.string.maint_history_failed, r.display.resolve()), SsColors.WarnPillBg, SsColors.WarnPillText)
                 }
             }
         }

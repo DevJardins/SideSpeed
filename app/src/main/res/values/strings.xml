@@ -1,3 +1,61 @@
 <resources>
-    <string name="app_name">SideSpeed</string>
+    <string name="app_name" translatable="false">SideSpeed</string>
+
+    <!-- Shared -->
+    <!-- Back button label shown at the top of sub-screens. -->
+    <string name="common_back">‹ Back</string>
+
+    <!-- Maintenance -->
+    <!-- Android notification channel name for the background optimization service. -->
+    <string name="maint_channel_name">Keeping apps optimized</string>
+    <!-- Foreground service notification text when work is queued and the helper is not running. -->
+    <string name="maint_notif_waiting_helper">Waiting for the helper</string>
+    <!-- Foreground service notification text while background optimization is running. %1$d is the number of apps left in the queue. -->
+    <plurals name="maint_notif_optimizing">
+        <item quantity="one">Optimizing apps (%1$d left)</item>
+        <item quantity="other">Optimizing apps (%1$d left)</item>
+    </plurals>
+    <!-- Foreground service notification text when auto-optimize is on and nothing needs compiling. -->
+    <string name="maint_notif_watching">Watching for apps to optimize</string>
+    <!-- Foreground service notification text when auto-optimize is idle and keeping %1$d apps up to date. -->
+    <plurals name="maint_notif_keeping">
+        <item quantity="one">Keeping %1$d app optimized</item>
+        <item quantity="other">Keeping %1$d apps optimized</item>
+    </plurals>
+    <!-- Foreground service notification text when only automatic space cleanup is enabled. %1$s is a size threshold like 1 GB. -->
+    <string name="maint_notif_free_space">Keeping free space above %1$s</string>
+    <!-- Headline for the Auto-optimize screen. -->
+    <string name="maint_auto_optimize_title">Auto-optimize</string>
+    <!-- Headline for the Auto-optimize history screen. -->
+    <string name="maint_history_title">Auto-optimize history</string>
+    <!-- Button label for the currently selected auto-optimize mode. %1$s is the mode title. -->
+    <string name="maint_mode_selected">✓ %1$s</string>
+    <!-- Button on Auto-optimize opening the optimization history list. -->
+    <string name="maint_history_button">History</string>
+    <!-- Empty state on the Auto-optimize history screen. -->
+    <string name="maint_history_empty">Nothing has been optimized automatically yet.</string>
+    <!-- Status pill on a successful Auto-optimize history row. -->
+    <string name="maint_history_optimized">Optimized</string>
+    <!-- Status pill on a failed Auto-optimize history row. %1$s is the failure reason. -->
+    <string name="maint_history_failed">Failed: %1$s</string>
+    <!-- Auto-optimize history outcome when a compile succeeds. -->
+    <string name="maint_job_success">Success</string>
+    <!-- Auto-optimize history outcome when a compile fails with no specific error. -->
+    <string name="maint_job_failure">Failure</string>
+    <!-- Auto-optimize history outcome when the helper connection drops mid-compile. -->
+    <string name="maint_job_connection_lost">Connection lost</string>
+    <!-- Auto-optimize history fallback outcome when a compile throws an exception with no message. -->
+    <string name="maint_job_error">Error</string>
+
+    <!-- Home -->
+    <!-- Status pill in the Home header when the background helper is connected. Keep the leading bullet. -->
+    <string name="home_helper_running">● Helper running</string>
+    <!-- Home screen tile title for the installed apps list. -->
+    <string name="home_tile_my_apps">My Apps</string>
+    <!-- Home screen tile title for automatic background optimization. -->
+    <string name="home_tile_auto_optimize">Auto-optimize</string>
+    <!-- Home screen tile title for device utilities. -->
+    <string name="home_tile_tools">Tools</string>
+    <!-- Home screen tile title for version, updates, and companion info. -->
+    <string name="home_tile_about">About</string>
 </resources>
