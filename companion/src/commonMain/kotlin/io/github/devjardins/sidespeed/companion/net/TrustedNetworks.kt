@@ -49,8 +49,9 @@ object Subnets {
 
 object TrustMatcher {
     /**
-     * Same gateway IP and subnet, and DNS sets intersect (or both empty); if both have gatewayMac they must be
-     * equal. A blank gateway IP, malformed subnets or MACs never match.
+     * Same gateway IP and subnet, and DNS sets intersect (or both empty). Then, fail closed on what the
+     * trusted record has: a recorded gatewayMac needs the current one to match it (normalised).
+     * Anything the record lacks is ignored. A blank gateway IP, malformed subnets or MACs never match.
      */
     fun matches(current: NetworkFingerprint, trusted: NetworkFingerprint): Boolean {
         val cg = current.gatewayIp.trim()
@@ -61,9 +62,9 @@ object TrustMatcher {
         val cd = current.dnsServers.map { it.trim().lowercase() }.toSet()
         val td = trusted.dnsServers.map { it.trim().lowercase() }.toSet()
         if (!(cd.isEmpty() && td.isEmpty()) && cd.intersect(td).isEmpty()) return false
-        val cm = current.gatewayMac
         val tm = trusted.gatewayMac
-        if (cm != null && tm != null) {
+        if (tm != null) {
+            val cm = current.gatewayMac ?: return false
             val a = Subnets.normalizeMac(cm) ?: return false
             val b = Subnets.normalizeMac(tm) ?: return false
             if (a != b) return false
@@ -75,5 +76,16 @@ object TrustMatcher {
     fun currentTrusted(current: NetworkFingerprint?, all: List<TrustedNetwork>): TrustedNetwork? {
         if (current == null) return null
         return all.firstOrNull { matches(current, it.fingerprint) }
+    }
+
+    /**
+     * The record with the current fingerprint's gatewayMac added where the record lacks it — or null when
+     * there is nothing to add. The existing field is never changed. Callers save the result only after
+     * [matches] passed, so the added MAC was seen on the trusted network.
+     */
+    fun upgraded(matched: TrustedNetwork, current: NetworkFingerprint): TrustedNetwork? {
+        val fp = matched.fingerprint
+        val next = fp.copy(gatewayMac = fp.gatewayMac ?: current.gatewayMac)
+        return if (next == fp) null else matched.copy(fingerprint = next)
     }
 }

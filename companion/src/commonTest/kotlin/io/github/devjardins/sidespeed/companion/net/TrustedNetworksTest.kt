@@ -25,6 +25,29 @@ class TrustedNetworksTest {
     @Test fun oneDnsEmpty() = assertFalse(TrustMatcher.matches(fp(dns = emptySet()), fp()))
     @Test fun macsDiffer() = assertFalse(TrustMatcher.matches(fp(mac = "aa:bb:cc:dd:ee:01"), fp(mac = "aa:bb:cc:dd:ee:02")))
     @Test fun oneMacMissingIgnored() = assertTrue(TrustMatcher.matches(fp(mac = "aa:bb:cc:dd:ee:01"), fp()))
+    @Test fun currentMacMissingWhenTrustedHasOneFails() =
+        assertFalse(TrustMatcher.matches(fp(), fp(mac = "aa:bb:cc:dd:ee:01")))
+
+    @Test fun upgradeAddsMissingMac() {
+        val record = TrustedNetwork("n", "N", fp())
+        val current = fp(mac = "aa:bb:cc:dd:ee:ff")
+        val upgraded = TrustMatcher.upgraded(record, current)
+        assertEquals(fp(mac = "aa:bb:cc:dd:ee:ff"), upgraded?.fingerprint)
+        assertEquals("n", upgraded?.id)
+        assertEquals("N", upgraded?.name)
+    }
+
+    @Test fun upgradeKeepsTheRecordedMac() {
+        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff"))
+        val current = fp(mac = "00:11:22:33:44:55")
+        assertNull(TrustMatcher.upgraded(record, current))
+    }
+
+    @Test fun upgradeIsNullWhenNothingToAdd() {
+        val record = TrustedNetwork("n", "N", fp(mac = "aa:bb:cc:dd:ee:ff"))
+        val current = fp(mac = "aa:bb:cc:dd:ee:ff")
+        assertNull(TrustMatcher.upgraded(record, current))
+    }
     @Test fun macFormatsEqual() =
         assertTrue(TrustMatcher.matches(fp(mac = "0:1A:2b:3C:4d:5E"), fp(mac = "00-1a-2B-3c-4D-5e")))
     @Test fun blankGatewayNeverMatches() {

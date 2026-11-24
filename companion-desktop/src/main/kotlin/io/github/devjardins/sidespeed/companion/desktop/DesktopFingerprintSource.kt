@@ -35,6 +35,8 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             }
         }
         // `gateway` is a validated IPv4 literal, so it is safe as a command argument.
+        // Warm the ARP entry first so the MAC read below doesn't miss on a quiet network; ignore the result.
+        runCommand(*pingCommand(gateway))
         val macAddr = FingerprintParsers.gatewayMac(
             when {
                 mac -> runCommand("arp", "-n", gateway)
@@ -44,6 +46,13 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             gateway,
         )
         NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp)
+    }
+
+    /** One ICMP echo to the gateway; fixed argv, and the gateway is a validated IPv4 literal. */
+    private fun pingCommand(gateway: String): Array<String> = when {
+        mac -> arrayOf("ping", "-c", "1", "-W", "1000", gateway)
+        windows -> arrayOf("ping", "-n", "1", "-w", "1000", gateway)
+        else -> arrayOf("ping", "-c", "1", "-W", "1", gateway)
     }
 
     /** The interface address inside the gateway's subnet, with that subnet's normalized form. */

@@ -41,6 +41,23 @@ class JsonFileCompanionStoreTest {
         assertEquals(false, CompanionSettings().startAtLogin)
     }
 
+    @Test fun branchWifiFieldsAreIgnoredWhenLoading() = runBlocking {
+        // A file saved by this branch while it recorded the Wi-Fi name (schema v3): the trimmed
+        // build reads the record and settings without the Wi-Fi keys.
+        file.writeText(
+            """{"version":3,"trustedNetworks":[{"id":"n","name":"N","fingerprint":{"gatewayIp":"192.168.5.1","subnet":"192.168.5.0/24","dnsServers":["192.168.5.1"],"gatewayMac":"aa:bb:cc:dd:ee:ff","wifiSsid":"Home","wifiBssid":"aa:bb:cc:dd:ee:ff"}}],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false,"useWifiName":true}}""",
+        )
+        val s = JsonFileCompanionStore(dir)
+        assertEquals(
+            TrustedNetwork(
+                "n", "N",
+                NetworkFingerprint("192.168.5.1", "192.168.5.0/24", setOf("192.168.5.1"), "aa:bb:cc:dd:ee:ff"),
+            ),
+            s.trustedNetworks().single(),
+        )
+        assertEquals(CompanionSettings(), s.settings())
+    }
+
     @Test fun roundTripsAcrossInstances() = runBlocking {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv)
