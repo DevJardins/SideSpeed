@@ -24,12 +24,16 @@ import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.PairResult
 import io.github.devjardins.sidespeed.companion.tv.Pairer
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
+import io.github.devjardins.sidespeed.companion.tv.LinkOffer
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.TestScope
@@ -1148,5 +1152,107 @@ class CompanionViewModelTest {
         assertEquals(listOf("192.168.5.20:37000", "192.168.8.40:39001"), opened)
         vm.setHomeVisible(false)
         runCurrent()
+    }
+
+    @Test
+    fun refreshShowsEveryCardWhileOfferLookupsHang() = runTest(UnconfinedTestDispatcher()) {
+        val vm = legacyVm(count = 4, offer = LinkOffer { suspendCancellableCoroutine { } }, ports = hangingPorts())
+        try {
+            assertTrue(vm.state.value.loaded)
+            assertEquals(4, vm.state.value.tvs.size)
+            assertEquals(List(4) { TvAttention.LEGACY_ACK }, vm.state.value.tvs.map { it.attention })
+        } finally {
+            coroutineContext[Job]?.cancelChildren()
+        }
+    }
+
+    @Test
+    fun legacyOfferLookupsRunTogether() = runTest(UnconfinedTestDispatcher()) {
+        var entered = 0
+        val vm = legacyVm(
+            count = 2,
+            offer = LinkOffer {
+                entered += 1
+                suspendCancellableCoroutine { }
+            },
+        )
+        try {
+            assertTrue(vm.state.value.loaded)
+            assertEquals(2, entered)
+            assertEquals(List(2) { TvAttention.LEGACY_ACK }, vm.state.value.tvs.map { it.attention })
+        } finally {
+            coroutineContext[Job]?.cancelChildren()
+        }
+    }
+
+    @Test
+    fun legacyOfferLookupsStayWithinTheBound() = runTest(UnconfinedTestDispatcher()) {
+        var entered = 0
+        val vm = legacyVm(
+            count = 5,
+            offer = LinkOffer {
+                entered += 1
+                suspendCancellableCoroutine { }
+            },
+        )
+        try {
+            assertTrue(vm.state.value.loaded)
+            assertEquals(5, vm.state.value.tvs.size)
+            assertEquals(4, entered)
+        } finally {
+            coroutineContext[Job]?.cancelChildren()
+        }
+    }
+
+    @Test
+    fun aLegacyCardOffersPairWhenTheLookupFindsTls() = runTest(UnconfinedTestDispatcher()) {
+        val gate = CompletableDeferred<Boolean>()
+        val vm = legacyVm(count = 1, offer = LinkOffer { gate.await() })
+        assertEquals(TvAttention.LEGACY_ACK, vm.state.value.tvs.single().attention)
+        gate.complete(true)
+        assertEquals(TvAttention.LEGACY_PAIR, vm.state.value.tvs.single().attention)
+    }
+
+    @Test
+    fun aKnownLegacyOfferIsNotLookedUpAgainOnRefresh() = runTest(UnconfinedTestDispatcher()) {
+        var calls = 0
+        val vm = legacyVm(count = 1, offer = LinkOffer { calls += 1; false })
+        assertEquals(1, calls)
+        assertEquals(TvAttention.LEGACY_ACK, vm.state.value.tvs.single().attention)
+        vm.refreshNow()
+        assertEquals(1, calls)
+        assertEquals(TvAttention.LEGACY_ACK, vm.state.value.tvs.single().attention)
+    }
+
+    private suspend fun TestScope.legacyVm(
+        count: Int,
+        offer: LinkOffer,
+        ports: ConnectPortFinder = ConnectPortFinder { null },
+    ): CompanionViewModel {
+        val store = InMemoryCompanionStore(networks = listOf(homeNet))
+        repeat(count) { i ->
+            store.saveTv(
+                SavedTv(
+                    "tv-$i",
+                    "TV $i",
+                    "192.168.250.${10 + i}",
+                    "SER-$i",
+                    "home",
+                    status = TvStatus.NEEDS_ATTENTION,
+                    link = TvLink.Classic(null),
+                ),
+            )
+        }
+        val connector = tv().connector()
+        val source = FingerprintSource { home }
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner(), ports = ports) { 1_000_000L }
+        return CompanionViewModel(
+            store, source, upkeep, connector, Discovery(listOf(SweepSource), FakeLan()), this,
+            { 1_000_000L }, { "tv-x" }, ports = ports, linkOffer = offer,
+        )
+    }
+
+    private fun hangingPorts() = object : ConnectPortFinder {
+        override suspend fun find(host: String): Int? = suspendCancellableCoroutine { }
     }
 }

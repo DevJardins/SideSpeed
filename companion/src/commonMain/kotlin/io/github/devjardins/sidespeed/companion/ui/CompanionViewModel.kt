@@ -54,6 +54,7 @@ import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -64,7 +65,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 
 object Copy {
     /** Shown under a TV; the screen re-evaluates it on a timer so it never freezes. */
@@ -241,6 +244,10 @@ class CompanionViewModel(
     )
     /** Whether a saved classic TV offered TLS the last time Home asked. Avoids asking on every refresh. */
     private val tlsOffer = mutableMapOf<String, Boolean>()
+    /** Guards [tlsOffer] and [offersInFlight]. Lookups run off the refresh path, so they share this lock. */
+    private val offerMutex = Mutex()
+    /** Addresses whose encrypted-link lookup is already running. A refresh does not start a second one. */
+    private val offersInFlight = mutableSetOf<String>()
 
     private val _state = MutableStateFlow(CompanionUiState())
     val state: StateFlow<CompanionUiState> = _state.asStateFlow()
@@ -427,7 +434,7 @@ class CompanionViewModel(
             val link = tv.link
             if (link !is TvLink.Classic || link.ackAtEpochMs != null) return@locked
             store.updateTv(tvId) { it.copy(link = TvLink.Classic(clock())) }
-            tlsOffer.remove(tv.address)
+            offerMutex.withLock { tlsOffer.remove(tv.address) }
             runUpkeep(Trigger.APP_OPEN, tvId)
         }
     }
@@ -852,7 +859,7 @@ class CompanionViewModel(
             store.updateTv(existing.id) {
                 it.copy(address = form.address, link = TvLink.Encrypted(port), status = TvStatus.UNKNOWN)
             }
-            tlsOffer.remove(form.address)
+            offerMutex.withLock { tlsOffer.remove(form.address) }
             _state.update { it.copy(pairing = null, addedAddress = form.address) }
             runUpkeep(Trigger.APP_OPEN, existing.id)
             return
@@ -936,7 +943,8 @@ class CompanionViewModel(
         activities.keys.retainAll(tvs.map { it.id }.toSet())
         val saved = tvs.map { it.address }.toSet()
         val cards = ArrayList<TvCardState>(tvs.size)
-        tlsOffer.keys.retainAll(tvs.map { it.address }.toSet())
+        val addresses = tvs.map { it.address }.toSet()
+        offerMutex.withLock { tlsOffer.keys.retainAll(addresses) }
         for (tv in tvs) {
             val here = checkableHere(tv, trusted, overlays)
             val attention = attentionFor(tv)
@@ -976,24 +984,92 @@ class CompanionViewModel(
                 tlsHosts = retainTlsHosts ?: if (trusted == null) emptyList() else it.tlsHosts.filter { h -> h !in saved },
             )
         }
+        // The cards are already published. Asking whether a legacy TV can pair runs beside this, not inside it.
+        scheduleOfferLookups(tvs)
     }
 
+    /**
+     * A legacy TV with no acknowledgment shows [TvAttention.LEGACY_ACK] until a lookup says it can pair.
+     * The lookup is not done here: [refresh] must finish from the store alone.
+     */
     private suspend fun attentionFor(tv: SavedTv): TvAttention {
         val link = tv.link
         return when {
             link is TvLink.Encrypted && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.WIRELESS_OFF
             link is TvLink.Classic && link.ackAtEpochMs == null ->
-                if (offersTls(tv.address)) TvAttention.LEGACY_PAIR else TvAttention.LEGACY_ACK
+                if (cachedOffer(tv.address) == true) TvAttention.LEGACY_PAIR else TvAttention.LEGACY_ACK
             link is TvLink.Classic && tv.status == TvStatus.NEEDS_ATTENTION -> TvAttention.LEGACY_PAIR
             else -> TvAttention.NONE
         }
     }
 
-    private suspend fun offersTls(address: String): Boolean {
-        tlsOffer[address]?.let { return it }
-        val offered = linkOffer.encryptedAvailable(address) || ports.find(address) != null
-        tlsOffer[address] = offered
-        return offered
+    private suspend fun cachedOffer(address: String): Boolean? = offerMutex.withLock { tlsOffer[address] }
+
+    /**
+     * Asks [linkOffer] and [ports] for each legacy TV that has not been asked yet.
+     * Several run at once, up to [OFFER_LOOKUP_LIMIT]. Returns without waiting: the home screen is already up,
+     * and a TV that can pair changes from [TvAttention.LEGACY_ACK] to [TvAttention.LEGACY_PAIR] when the answer arrives.
+     */
+    private suspend fun scheduleOfferLookups(tvs: List<SavedTv>) {
+        val pending = offerMutex.withLock {
+            val claimed = ArrayList<String>()
+            for (tv in tvs) {
+                val link = tv.link
+                if (link !is TvLink.Classic || link.ackAtEpochMs != null) continue
+                val address = tv.address
+                if (address in tlsOffer || address in offersInFlight) continue
+                offersInFlight += address
+                claimed += address
+            }
+            claimed
+        }
+        if (pending.isEmpty()) return
+        scope.launch {
+            val gate = Semaphore(OFFER_LOOKUP_LIMIT)
+            try {
+                coroutineScope {
+                    pending.forEach { address ->
+                        launch {
+                            gate.withPermit {
+                                try {
+                                    val offered = linkOffer.encryptedAvailable(address) || ports.find(address) != null
+                                    offerMutex.withLock {
+                                        tlsOffer[address] = offered
+                                        offersInFlight.remove(address)
+                                    }
+                                    if (offered) promoteToPair(address)
+                                } catch (e: CancellationException) {
+                                    offerMutex.withLock { offersInFlight.remove(address) }
+                                    throw e
+                                } catch (_: Exception) {
+                                    offerMutex.withLock {
+                                        tlsOffer[address] = false
+                                        offersInFlight.remove(address)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                offerMutex.withLock { pending.forEach { offersInFlight.remove(it) } }
+                throw e
+            }
+        }
+    }
+
+    private fun promoteToPair(address: String) {
+        _state.update { s ->
+            s.copy(
+                tvs = s.tvs.map { card ->
+                    if (card.address == address && card.attention == TvAttention.LEGACY_ACK) {
+                        card.copy(attention = TvAttention.LEGACY_PAIR)
+                    } else {
+                        card
+                    }
+                },
+            )
+        }
     }
 
     private fun isIpv4(s: String): Boolean {
@@ -1009,5 +1085,7 @@ class CompanionViewModel(
         const val ACTIVITY_POLL_MS = 3_000L
         /** Consecutive poll failures that park a TV until the next screen visit. */
         const val MAX_ACTIVITY_FAILURES = 3
+        /** Legacy TVs asked at once whether they can use an encrypted link. The screen does not wait for them. */
+        const val OFFER_LOOKUP_LIMIT = 4
     }
 }
