@@ -18,8 +18,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.Socket
 import java.net.SocketTimeoutException
 import java.security.SecureRandom
@@ -69,6 +71,8 @@ data class HelperPing(val version: Int, val apkPath: String) {
  * covers an old v1 helper (it refuses v2 lines, so it never proves).
  * Residual risk: an impostor on a stale port can only deny service (connections fail closed). It can neither
  * fake results nor receive the APK body, since proof comes before any output or body byte on every connection.
+ * The proof line is read with a 4 KiB cap. Past that the socket is closed and the proof has failed, so a
+ * peer that never sends a newline cannot grow this process without bound.
  *
  * Retries (after each of [retryDelaysMs]) only cover immediate refusals: a refused connect, or a connection
  * closed or reset with no reply within [immediateCloseWindowMs] of connecting. That is how the helper turns
@@ -196,9 +200,9 @@ class HelperClient(
             val out = socket.getOutputStream()
             out.write("$nonce $command\n".toByteArray(Charsets.US_ASCII))
             out.flush()
-            val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
+            val input = socket.getInputStream()
             val proven = try {
-                reader.readLine()
+                readBoundedLine(input)
             } catch (e: IOException) {
                 currentCoroutineContext().ensureActive()
                 null
@@ -209,6 +213,7 @@ class HelperClient(
                 return InstallOutcome.HelperDown
             }
             socket.soTimeout = 0 // the install can take ~30 s, so no read timeout after the body
+            val reader = input.bufferedReader(Charsets.UTF_8)
             apk.inputStream().use { it.copyTo(out) }
             out.flush()
             var last: String? = null
@@ -360,8 +365,8 @@ class HelperClient(
             val out = socket.getOutputStream()
             out.write((request + "\n").toByteArray(Charsets.US_ASCII))
             out.flush()
-            val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
-            reader.readLine()?.let { return Connection(socket, reader, it, onCancel) }
+            val input = socket.getInputStream()
+            readBoundedLine(input)?.let { return Connection(socket, input.bufferedReader(Charsets.UTF_8), it, onCancel) }
             null
         } catch (e: Throwable) {
             onCancel.dispose()
@@ -389,6 +394,33 @@ class HelperClient(
         private const val PROOF_READ_TIMEOUT_MS = 10_000
         private const val NONCE_LENGTH = 32
         private const val NONCE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+        /** `__PROVEN__` and a pong both fit. Past this, the socket is closed and the proof has failed. */
+        private const val MAX_PROOF_LINE_BYTES = 4 * 1024
+
+        /**
+         * One line, at most [MAX_PROOF_LINE_BYTES] of payload. A longer line throws, so a peer that
+         * never sends a newline cannot grow memory without bound. EOF with no bytes is null, matching
+         * [java.io.BufferedReader.readLine].
+         */
+        private fun readBoundedLine(input: InputStream): String? {
+            val buf = ByteArrayOutputStream()
+            while (buf.size() < MAX_PROOF_LINE_BYTES) {
+                val b = input.read()
+                if (b == -1) {
+                    if (buf.size() == 0) return null
+                    return decodeProofLine(buf.toByteArray())
+                }
+                if (b == '\n'.code) return decodeProofLine(buf.toByteArray())
+                buf.write(b)
+            }
+            throw IOException("helper proof line exceeded $MAX_PROOF_LINE_BYTES bytes")
+        }
+
+        private fun decodeProofLine(bytes: ByteArray): String {
+            val n = if (bytes.isNotEmpty() && bytes.last() == '\r'.code.toByte()) bytes.size - 1 else bytes.size
+            return String(bytes, 0, n, Charsets.UTF_8)
+        }
 
         private fun closeQuietly(s: Socket) = try { s.close() } catch (_: Throwable) {}
     }

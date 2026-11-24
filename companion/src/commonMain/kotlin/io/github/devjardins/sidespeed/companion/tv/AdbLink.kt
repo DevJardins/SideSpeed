@@ -16,6 +16,12 @@ internal interface AdbLink : AutoCloseable {
 
     /** True while the transport established by [connect] is still open. */
     val isConnected: Boolean
+
+    /**
+     * True when the transport [connect] established finished TLS.
+     * False before [connect], and false when the peer answered in cleartext.
+     */
+    val tlsNegotiated: Boolean get() = false
 }
 
 /** The raw Kadb calls, behind an interface so [GuardedLink]'s close handling is testable. */
@@ -24,6 +30,9 @@ internal interface AdbClient : AutoCloseable {
     fun handshake()
     fun shell(command: String): String
     val isOpen: Boolean
+
+    /** True when [handshake] left a finished TLS transport. See [KadbTls]. */
+    val tlsNegotiated: Boolean get() = false
 }
 
 internal class KadbClient(private val kadb: Kadb) : AdbClient {
@@ -32,6 +41,8 @@ internal class KadbClient(private val kadb: Kadb) : AdbClient {
     override fun handshake() {
         kadb.supportsFeature("shell_v2")
     }
+
+    override val tlsNegotiated: Boolean get() = KadbTls.negotiated(kadb)
 
     override fun shell(command: String): String = kadb.shell(command).output
 
@@ -67,6 +78,8 @@ internal class GuardedLink(private val client: AdbClient) : AdbLink {
     }
 
     override val isConnected: Boolean get() = !closed && client.isOpen
+
+    override val tlsNegotiated: Boolean get() = !closed && client.tlsNegotiated
 
     override fun close() {
         synchronized(lock) {

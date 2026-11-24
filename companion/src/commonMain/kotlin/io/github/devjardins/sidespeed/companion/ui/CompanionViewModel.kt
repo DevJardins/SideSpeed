@@ -31,6 +31,7 @@ import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
 import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
 import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
+import io.github.devjardins.sidespeed.companion.tv.TlsNotNegotiated
 import io.github.devjardins.sidespeed.companion.tv.LinkOffer
 import io.github.devjardins.sidespeed.companion.tv.PairCopy
 import io.github.devjardins.sidespeed.companion.tv.PairResult
@@ -651,24 +652,23 @@ class CompanionViewModel(
 
     /**
      * Best effort, after the record is already gone, and outside [work] so a powered-off TV cannot hold the UI.
-     * Gives up after [FORGET_TIMEOUT_MS].
+     * Gives up after [FORGET_TIMEOUT_MS]. Nothing is sent unless this network could check the TV, and the
+     * saved secret proves first. A failed proof sends no forget.
      */
     private suspend fun forgetQuietly(tv: SavedTv) {
         val checker = identity ?: return
-        val port = when (val link = tv.link) {
-            is TvLink.Classic -> if (link.ackAtEpochMs == null) return else TvConnector.DEFAULT_PORT
-            is TvLink.Encrypted -> link.lastPort ?: return
-        }
+        if (tv.identitySecret == null) return
+        if (!checkableHere(tv, currentTrusted(), store.trustedOverlays())) return
         try {
             withTimeout(FORGET_TIMEOUT_MS) {
-                connector.open(tv.address, port).use { checker.forget(it) }
+                sessions.open(tv).use { checker.forget(it) }
             }
         } catch (_: TimeoutCancellationException) {
             // The TV did not answer in time. The record is already gone.
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            // Removal does not wait on the TV.
+            // Removal does not wait on the TV. A failed proof is one of these: the session is already closed.
         }
     }
 
@@ -1001,6 +1001,9 @@ class CompanionViewModel(
     } catch (e: EncryptedPortUnknown) {
         refresh(error = Copy.UNREACHABLE)
         null
+    } catch (e: TlsNotNegotiated) {
+        refresh(error = Copy.UNREACHABLE)
+        null
     } catch (e: AdbConnectionLost) {
         refresh(error = Copy.UNREACHABLE)
         null
@@ -1114,16 +1117,20 @@ class CompanionViewModel(
     private suspend fun cachedOffer(address: String): Boolean? = offerMutex.withLock { tlsOffer[address] }
 
     /**
-     * Asks [linkOffer] and [ports] for each legacy TV that has not been asked yet.
+     * Asks [linkOffer] and [ports] for each legacy TV that has not been asked yet and that
+     * [checkableHere] would let a poll contact. A saved TV on another network is not probed.
      * Several run at once, up to [OFFER_LOOKUP_LIMIT]. Returns without waiting: the home screen is already up,
      * and a TV that can pair changes from [TvAttention.LEGACY_ACK] to [TvAttention.LEGACY_PAIR] when the answer arrives.
      */
     private suspend fun scheduleOfferLookups(tvs: List<SavedTv>) {
+        val trusted = currentTrusted()
+        val overlays = store.trustedOverlays()
         val pending = offerMutex.withLock {
             val claimed = ArrayList<String>()
             for (tv in tvs) {
                 val link = tv.link
                 if (tv.unproven || link !is TvLink.Classic || link.ackAtEpochMs != null) continue
+                if (!checkableHere(tv, trusted, overlays)) continue
                 val address = tv.address
                 if (address in tlsOffer || address in offersInFlight) continue
                 offersInFlight += address

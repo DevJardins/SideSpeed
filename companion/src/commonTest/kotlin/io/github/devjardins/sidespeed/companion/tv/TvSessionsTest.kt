@@ -206,6 +206,67 @@ class TvSessionsTest {
         assertEquals(listOf(host to 5555), connector.opens)
     }
 
+    @Test fun aCleartextAnswerOnAnEncryptedLinkGetsNoCommand() = runBlocking {
+        val secret = "ab".repeat(32)
+        val session = scripted(tls = false)
+        val store = InMemoryCompanionStore(listOf(tv(TvLink.Encrypted(37_555)).copy(identitySecret = secret)))
+        assertFailsWith<TlsNotNegotiated> { openWithIdentity(session, store) }
+        assertTrue(session.sent.isEmpty(), session.sent.joinToString())
+        assertTrue(session.closed)
+        assertEquals(secret, store.tv("tv-1").identitySecret)
+        assertEquals(host, store.tv("tv-1").address)
+        assertEquals(TvLink.Encrypted(37_555), store.tv("tv-1").link)
+    }
+
+    @Test fun pairingOverAnEncryptedPortThatIsNotTlsSendsNothing() = runBlocking {
+        val session = scripted(tls = false)
+        val store = InMemoryCompanionStore()
+        val sessions = TvSessions(session.connector(), store, identity = identity())
+        assertFailsWith<TlsNotNegotiated> {
+            sessions.open(TvTarget("pending", host, TvLink.Encrypted(37_555)))
+        }
+        assertTrue(session.sent.isEmpty(), session.sent.joinToString())
+        assertTrue(session.closed)
+        assertTrue(store.tvs().isEmpty())
+    }
+
+    @Test fun aMovedEncryptedTvThatAnswersInCleartextIsNotRead() = runBlocking {
+        val session = scripted(tls = false)
+        val store = InMemoryCompanionStore(listOf(tv(TvLink.Encrypted(37_000))))
+        val connector = object : TvConnector {
+            override suspend fun open(address: String, port: Int): TvSession {
+                if (address == host) throw TvUnreachable(null)
+                return session
+            }
+        }
+        val services = listOf(TlsConnectService("192.168.5.77", 37_111, "adb-SER-1-bbbbbb"))
+        assertFailsWith<TlsNotNegotiated> {
+            TvSessions(connector, store, ports = namedPorts(services), relocateAllowed = { true }).open(store.tv("tv-1"))
+        }
+        assertTrue(session.sent.isEmpty(), session.sent.joinToString())
+        assertTrue(session.closed)
+        assertEquals(host, store.tv("tv-1").address)
+        assertEquals(TvLink.Encrypted(37_000), store.tv("tv-1").link)
+    }
+
+    @Test fun anEncryptedLinkThatNegotiatedTlsStillProves() = runBlocking {
+        val secret = "ab".repeat(32)
+        val session = scripted(tls = true)
+        val store = InMemoryCompanionStore(listOf(tv(TvLink.Encrypted(37_555)).copy(identitySecret = secret)))
+        openWithIdentity(session, store)
+        assertEquals(listOf(proveCommand()), session.sent)
+        assertFalse(session.closed)
+    }
+
+    @Test fun aClassicLinkDoesNotRequireTls() = runBlocking {
+        val secret = "ab".repeat(32)
+        val session = scripted(tls = false)
+        val store = InMemoryCompanionStore(listOf(tv(TvLink.Classic(1L)).copy(identitySecret = secret)))
+        openWithIdentity(session, store)
+        assertEquals(listOf(proveCommand()), session.sent)
+        assertFalse(session.closed)
+    }
+
     @Test fun aMovedEncryptedTvIsSavedWhenItsSerialMatches() = runBlocking {
         val store = InMemoryCompanionStore(listOf(tv(TvLink.Encrypted(37_000))))
         val connector = ScriptedConnector(fail = setOf(host), serialAt = mapOf("192.168.5.77" to "SER-1"))
@@ -263,6 +324,30 @@ class TvSessionsTest {
         assertEquals(listOf(host to 37_000, "192.168.5.77" to 37_111), connector.opens)
         assertEquals("192.168.5.77", store.tv("tv-1").address)
         assertEquals(TvLink.Encrypted(37_111), store.tv("tv-1").link)
+    }
+
+    private val companionId = "0123456789abcdef"
+    private val nonce = "cd".repeat(32)
+
+    private fun proveCommand() = TvCommands.proveSecret(companionId, nonce)
+
+    private fun identity() = TvIdentity(companionId) {
+        nonce.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    }
+
+    private fun scripted(tls: Boolean): FakeTvSession {
+        val secret = "ab".repeat(32)
+        val prove = proveCommand()
+        return FakeTvSession(
+            mapOf(
+                TvCommands.SERIAL to "SER-1",
+                prove to "${TvProof.expected(secret, nonce, sha256 = true)}  -",
+            ),
+        ).also { it.tlsNegotiated = tls }
+    }
+
+    private suspend fun openWithIdentity(session: FakeTvSession, store: InMemoryCompanionStore) {
+        TvSessions(session.connector(), store, identity = identity()).open(store.tv("tv-1"))
     }
 
     private class ScriptedConnector(

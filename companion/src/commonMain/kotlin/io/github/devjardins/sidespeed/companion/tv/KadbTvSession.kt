@@ -86,6 +86,8 @@ class KadbTvConnector internal constructor(
 internal class KadbTvSession(private val link: AdbLink, private val commandTimeoutMs: Long) : TvSession {
     @Volatile private var dead = false
 
+    override val tlsNegotiated: Boolean get() = !dead && link.tlsNegotiated
+
     override suspend fun run(command: String): String {
         // Kadb would silently reconnect a dropped transport on the next call; a session never does,
         // so a reconnect always goes through open() and its auth-timeout handling.

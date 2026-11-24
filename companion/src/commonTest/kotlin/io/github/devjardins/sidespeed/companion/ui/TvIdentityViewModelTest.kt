@@ -54,9 +54,11 @@ class TvIdentityViewModelTest {
         connector: TvConnector = fake.connector(),
         pairer: Pairer = Pairer { _, _, _ -> PairResult.Failed(PairCopy.FAILED) },
         ports: ConnectPortFinder = ConnectPortFinder { null },
+        fingerprint: NetworkFingerprint = home,
+        random: () -> ByteArray = bytes(),
     ): CompanionViewModel {
-        val identity = TvIdentity(companionId, bytes())
-        val source = FingerprintSource { home }
+        val identity = TvIdentity(companionId, random)
+        val source = FingerprintSource { fingerprint }
         val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner(), identity = identity, ports = ports) { 1_000_000L }
         return CompanionViewModel(
             store, source, upkeep, connector, Discovery(listOf(SweepSource), io.github.devjardins.sidespeed.companion.discovery.FakeLan()),
@@ -103,14 +105,17 @@ class TvIdentityViewModelTest {
     }
 
     @Test fun removeForgetsWhenTheTvAnswersAndStillRemovesWhenItDoesNot() = runTest(UnconfinedTestDispatcher()) {
-        val fake = scripted("${TvProof.expected(secret, nonce, sha256 = true)}  -")
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = scripted(line)
         val store = InMemoryCompanionStore(
-            tvs = listOf(savedTv()),
+            tvs = listOf(savedTv().copy(identitySecret = secret)),
             networks = listOf(TrustedNetwork("home", "Living room", home)),
         )
-        val vm = model(fake, store)
+        val vm = model(fake, store, random = { nonce.hexToBytes() })
         vm.removeTv("tv-1")
-        assertEquals(listOf(TvCommands.forgetSecret(companionId)), fake.sent.filter { it.startsWith("rm ") })
+        val prove = TvCommands.proveSecret(companionId, nonce)
+        val forget = TvCommands.forgetSecret(companionId)
+        assertEquals(listOf(prove, forget), fake.sent)
         assertTrue(store.tvs().isEmpty())
 
         val down = scripted("").also { it.failOnOpen = true }
@@ -121,6 +126,48 @@ class TvIdentityViewModelTest {
         model(down, kept).removeTv("tv-1")
         assertTrue(down.sent.isEmpty())
         assertTrue(kept.tvs().isEmpty())
+    }
+
+    @Test fun removeOnAnotherNetworkSendsNothing() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = scripted(line)
+        val store = InMemoryCompanionStore(
+            tvs = listOf(savedTv().copy(identitySecret = secret)),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val away = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        val vm = model(fake, store, fingerprint = away, random = { nonce.hexToBytes() })
+        fake.opened.clear()
+        vm.removeTv("tv-1")
+        assertTrue(fake.opened.isEmpty(), fake.opened.joinToString())
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(store.tvs().isEmpty())
+    }
+
+    @Test fun aFailedProofSendsNoForget() = runTest(UnconfinedTestDispatcher()) {
+        val fake = scripted("${"ab".repeat(32)}  -")
+        val store = InMemoryCompanionStore(
+            tvs = listOf(savedTv().copy(identitySecret = secret)),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(fake, store, random = { nonce.hexToBytes() })
+        vm.removeTv("tv-1")
+        assertEquals(listOf(TvCommands.proveSecret(companionId, nonce)), fake.sent)
+        assertTrue(fake.closed)
+        assertTrue(store.tvs().isEmpty())
+    }
+
+    @Test fun anEncryptedPortThatIsNotTlsIsNotRead() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = scripted(line).also { it.tlsNegotiated = false }
+        val store = InMemoryCompanionStore(networks = listOf(TrustedNetwork("home", "Living room", home)))
+        val vm = model(fake, store, random = { nonce.hexToBytes() })
+        vm.startPairing("192.168.5.20")
+        vm.submitConnectPort("37111")
+        assertEquals(Copy.UNREACHABLE, vm.state.value.error)
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(fake.closed)
+        assertTrue(store.tvs().isEmpty())
     }
 
     @Test fun anUnprovenTvShowsTheCardMessage() = runTest(UnconfinedTestDispatcher()) {

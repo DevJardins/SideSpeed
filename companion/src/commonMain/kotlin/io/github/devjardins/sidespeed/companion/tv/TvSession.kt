@@ -9,6 +9,12 @@ interface TvSession : AutoCloseable {
      * @throws io.github.devjardins.sidespeed.adb.AdbConnectionLost if the connection fails or has failed.
      */
     suspend fun run(command: String): String
+
+    /**
+     * True only when this connection's ADB transport finished a TLS handshake.
+     * An encrypted open refuses the session when this is false.
+     */
+    val tlsNegotiated: Boolean
 }
 
 /** The TV could not be reached before the ADB handshake: refused, no route, or the connect timed out. */

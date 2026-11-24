@@ -24,6 +24,9 @@ class EncryptedAvailable : Exception("This TV can use an encrypted connection")
 /** An encrypted TV's connect port is not known, and nothing is advertising one. */
 class EncryptedPortUnknown : Exception("The encrypted port is not known")
 
+/** The peer completed ADB without TLS. The session is already closed, and nothing was sent. */
+class TlsNotNegotiated : Exception("This connection did not use TLS")
+
 /** What [TvSessions] needs in order to open a TV. [id] is the saved id, used when a new port is stored. */
 data class TvTarget(val id: String, val address: String, val link: TvLink)
 
@@ -42,7 +45,8 @@ fun interface LinkOffer {
  * looked up by serial in the same advertisement. The new address and port are saved together only
  * when [relocateAllowed] is open, the host is a private IPv4 address, the connection works, and
  * [TvCommands.SERIAL] there equals the saved serial. A mismatch closes the session and saves nothing.
- * Port 5555 is never dialled for an encrypted TV.
+ * Port 5555 is never dialled for an encrypted TV. A connection that did not finish TLS is closed
+ * before any command, including the identity proof and the serial read.
  *
  * A classic TV with no acknowledgment is refused before any connection. An acknowledged classic TV
  * is refused when [classicTls] says port 5555 answered STLS, or when [ports] sees the host advertising
@@ -100,7 +104,7 @@ class TvSessions(
         val last = link.lastPort?.takeIf { usableEncryptedPort(it) }
         if (last != null) {
             try {
-                return gate(connector.open(target.address, last), saved)
+                return gate(requireTls(connector.open(target.address, last)), saved)
             } catch (e: TvUnreachable) {
                 // The saved port is stale. Look up the one the TV is advertising now.
             }
@@ -113,7 +117,7 @@ class TvSessions(
         }
         if (found != null) {
             val session = try {
-                connector.open(target.address, found)
+                requireTls(connector.open(target.address, found))
             } catch (e: TvUnreachable) {
                 throw EncryptedPortUnknown()
             }
@@ -142,7 +146,7 @@ class TvSessions(
         if (ip == null || !AddressPolicy.isPrivate(ip)) throw EncryptedPortUnknown()
         if (!relocateAllowed(target)) throw EncryptedPortUnknown()
         val session = try {
-            connector.open(match.host, match.port)
+            requireTls(connector.open(match.host, match.port))
         } catch (e: TvUnreachable) {
             throw EncryptedPortUnknown()
         }
@@ -212,6 +216,32 @@ class TvSessions(
             Prepared.WrongDevice -> session
             Prepared.Failed -> throw TvUnproven()
         }
+    }
+
+    /**
+     * Closes [session] and refuses it unless its transport finished TLS.
+     * Checked again before each later command, so a transport Kadb replaced is not used.
+     */
+    private fun requireTls(session: TvSession): TvSession {
+        if (!session.tlsNegotiated) {
+            session.close()
+            throw TlsNotNegotiated()
+        }
+        return TlsBoundSession(session)
+    }
+
+    private class TlsBoundSession(private val inner: TvSession) : TvSession {
+        override val tlsNegotiated: Boolean get() = inner.tlsNegotiated
+
+        override suspend fun run(command: String): String {
+            if (!inner.tlsNegotiated) {
+                inner.close()
+                throw TlsNotNegotiated()
+            }
+            return inner.run(command)
+        }
+
+        override fun close() = inner.close()
     }
 
     private fun usableEncryptedPort(port: Int): Boolean =
