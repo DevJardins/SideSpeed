@@ -44,6 +44,7 @@ android {
     buildTypes {
         // Debug serves updates from -PupdateBaseUrl (the emulator E2E); release is always GitHub.
         debug {
+            isPseudoLocalesEnabled = true
             val base = (findProperty("updateBaseUrl") as String?)?.takeIf { it.isNotBlank() }
                 ?: "https://github.com/DevJardins/SideSpeed/releases/download"
             buildConfigField("String", "UPDATE_BASE_URL", "\"$base\"")
