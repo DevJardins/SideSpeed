@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -53,6 +56,7 @@ import io.github.devjardins.sidespeed.ui.theme.SsDimens
 import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
+import io.github.devjardins.sidespeed.ui.theme.bleed
 import io.github.devjardins.sidespeed.updates.ApkVariant
 import io.github.devjardins.sidespeed.updates.AppUpdateUiState
 import io.github.devjardins.sidespeed.updates.AvailableUpdate
@@ -123,7 +127,19 @@ fun CompileScreen(
     LaunchedEffect(result) { if (result != null && launch.busy == null) runCatching { backFocus.requestFocus() } }
 
     SsScreen {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // The scroll clips to the column bounds, which would cut the first and last
+        // focusables' 2dp focus ring and focus scale: bleed the column out
+        // symmetrically and pad the scroll content by the same amount, so resting
+        // edges stay aligned.
+        val scrollInset = 8.dp
+        Column(
+            Modifier
+                .fillMaxSize()
+                .bleed(horizontal = scrollInset, vertical = scrollInset)
+                .verticalScroll(rememberScrollState())
+                .padding(scrollInset),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 AppIcon(app.packageName, icon, SsDimens.Icon + 12.dp)
                 Column(Modifier.weight(1f)) {
@@ -252,7 +268,7 @@ fun CompileScreen(
             }
 
             if (state.running || (result != null && showLog)) {
-                LogView(state.log, Modifier.weight(1f).focusRequester(logFocus))
+                LogView(state.log, Modifier.height(200.dp).focusRequester(logFocus))
             }
         }
     }

@@ -178,7 +178,7 @@ private fun HomeTile(title: String, status: String, onClick: () -> Unit, modifie
                 status,
                 style = SsType.Caption,
                 color = SsColors.TextSecondary,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
         }
