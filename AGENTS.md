@@ -50,14 +50,16 @@ the code may have a bug.
 - The feature is "Trusted Network", never "home network".
   In UI labels and titles it is "Trusted Network";
   in running prose "trusted network" is fine.
-  See `companion/.../ui/FirstRunScreen.kt`, `SettingsScreen.kt`, `HomeScreen.kt`.
+  See `first_run_title`, `home_trust_banner`, `settings_trusted_networks` in `companion/src/commonMain/composeResources/values/strings.xml`.
 - State caveats plainly, next to the choice they qualify.
 - Setup warns that ADB debugging must stay on and that anyone
   on the network could ask the TV for access (`ui/setup/SetupScreen.kt`).
 - The animation speed card says "It does not make apps load faster"
   (`ui/tools/AnimationsCard.kt`).
-- Companion UI copy lives in the `Copy` object
-  (`companion/.../ui/CompanionViewModel.kt`); keep strings there, not scattered.
+- Companion UI copy lives in `companion/src/commonMain/composeResources/values/strings.xml`
+  (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references in `Copy`).
+  `companion-android/src/main/res/values/strings.xml` holds only `app_name` and `channel_restarts`.
+  Never hard-code user-visible text in Companion Kotlin (`NoHardCodedTextTest` fails the build).
 - TV copy sits with its screen; keep each string next to the control it explains.
 
 ## 3. TV focus and D-pad
