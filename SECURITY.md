@@ -106,11 +106,15 @@ These are known limits. Each one is a choice, and the reason is given.
 - **The older connection is not encrypted.** Some TVs cannot use an encrypted link.
   The Companion can still reach them the older way, but only after you tick
   "I understand. Connect the older way." for that TV.
-  On that link, anyone on your network could see the commands.
+  On that link, anyone on your network could see or change the commands,
+  and could send their own while it is connected.
   That includes the TV's secret, once, when the TV is first added.
   If the TV later offers an encrypted link, the Companion stops and asks you to pair it.
-- **A look-alike network can be searched.** If another network copies your router's
-  address, subnet, DNS servers and hardware address, the Companion may search it.
+- **A look-alike network can be searched.** On desktop, a copy needs your router's
+  address, subnet, a DNS server and hardware address.
+  On Android the hardware address is not read. `TrustMatcher` checks a hardware
+  address only once one has been recorded, so on Android the address, subnet
+  and one shared DNS server are enough. The Companion may then search that network.
   It still sends no commands to a TV that cannot prove it holds its secret.
 - **A reset TV must be added again.** The secret lives in `/data/local/tmp` on the TV.
   A factory reset, or anything that clears that folder, removes it.

@@ -112,7 +112,7 @@ object Copy {
         "Type the port shown on the TV's Wireless debugging screen (after the colon in the IP address)."
     const val CLASSIC_ACK =
         "This TV can't use an encrypted connection. SideSpeed can still connect the older way. " +
-            "Anyone on your network could see the commands it sends."
+            "Anyone on your network could see or change the commands it sends."
     const val CLASSIC_ACK_CHECK = "I understand. Connect the older way."
     const val PAIR_OFFER = "This TV can use an encrypted connection. Pair it to keep checking it."
     const val NOT_CONTACTED = "SideSpeed isn't checking this TV until you choose."
@@ -422,12 +422,18 @@ class CompanionViewModel(
     fun submitPair(code: String, portText: String) {
         val form = _state.value.pairing ?: return
         locked {
+            val existing = savedFor(form)
+            // Pairing takes time. Refuse before it starts, and again before any session opens.
+            val refused = contactRefusal(form.address, existing)
+            if (refused != null) return@locked rejectPairing(form, refused)
             val port = portText.trim().toIntOrNull()
             val result = if (port == null) PairResult.Failed(PairCopy.BAD_PORT) else pairer.pair(form.address, port, code.trim())
             if (result !is PairResult.Paired) {
                 _state.update { it.copy(pairing = form.copy(error = result.message())) }
                 return@locked
             }
+            val again = contactRefusal(form.address, existing)
+            if (again != null) return@locked rejectPairing(form, again)
             val connect = ports.find(form.address)?.takeIf { it != TvConnector.DEFAULT_PORT }
             if (connect == null) {
                 _state.update { it.copy(pairing = form.copy(error = null, askConnectPort = true)) }
@@ -718,6 +724,12 @@ class CompanionViewModel(
             (pollSessions.keys - ids).forEach { id -> runCatching { pollSessions.remove(id)?.close() } }
             for (tv in eligible) {
                 currentCoroutineContext().ensureActive()
+                // The network can change between TVs in one pass. Read it again, as upkeep does before each call.
+                val savedNow = store.tvs().firstOrNull { it.id == tv.id }
+                if (savedNow == null || !checkableHere(savedNow, currentTrusted(), store.trustedOverlays())) {
+                    runCatching { pollSessions.remove(tv.id)?.close() }
+                    continue
+                }
                 pollOneTv(tv)
             }
             delay(ACTIVITY_POLL_MS)
@@ -885,20 +897,16 @@ class CompanionViewModel(
     }
 
     private suspend fun saveEncrypted(form: PairingForm, port: Int) {
-        if (!isIpv4(form.address)) return refresh(error = Copy.BAD_ADDRESS)
-        val ip = Ipv4.parse(form.address)
-        if (ip == null || !AddressPolicy.contactable(ip)) return refresh(error = Copy.OUTSIDE_NETWORK)
-        val existing = form.tvId?.let { id -> store.tvs().firstOrNull { it.id == id } }
-        if (existing == null) {
-            val binding = overlayGate?.bindingFor(ip, store.trustedOverlays())
-            if (binding == null && AddressPolicy.isOverlay(ip) &&
-                overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
-            ) return refresh(error = Copy.SHARED_PEER)
-            if (binding == null && currentTrusted() == null) return refresh(error = Copy.NOT_TRUSTED_ADD)
-        }
+        val existing = savedFor(form)
+        // Again, immediately before the session opens: the network may have changed since pairing.
+        val refused = contactRefusal(form.address, existing)
+        if (refused != null) return rejectPairing(form, refused)
         _state.update { it.copy(busy = true, error = null) }
         var different = false
-        val found = readIdentity(TvTarget(existing?.id ?: "pending", form.address, TvLink.Encrypted(port))) { serial ->
+        val target = TvTarget(existing?.id ?: "pending", form.address, TvLink.Encrypted(port))
+        // A saved TV opens through its record, so the gate proves a secret before any command.
+        val saved = existing?.copy(address = form.address, link = TvLink.Encrypted(port))
+        val found = readIdentity(target, saved) { serial ->
             if (existing != null && serial.isNotBlank() && existing.serial != serial) {
                 different = true
                 false
@@ -906,6 +914,7 @@ class CompanionViewModel(
                 true
             }
         } ?: run {
+            if (existing != null && store.tvs().firstOrNull { it.id == existing.id }?.unproven == true) return
             if (different) {
                 _state.update { it.copy(pairing = form.copy(error = Copy.DIFFERENT_DEVICE), error = Copy.DIFFERENT_DEVICE, busy = false) }
             } else {
@@ -927,7 +936,8 @@ class CompanionViewModel(
                     address = form.address,
                     link = TvLink.Encrypted(port),
                     status = TvStatus.UNKNOWN,
-                    identitySecret = found.secret ?: it.identitySecret,
+                    // A secret already on the TV stays. A legacy TV keeps the one the gate just stored.
+                    identitySecret = existing.identitySecret ?: it.identitySecret,
                     unproven = false,
                 )
             }
@@ -936,6 +946,7 @@ class CompanionViewModel(
             runUpkeep(Trigger.APP_OPEN, existing.id)
             return
         }
+        val ip = Ipv4.parse(form.address) ?: return refresh(error = Copy.BAD_ADDRESS)
         val binding = overlayGate?.bindingFor(ip, store.trustedOverlays())
         if (binding == null && AddressPolicy.isOverlay(ip) &&
             overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
@@ -965,18 +976,23 @@ class CompanionViewModel(
     private data class Identified(val serial: String, val model: String, val maker: String, val secret: String?)
 
     /**
-     * Opens [target], reads the fixed identity fields, and when this companion checks TVs, writes and proves
-     * a secret. [accept] can refuse a serial before anything is written. On failure, records the error and
-     * returns null.
+     * Opens [target], or [saved] when this is a TV we already have, so its proof runs before any command.
+     * A saved TV is not enrolled here: the gate writes a secret only when the record had none.
+     * [accept] can refuse a serial before anything is written. On failure, records the error and returns null.
      */
-    private suspend fun readIdentity(target: TvTarget, accept: (String) -> Boolean = { true }): Identified? = try {
-        sessions.open(target).use { session ->
+    private suspend fun readIdentity(
+        target: TvTarget,
+        saved: SavedTv? = null,
+        accept: (String) -> Boolean = { true },
+    ): Identified? = try {
+        val opened = if (saved != null) sessions.open(saved) else sessions.open(target)
+        opened.use { session ->
             val serial = session.run(TvCommands.SERIAL).trim()
             val model = session.run(TvCommands.MODEL).trim()
             val maker = session.run(TvCommands.MANUFACTURER).trim()
             if (!accept(serial)) return@use null
             val checker = identity
-            val secret = if (checker != null && serial.isNotBlank()) {
+            val secret = if (saved == null && checker != null && serial.isNotBlank()) {
                 checker.enroll(session) ?: throw TvCheckNotSaved()
             } else {
                 null
@@ -1008,8 +1024,45 @@ class CompanionViewModel(
         refresh(error = Copy.UNREACHABLE)
         null
     } catch (_: TvUnproven) {
+        // Same outcome as a failed check elsewhere: park the TV, save nothing about this pairing, and do not retry.
+        if (saved != null && store.tvs().any { it.id == saved.id }) {
+            store.updateTv(saved.id) {
+                it.copy(unproven = true, status = TvStatus.CHECK_FAILED, reach = Reach.UNREACHABLE)
+            }
+            _state.update { it.copy(pairing = null) }
+        }
         refresh()
         null
+    }
+
+    private suspend fun savedFor(form: PairingForm): SavedTv? =
+        form.tvId?.let { id -> store.tvs().firstOrNull { it.id == id } }
+
+    /**
+     * Why [address] must not be contacted from here, or null when it may.
+     * A private or overlay address, and either this tailnet or a Trusted Network.
+     * A saved TV must also be on its own Trusted Network or overlay. A shared-in peer is refused.
+     */
+    private suspend fun contactRefusal(address: String, existing: SavedTv?): String? {
+        if (!isIpv4(address)) return Copy.BAD_ADDRESS
+        val ip = Ipv4.parse(address) ?: return Copy.BAD_ADDRESS
+        if (!AddressPolicy.contactable(ip)) return Copy.OUTSIDE_NETWORK
+        val overlays = store.trustedOverlays()
+        val binding = overlayGate?.bindingFor(ip, overlays)
+        if (binding == null && AddressPolicy.isOverlay(ip) &&
+            overlay?.source?.snapshot()?.peers?.any { it.shared && ip in it.ips } == true
+        ) return Copy.SHARED_PEER
+        if (existing != null) {
+            if (!checkableHere(existing, currentTrusted(), overlays)) return Copy.NOT_TRUSTED_ADD
+            return null
+        }
+        if (binding == null && currentTrusted() == null) return Copy.NOT_TRUSTED_ADD
+        return null
+    }
+
+    private suspend fun rejectPairing(form: PairingForm, message: String) {
+        _state.update { it.copy(pairing = form.copy(error = message), busy = false) }
+        refresh(error = message)
     }
 
     private suspend fun refresh(
