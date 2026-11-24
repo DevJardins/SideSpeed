@@ -167,7 +167,7 @@ fun main() {
             if (store.settings().notifications && report.restartedNames.isNotEmpty()) {
                 val title = UiText.Res(Res.string.app_name).resolveSuspend()
                 report.restartedNames.forEach {
-                    val body = UiText.Res(Res.string.notif_restarted, listOf(UiText.Ltr(it))).resolveSuspend()
+                    val body = UiText.Res(Res.string.notif_restarted, listOf(UiText.Fsi(it))).resolveSuspend()
                     tray.sendNotification(Notification(title, body))
                 }
             }

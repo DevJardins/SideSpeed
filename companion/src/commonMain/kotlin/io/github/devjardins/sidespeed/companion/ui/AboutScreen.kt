@@ -69,7 +69,7 @@ fun AboutScreen(
                 is CompanionUpdateState.Available ->
                     UiText.Res(Res.string.about_available, listOf(UiText.Ltr(displayVersion(update.tag)))).resolve()
                 is CompanionUpdateState.Downloading ->
-                    UiText.Res(Res.string.about_downloading, listOf("${update.percent}%")).resolve()
+                    UiText.Res(Res.string.about_downloading, listOf(update.percent)).resolve()
                 CompanionUpdateState.Installing -> stringResource(Res.string.about_installing)
                 is CompanionUpdateState.Failed -> update.reason.resolve()
             }

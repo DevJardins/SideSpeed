@@ -14,7 +14,10 @@ sealed interface UiText {
     data class Res(val id: StringResource, val args: List<Any> = emptyList()) : UiText
     data class Plural(val id: PluralStringResource, val count: Int, val args: List<Any> = emptyList()) : UiText
     data class Raw(val text: String) : UiText
+    /** Left-to-right isolate for technical values (addresses, ports, codes, versions). */
     data class Ltr(val value: String) : UiText
+    /** First-strong isolate for labels people type (TV names, network names). */
+    data class Fsi(val value: String) : UiText
 }
 
 fun uiText(id: StringResource, vararg args: Any): UiText = UiText.Res(id, args.toList())
@@ -34,12 +37,16 @@ private fun resolveArgs(args: List<Any>, lookup: StringLookup, rtl: Boolean): Ar
         }
     }
 
-/** Args that are UiText are resolved first; Ltr is wrapped in U+2066 LRI … U+2069 PDI only when [rtl]. */
+private fun isolated(rtl: Boolean, open: String, close: String, value: String): String =
+    if (rtl) "$open$value$close" else value
+
+/** Args that are UiText are resolved first; Ltr/Fsi are wrapped only when [rtl]. */
 fun UiText.resolve(lookup: StringLookup, rtl: Boolean): String = when (this) {
     is UiText.Res -> lookup.string(id, resolveArgs(args, lookup, rtl))
     is UiText.Plural -> lookup.plural(id, count, resolveArgs(args, lookup, rtl))
     is UiText.Raw -> text
-    is UiText.Ltr -> if (rtl) "\u2066$value\u2069" else value
+    is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
+    is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
 }
 
 @Composable
@@ -62,7 +69,8 @@ private fun UiText.resolve(rtl: Boolean): String = when (this) {
         if (resolved.isEmpty()) pluralStringResource(id, count) else pluralStringResource(id, count, *resolved)
     }
     is UiText.Raw -> text
-    is UiText.Ltr -> if (rtl) "\u2066$value\u2069" else value
+    is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
+    is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
 }
 
 @Composable
@@ -86,5 +94,6 @@ suspend fun UiText.resolveSuspend(rtl: Boolean = isDefaultLocaleRtl()): String =
         if (resolved.isEmpty()) getPluralString(id, count) else getPluralString(id, count, *resolved)
     }
     is UiText.Raw -> text
-    is UiText.Ltr -> if (rtl) "\u2066$value\u2069" else value
+    is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
+    is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
 }

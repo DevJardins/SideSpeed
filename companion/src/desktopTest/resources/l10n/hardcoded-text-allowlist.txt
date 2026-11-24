@@ -84,3 +84,45 @@ companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/andro
 # never user-visible: internal desktop release metadata fetch exception messages
 companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"HTTP $code from $RELEASES_API_URL"
 companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"Release body exceeds cap"
+
+# never user-visible: Tailscale JSON field names
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Peer"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Online"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Name"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Self"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Running"
+
+# never user-visible: OS detection and ADB timeout substring
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Windows"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/KadbTvSession.kt|"connect timed out"
+
+# never user-visible: Compose animation property keys
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/ActivityBlock.kt|"activity-done"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"dot"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"alpha"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"spin"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"angle"
+
+# never user-visible: persisted id prefixes and Fire TV manufacturer check
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"net-"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"overlay-"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"Amazon"
+
+# never user-visible: internal upkeep log lines
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"no longer on the trusted network"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched but the proof failed"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched but the TV still needs confirmation"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched; sweep no longer needed"
+
+# never user-visible: TLS exporter algorithm labels
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"Mac"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-256"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-384"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-512"
+
+# never user-visible: HTTP header name and notification channel tag ids
+companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"Accept"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/Notifier.kt|"restarts"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Location"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"update"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"SideSpeed"

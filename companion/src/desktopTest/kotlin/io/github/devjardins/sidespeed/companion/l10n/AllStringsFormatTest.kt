@@ -97,7 +97,10 @@ class AllStringsFormatTest {
         assertFalse(template.contains("\\\""), "$label contains \\\" (Compose Multiplatform does not unescape it): '$template'")
         assertFalse(template.contains("%%"), "$label contains %% (Compose Multiplatform does not unescape it): '$template'")
         dummyArgs(template)
-        val stripped = placeholderRegex.replace(template, "")
+        var stripped = placeholderRegex.replace(template, "")
+        if (stripped.endsWith('%') && placeholderRegex.containsMatchIn(template)) {
+            stripped = stripped.dropLast(1)
+        }
         assertFalse(stripped.contains('%'), "$label has stray '%' outside %n\$s/%n\$d: '$template'")
     }
 }

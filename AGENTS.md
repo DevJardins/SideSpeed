@@ -58,7 +58,7 @@ the code may have a bug.
 - The animation speed card says "It does not make apps load faster"
   (`ui/tools/AnimationsCard.kt`, string `tools_animations_body`).
 - Companion UI copy lives in `companion/src/commonMain/composeResources/values/strings.xml`
-  (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references in `Copy`).
+  (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references).
   `companion-android/src/main/res/values/strings.xml` holds only `app_name` and `channel_restarts`.
   Never hard-code user-visible text in Companion Kotlin (`NoHardCodedTextTest` fails the build).
 - TV copy lives in `app/src/main/res/values/strings.xml`, grouped by screen,
