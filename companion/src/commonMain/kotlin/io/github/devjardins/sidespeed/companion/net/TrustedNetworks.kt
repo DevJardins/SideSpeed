@@ -49,9 +49,11 @@ object Subnets {
 
 object TrustMatcher {
     /**
-     * Same gateway IP and subnet, and DNS sets intersect (or both empty). Then, fail closed on what the
-     * trusted record has: a recorded gatewayMac needs the current one to match it (normalised).
-     * Anything the record lacks is ignored. A blank gateway IP, malformed subnets or MACs never match.
+     * Same gateway IP and subnet. When the trusted record has no gateway MAC, the IPv4 DNS servers
+     * must be the same non-empty set: each address is trimmed, IPv6 addresses are ignored, and a side
+     * with no IPv4 DNS server does not match. When the record has a gateway MAC, DNS sets intersect
+     * (or both are empty) and the current MAC must match it. A blank gateway IP, or a malformed
+     * subnet or MAC, never matches.
      */
     fun matches(current: NetworkFingerprint, trusted: NetworkFingerprint): Boolean {
         val cg = current.gatewayIp.trim()
@@ -59,18 +61,24 @@ object TrustMatcher {
         val cs = Subnets.normalize(current.subnet) ?: return false
         val ts = Subnets.normalize(trusted.subnet) ?: return false
         if (cs != ts) return false
+        val tm = trusted.gatewayMac
+        if (tm == null) {
+            val cd = ipv4Dns(current.dnsServers)
+            val td = ipv4Dns(trusted.dnsServers)
+            return cd.isNotEmpty() && cd == td
+        }
         val cd = current.dnsServers.map { it.trim().lowercase() }.toSet()
         val td = trusted.dnsServers.map { it.trim().lowercase() }.toSet()
         if (!(cd.isEmpty() && td.isEmpty()) && cd.intersect(td).isEmpty()) return false
-        val tm = trusted.gatewayMac
-        if (tm != null) {
-            val cm = current.gatewayMac ?: return false
-            val a = Subnets.normalizeMac(cm) ?: return false
-            val b = Subnets.normalizeMac(tm) ?: return false
-            if (a != b) return false
-        }
-        return true
+        val cm = current.gatewayMac ?: return false
+        val a = Subnets.normalizeMac(cm) ?: return false
+        val b = Subnets.normalizeMac(tm) ?: return false
+        return a == b
     }
+
+    /** IPv4 DNS servers only, trimmed. IPv6 and anything that is not an IPv4 address are left out. */
+    private fun ipv4Dns(servers: Set<String>): Set<String> =
+        servers.map { it.trim() }.filter { Ipv4.parse(it) != null }.toSet()
 
     /** The first Trusted Network matching [current]; null when there is no usable network or none matches. */
     fun currentTrusted(current: NetworkFingerprint?, all: List<TrustedNetwork>): TrustedNetwork? {
