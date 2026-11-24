@@ -76,7 +76,10 @@ so the Companion is careful about where it connects and to what.
   when the network changes (`upkeep/Upkeep.kt`, `ui/CompanionViewModel.kt`).
 - A Trusted Network is matched by its router's address, subnet and DNS servers.
   Once the router's hardware address is known, it must match too,
-  or the network is not trusted (`TrustMatcher` in `net/TrustedNetworks.kt`).
+  or the network is not trusted.
+  Until then, the DNS servers must be exactly the same ones you saved.
+  Tailscale's own DNS addresses and IPv6 DNS servers are left out of that comparison
+  (`TrustMatcher` in `net/TrustedNetworks.kt`).
 - TVs that support it are paired and reached over an encrypted link (TLS).
   A session for an encrypted TV is used only after TLS is confirmed.
   If the other side answers without encryption, the session is closed
@@ -110,11 +113,14 @@ These are known limits. Each one is a choice, and the reason is given.
   and could send their own while it is connected.
   That includes the TV's secret, once, when the TV is first added.
   If the TV later offers an encrypted link, the Companion stops and asks you to pair it.
-- **A look-alike network can be searched.** On desktop, a copy needs your router's
-  address, subnet, a DNS server and hardware address.
-  On Android the hardware address is not read. `TrustMatcher` checks a hardware
-  address only once one has been recorded, so on Android the address, subnet
-  and one shared DNS server are enough. The Companion may then search that network.
+- **A look-alike network can be searched.** On desktop, once the router's hardware
+  address is known, a copy needs your router's address, subnet, a DNS server
+  and that hardware address.
+  On Android the hardware address is not read,
+  so a copy needs the router's address, subnet and exactly the same DNS servers.
+  Many routers hand out their own address as the DNS server, and many use the same
+  factory address. On those networks, another router left on its factory settings
+  can look the same. The Companion may then search that network.
   It still sends no commands to a TV that cannot prove it holds its secret.
 - **A reset TV must be added again.** The secret lives in `/data/local/tmp` on the TV.
   A factory reset, or anything that clears that folder, removes it.
