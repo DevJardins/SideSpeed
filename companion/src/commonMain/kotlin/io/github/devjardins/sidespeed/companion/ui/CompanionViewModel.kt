@@ -121,6 +121,7 @@ object Copy {
     const val NOT_CONTACTED = "SideSpeed isn't checking this TV until you choose."
     const val CONFIRM_TV = "Confirm this is your TV before SideSpeed uses it."
     const val CONFIRM = "Confirm"
+    const val WAITING_FOR_YOU = "Waiting for you"
     const val WIRELESS_OFF = "Turn wireless debugging back on to keep this TV up to date."
     const val TRY_AGAIN = "Try again"
     const val TYPE_THE_PORT = "Type the port"

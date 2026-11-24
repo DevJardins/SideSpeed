@@ -25,6 +25,8 @@ object SsTokens {
     const val GLOW_LAN = ACCENT
     const val GLOW_TAILNET = 0xFF8FAACC
     const val GLOW_UNREACHABLE = 0xFFC98A8A
+    /** Muted coral orange for a card waiting to be trusted. */
+    const val GLOW_TRUST = 0xFFD97757
 
     /** Type sizes in sp. */
     const val HEADLINE_SP = 28

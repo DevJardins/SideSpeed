@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.store.TvStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
@@ -122,14 +123,16 @@ fun HomeScreen(
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.tvs, key = { it.id }) { tv ->
                     val restarting = restartingId == tv.id
-                    SsReachCard(cardGlow(tv.reach, tv.checkableHere)) {
+                    val parked = tv.status == TvStatus.CHECK_FAILED
+                    SsReachCard(cardGlow(tv.reach, tv.checkableHere, tv.attention, parked)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            SsStatusDot(cardDot(tv.status, tv.checkableHere), pulsing = restarting)
+                            SsStatusDot(cardDot(tv.status, tv.checkableHere, tv.attention, parked), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         SsText(tv.address, Ss.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         SsText(if (restarting) "Restarting…" else if (tv.checkableHere) tv.statusLabel else Copy.lastSeen(tv.statusLabel))
-                        tv.checkedAtEpochMs?.let { SsText(Copy.checkedAgo(now - it), Ss.caption) }
+                        cardCheckedLine(tv.attention, tv.checkableHere, tv.checkedAtEpochMs, now, parked)
+                            ?.let { SsText(it, Ss.caption) }
                         tv.note?.let { SsText(it, Ss.caption.copy(color = Ss.warnText)) }
                         tv.scopeNote?.let { SsText(it, Ss.caption) }
                         TvActivityBlock(tv, now)

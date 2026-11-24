@@ -26,9 +26,10 @@ object Ss {
     val warnText = Color(SsTokens.WARN_PILL_TEXT)
     val dangerBg = Color(SsTokens.DANGER_CARD_BG)
     val dangerText = Color(SsTokens.DANGER_CARD_TEXT)
-    /** TV card glows: calm green on the home network, muted blue over the tailnet. */
+    /** TV card glows: calm green on the Trusted Network, muted blue over Tailscale, muted orange while a TV waits for trust. */
     val glowLan = Color(SsTokens.GLOW_LAN)
     val glowTailnet = Color(SsTokens.GLOW_TAILNET)
+    val glowTrust = Color(SsTokens.GLOW_TRUST)
     /** An unreachable card glows a muted red. */
     val glowUnreachable = Color(SsTokens.GLOW_UNREACHABLE)
 
