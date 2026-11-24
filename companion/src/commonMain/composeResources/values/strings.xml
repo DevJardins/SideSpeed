@@ -1,0 +1,20 @@
+<resources>
+    <!-- App and shared -->
+    <!-- Application name shown in window title, tray tooltip, and About screen. Keep: SideSpeed Companion -->
+    <string name="app_name" translatable="false">SideSpeed Companion</string>
+    <!-- Brand name for the TV app. Keep: SideSpeed -->
+    <string name="brand_sidespeed" translatable="false">SideSpeed</string>
+
+    <!-- Home -->
+    <!-- Line under a TV status showing minutes since last check. %1$d is minutes. -->
+    <plurals name="home_checked_min_ago">
+        <item quantity="one">Checked %1$d min ago</item>
+        <item quantity="other">Checked %1$d min ago</item>
+    </plurals>
+
+    <!-- About and updates -->
+    <!-- Status line on About when the manual update check fails. Keep: GitHub -->
+    <string name="about_check_failed">Couldn't reach GitHub. Try again later.</string>
+    <!-- Status line on About while an app update is downloading. %1$s is a percentage like 42%. -->
+    <string name="about_downloading">Downloading… %1$s</string>
+</resources>

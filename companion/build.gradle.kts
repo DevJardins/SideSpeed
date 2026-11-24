@@ -14,6 +14,9 @@ kotlin {
         namespace = "io.github.devjardins.sidespeed.companion.core"
         compileSdk = 37
         minSdk = 26
+        androidResources {
+            enable = true
+        }
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
@@ -30,6 +33,7 @@ kotlin {
             implementation(libs.jb.compose.runtime)
             implementation(libs.jb.compose.foundation)
             implementation(libs.jb.compose.ui)
+            api(libs.jb.compose.resources)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -46,6 +50,12 @@ kotlin {
             implementation(compose.desktop.currentOs)
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "io.github.devjardins.sidespeed.companion.resources"
+    nameOfResClass = "Res"
 }
 
 // Dependabot: kadb 2.1.4 pulls bcprov/bcpkix/bcutil-jdk18on 1.84, and bcprov < 1.85
