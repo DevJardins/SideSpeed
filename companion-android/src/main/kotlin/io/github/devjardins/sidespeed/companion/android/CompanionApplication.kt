@@ -27,6 +27,7 @@ import io.github.devjardins.sidespeed.companion.android.update.readApkFacts
 import io.github.devjardins.sidespeed.companion.tv.AndroidDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
+import io.github.devjardins.sidespeed.companion.tv.TvIdentity
 import io.github.devjardins.sidespeed.companion.tv.kadbPairer
 import io.github.devjardins.sidespeed.companion.upkeep.Scanner
 import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
@@ -49,6 +50,7 @@ class Graph(app: Application, scope: CoroutineScope) {
     val store = JsonFileCompanionStore(java.io.File(app.filesDir, "companion"))
     val fingerprints = AndroidFingerprintSource(app)
     val connector = KadbTvConnector(AndroidDirs.keyDir(app))
+    val identity = TvIdentity.forKeys(AndroidDirs.keyDir(app))
     // Same shared browser as desktop. NsdManager has no interface list, so Android does not pick one.
     val ports = KadbMdnsConnectPorts(open = {
         KadbMdnsAndroid(app, MdnsConfig(serviceTypes = setOf(MdnsServiceType.TLS_CONNECT)))
@@ -60,6 +62,7 @@ class Graph(app: Application, scope: CoroutineScope) {
     val upkeep = Upkeep(
         store, fingerprints, connector, HelperKeeper(), scanner,
         ports = ports, classicTls = { linkOffer.encryptedAvailable(it) },
+        identity = identity,
     ) { System.currentTimeMillis() }
     val notifier = Notifier(app)
 
@@ -74,6 +77,7 @@ class Graph(app: Application, scope: CoroutineScope) {
     val viewModel = CompanionViewModel(
         store, fingerprints, upkeep, connector, discovery, scope,
         pairer = pairer, ports = ports, linkOffer = linkOffer,
+        identity = identity,
     )
 
     /** Self-update: check state and installer for the About screen. */

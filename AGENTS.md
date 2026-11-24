@@ -134,6 +134,10 @@ the code may have a bug.
   weaker install checks) without the owner's explicit decision.
 - New forms are exact-token allowlist entries with tests,
   as in `CommandAllowlist.kt`.
+- Every Companion session proves the TV before any other command
+  (`TvIdentity.prepare` in `TvSessions.open`). A TV saved before this check
+  existed gets a secret only after its serial still matches. A failed proof
+  closes the session and is not retried in the background.
 
 ## 6. Versions and releases
 

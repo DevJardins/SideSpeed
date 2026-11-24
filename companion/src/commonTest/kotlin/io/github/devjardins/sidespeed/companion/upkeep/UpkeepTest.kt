@@ -14,6 +14,8 @@ import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.FakeTvSession
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
+import io.github.devjardins.sidespeed.companion.tv.TvIdentity
+import io.github.devjardins.sidespeed.companion.tv.TvProof
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.tv.TvSession
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
@@ -107,9 +109,11 @@ class UpkeepTest {
         scanner: FakeScanner = FakeScanner(),
         source: FingerprintSource = FingerprintSource { home },
         ports: ConnectPortFinder = ConnectPortFinder { null },
+        identity: TvIdentity? = null,
     ) = Upkeep(
         store, source, net.connector, HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), scanner,
         ports = ports,
+        identity = identity,
     ) { now }
 
     @Test fun untrustedFingerprintIsGated() = runTest {
@@ -728,6 +732,58 @@ class UpkeepTest {
         assertEquals("192.168.5.50", store.tv("a").address)
         assertEquals(TvLink.Encrypted(37_000), store.tv("a").link)
     }
+
+    @Test fun aFailedProofIsNotRetriedInTheBackground() = runTest {
+        val secret = "ab".repeat(32)
+        val nonce = "cd".repeat(32)
+        val id = "0123456789abcdef"
+        val prove = TvCommands.proveSecret(id, nonce)
+        val fake = runningTv("SER-a").also { it.outputs[prove] = "" }
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50").copy(identitySecret = secret)), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = fake }
+        val identity = TvIdentity(id) { nonce.hexToBytes() }
+        val u = upkeep(store, net, identity = identity)
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf(prove), fake.sent)
+        assertTrue(store.tv("a").unproven)
+        val opens = net.opened.size
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(opens, net.opened.size)
+        assertEquals(listOf(prove), fake.sent)
+    }
+
+    @Test fun refindCountsAHostOnlyAfterTheProofPasses() = runTest {
+        val secret = "ab".repeat(32)
+        val nonce = "cd".repeat(32)
+        val id = "0123456789abcdef"
+        val prove = TvCommands.proveSecret(id, nonce)
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val stranger = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER"))
+        val missing = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-a", prove to ""))
+        val store = InMemoryCompanionStore(listOf(offlineTv().copy(identitySecret = secret)), listOf(homeNet))
+        val net = FakeNet().also {
+            it.sessions["192.168.5.23"] = stranger
+            it.sessions["192.168.5.77"] = missing
+        }
+        val identity = TvIdentity(id) { nonce.hexToBytes() }
+        upkeep(store, net, FakeScanner(listOf("192.168.5.23", "192.168.5.77")), identity = identity).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf(TvCommands.SERIAL), stranger.sent)
+        assertEquals(listOf(TvCommands.SERIAL, prove), missing.sent)
+        assertEquals("192.168.5.50", store.tv("a").address)
+        assertTrue(store.tv("a").unproven)
+
+        val good = runningTv("SER-a").also { it.outputs[prove] = line }
+        val again = InMemoryCompanionStore(listOf(offlineTv().copy(identitySecret = secret)), listOf(homeNet))
+        val net2 = FakeNet().also { it.sessions["192.168.5.77"] = good }
+        upkeep(again, net2, FakeScanner(listOf("192.168.5.77")), identity = identity).runOnce(Trigger.BACKGROUND)
+        assertEquals("192.168.5.77", again.tv("a").address)
+        assertEquals(TvStatus.RUNNING, again.tv("a").status)
+        assertFalse(again.tv("a").unproven)
+        assertTrue(prove in good.sent)
+        assertTrue(good.sent.indexOf(TvCommands.SERIAL) < good.sent.indexOf(prove))
+    }
+
+    private fun String.hexToBytes(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
     private fun namedPorts(services: List<TlsConnectService>) = object : ConnectPortFinder {
         override suspend fun find(host: String) = services.firstOrNull { it.host == host }?.port

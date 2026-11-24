@@ -35,6 +35,7 @@ import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
 import io.github.devjardins.sidespeed.companion.tv.DesktopDirs
 import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.KadbTvConnector
+import io.github.devjardins.sidespeed.companion.tv.TvIdentity
 import io.github.devjardins.sidespeed.companion.tv.kadbPairer
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.discovery.TailscaleStatus
@@ -80,6 +81,7 @@ fun main() {
     val store = JsonFileCompanionStore(File(appData, "store"))
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
+    val identity = TvIdentity.forKeys(DesktopDirs.keyDir())
     // kadb-mdns 2.1.4 has no public way to choose interfaces.
     // KadbMdnsJvm(MdnsConfig) opens one JmDNS per address via createDefaultJmDnsBackends:
     // every up, non-loopback, non-virtual interface, IPv4 and IPv6.
@@ -98,6 +100,7 @@ fun main() {
     val upkeep = Upkeep(
         store, fingerprints, connector, HelperKeeper(), scanner, overlay,
         ports = ports, classicTls = { linkOffer.encryptedAvailable(it) },
+        identity = identity,
     ) { System.currentTimeMillis() }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     // Hints first, so the 4096-probe cap on the sweep can never push them out; the ARP table is read on IO.
@@ -131,6 +134,7 @@ fun main() {
     val vm = CompanionViewModel(
         store, fingerprints, upkeep, connector, discovery, scope,
         overlay = overlay, pairer = pairer, ports = ports, linkOffer = linkOffer,
+        identity = identity,
     )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
 
