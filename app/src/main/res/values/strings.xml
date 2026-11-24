@@ -177,4 +177,129 @@
     <string name="compile_launch_error_helper_down">Helper not running</string>
     <string name="compile_launch_error_helper_outdated">Restart the helper to use this</string>
     <string name="compile_launch_error_helper_refused">Helper refused the command</string>
+
+    <!-- My Apps and updates -->
+    <!-- Screen title on the My Apps screen. -->
+    <string name="apps_title">My Apps</string>
+    <!-- Filter chip showing all installed apps. -->
+    <string name="apps_filter_all">All</string>
+    <!-- Filter chip showing only sideloaded apps. -->
+    <string name="apps_filter_sideloaded">Sideloaded</string>
+    <!-- Shown on Home and My Apps while the installed app list is loading. -->
+    <string name="apps_loading">Loading apps…</string>
+    <!-- Empty state on My Apps when the active filter matches no apps. -->
+    <string name="apps_empty">No apps found.</string>
+    <!-- Secondary line under an app row when it has been compiled. %1$s is a formatted date. -->
+    <string name="apps_row_compiled">compiled %1$s</string>
+    <!-- Status pill on an app row while Auto-optimize is compiling it. -->
+    <string name="apps_pill_optimizing">Optimizing…</string>
+    <!-- Status pill on an app row while it waits in the Auto-optimize queue. -->
+    <string name="apps_pill_waiting">Waiting</string>
+    <!-- Status pill on an app row when Auto-optimize failed and will retry. -->
+    <string name="apps_pill_retry">Retry</string>
+    <!-- Status pill on an app row when Auto-optimize has it up to date. -->
+    <string name="apps_pill_optimized">Optimized</string>
+    <!-- Status pill on an app row when a newer version is available. %1$s is the version name. -->
+    <string name="apps_pill_update">Update: %1$s</string>
+    <!-- Status pill in the Home header when SideSpeed itself is compiled for the current build. Keep: SideSpeed -->
+    <string name="home_self_optimized">SideSpeed optimized</string>
+    <!-- Status pill in the Home header when SideSpeed has not yet compiled itself. Keep: SideSpeed -->
+    <string name="home_self_optimizes_on_leave">SideSpeed optimizes itself when you leave</string>
+    <!-- Home header status line when queued work is paused because the helper is not running. -->
+    <string name="apps_maintenance_waiting_helper">Waiting for the helper</string>
+    <!-- Home header status line when Auto-optimize has apps queued. %1$d is the queue length. -->
+    <plurals name="apps_maintenance_waiting">
+        <item quantity="one">Maintenance: %1$d waiting</item>
+        <item quantity="other">Maintenance: %1$d waiting</item>
+    </plurals>
+    <!-- Home header status line when Auto-optimize is enabled and no apps are queued. -->
+    <string name="apps_maintenance_up_to_date">Maintenance: up to date</string>
+    <!-- Combines the TV address line (%1$s) and the maintenance line (%2$s) in the Home header. -->
+    <string name="home_header_caption">%1$s · %2$s</string>
+    <!-- Auto-optimize mode title covering all user-installed apps. -->
+    <string name="apps_mode_all_title">All apps</string>
+    <!-- Auto-optimize mode description for All apps. -->
+    <string name="apps_mode_all_desc">Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.</string>
+    <!-- Auto-optimize mode title covering only sideloaded apps. -->
+    <string name="apps_mode_sideloaded_title">Sideloaded only</string>
+    <!-- Auto-optimize mode description for Sideloaded only. -->
+    <string name="apps_mode_sideloaded_desc">Only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.</string>
+    <!-- Auto-optimize mode title covering only manually selected apps. -->
+    <string name="apps_mode_selected_title">Selected apps</string>
+    <!-- Auto-optimize mode description for Selected apps. Must match the compile_keep_optimized button label. -->
+    <string name="apps_mode_selected_desc">Only the apps you pick. Open an app and choose “Keep this app optimized” to add it.</string>
+    <!-- Button label showing the active Auto-optimize mode. %1$s is the mode title. -->
+    <string name="apps_auto_optimize_button">Auto-optimize: %1$s</string>
+    <!-- Brief note shown when pressing a locked keep-checkbox on My Apps. %1$s is the mode title. -->
+    <string name="apps_locked_message">Kept optimized by Auto-optimize (%1$s). Change it on the Auto-optimize screen.</string>
+    <!-- Total app count in the Home My Apps tile. %1$d is the number of apps. -->
+    <plurals name="home_apps_count">
+        <item quantity="one">%1$d apps</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <!-- Update count in the Home My Apps tile when updates are available. %1$d is the number of updates. -->
+    <plurals name="home_updates_count">
+        <item quantity="one">%1$d update</item>
+        <item quantity="other">%1$d updates</item>
+    </plurals>
+    <!-- Sideloaded app count in the Home My Apps tile when no updates are available. %1$d is the number of sideloaded apps. -->
+    <plurals name="home_sideloaded_count">
+        <item quantity="one">%1$d sideloaded</item>
+        <item quantity="other">%1$d sideloaded</item>
+    </plurals>
+    <!-- Status line on the Home My Apps tile. %1$s is the total app count, %2$s is updates or sideloaded count. -->
+    <string name="home_status_my_apps">%1$s · %2$s</string>
+    <!-- Detail part of the Home Auto-optimize tile status when queued work waits for the helper. -->
+    <string name="home_auto_waiting_helper">waiting for the helper</string>
+    <!-- Detail part of the Home Auto-optimize tile status when apps are queued. %1$d is the queue length. -->
+    <plurals name="home_auto_waiting">
+        <item quantity="one">%1$d waiting</item>
+        <item quantity="other">%1$d waiting</item>
+    </plurals>
+    <!-- Detail part of the Home Auto-optimize tile status when nothing is queued. -->
+    <string name="home_auto_up_to_date">up to date</string>
+    <!-- Status line on the Home Auto-optimize tile. %1$s is the mode title, %2$s is the queue detail. -->
+    <string name="home_status_auto_optimize">%1$s · %2$s</string>
+    <!-- Status line on the Home Tools tile. -->
+    <string name="home_status_tools">Space, animations, extras, home screen</string>
+    <!-- Status line on the Home About tile. %1$s is the SideSpeed version name. -->
+    <string name="home_status_about">Version %1$s</string>
+    <!-- SideSpeed update banner progress while downloading. %1$d is percent (0-100). -->
+    <string name="update_banner_downloading">Downloading… %1$d%%</string>
+    <!-- SideSpeed update banner status while installing. Keep: SideSpeed -->
+    <string name="update_banner_installing">Installing… SideSpeed will close and reopen.</string>
+    <!-- SideSpeed update banner headline. %1$s is the new version name. Keep: SideSpeed -->
+    <string name="update_banner_out">SideSpeed %1$s is out</string>
+    <!-- SideSpeed update banner note when another job blocks updating. -->
+    <string name="update_banner_busy">Available when the current job finishes.</string>
+    <!-- SideSpeed update banner fallback instructions. Keep: Downloader, 3503400, sidespeed.app/tv -->
+    <string name="update_banner_manual">In Downloader, enter 3503400, or go to sidespeed.app/tv.</string>
+    <string name="update_banner_update_now">Update now</string>
+    <string name="update_banner_dismiss">Dismiss</string>
+    <string name="update_banner_cancel">Cancel</string>
+    <string name="update_banner_retry">Retry</string>
+    <!-- Compile screen update card headline. %1$s is the app name, %2$s is the available version, %3$s is the installed version. -->
+    <string name="update_card_title">%1$s %2$s is out. You have %3$s.</string>
+    <!-- Keep: GitHub -->
+    <string name="update_source_github">From GitHub.</string>
+    <!-- Keep: F-Droid -->
+    <string name="update_source_fdroid">From F-Droid.</string>
+    <!-- Keep: IzzyOnDroid -->
+    <string name="update_source_izzy">From IzzyOnDroid.</string>
+    <!-- Generic failure reason when an in-app update throws an unexpected error. -->
+    <string name="update_error_failed">Update failed.</string>
+    <!-- Failure reason when TV storage has less than twice the APK size free. -->
+    <string name="update_error_no_space">Not enough free space on the TV.</string>
+    <!-- Failure reason when downloading the update APK fails. -->
+    <string name="update_error_download_failed">Download failed.</string>
+    <!-- Failure reason when reading the installed app's version or signers fails. -->
+    <string name="update_error_read_installed">Could not read the installed app.</string>
+    <!-- Failure reason when the helper connection drops and the version does not rise within the timeout. -->
+    <string name="update_error_confirm_timeout">Couldn\'t confirm the update. Check the app\'s version, then try again.</string>
+    <!-- Failure reason when the helper finishes without raising the installed version code. -->
+    <string name="update_error_didnt_install">The update didn\'t install.</string>
+    <!-- Fallback failure reason when an install fails with no detail line. -->
+    <string name="update_error_install_failed">Install failed.</string>
+    <!-- Failure reason when the fallback installer cannot run because the helper is down. -->
+    <string name="update_error_helper_down">Helper not running.</string>
 </resources>

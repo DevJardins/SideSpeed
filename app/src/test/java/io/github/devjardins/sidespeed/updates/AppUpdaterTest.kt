@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.updates
 
 import io.github.devjardins.sidespeed.helper.InstallOutcome
+import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.update.ApkFacts
 import io.github.devjardins.sidespeed.update.UpdateDownload
 import io.github.devjardins.sidespeed.update.sha256Hex
@@ -124,7 +125,7 @@ class AppUpdaterTest {
         val u = updater(apkBytes = bytes, variant = v, helperCalls = helperCalls)
         u.start(pkg, v, "2")
         val end = u.awaitState { it is AppUpdateUiState.Failed }
-        assertEquals("Checksum mismatch.", (end as AppUpdateUiState.Failed).reason)
+        assertEquals("Checksum mismatch.", (end as AppUpdateUiState.Failed).reason.english())
         assertTrue(helperCalls.isEmpty())
         assertFalse(updateFile().exists())
     }
@@ -136,7 +137,8 @@ class AppUpdaterTest {
         val u = updater(apkBytes = bytes, variant = v, apkFacts = facts)
         u.start(pkg, v, "2")
         val end = u.awaitState { it is AppUpdateUiState.Failed }
-        assertTrue((end as AppUpdateUiState.Failed).reason, end.reason.contains("Signer"))
+        val reason = (end as AppUpdateUiState.Failed).reason.english()
+        assertTrue(reason, reason.contains("Signer"))
         assertFalse(updateFile().exists())
     }
 
@@ -197,7 +199,7 @@ class AppUpdaterTest {
         val end = u.awaitState { it is AppUpdateUiState.Failed }
         assertEquals(
             "Couldn't confirm the update. Check the app's version, then try again.",
-            (end as AppUpdateUiState.Failed).reason,
+            (end as AppUpdateUiState.Failed).reason.english(),
         )
         assertTrue(fallbackCalls.isEmpty())
         assertFalse(updateFile().exists())
@@ -283,7 +285,7 @@ class AppUpdaterTest {
         val u = updater(apkBytes = bytes, variant = v, fallbackCalls = fallbackCalls)
         u.start(pkg, v, "2")
         val end = u.awaitState { it is AppUpdateUiState.Failed }
-        assertEquals("The update didn't install.", (end as AppUpdateUiState.Failed).reason)
+        assertEquals("The update didn't install.", (end as AppUpdateUiState.Failed).reason.english())
         assertTrue(fallbackCalls.isEmpty())
         assertFalse(updateFile().exists())
     }
@@ -294,7 +296,7 @@ class AppUpdaterTest {
         val u = updater(apkBytes = bytes, variant = v, helperResult = InstallOutcome.Failed(3, "boom"))
         u.start(pkg, v, "2")
         val end = u.awaitState { it is AppUpdateUiState.Failed }
-        assertEquals("boom", (end as AppUpdateUiState.Failed).reason)
+        assertEquals("boom", (end as AppUpdateUiState.Failed).reason.english())
         assertFalse(updateFile().exists())
     }
 
@@ -305,7 +307,7 @@ class AppUpdaterTest {
         val u = updater(apkBytes = bytes, variant = v, freeBytes = v.size * 2 - 1, helperCalls = helperCalls)
         u.start(pkg, v, "2")
         val end = u.awaitState { it is AppUpdateUiState.Failed }
-        assertEquals("Not enough free space on the TV.", (end as AppUpdateUiState.Failed).reason)
+        assertEquals("Not enough free space on the TV.", (end as AppUpdateUiState.Failed).reason.english())
         assertTrue(helperCalls.isEmpty())
         assertFalse(updateFile().exists())
     }

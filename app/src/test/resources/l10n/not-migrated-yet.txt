@@ -7,10 +7,6 @@ tools/Cleanup.kt
 tools/Extras.kt
 tools/HomeScreen.kt
 ui/about/AboutScreen.kt
-ui/apps/AppsScreen.kt
-ui/apps/AppsViewModel.kt
-ui/apps/MyApps.kt
-ui/apps/UpdateBanner.kt
 ui/setup/SetupScreen.kt
 ui/setup/SetupViewModel.kt
 ui/tools/AnimationsCard.kt
@@ -23,5 +19,3 @@ update/FallbackInstaller.kt
 update/SelfUpdater.kt
 update/UpdateDownload.kt
 update/UpdateVerify.kt
-updates/AppUpdater.kt
-updates/AppUpdates.kt

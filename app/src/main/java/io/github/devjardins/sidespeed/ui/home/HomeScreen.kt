@@ -36,6 +36,7 @@ import io.github.devjardins.sidespeed.ui.apps.headerCaption
 import io.github.devjardins.sidespeed.ui.apps.maintenanceLine
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
+import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
@@ -128,7 +129,7 @@ fun HomeScreen(
                 SsPill(stringResource(R.string.home_helper_running), SsColors.OkPillBg, SsColors.OkPillText)
             }
             headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
-                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it.resolve(), style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             banner()
             Row(
@@ -137,25 +138,25 @@ fun HomeScreen(
             ) {
                 HomeTile(
                     stringResource(R.string.home_tile_my_apps),
-                    myAppsStatus(state.apps, state.loading, updateCount),
+                    myAppsStatus(state.apps, state.loading, updateCount).resolve(),
                     onClick = onOpenMyApps,
                     modifier = Modifier.weight(1f).focusRequester(myAppsFocus),
                 )
                 HomeTile(
                     stringResource(R.string.home_tile_auto_optimize),
-                    autoOptimizeStatus(optimizeMode, maintenanceState),
+                    autoOptimizeStatus(optimizeMode, maintenanceState).resolve(),
                     onClick = onOpenAutoOptimize,
                     modifier = Modifier.weight(1f).focusRequester(autoOptimizeFocus),
                 )
                 HomeTile(
                     stringResource(R.string.home_tile_tools),
-                    TOOLS_STATUS,
+                    TOOLS_STATUS.resolve(),
                     onClick = onOpenTools,
                     modifier = Modifier.weight(1f).focusRequester(toolsFocus),
                 )
                 HomeTile(
                     stringResource(R.string.home_tile_about),
-                    aboutStatus(versionName),
+                    aboutStatus(versionName).resolve(),
                     onClick = onOpenAbout,
                     modifier = Modifier.weight(1f).focusRequester(aboutFocus),
                 )

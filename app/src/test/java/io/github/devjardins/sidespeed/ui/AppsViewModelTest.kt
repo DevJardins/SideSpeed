@@ -117,25 +117,21 @@ class AppsViewModelTest {
 
     @Test fun selfOptimizedPillStates() {
         // Matching record: SideSpeed itself is optimized.
-        assertEquals(
-            Pill("SideSpeed optimized", PillTone.OK),
-            selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, false),
-        )
+        val ok = selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, false)!!
+        assertEquals(PillTone.OK, ok.tone)
+        assertEquals("SideSpeed optimized", ok.label.english())
         // No record yet: optimizes itself when left.
-        assertEquals(
-            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
-            selfOptimizedPill(null, 42L, 100L, false),
-        )
+        val uncompiled = selfOptimizedPill(null, 42L, 100L, false)!!
+        assertEquals(PillTone.NEUTRAL, uncompiled.tone)
+        assertEquals("SideSpeed optimizes itself when you leave", uncompiled.label.english())
         // Stale record from an older version.
-        assertEquals(
-            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
-            selfOptimizedPill(SelfCompile(41L, 100L), 42L, 100L, false),
-        )
+        val staleVersion = selfOptimizedPill(SelfCompile(41L, 100L), 42L, 100L, false)!!
+        assertEquals(PillTone.NEUTRAL, staleVersion.tone)
+        assertEquals("SideSpeed optimizes itself when you leave", staleVersion.label.english())
         // Stale record from an older update of the same version.
-        assertEquals(
-            Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL),
-            selfOptimizedPill(SelfCompile(42L, 99L), 42L, 100L, false),
-        )
+        val staleTime = selfOptimizedPill(SelfCompile(42L, 99L), 42L, 100L, false)!!
+        assertEquals(PillTone.NEUTRAL, staleTime.tone)
+        assertEquals("SideSpeed optimizes itself when you leave", staleTime.label.english())
         // Debuggable builds show nothing: ART won't compile them.
         assertNull(selfOptimizedPill(SelfCompile(42L, 100L), 42L, 100L, true))
         assertNull(selfOptimizedPill(null, 42L, 100L, true))
@@ -144,15 +140,15 @@ class AppsViewModelTest {
     @Test fun headerCaptionCombinations() {
         assertEquals(
             "This TV: 192.168.5.140 · 100.79.202.46 · Maintenance: 11 waiting",
-            headerCaption("This TV: 192.168.5.140 · 100.79.202.46", "Maintenance: 11 waiting"),
+            headerCaption("This TV: 192.168.5.140 · 100.79.202.46", UiText.Raw("Maintenance: 11 waiting"))?.english(),
         )
         assertEquals(
             "This TV: 192.168.5.140",
-            headerCaption("This TV: 192.168.5.140", null),
+            headerCaption("This TV: 192.168.5.140", null)?.english(),
         )
         assertEquals(
             "Maintenance: 11 waiting",
-            headerCaption(null, "Maintenance: 11 waiting"),
+            headerCaption(null, UiText.Raw("Maintenance: 11 waiting"))?.english(),
         )
         assertNull(headerCaption(null, null))
     }

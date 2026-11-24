@@ -14,6 +14,8 @@ import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
 import io.github.devjardins.sidespeed.status.BadgeSource
 import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,7 +39,7 @@ data class AppsUiState(
 
 enum class PillTone { OK, WARN, NEUTRAL }
 
-data class Pill(val label: String, val tone: PillTone)
+data class Pill(val label: UiText, val tone: PillTone)
 
 data class BadgePill(@StringRes val label: Int, val tone: PillTone)
 
@@ -53,10 +55,10 @@ fun pillFor(statusLoading: Boolean, badge: StatusBadge?): BadgePill? = when (bad
 fun maintenancePill(pkg: String, state: MaintenanceState): Pill? = when {
     pkg !in state.maintained -> null
     else -> when (state.phases[pkg]) {
-        JobPhase.RUNNING -> Pill("Optimizing…", PillTone.NEUTRAL)
-        JobPhase.WAITING -> Pill("Waiting", PillTone.NEUTRAL)
-        JobPhase.RETRY -> Pill("Retry", PillTone.WARN)
-        null -> Pill("Optimized", PillTone.OK)
+        JobPhase.RUNNING -> Pill(UiText.Res(R.string.apps_pill_optimizing), PillTone.NEUTRAL)
+        JobPhase.WAITING -> Pill(UiText.Res(R.string.apps_pill_waiting), PillTone.NEUTRAL)
+        JobPhase.RETRY -> Pill(UiText.Res(R.string.apps_pill_retry), PillTone.WARN)
+        null -> Pill(UiText.Res(R.string.apps_pill_optimized), PillTone.OK)
     }
 }
 
@@ -64,29 +66,29 @@ fun maintenancePill(pkg: String, state: MaintenanceState): Pill? = when {
 fun selfOptimizedPill(record: SelfCompile?, versionCode: Long, lastUpdateTime: Long, debuggable: Boolean): Pill? {
     if (debuggable) return null
     if (record != null && record.versionCode == versionCode && record.lastUpdateTime == lastUpdateTime) {
-        return Pill("SideSpeed optimized", PillTone.OK)
+        return Pill(UiText.Res(R.string.home_self_optimized), PillTone.OK)
     }
-    return Pill("SideSpeed optimizes itself when you leave", PillTone.NEUTRAL)
+    return Pill(UiText.Res(R.string.home_self_optimizes_on_leave), PillTone.NEUTRAL)
 }
 
 /** The "Maintenance" line under the Apps header, or null when there is nothing to say. */
-fun maintenanceLine(state: MaintenanceState): String? = when {
-    state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
+fun maintenanceLine(state: MaintenanceState): UiText? = when {
+    state.helperDown && state.queueLength > 0 -> UiText.Res(R.string.apps_maintenance_waiting_helper)
     state.maintained.isEmpty() && state.queueLength == 0 -> null
-    state.queueLength > 0 -> "Maintenance: ${state.queueLength} waiting"
-    else -> "Maintenance: up to date"
+    state.queueLength > 0 -> UiText.Plural(R.plurals.apps_maintenance_waiting, state.queueLength, listOf(state.queueLength))
+    else -> UiText.Res(R.string.apps_maintenance_up_to_date)
 }
 
 /**
  * The second header line: the "This TV: …" caption and the maintenance line joined with " · ".
  * Shows whichever exists, or null when neither does.
  */
-fun headerCaption(tvAddress: String?, maintenance: String?): String? {
+fun headerCaption(tvAddress: String?, maintenance: UiText?): UiText? {
     val tv = tvAddress?.takeIf { it.isNotBlank() }
-    val line = maintenance?.takeIf { it.isNotBlank() }
+    val line = if (maintenance is UiText.Raw && maintenance.text.isBlank()) null else maintenance
     return when {
-        tv != null && line != null -> "$tv · $line"
-        tv != null -> tv
+        tv != null && line != null -> uiText(R.string.home_header_caption, UiText.Raw(tv), line)
+        tv != null -> UiText.Raw(tv)
         line != null -> line
         else -> null
     }
@@ -134,20 +136,20 @@ class AppsViewModel(
     }
 }
 
-class AutoOptimizeOption(val title: String, val description: String)
+class AutoOptimizeOption(val title: UiText, val description: UiText)
 
 /** Plain-language label and explanation for each auto-optimize mode. */
 fun autoOptimizeOption(mode: AutoOptimizeMode): AutoOptimizeOption = when (mode) {
     AutoOptimizeMode.ALL -> AutoOptimizeOption(
-        "All apps",
-        "Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.",
+        UiText.Res(R.string.apps_mode_all_title),
+        UiText.Res(R.string.apps_mode_all_desc),
     )
     AutoOptimizeMode.SIDELOADED -> AutoOptimizeOption(
-        "Sideloaded only",
-        "Only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.",
+        UiText.Res(R.string.apps_mode_sideloaded_title),
+        UiText.Res(R.string.apps_mode_sideloaded_desc),
     )
     AutoOptimizeMode.SELECTED -> AutoOptimizeOption(
-        "Selected apps",
-        "Only the apps you pick. Open an app and choose \u201cKeep this app optimized\u201d to add it.",
+        UiText.Res(R.string.apps_mode_selected_title),
+        UiText.Res(R.string.apps_mode_selected_desc),
     )
 }

@@ -294,12 +294,12 @@ private fun UpdateAvailableCard(
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.compile_update_available), style = SsType.Title, color = SsColors.TextPrimary)
             Text(
-                updateCardTitle(update.name, update.versionName, installedVersion),
+                updateCardTitle(update.name, update.versionName, installedVersion).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
             updateSourceLine(update.source)?.let {
-                Text(it, style = SsType.Body, color = SsColors.TextBody)
+                Text(it.resolve(), style = SsType.Body, color = SsColors.TextBody)
             }
             if (elsewhereRunning) {
                 Text(
@@ -398,7 +398,7 @@ private fun UpdateNowSection(
             }
         }
         is AppUpdateUiState.Failed -> {
-            Text(updateState.reason, style = SsType.Body, color = SsColors.TextBody)
+            Text(updateState.reason.resolve(), style = SsType.Body, color = SsColors.TextBody)
             SsButton(
                 stringResource(R.string.compile_update_try_again),
                 onClick = onUpdateNow,

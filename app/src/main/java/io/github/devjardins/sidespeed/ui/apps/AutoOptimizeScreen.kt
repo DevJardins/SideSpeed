@@ -91,7 +91,7 @@ fun AutoOptimizeScreen(
             }
             current?.let {
                 AutoOptimizeMode.entries.forEach { m ->
-                    val optionTitle = autoOptimizeOption(m).title
+                    val optionTitle = autoOptimizeOption(m).title.resolve()
                     SsButton(
                         if (m == it) stringResource(R.string.maint_mode_selected, optionTitle) else optionTitle,
                         onClick = { onMode(m) },
@@ -100,7 +100,7 @@ fun AutoOptimizeScreen(
                     )
                 }
                 Text(
-                    autoOptimizeOption(it).description,
+                    autoOptimizeOption(it).description.resolve(),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )

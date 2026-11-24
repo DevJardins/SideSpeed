@@ -1,7 +1,10 @@
 package io.github.devjardins.sidespeed.updates
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.helper.CommandAllowlist
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -254,17 +257,18 @@ fun updateFor(
 }
 
 /** "Update: 29.47": the My Apps row pill for an app with a proven newer version. */
-fun updatePillLabel(versionName: String): String = "Update: $versionName"
+fun updatePillLabel(versionName: String): UiText =
+    uiText(R.string.apps_pill_update, UiText.Ltr(versionName))
 
 /** "SmartTube 29.47 is out. You have 29.46.": the Compile screen card title. */
-fun updateCardTitle(name: String, latest: String, installed: String): String =
-    "$name $latest is out. You have $installed."
+fun updateCardTitle(name: String, latest: String, installed: String): UiText =
+    uiText(R.string.update_card_title, name, UiText.Ltr(latest), UiText.Ltr(installed))
 
 /** "From GitHub." and friends; null when the source is missing or unknown. */
-fun updateSourceLine(source: String?): String? = when (source?.lowercase()) {
-    "github" -> "From GitHub."
-    "fdroid" -> "From F-Droid."
-    "izzy" -> "From IzzyOnDroid."
+fun updateSourceLine(source: String?): UiText? = when (source?.lowercase()) {
+    "github" -> UiText.Res(R.string.update_source_github)
+    "fdroid" -> UiText.Res(R.string.update_source_fdroid)
+    "izzy" -> UiText.Res(R.string.update_source_izzy)
     else -> null
 }
 
