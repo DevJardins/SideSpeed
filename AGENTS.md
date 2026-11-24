@@ -139,7 +139,8 @@ Keep it true when you change anything below.
   as in `CommandAllowlist.kt`.
 - Every Companion session proves the TV before any other command
   (`TvIdentity.prepare` in `TvSessions.open`). A TV saved before this check
-  existed gets a secret only after its serial still matches; a wrong serial
+  existed gets a secret only after its serial still matches, and only from
+  an action the person started (`mayEnroll`); a wrong serial
   closes the session (`TvWrongDevice`). A failed proof
   closes the session and is not retried in the background.
 - A Trusted Network matches on router address and subnet, then

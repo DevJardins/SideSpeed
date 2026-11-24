@@ -89,6 +89,9 @@ so the Companion is careful about where it connects and to what.
   in a folder only the shell user can read.
   Each later session asks the TV to prove it holds that secret,
   without sending the secret again (`tv/TvIdentity.kt`, `tv/TvSessions.kt`).
+  A TV saved before this check gets its secret only when you confirm it
+  in the Companion, after its serial still matches.
+  The Companion doesn't contact that TV before then.
   A TV that fails is stopped and shown as "Stopped: check failed".
   The only choice offered is to remove it.
 - The Companion's ADB key and saved TVs are readable only by your user account

@@ -92,6 +92,7 @@ fun CompanionApp(
                     onSubmitPair = vm::submitPair,
                     onSubmitConnectPort = vm::submitConnectPort,
                     onCancelPair = vm::cancelPairing,
+                    onConfirm = vm::confirmTv,
                 )
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }

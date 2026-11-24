@@ -50,6 +50,7 @@ fun HomeScreen(
     onSubmitPair: (String, String) -> Unit = { _, _ -> },
     onSubmitConnectPort: (String) -> Unit = {},
     onCancelPair: () -> Unit = {},
+    onConfirm: (String) -> Unit = {},
 ) {
     DisposableEffect(Unit) {
         onVisibleChange(true)
@@ -133,7 +134,10 @@ fun HomeScreen(
                         tv.scopeNote?.let { SsText(it, Ss.caption) }
                         TvActivityBlock(tv, now)
                         if (tv.attention != TvAttention.NONE) {
-                            AttentionBlock(tv, state.pairing, onAcknowledge, onPair, onRestart, onPort, onSubmitPair, onSubmitConnectPort, onCancelPair)
+                            AttentionBlock(
+                                tv, state.pairing, onAcknowledge, onPair, onRestart, onPort,
+                                onSubmitPair, onSubmitConnectPort, onCancelPair, onConfirm,
+                            )
                         }
                         if (TvCardAction.RESTART in cardActions(tv)) {
                             Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -178,6 +182,7 @@ private fun AttentionBlock(
     onSubmitPair: (String, String) -> Unit,
     onSubmitConnectPort: (String) -> Unit,
     onCancelPair: () -> Unit,
+    onConfirm: (String) -> Unit,
 ) {
     val form = pairing?.takeIf { it.tvId == tv.id }
     if (form != null) {
@@ -196,6 +201,10 @@ private fun AttentionBlock(
             SsText(Copy.NOT_CONTACTED, Ss.caption)
             SsText(Copy.PAIR_OFFER, Ss.caption)
             SsButton(Copy.PAIR, { onPair(tv.id) })
+        }
+        TvAttention.CONFIRM -> {
+            SsText(Copy.CONFIRM_TV, Ss.caption)
+            SsButton(Copy.CONFIRM, { onConfirm(tv.id) })
         }
         TvAttention.WIRELESS_OFF -> {
             var typing by remember(tv.id) { mutableStateOf(false) }

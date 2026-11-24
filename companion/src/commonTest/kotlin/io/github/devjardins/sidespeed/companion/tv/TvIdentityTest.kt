@@ -77,7 +77,8 @@ class TvIdentityTest {
             ),
         )
         val store = InMemoryCompanionStore(listOf(saved(secret = null)))
-        val session = TvSessions(fake.connector(), store, identity = checker(secret, nonce)).open(store.tv("tv-1"))
+        val session = TvSessions(fake.connector(), store, identity = checker(secret, nonce))
+            .open(store.tv("tv-1"), mayEnroll = true)
         assertEquals(listOf(TvCommands.SERIAL, write, prove), fake.sent)
         assertEquals(secret, store.tv("tv-1").identitySecret)
         assertEquals("row", session.run(TvCommands.STATUS_QUERY))
@@ -85,7 +86,8 @@ class TvIdentityTest {
         val failed = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-1", write to "", prove to ""))
         val again = InMemoryCompanionStore(listOf(saved(secret = null)))
         assertFailsWith<TvUnproven> {
-            TvSessions(failed.connector(), again, identity = checker(secret, nonce)).open(again.tv("tv-1"))
+            TvSessions(failed.connector(), again, identity = checker(secret, nonce))
+                .open(again.tv("tv-1"), mayEnroll = true)
         }
         assertEquals(listOf(TvCommands.SERIAL, write, prove), failed.sent)
         assertFalse(TvCommands.STATUS_QUERY in failed.sent)
@@ -103,11 +105,28 @@ class TvIdentityTest {
         assertTrue(fake.sent.isEmpty())
     }
 
+    @Test fun aSavedTvWithNoSecretIsNotContactedUntilEnrollIsAllowed() = runBlocking {
+        val write = TvCommands.writeSecret(companionId, secret)
+        val prove = proveCommand()
+        val fake = FakeTvSession(
+            mapOf(TvCommands.SERIAL to "SER-1", write to "", prove to goodLine()),
+        )
+        val store = InMemoryCompanionStore(listOf(saved(secret = null)))
+        assertFailsWith<NeedsConfirmation> {
+            TvSessions(fake.connector(), store, identity = checker(secret, nonce)).open(store.tv("tv-1"))
+        }
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(fake.opened.isEmpty() || fake.closed)
+        assertNull(store.tv("tv-1").identitySecret)
+        assertFalse(store.tv("tv-1").unproven)
+    }
+
     @Test fun firstUseDoesNotWriteWhenTheSerialDoesNotMatch() = runBlocking {
         val fake = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER"))
         val store = InMemoryCompanionStore(listOf(saved(secret = null)))
         assertFailsWith<TvWrongDevice> {
-            TvSessions(fake.connector(), store, identity = checker(secret, nonce)).open(store.tv("tv-1"))
+            TvSessions(fake.connector(), store, identity = checker(secret, nonce))
+                .open(store.tv("tv-1"), mayEnroll = true)
         }
         assertEquals(listOf(TvCommands.SERIAL), fake.sent)
         assertNull(store.tv("tv-1").identitySecret)
@@ -128,12 +147,31 @@ class TvIdentityTest {
         val store = InMemoryCompanionStore(listOf(saved(secret = null)))
         assertFailsWith<TvWrongDevice> {
             TvSessions(fake.connector(), store, identity = checker(secret, nonce))
-                .open(store.tv("tv-1"))
+                .open(store.tv("tv-1"), mayEnroll = true)
                 .use { HelperKeeper().visit(it, "SER-1") }
         }
         assertEquals(listOf(TvCommands.SERIAL), fake.sent)
         assertTrue(fake.closed)
         assertNull(store.tv("tv-1").identitySecret)
+    }
+
+    @Test fun prepareClosesWithoutACommandWhenEnrollIsNotAllowed() = runBlocking {
+        val fake = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-1"))
+        val session = fake.connector().open(host, 5555)
+        val result = checker(secret).prepare(session, saved(secret = null), mayEnroll = false)
+        assertTrue(result is Prepared.NeedsConfirm)
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(fake.closed)
+    }
+
+    @Test fun acceptMatchedDoesNotEnrollWhenItIsNotAllowed() = runBlocking {
+        val write = TvCommands.writeSecret(companionId, secret)
+        val fake = FakeTvSession(mapOf(TvCommands.SERIAL to "SER-1", write to "", proveCommand() to goodLine()))
+        val session = fake.connector().open(host, 5555)
+        val result = checker(secret, nonce).acceptMatched(session, saved(secret = null), mayEnroll = false)
+        assertTrue(result is Prepared.NeedsConfirm)
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(fake.closed)
     }
 
     private fun String.hexToBytes(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()

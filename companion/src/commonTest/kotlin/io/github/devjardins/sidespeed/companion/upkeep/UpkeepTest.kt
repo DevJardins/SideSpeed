@@ -544,18 +544,19 @@ class UpkeepTest {
         assertTrue(store.promptedHosts().isEmpty())
     }
 
-    @Test fun aMismatchedFirstSerialIsWrongDeviceAndSendsNothingElse() = runTest {
+    @Test fun aBackgroundCheckDoesNotReadATvThatStillNeedsConfirming() = runTest {
         val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
         val stranger = runningTv("SER-a")
         stranger.nextAnswers[TvCommands.SERIAL] = ArrayDeque(listOf("OTHER"))
         val net = FakeNet().also { it.sessions["192.168.5.50"] = stranger }
         val identity = TvIdentity("0123456789abcdef") { ByteArray(32) }
         upkeep(store, net, identity = identity).runOnce(Trigger.BACKGROUND)
-        assertEquals(TvStatus.WRONG_DEVICE, store.tv("a").status)
-        assertEquals(1, store.tv("a").offlineCount)
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        assertEquals(0, store.tv("a").offlineCount)
         assertNull(store.tv("a").identitySecret)
-        assertEquals(listOf(TvCommands.SERIAL), stranger.sent)
-        assertTrue(stranger.closed)
+        assertFalse(store.tv("a").unproven)
+        assertTrue(stranger.sent.isEmpty(), stranger.sent.joinToString())
+        assertTrue(net.opened.isEmpty())
     }
 
     @Test fun wrongDeviceThreeTimesStartsRefind() = runTest {
@@ -763,6 +764,97 @@ class UpkeepTest {
         assertEquals(listOf("192.168.5.50"), net.opened)
         assertEquals("192.168.5.50", store.tv("a").address)
         assertEquals(TvLink.Encrypted(37_000), store.tv("a").link)
+    }
+
+    @Test fun backgroundCheckDoesNotContactASavedTvThatHasNoSecret() = runTest {
+        val id = "0123456789abcdef"
+        val secret = "ab".repeat(32)
+        val nonce = "cd".repeat(32)
+        val prove = TvCommands.proveSecret(id, nonce)
+        val write = TvCommands.writeSecret(id, secret)
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = runningTv("SER-a").also {
+            it.outputs[write] = ""
+            it.outputs[prove] = line
+        }
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(status = TvStatus.RUNNING)),
+            listOf(homeNet),
+        )
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = fake }
+        var draws = 0
+        val identity = TvIdentity(id) {
+            draws += 1
+            (if (draws == 1) secret else nonce).hexToBytes()
+        }
+        val u = upkeep(store, net, identity = identity)
+        u.runOnce(Trigger.BACKGROUND)
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertTrue(net.opened.isEmpty() || fake.closed)
+        assertEquals(null, store.tv("a").identitySecret)
+        assertFalse(store.tv("a").unproven)
+        assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
+        val opens = net.opened.size
+        u.runOnce(Trigger.BACKGROUND)
+        assertEquals(opens, net.opened.size)
+        assertTrue(fake.sent.isEmpty(), fake.sent.joinToString())
+        assertEquals(null, store.tv("a").identitySecret)
+    }
+
+    @Test fun refindDoesNotEnrollATvThatHasNoSecret() = runTest {
+        val id = "0123456789abcdef"
+        val secret = "ab".repeat(32)
+        val nonce = "cd".repeat(32)
+        val prove = TvCommands.proveSecret(id, nonce)
+        val write = TvCommands.writeSecret(id, secret)
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val found = runningTv("SER-a").also {
+            it.outputs[write] = ""
+            it.outputs[prove] = line
+        }
+        val store = InMemoryCompanionStore(listOf(offlineTv()), listOf(homeNet))
+        val net = FakeNet().also { it.sessions["192.168.5.77"] = found }
+        var draws = 0
+        val identity = TvIdentity(id) {
+            draws += 1
+            (if (draws == 1) secret else nonce).hexToBytes()
+        }
+        upkeep(store, net, FakeScanner(listOf("192.168.5.77")), identity = identity).runOnce(Trigger.BACKGROUND)
+        assertEquals(null, store.tv("a").identitySecret)
+        assertFalse(store.tv("a").unproven)
+        assertEquals("192.168.5.50", store.tv("a").address)
+        assertTrue(found.sent.none { "printf" in it }, found.sent.joinToString())
+        assertTrue(net.opened.isEmpty() || found.closed)
+    }
+
+    @Test fun anEncryptedMoveDoesNotEnrollATvThatHasNoSecret() = runTest {
+        val id = "0123456789abcdef"
+        val secret = "ab".repeat(32)
+        val nonce = "cd".repeat(32)
+        val found = runningTv("SER-a").also {
+            it.outputs[TvCommands.writeSecret(id, secret)] = ""
+            it.outputs[TvCommands.proveSecret(id, nonce)] = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        }
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(37_000))),
+            listOf(homeNet),
+        )
+        val net = FakeNet().also {
+            it.anyPort = true
+            it.sessions["192.168.5.77"] = found
+        }
+        var draws = 0
+        val identity = TvIdentity(id) {
+            draws += 1
+            (if (draws == 1) secret else nonce).hexToBytes()
+        }
+        val services = listOf(TlsConnectService("192.168.5.77", 37_111, "adb-SER-a-bbbbbb"))
+        upkeep(store, net, identity = identity, ports = namedPorts(services)).runOnce(Trigger.BACKGROUND)
+        assertEquals(null, store.tv("a").identitySecret)
+        assertEquals("192.168.5.50", store.tv("a").address)
+        assertEquals(TvLink.Encrypted(37_000), store.tv("a").link)
+        assertFalse(store.tv("a").unproven)
+        assertTrue(net.opened.isEmpty(), net.opened.joinToString())
     }
 
     @Test fun aFailedProofIsNotRetriedInTheBackground() = runTest {

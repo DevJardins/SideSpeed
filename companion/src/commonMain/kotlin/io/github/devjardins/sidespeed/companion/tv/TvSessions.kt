@@ -66,32 +66,34 @@ class TvSessions(
     /** Address to the instant a remembered "no encrypted offer" result expires. A positive offer is never stored. */
     private val noEncryptedOfferUntil = ConcurrentHashMap<String, Long>()
 
-    suspend fun open(tv: SavedTv): TvSession = open(tv.toTarget(), tv)
+    suspend fun open(tv: SavedTv, mayEnroll: Boolean = false): TvSession = open(tv.toTarget(), tv, mayEnroll)
 
-    suspend fun open(target: TvTarget): TvSession = open(target, saved = null)
+    suspend fun open(target: TvTarget): TvSession = open(target, saved = null, mayEnroll = false)
 
     /**
      * A parked TV is refused here, before any connection, for every caller: upkeep, the activity poll,
      * and a user action that still has the saved id.
+     * A saved TV with no secret is refused the same way unless [mayEnroll] is true: nothing is dialled.
      */
-    private suspend fun open(target: TvTarget, saved: SavedTv?): TvSession {
+    private suspend fun open(target: TvTarget, saved: SavedTv?, mayEnroll: Boolean): TvSession {
         if (saved?.unproven == true || store.tvs().any { it.id == target.id && it.unproven }) throw TvUnproven()
-        return openLink(target, saved)
+        if (identity != null && saved != null && saved.identitySecret == null && !mayEnroll) throw NeedsConfirmation()
+        return openLink(target, saved, mayEnroll)
     }
 
-    private suspend fun openLink(target: TvTarget, saved: SavedTv?): TvSession = when (val link = target.link) {
-        is TvLink.Classic -> openClassic(target, link, saved)
-        is TvLink.Encrypted -> openEncrypted(target, link, saved)
+    private suspend fun openLink(target: TvTarget, saved: SavedTv?, mayEnroll: Boolean): TvSession = when (val link = target.link) {
+        is TvLink.Classic -> openClassic(target, link, saved, mayEnroll)
+        is TvLink.Encrypted -> openEncrypted(target, link, saved, mayEnroll)
     }
 
-    private suspend fun openClassic(target: TvTarget, link: TvLink.Classic, saved: SavedTv?): TvSession {
+    private suspend fun openClassic(target: TvTarget, link: TvLink.Classic, saved: SavedTv?, mayEnroll: Boolean): TvSession {
         if (link.ackAtEpochMs == null) throw ClassicNotAcknowledged()
         if (!rememberedNoEncryptedOffer(target.address)) {
             val offered = classicTls(target.address) || ports.find(target.address) != null
             if (offered) throw EncryptedAvailable()
             noEncryptedOfferUntil[target.address] = clock() + NO_ENCRYPTED_OFFER_MS
         }
-        return gate(connector.open(target.address, TvConnector.DEFAULT_PORT), saved)
+        return gate(connector.open(target.address, TvConnector.DEFAULT_PORT), saved, mayEnroll)
     }
 
     /** True while a recent check found no encrypted offer for [address]. A positive result is never remembered. */
@@ -100,11 +102,16 @@ class TvSessions(
         return clock() < until
     }
 
-    private suspend fun openEncrypted(target: TvTarget, link: TvLink.Encrypted, saved: SavedTv?): TvSession {
+    private suspend fun openEncrypted(
+        target: TvTarget,
+        link: TvLink.Encrypted,
+        saved: SavedTv?,
+        mayEnroll: Boolean,
+    ): TvSession {
         val last = link.lastPort?.takeIf { usableEncryptedPort(it) }
         if (last != null) {
             try {
-                return gate(requireTls(connector.open(target.address, last)), saved)
+                return gate(requireTls(connector.open(target.address, last)), saved, mayEnroll)
             } catch (e: TvUnreachable) {
                 // The saved port is stale. Look up the one the TV is advertising now.
             }
@@ -124,10 +131,10 @@ class TvSessions(
             store.updateTv(target.id) { current ->
                 if (current.link is TvLink.Encrypted) current.copy(link = TvLink.Encrypted(found)) else current
             }
-            return gate(session, saved)
+            return gate(session, saved, mayEnroll)
         }
         if (listed == null) throw EncryptedPortUnknown()
-        return openMovedEncrypted(target, listed, saved)
+        return openMovedEncrypted(target, listed, saved, mayEnroll)
     }
 
     /**
@@ -138,6 +145,7 @@ class TvSessions(
         target: TvTarget,
         services: List<TlsConnectService>,
         hinted: SavedTv?,
+        mayEnroll: Boolean,
     ): TvSession {
         val saved = hinted ?: store.tvs().firstOrNull { it.id == target.id } ?: throw EncryptedPortUnknown()
         val match = serviceForSerial(saved.serial, services) ?: throw EncryptedPortUnknown()
@@ -170,6 +178,10 @@ class TvSessions(
             throw EncryptedPortUnknown()
         }
         if (checker != null && saved.identitySecret == null) {
+            if (!mayEnroll) {
+                session.close()
+                throw NeedsConfirmation()
+            }
             if (saved.unproven) {
                 session.close()
                 throw TvUnproven()
@@ -198,10 +210,10 @@ class TvSessions(
      * been written yet), leaves the session alone. A serial that does not match closes the session and
      * throws [TvWrongDevice]. The caller never receives that session.
      */
-    private suspend fun gate(session: TvSession, saved: SavedTv?): TvSession {
+    private suspend fun gate(session: TvSession, saved: SavedTv?, mayEnroll: Boolean): TvSession {
         val checker = identity
         if (checker == null || saved == null) return session
-        return when (val prepared = checker.prepare(session, saved)) {
+        return when (val prepared = checker.prepare(session, saved, mayEnroll)) {
             is Prepared.Ready -> {
                 if (prepared.enrolled) {
                     store.updateTv(saved.id) { current ->
@@ -220,6 +232,7 @@ class TvSessions(
                 session.close()
                 throw TvWrongDevice()
             }
+            Prepared.NeedsConfirm -> throw NeedsConfirmation()
             Prepared.Failed -> throw TvUnproven()
         }
     }
