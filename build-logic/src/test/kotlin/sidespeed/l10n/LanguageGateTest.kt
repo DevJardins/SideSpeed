@@ -163,6 +163,13 @@ class LanguageGateTest {
     }
 
     @Test
+    fun doctype_file_left_out_not_resolved() {
+        val xml = "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/hosts\">]><resources><string name=\"a\">&x;</string></resources>"
+        val result = evaluate(mapOf("values-de" to xml))
+        assertEquals(0, result.excluded.single { it.tag == "de" }.translated)
+    }
+
+    @Test
     fun qualifier_to_tag() {
         assertEquals("fr", LanguageGate.qualifierToTag("values-fr"))
         assertEquals("pt-BR", LanguageGate.qualifierToTag("values-pt-rBR"))

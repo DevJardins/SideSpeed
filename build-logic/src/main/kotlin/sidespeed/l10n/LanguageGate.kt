@@ -20,7 +20,6 @@ object LanguageGate {
     private val REGION = Regex("r([A-Z]{2}|[0-9]{3})")
 
     /** The project ships every language at or above this share of English; also printed by [summary]. */
-    const val BAR_PERCENT = 70
 
     fun qualifierToTag(folderName: String): String? {
         if (!folderName.startsWith("values-")) return null
@@ -62,11 +61,12 @@ object LanguageGate {
         return GateResult(included.sortedBy { it.tag }, excluded.sortedBy { it.tag })
     }
 
-    fun summary(module: String, result: GateResult): String {
+    fun summary(module: String, result: GateResult, bar: Double = 0.70): String {
+        val barPercent = Math.round(bar * 100)
         if (result.included.isEmpty() && result.excluded.isEmpty()) {
-            return "SideSpeed languages ($module): bar $BAR_PERCENT%, English only"
+            return "SideSpeed languages ($module): bar $barPercent%, English only"
         }
-        val lines = mutableListOf("SideSpeed languages ($module): bar $BAR_PERCENT%")
+        val lines = mutableListOf("SideSpeed languages ($module): bar $barPercent%")
         for (score in result.included) lines.add("  in:  ${score.tag} ${percent(score)} (${score.missing} missing)")
         for (score in result.excluded) lines.add("  out: ${score.tag} ${percent(score)} (${score.missing} missing)")
         return lines.joinToString("\n")
@@ -113,7 +113,13 @@ object LanguageGate {
     }
 
     private fun parseStrings(file: File): Map<String, Entry> {
-        val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        val factory = DocumentBuilderFactory.newInstance().apply {
+            // Translation files come from outside contributors: never resolve DOCTYPEs or entities.
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+            isXIncludeAware = false
+            isExpandEntityReferences = false
+        }
+        val builder = factory.newDocumentBuilder().apply { setErrorHandler(null) }
         val root = file.inputStream().use { builder.parse(it) }.documentElement
         val entries = linkedMapOf<String, Entry>()
         val nodes = root.childNodes
