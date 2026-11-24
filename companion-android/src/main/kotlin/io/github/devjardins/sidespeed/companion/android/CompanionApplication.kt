@@ -49,6 +49,7 @@ class Graph(app: Application, scope: CoroutineScope) {
     val store = JsonFileCompanionStore(java.io.File(app.filesDir, "companion"))
     val fingerprints = AndroidFingerprintSource(app)
     val connector = KadbTvConnector(AndroidDirs.keyDir(app))
+    // Same shared browser as desktop. NsdManager has no interface list, so Android does not pick one.
     val ports = KadbMdnsConnectPorts(open = {
         KadbMdnsAndroid(app, MdnsConfig(serviceTypes = setOf(MdnsServiceType.TLS_CONNECT)))
     })

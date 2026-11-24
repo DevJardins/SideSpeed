@@ -1,10 +1,12 @@
 package io.github.devjardins.sidespeed.companion.discovery
 
 import com.flyfishxu.kadb.mdns.KadbMdns
-import com.flyfishxu.kadb.mdns.MdnsServiceType
 import io.github.devjardins.sidespeed.companion.net.Ipv4
 import io.github.devjardins.sidespeed.companion.tv.LinkOffer
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -72,32 +74,41 @@ class MdnsConnectPortFinder(
 }
 
 /**
- * Browses `_adb-tls-connect._tcp` with kadb-mdns for up to [timeoutMs]. [open] builds a fresh
- * browser for each lookup, so two lookups never share one session.
+ * Browses `_adb-tls-connect._tcp` with one shared kadb-mdns browser.
+ *
+ * [open] runs on the first lookup and again after the browser has been idle. A lookup reads whatever
+ * that browser has already collected. When [host] is not among those services yet, the lookup waits
+ * up to [timeoutMs] (3 seconds unless a test says otherwise) for a later result. It does not build
+ * a browser of its own, and it does not close the shared one.
  */
 class KadbMdnsConnectPorts(
-    private val open: () -> KadbMdns,
-    private val timeoutMs: Long = MdnsConnectPortFinder.BROWSE_MS,
+    private val browser: SharedMdnsBrowser,
+    private val timeoutMs: Long,
+    private val clock: () -> Long,
 ) : ConnectPortFinder {
+    constructor(
+        open: suspend () -> KadbMdns,
+        timeoutMs: Long = MdnsConnectPortFinder.BROWSE_MS,
+        clock: () -> Long = { System.currentTimeMillis() },
+        stopScope: CoroutineScope = MdnsBrowsers.stopScope,
+        idleMs: Long = SharedMdnsBrowser.IDLE_MS,
+        pollMs: Long = SharedMdnsBrowser.POLL_MS,
+    ) : this(SharedMdnsBrowser(open, clock, idleMs, stopScope, pollMs), timeoutMs, clock)
+
     override suspend fun find(host: String): Int? = portForHost(host, servicesFor(host))
 
     override suspend fun servicesFor(host: String): List<TlsConnectService> {
-        val mdns = open()
-        mdns.start()
-        try {
-            val deadline = System.currentTimeMillis() + timeoutMs
-            var latest = emptyList<TlsConnectService>()
-            while (true) {
-                latest = mdns.state.value.connectDevices
-                    .filter { it.serviceType == MdnsServiceType.TLS_CONNECT }
-                    .map { TlsConnectService(it.host, it.port, it.name) }
-                // The saved address is enough: stop as soon as it is advertising.
-                if (portForHost(host, latest) != null) return latest
-                if (System.currentTimeMillis() >= deadline) return latest
-                delay(100)
-            }
-        } finally {
-            mdns.stop()
+        val deadline = clock() + timeoutMs
+        var latest = browser.services()
+        while (portForHost(host, latest) == null && clock() < deadline) {
+            delay(100)
+            latest = browser.services()
         }
+        return latest
     }
+}
+
+/** Where a shared browser is closed. JmDNS's close blocks, so this is never the lookup's coroutine. */
+internal object MdnsBrowsers {
+    val stopScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }

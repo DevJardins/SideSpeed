@@ -80,6 +80,11 @@ fun main() {
     val store = JsonFileCompanionStore(File(appData, "store"))
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
+    // kadb-mdns 2.1.4 has no public way to choose interfaces.
+    // KadbMdnsJvm(MdnsConfig) opens one JmDNS per address via createDefaultJmDnsBackends:
+    // every up, non-loopback, non-virtual interface, IPv4 and IPv6.
+    // MdnsConfig only has serviceTypes and preferIpv4. preferIpv4 is not read when those
+    // JmDNS instances are opened. The constructor that takes a backend factory is internal.
     val ports = KadbMdnsConnectPorts(open = {
         KadbMdnsJvm(MdnsConfig(serviceTypes = setOf(MdnsServiceType.TLS_CONNECT)))
     })

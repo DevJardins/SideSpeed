@@ -5,8 +5,15 @@ import com.flyfishxu.kadb.mdns.MdnsDiscoveryState
 import com.flyfishxu.kadb.mdns.MdnsEndpoint
 import com.flyfishxu.kadb.mdns.MdnsServiceType
 import com.flyfishxu.kadb.mdns.MdnsStatus
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -71,6 +78,25 @@ class TlsConnectPortsTest {
         assertNull(serviceForSerial("nope", services))
     }
 
+    @Test fun aLookupWaitsForTheHostThenReturnsIt() = runTest {
+        val mdns = ScriptedMdns(emptyList())
+        val ports = KadbMdnsConnectPorts(
+            open = { mdns },
+            timeoutMs = MdnsConnectPortFinder.BROWSE_MS,
+            clock = { testScheduler.currentTime },
+            stopScope = this,
+            pollMs = 5_000,
+        )
+        val pending = async { ports.servicesFor("192.168.5.20") }
+        runCurrent()
+        mdns.setEndpoints(listOf(MdnsEndpoint("adb-SER-1-abcdef", "192.168.5.20", 37_111, MdnsServiceType.TLS_CONNECT)))
+        advanceTimeBy(100)
+        runCurrent()
+        val seen = pending.await()
+        assertEquals(37_111, portForHost("192.168.5.20", seen))
+        coroutineContext[Job]?.cancelChildren()
+    }
+
     @Test fun theBrowserKeepsTheInstanceName() = runBlocking {
         val endpoint = MdnsEndpoint("adb-SER-1-abcdef", "192.168.5.20", 37_001, MdnsServiceType.TLS_CONNECT)
         val ports = KadbMdnsConnectPorts(open = { ScriptedMdns(listOf(endpoint)) }, timeoutMs = 0)
@@ -80,10 +106,14 @@ class TlsConnectPortsTest {
     }
 
     private class ScriptedMdns(endpoints: List<MdnsEndpoint>) : KadbMdns {
-        override val state = MutableStateFlow(
-            MdnsDiscoveryState(MdnsStatus.STARTED, false, endpoints, emptyList()),
-        )
+        override val state = MutableStateFlow(discovery(endpoints))
+        fun setEndpoints(endpoints: List<MdnsEndpoint>) {
+            state.value = discovery(endpoints)
+        }
         override fun start() {}
         override fun stop() {}
+
+        private fun discovery(endpoints: List<MdnsEndpoint>) =
+            MdnsDiscoveryState(MdnsStatus.STARTED, false, endpoints, emptyList())
     }
 }
