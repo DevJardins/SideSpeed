@@ -4,11 +4,15 @@ import android.content.ContentResolver
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.adb.AdbBackend
+import io.github.devjardins.sidespeed.adb.AdbPairingFailedException
 import io.github.devjardins.sidespeed.adb.ConnectionStrategy
 import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +50,7 @@ sealed interface SetupUiState {
         val refusedHint: Boolean = false,
         val showPairing: Boolean = false,
         val pairing: Boolean = false,
-        val pairMessage: String? = null,
+        val pairMessage: UiText? = null,
     ) : SetupUiState
 }
 
@@ -189,13 +193,13 @@ class SetupViewModel(
         if (_state.value !is SetupUiState.Connecting) return
         val p = port.toIntOrNull()
         if (code.length != 6 || p == null) {
-            updateConnecting { it.copy(pairMessage = "Enter the 6-digit code and the pairing port.") }
+            updateConnecting { it.copy(pairMessage = UiText.Res(R.string.setup_pairing_invalid_input)) }
             return
         }
         // A pending check (up to 30 s while the Allow prompt is up) must finish first; say so.
-        updateConnecting { it.copy(pairing = true, pairMessage = WAITING_FOR_CHECK) }
+        updateConnecting { it.copy(pairing = true, pairMessage = UiText.Res(R.string.setup_pairing_waiting_check)) }
         launchExclusive {
-            updateConnecting { it.copy(pairMessage = PAIRING) }
+            updateConnecting { it.copy(pairMessage = UiText.Res(R.string.setup_pairing_in_progress)) }
             val r = try {
                 // The timeout starts only now that pairing actually begins.
                 withTimeout(PAIR_TIMEOUT_MS) {
@@ -210,22 +214,32 @@ class SetupViewModel(
                 updateConnecting { if (it.pairing) it.copy(pairing = false, pairMessage = null) else it }
             }
             when {
-                r == null -> updateConnecting { it.copy(pairMessage = "Pairing timed out") }
+                r == null -> updateConnecting { it.copy(pairMessage = UiText.Res(R.string.setup_pairing_timed_out)) }
                 r.isSuccess -> {
                     prefs.setPairedTls(true)
-                    updateConnecting { it.copy(pairMessage = "Paired. Connecting…") }
+                    updateConnecting { it.copy(pairMessage = UiText.Res(R.string.setup_pairing_paired_connecting)) }
                 }
                 else -> updateConnecting {
-                    it.copy(pairMessage = "Pairing failed: ${r.exceptionOrNull()?.message ?: "unknown error"}")
+                    it.copy(pairMessage = pairFailureMessage(r.exceptionOrNull()))
                 }
             }
             retryLoop()
         }
     }
 
+    private fun pairFailureMessage(err: Throwable?): UiText = when (err) {
+        is AdbPairingFailedException -> UiText.Res(R.string.setup_pairing_failed_adb)
+        else -> {
+            val msg = err?.message
+            if (msg == null) {
+                UiText.Res(R.string.setup_pairing_failed_unknown)
+            } else {
+                uiText(R.string.setup_pairing_failed, UiText.Raw(msg))
+            }
+        }
+    }
+
     companion object {
-        const val WAITING_FOR_CHECK = "Waiting for the current check…"
-        const val PAIRING = "Pairing…"
         const val PAIR_TIMEOUT_MS = 30_000L
         const val RETRY_DELAY_MS = 2_000L
         const val REFUSALS_FOR_HINT = 3

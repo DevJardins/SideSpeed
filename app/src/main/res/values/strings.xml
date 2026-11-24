@@ -479,4 +479,109 @@
     </plurals>
     <!-- Combines an extras action count (%1$s) with its failure count (%2$s). -->
     <string name="extras_outcome_with_failed">%1$s %2$s</string>
+
+    <!-- Setup and connection -->
+    <!-- Screen headline on Setup. Keep: SideSpeed -->
+    <string name="setup_headline">Allow SideSpeed on this TV</string>
+    <!-- Shown next to a spinner while checking whether the helper is already running. -->
+    <string name="setup_checking">Checking…</string>
+    <!-- Headline for the initial ADB safety warning screen. -->
+    <string name="setup_warning_title">Before you start</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Keep: ADB, SideSpeed -->
+    <string name="setup_lan_warning">ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed\'s helper until you start it again.</string>
+    <!-- Button acknowledging the initial ADB safety warning. -->
+    <string name="setup_warning_ack">I understand</string>
+    <!-- Subtitle on Google TV / Android TV setup screen. Keep: SideSpeed -->
+    <string name="setup_google_tv_subtitle">SideSpeed connects by itself as soon as your TV allows it.</string>
+    <!-- Shown when direct ADB connection is refused 3 times with Wireless debugging on. Must match setup_pair_with_code button label. -->
+    <string name="setup_refused_hint">Your TV doesn\'t accept direct connections. Pair with a code instead.</string>
+    <!-- Button opening the TV's developer settings screen. -->
+    <string name="setup_open_dev_settings">Open developer settings</string>
+    <!-- Button hiding the wireless debugging pairing keypad. -->
+    <string name="setup_hide_pairing">Hide pairing</string>
+    <!-- Button showing the wireless debugging pairing keypad. -->
+    <string name="setup_pair_with_code">Pair with a code instead</string>
+    <!-- Step 1 title on Google TV setup. Match Android's "Wireless debugging" setting name. -->
+    <string name="setup_step_wireless_debugging">Turn on Wireless debugging</string>
+    <!-- Status caption on step 1 when ADB debugging is turned on. -->
+    <string name="setup_step_detected">Detected</string>
+    <!-- Navigation path in Android TV Settings to find Wireless debugging. -->
+    <string name="setup_step_wireless_debugging_path">Settings &gt; System &gt; Developer options</string>
+    <!-- Step 2 title on Google TV setup. Match Android's "Always allow" and "Allow" dialog labels. -->
+    <string name="setup_step_allow_prompt">When your TV asks, tick Always allow, then Allow</string>
+    <!-- Status caption on a setup step card while waiting for user action on the TV. -->
+    <string name="setup_step_waiting">Waiting for you…</string>
+    <!-- Step 3 title on Google TV setup. Keep: SideSpeed -->
+    <string name="setup_step_starts_helper">SideSpeed starts its helper</string>
+    <!-- Card headline for wireless debugging pairing with a 6-digit code. -->
+    <string name="setup_pairing_title">Pair with a code</string>
+    <!-- Instructions inside the pairing card. Match Android's "Wireless debugging" and "Pair device with pairing code" labels. -->
+    <string name="setup_pairing_instructions">In Wireless debugging, choose Pair device with pairing code. Enter the code and the port shown there (the number after the colon).</string>
+    <!-- Label above the 6-digit pairing code keypad. -->
+    <string name="setup_pairing_code_label">Pairing code</string>
+    <!-- Label above the 5-digit pairing port keypad. -->
+    <string name="setup_pairing_port_label">Pairing port</string>
+    <!-- Short delete button label on a 72dp pairing keypad button. -->
+    <string name="setup_keypad_del">Del</string>
+    <!-- Short clear button label on a 72dp pairing keypad button. -->
+    <string name="setup_keypad_clr">Clr</string>
+    <!-- Button submitting the pairing code and port. -->
+    <string name="setup_pairing_submit">Pair</string>
+    <string name="setup_pairing_hide_pc">Hide PC steps</string>
+    <string name="setup_pairing_show_pc">Start from a PC instead</string>
+    <!-- Intro above PC ADB commands for Google TV. Match Android's "Wireless debugging" label. -->
+    <string name="setup_pc_google_tv_intro">From a PC on the same network, using the addresses shown under Wireless debugging:</string>
+    <!-- Note between adb pair/connect commands and the helper launch command. -->
+    <string name="setup_pc_enter_code_note">(enter the pairing code when asked)</string>
+    <!-- Subtitle on Fire TV setup screen. Keep: SideSpeed -->
+    <string name="setup_fire_os_subtitle">SideSpeed checks automatically every few seconds.</string>
+    <!-- Step 1 title on Fire TV setup. Keep: ADB -->
+    <string name="setup_step_adb_debugging">Turn on ADB debugging</string>
+    <!-- Navigation path in Fire TV Settings to find ADB debugging. Keep: Fire TV -->
+    <string name="setup_step_adb_debugging_path">Settings &gt; My Fire TV &gt; Developer options</string>
+    <!-- Step 2 title on Fire TV setup. -->
+    <string name="setup_step_start_helper_companion">Start the helper from your phone or computer</string>
+    <!-- Warning on Fire TV setup when an older helper is running. Keep: SideSpeed, SideSpeed Companion. Match setup_other_ways_show label. -->
+    <string name="setup_fire_os_stale_helper">The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.</string>
+    <!-- Body text on step 2 of Fire TV setup. Keep: SideSpeed Companion, github.com/DevJardins/SideSpeed/releases -->
+    <string name="setup_fire_os_companion_hint">Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from github.com/DevJardins/SideSpeed/releases</string>
+    <string name="setup_other_ways_hide">Hide other ways</string>
+    <string name="setup_other_ways_show">Other ways to run it</string>
+    <string name="setup_pc_fire_os_intro">From a PC on the same network, run:</string>
+    <!-- Step 3 title on Fire TV setup. -->
+    <string name="setup_step_helper_starts">Helper starts</string>
+    <!-- Status caption on step 3 of Fire TV setup. -->
+    <string name="setup_step_checks_automatically">Checks automatically</string>
+    <!-- Troubleshooting caption on Setup. Keep: Allow debugging -->
+    <string name="setup_status_waiting_allow">Last check: waiting for the Allow debugging prompt</string>
+    <!-- Troubleshooting caption on Setup. -->
+    <string name="setup_status_helper_outdated">Last check: the helper is out of date</string>
+    <!-- Troubleshooting caption on Setup. %1$s is a short status reason (e.g. "ADB not reachable"). -->
+    <string name="setup_status_last_check">Last check: %1$s</string>
+    <!-- Note below PC ADB commands. Keep: Windows, PowerShell, Terminal, Command Prompt -->
+    <string name="setup_windows_note">On Windows use PowerShell or Terminal, not Command Prompt.</string>
+    <!-- Caption above raw shell commands to paste inside adb shell. Keep: adb shell -->
+    <string name="setup_pc_or_shell_paste">Or type adb shell, then paste:</string>
+    <!-- Validation error when trying to pair without a 6-digit code and numeric port. -->
+    <string name="setup_pairing_invalid_input">Enter the 6-digit code and the pairing port.</string>
+    <!-- Pairing status while waiting for an in-flight ADB connection check to finish. -->
+    <string name="setup_pairing_waiting_check">Waiting for the current check…</string>
+    <!-- Pairing status while pairing is in progress. -->
+    <string name="setup_pairing_in_progress">Pairing…</string>
+    <!-- Pairing status when pairing exceeds the timeout. -->
+    <string name="setup_pairing_timed_out">Pairing timed out</string>
+    <!-- Pairing status right after pairing succeeds. -->
+    <string name="setup_pairing_paired_connecting">Paired. Connecting…</string>
+    <!-- Pairing failure when the TV rejects the pairing attempt without a specific library error. Keep: ADB -->
+    <string name="setup_pairing_failed_adb">Pairing failed: ADB pairing failed</string>
+    <!-- Pairing failure when the exception provides no error message. -->
+    <string name="setup_pairing_failed_unknown">Pairing failed: unknown error</string>
+    <!-- Pairing failure with a raw error message from the ADB library. %1$s is the exception message. -->
+    <string name="setup_pairing_failed">Pairing failed: %1$s</string>
+    <!-- Short reason shown after "Last check:" on Fire OS when the helper is not running. Keep: Fire OS, ADB -->
+    <string name="setup_reason_fire_os">Fire OS blocks on-box ADB</string>
+    <!-- Short reason shown after "Last check:" when ADB connection fails. Keep: ADB -->
+    <string name="setup_reason_adb_unreachable">ADB not reachable</string>
+    <!-- Short reason shown after "Last check:" when the helper fails to start after ADB connects. -->
+    <string name="setup_reason_helper_not_started">Helper did not start</string>
 </resources>
