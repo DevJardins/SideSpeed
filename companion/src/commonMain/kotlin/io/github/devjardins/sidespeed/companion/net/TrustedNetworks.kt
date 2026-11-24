@@ -49,11 +49,10 @@ object Subnets {
 
 object TrustMatcher {
     /**
-     * Same gateway IP and subnet. When the trusted record has no gateway MAC, the IPv4 DNS servers
-     * must be the same non-empty set: each address is trimmed, IPv6 addresses are ignored, and a side
-     * with no IPv4 DNS server does not match. When the record has a gateway MAC, DNS sets intersect
-     * (or both are empty) and the current MAC must match it. A blank gateway IP, or a malformed
-     * subnet or MAC, never matches.
+     * Same gateway IP and subnet. When the trusted record has no gateway MAC, the trimmed IPv4 DNS
+     * servers, IPv6 ignored, must be the same non-empty set after addresses in 100.64.0.0/10 are left
+     * out of both sides. When the record has a gateway MAC, DNS sets intersect (or both are empty) and
+     * the current MAC must match it. A blank gateway IP, or a malformed subnet or MAC, never matches.
      */
     fun matches(current: NetworkFingerprint, trusted: NetworkFingerprint): Boolean {
         val cg = current.gatewayIp.trim()
@@ -63,8 +62,8 @@ object TrustMatcher {
         if (cs != ts) return false
         val tm = trusted.gatewayMac
         if (tm == null) {
-            val cd = ipv4Dns(current.dnsServers)
-            val td = ipv4Dns(trusted.dnsServers)
+            val cd = ipv4DnsIgnoringOverlay(current.dnsServers)
+            val td = ipv4DnsIgnoringOverlay(trusted.dnsServers)
             return cd.isNotEmpty() && cd == td
         }
         val cd = current.dnsServers.map { it.trim().lowercase() }.toSet()
@@ -79,6 +78,14 @@ object TrustMatcher {
     /** IPv4 DNS servers only, trimmed. IPv6 and anything that is not an IPv4 address are left out. */
     private fun ipv4Dns(servers: Set<String>): Set<String> =
         servers.map { it.trim() }.filter { Ipv4.parse(it) != null }.toSet()
+
+    /**
+     * [ipv4Dns] with 100.64.0.0/10 left out. Quad100 is in that block; [AddressPolicy.isOverlay] excludes it.
+     */
+    private fun ipv4DnsIgnoringOverlay(servers: Set<String>): Set<String> =
+        ipv4Dns(servers).filter { server -> Ipv4.parse(server)?.let { it !in overlayRange } == true }.toSet()
+
+    private val overlayRange = Cidr.parse("100.64.0.0/10")!!
 
     /** The first Trusted Network matching [current]; null when there is no usable network or none matches. */
     fun currentTrusted(current: NetworkFingerprint?, all: List<TrustedNetwork>): TrustedNetwork? {

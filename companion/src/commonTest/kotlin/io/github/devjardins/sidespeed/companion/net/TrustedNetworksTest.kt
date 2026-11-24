@@ -49,6 +49,22 @@ class TrustedNetworksTest {
             fp(dns = setOf("2001:db8::1")),
         ))
     }
+    @Test fun noMacIgnoresOverlayDnsOnEitherSide() {
+        val saved = fp(dns = setOf("1.1.1.1", "8.8.8.8"))
+        val withOverlay = fp(dns = setOf("100.100.100.100", "1.1.1.1", "8.8.8.8"))
+        assertTrue(TrustMatcher.matches(withOverlay, saved))
+        assertTrue(TrustMatcher.matches(saved, withOverlay))
+    }
+    @Test fun noMacOverlayDnsAloneDoesNotMatch() =
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("100.100.100.100")),
+            fp(dns = setOf("100.100.100.100")),
+        ))
+    @Test fun noMacDifferentServerStillFailsWithOverlayDns() =
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("100.100.100.100", "1.1.1.1", "9.9.9.9")),
+            fp(dns = setOf("1.1.1.1", "8.8.8.8")),
+        ))
     @Test fun bothDnsEmptyWithMacMatches() =
         assertTrue(TrustMatcher.matches(
             fp(dns = emptySet(), mac = "aa:bb:cc:dd:ee:ff"),
