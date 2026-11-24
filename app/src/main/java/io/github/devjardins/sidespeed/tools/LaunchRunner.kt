@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.PkgVersion
 import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
@@ -8,6 +9,8 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.status.CompileStatus
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -25,7 +28,7 @@ import kotlinx.coroutines.withContext
 typealias UiCompile = suspend (PackageName, CompileMode) -> CompileEvent.Finished
 
 /** Per-package launch state the Compile screen observes: in-flight busy label or sticky error. */
-data class LaunchProgress(val busy: String? = null, val error: String? = null)
+data class LaunchProgress(val busy: UiText? = null, val error: UiText? = null)
 
 /** What the Compile screen shows for a package: resolution, stored result, whether a before run is needed. */
 data class LaunchPkg(
@@ -37,7 +40,7 @@ data class LaunchPkg(
     val needsBefore: Boolean,
 )
 
-private const val RESTORE_ERROR = "The app was left reset; SideSpeed will recompile it."
+private val RESTORE_ERROR: UiText = UiText.Res(R.string.compile_launch_restore_error)
 
 /**
  * Owns launch-timing sequences in a container-level scope, so Back, screen or
@@ -107,10 +110,10 @@ class LaunchRunner(
      */
     fun startTimed(pkg: PackageName, mode: CompileMode, uiCompile: UiCompile): Job? {
         if (!_measuring.compareAndSet(null, pkg.value)) return null
-        setBusy(pkg.value, "Timing launch before…")
+        setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_timing_before))
         keepAlive()
         return scope.launch {
-            var failMsg: String? = null
+            var failMsg: UiText? = null
             try {
                 failMsg = runTimed(pkg, mode, uiCompile)
             } finally {
@@ -135,12 +138,12 @@ class LaunchRunner(
 
     fun measure(pkg: PackageName, uiCompile: UiCompile): Job? {
         if (!_measuring.compareAndSet(null, pkg.value)) return null
-        setBusy(pkg.value, "Resetting…")
+        setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_resetting))
         keepAlive()
         inFlightMemMode = null
         inFlightRecompiled = false
         return scope.launch {
-            var failMsg: String? = null
+            var failMsg: UiText? = null
             try {
                 failMsg = runMeasure(pkg, uiCompile)
             } finally {
@@ -170,32 +173,32 @@ class LaunchRunner(
         }
     }
 
-    private suspend fun runTimed(pkg: PackageName, mode: CompileMode, uiCompile: UiCompile): String? {
+    private suspend fun runTimed(pkg: PackageName, mode: CompileMode, uiCompile: UiCompile): UiText? {
         try {
             val d = describe(pkg.value)
-            val cls = d.cls ?: return "This app can't be opened from SideSpeed"
-            val ver = d.version ?: return "Couldn't read this app's version"
+            val cls = d.cls ?: return UiText.Res(R.string.compile_launch_not_launchable)
+            val ver = d.version ?: return UiText.Res(R.string.compile_launch_error_version)
             val timer = LaunchTimer(commands, runs)
             // A self-compile started on an earlier leave must finish first:
             // it compiles SideSpeed itself and would skew the before number.
-            setBusy(pkg.value, "Waiting for SideSpeed to finish optimizing itself…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_waiting_self))
             try {
                 awaitSelfIdle()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                return "Couldn't start the measurement"
+                return UiText.Res(R.string.compile_launch_error_start)
             }
-            setBusy(pkg.value, "Timing launch before…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_timing_before))
             val before = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
                 else -> return timingMessage(r)
             }
-            setBusy(pkg.value, "Compiling…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_compiling))
             val result = uiCompile(pkg, mode)
             // The screen shows the compile failure; no reset ran, so nothing to restore.
             if (!result.success) return null
-            setBusy(pkg.value, "Timing launch after…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_timing_after))
             val after = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
                 else -> return timingMessage(r)
@@ -206,12 +209,12 @@ class LaunchRunner(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                "Couldn't save the result"
+                UiText.Res(R.string.compile_launch_error_save)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return e.message ?: "Couldn't measure this app"
+            return e.message?.let(UiText::Raw) ?: UiText.Res(R.string.compile_launch_error_measure)
         }
     }
 
@@ -221,25 +224,25 @@ class LaunchRunner(
      * record; [inFlightRecompiled] marks a landed recompile so a leftover record
      * from a failed clear is left for the restorer instead of recompiling again.
      */
-    private suspend fun runMeasure(pkg: PackageName, uiCompile: UiCompile): String? {
+    private suspend fun runMeasure(pkg: PackageName, uiCompile: UiCompile): UiText? {
         try {
             val d = describe(pkg.value)
-            val cls = d.cls ?: return "This app can't be opened from SideSpeed"
-            val ver = d.version ?: return "Couldn't read this app's version"
+            val cls = d.cls ?: return UiText.Res(R.string.compile_launch_not_launchable)
+            val ver = d.version ?: return UiText.Res(R.string.compile_launch_error_version)
             val mode = previousMode(pkg.value)
             val timer = LaunchTimer(commands, runs)
             // Wait out any in-flight maintenance compile first: the engine skips
             // newly measured packages, but one already running must finish.
             // A self-compile started on an earlier leave must finish too: it
             // compiles SideSpeed itself and would skew the before number.
-            setBusy(pkg.value, "Waiting for SideSpeed to finish optimizing this app…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_waiting_app))
             try {
                 awaitEngineIdle(pkg.value)
                 awaitSelfIdle()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                return "Couldn't start the measurement"
+                return UiText.Res(R.string.compile_launch_error_start)
             }
             // Write-ahead: persist BEFORE reset so a crash/cancel in the gap still
             // restores. Best effort: if the write itself fails, the in-memory mode
@@ -254,17 +257,17 @@ class LaunchRunner(
             // may mean the reset already ran on the device, so the finally must
             // restore. Never clear here; recompiling a never-reset app is harmless.
             inFlightMemMode = mode
-            setBusy(pkg.value, "Resetting…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_resetting))
             when (val reset = commands.resetCompiled(pkg.value)) {
                 is ToolResult.Ok -> {}
                 else -> return timingMessage(reset)
             }
-            setBusy(pkg.value, "Timing launch…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_timing))
             val before = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
                 else -> return timingMessage(r)
             }
-            setBusy(pkg.value, "Compiling…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_compiling))
             val result = uiCompile(pkg, mode)
             // The screen shows the compile failure; the outer finally restores.
             if (!result.success) return null
@@ -273,7 +276,7 @@ class LaunchRunner(
             // a redundant immediate recompile.
             clearPendingQuietly()
             inFlightRecompiled = true
-            setBusy(pkg.value, "Timing launch again…")
+            setBusy(pkg.value, UiText.Res(R.string.compile_launch_busy_timing_again))
             val after = when (val r = timer.medianMs(pkg.value, cls)) {
                 is ToolResult.Ok -> r.value
                 else -> return timingMessage(r)
@@ -284,16 +287,16 @@ class LaunchRunner(
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                "Couldn't save the result"
+                UiText.Res(R.string.compile_launch_error_save)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return e.message ?: "Couldn't measure this app"
+            return e.message?.let(UiText::Raw) ?: UiText.Res(R.string.compile_launch_error_measure)
         }
     }
 
-    private suspend fun finishSequence(pkg: String, failMsg: String?) {
+    private suspend fun finishSequence(pkg: String, failMsg: UiText?) {
         val memMode = inFlightMemMode
         val recompiled = inFlightRecompiled
         inFlightMemMode = null
@@ -311,7 +314,7 @@ class LaunchRunner(
             restored && failMsg == null -> null
             restored -> failMsg
             failMsg == null -> RESTORE_ERROR
-            else -> "$failMsg $RESTORE_ERROR"
+            else -> uiText(R.string.compile_launch_error_with_restore, failMsg, RESTORE_ERROR)
         }
         setProgress(pkg, error?.let { LaunchProgress(error = it) })
         _measuring.compareAndSet(pkg, null)
@@ -403,13 +406,15 @@ class LaunchRunner(
         _progress.value = if (p == null) _progress.value - pkg else _progress.value + (pkg to p)
     }
 
-    private fun setBusy(pkg: String, label: String) = setProgress(pkg, LaunchProgress(busy = label))
+    private fun setBusy(pkg: String, label: UiText) = setProgress(pkg, LaunchProgress(busy = label))
 
-    private fun timingMessage(r: ToolResult<*>): String = when (r) {
-        is ToolResult.Ok -> "Couldn't time this app"
-        is ToolResult.HelperDown -> "Helper not running"
-        is ToolResult.HelperOutdated -> "Restart the helper to use this"
-        is ToolResult.Refused -> "Helper refused the command"
-        is ToolResult.Failed -> "Couldn't time this app"
-    }
+    private fun timingMessage(r: ToolResult<*>): UiText = UiText.Res(
+        when (r) {
+            is ToolResult.Ok -> R.string.compile_launch_error_time
+            is ToolResult.HelperDown -> R.string.compile_launch_error_helper_down
+            is ToolResult.HelperOutdated -> R.string.compile_launch_error_helper_outdated
+            is ToolResult.Refused -> R.string.compile_launch_error_helper_refused
+            is ToolResult.Failed -> R.string.compile_launch_error_time
+        },
+    )
 }

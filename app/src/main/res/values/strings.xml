@@ -58,4 +58,123 @@
     <string name="home_tile_tools">Tools</string>
     <!-- Home screen tile title for version, updates, and companion info. -->
     <string name="home_tile_about">About</string>
+
+    <!-- My Apps -->
+    <!-- Status pill for an app compiled with the "speed" ART filter. Keep "speed". -->
+    <string name="apps_pill_speed_ok">speed ✓</string>
+    <!-- Status pill for an app compiled with the "speed-profile" ART filter. Keep "speed-profile". -->
+    <string name="apps_pill_speed_profile">speed-profile</string>
+    <!-- Status pill for an app whose ART filter is worse than speed-profile. -->
+    <string name="apps_pill_not_compiled">Not compiled</string>
+    <!-- Status pill shown while compiler status is being read. -->
+    <string name="apps_pill_checking">Checking…</string>
+
+    <!-- Compile and launch -->
+    <!-- Label before the compile mode toggle buttons (speed / speed-profile). -->
+    <string name="compile_mode_label">Mode</string>
+    <!-- Label for a selected option or mode button. %1$s is the option name. -->
+    <string name="compile_selected">✓ %1$s</string>
+    <!-- Status heading while an app compile is running. %1$s is elapsed mm:ss time. -->
+    <string name="compile_compiling_elapsed">Compiling… %1$s</string>
+    <string name="compile_running_note">A compile is running — please wait until it finishes.</string>
+    <!-- Keep: Fire TV -->
+    <string name="compile_note">This can take several minutes for large apps (about 3 min on a Fire TV Cube)</string>
+    <string name="compile_start">Start compile</string>
+    <!-- Result card headline after a successful compile. %1$s is the compile mode (speed or speed-profile). -->
+    <string name="compile_success_title">Compiled to %1$s</string>
+    <!-- Result card headline with checkmark. %1$s is the success title. -->
+    <string name="compile_success_title_checked">✓ %1$s</string>
+    <!-- Short duration in seconds under one minute, e.g. "51 s". %1$d is seconds. -->
+    <plurals name="compile_duration_seconds">
+        <item quantity="one">%1$d s</item>
+        <item quantity="other">%1$d s</item>
+    </plurals>
+    <!-- Duration in minutes and seconds, e.g. "2 min 58 s". %1$d is minutes, %2$s is the formatted seconds part. -->
+    <plurals name="compile_duration_minutes">
+        <item quantity="one">%1$d min %2$s</item>
+        <item quantity="other">%1$d min %2$s</item>
+    </plurals>
+    <!-- Result card detail when no post-compile status badge is available. %1$s is the duration. -->
+    <string name="compile_success_took">Took %1$s</string>
+    <!-- Result card detail when post-compile status matches the requested mode. %1$s is the duration, %2$s is the status pill label. -->
+    <string name="compile_success_took_confirmed">Took %1$s · status confirmed %2$s</string>
+    <!-- Result card detail when post-compile status differs from the requested mode. %1$s is the duration, %2$s is the status pill label. -->
+    <string name="compile_success_took_shows">Took %1$s · status shows %2$s</string>
+    <!-- Banner title when a compile succeeds. -->
+    <string name="compile_result_success">Success</string>
+    <!-- Banner title when a compile fails with no extra detail. -->
+    <string name="compile_result_failure">Failure</string>
+    <!-- Banner title when a compile fails with a specific reason. %1$s is the failure reason. -->
+    <string name="compile_result_failure_detail">Failure: %1$s</string>
+    <string name="compile_failure_see_log">See the log below for details.</string>
+    <string name="compile_back_to_apps">Back to apps</string>
+    <string name="compile_again">Compile again</string>
+    <string name="compile_keep_optimized">Keep this app optimized</string>
+    <string name="compile_kept_optimized">✓ Kept optimized (tap to stop)</string>
+    <string name="compile_show_log">Show log</string>
+    <string name="compile_hide_log">Hide log</string>
+    <!-- Button shown after a "Connection lost" compile failure to open the helper setup check. -->
+    <string name="compile_check_helper">Check helper</string>
+    <string name="compile_update_available">Update available</string>
+    <!-- Fallback installed version text in the update card when versionName is missing. -->
+    <string name="compile_update_version_unknown">unknown</string>
+    <string name="compile_update_elsewhere_running">Another app is updating. Wait for it to finish.</string>
+    <!-- Accessibility description for the update link QR code. %1$s is the URL. -->
+    <string name="compile_update_qr_cd">QR code for %1$s</string>
+    <string name="compile_update_scan_or_type">Scan with your phone, or type the link into a browser on this TV.</string>
+    <!-- %1$s is the APK size (e.g. "12 MB"), %2$s is the host domain. Keep: SideSpeed -->
+    <string name="compile_update_summary">Downloads %1$s from %2$s. SideSpeed checks it is a real update of the app you have, then installs it. Your data in the app stays.</string>
+    <string name="compile_update_now">Update now</string>
+    <!-- Update download progress. %1$d is percent (0-100). -->
+    <string name="compile_update_downloading">Downloading… %1$d%%</string>
+    <string name="compile_update_checking">Checking the download…</string>
+    <string name="compile_update_installing">Installing…</string>
+    <string name="compile_update_confirm">Your TV will ask you to confirm the install.</string>
+    <!-- Confirmation after an in-app update finishes. %1$s is the version name. -->
+    <string name="compile_update_done">Updated to %1$s.</string>
+    <string name="compile_update_try_again">Try again</string>
+    <!-- Card title for measuring app launch time before and after compilation. -->
+    <string name="compile_launch_title">Launch time</string>
+    <!-- Measured launch duration in seconds with one decimal place, e.g. "1.9 s". -->
+    <string name="compile_launch_seconds">%1$s s</string>
+    <!-- Launch time summary when only an after-compile measurement exists. %1$s is formatted seconds. -->
+    <string name="compile_launch_result_single">Launch: %1$s</string>
+    <!-- Launch time comparison before and after compilation. %1$s is before, %2$s is after, %3$s is the verdict. -->
+    <string name="compile_launch_result_pair">Launch: %1$s → %2$s (%3$s)</string>
+    <!-- Appended to the launch time summary when the app was updated since measurement. %1$s is the formatted launch result. -->
+    <string name="compile_launch_result_stale">%1$s · from an older version</string>
+    <!-- Launch time comparison verdict when difference is under 5%. -->
+    <string name="compile_launch_verdict_same">about the same</string>
+    <!-- Launch time comparison verdict when after is at least 5% faster. %1$d is the percentage. -->
+    <string name="compile_launch_verdict_faster">%1$d%% faster</string>
+    <!-- Launch time comparison verdict when after is at least 5% slower. -->
+    <string name="compile_launch_verdict_slower">no faster</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_not_launchable">This app can\'t be opened from SideSpeed</string>
+    <string name="compile_launch_time_before_after">Time the launch before and after</string>
+    <string name="compile_launch_time_before_after_hint">Opens the app on screen while timing.</string>
+    <string name="compile_launch_measure_now">Measure now</string>
+    <string name="compile_launch_measure_hint">Opens the app on screen twice. Takes a few minutes for large apps.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_busy_waiting_self">Waiting for SideSpeed to finish optimizing itself…</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_busy_waiting_app">Waiting for SideSpeed to finish optimizing this app…</string>
+    <string name="compile_launch_busy_timing_before">Timing launch before…</string>
+    <string name="compile_launch_busy_timing_after">Timing launch after…</string>
+    <string name="compile_launch_busy_timing">Timing launch…</string>
+    <string name="compile_launch_busy_timing_again">Timing launch again…</string>
+    <string name="compile_launch_busy_resetting">Resetting…</string>
+    <string name="compile_launch_busy_compiling">Compiling…</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_restore_error">The app was left reset; SideSpeed will recompile it.</string>
+    <!-- Combines a launch measurement failure (%1$s) with the restore-pending notice (%2$s). -->
+    <string name="compile_launch_error_with_restore">%1$s %2$s</string>
+    <string name="compile_launch_error_version">Couldn\'t read this app\'s version</string>
+    <string name="compile_launch_error_start">Couldn\'t start the measurement</string>
+    <string name="compile_launch_error_save">Couldn\'t save the result</string>
+    <string name="compile_launch_error_measure">Couldn\'t measure this app</string>
+    <string name="compile_launch_error_time">Couldn\'t time this app</string>
+    <string name="compile_launch_error_helper_down">Helper not running</string>
+    <string name="compile_launch_error_helper_outdated">Restart the helper to use this</string>
+    <string name="compile_launch_error_helper_refused">Helper refused the command</string>
 </resources>

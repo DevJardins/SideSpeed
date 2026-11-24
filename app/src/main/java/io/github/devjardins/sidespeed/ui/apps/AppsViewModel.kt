@@ -1,7 +1,9 @@
 package io.github.devjardins.sidespeed.ui.apps
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.apps.sortForPicker
@@ -37,12 +39,14 @@ enum class PillTone { OK, WARN, NEUTRAL }
 
 data class Pill(val label: String, val tone: PillTone)
 
+data class BadgePill(@StringRes val label: Int, val tone: PillTone)
+
 /** The status pill for a row: the badge when known, "Checking…" while loading, otherwise none. */
-fun pillFor(statusLoading: Boolean, badge: StatusBadge?): Pill? = when (badge) {
-    StatusBadge.SPEED_OK -> Pill("speed ✓", PillTone.OK)
-    StatusBadge.SPEED_PROFILE -> Pill("speed-profile", PillTone.WARN)
-    StatusBadge.NEEDS_RECOMPILE -> Pill("Not compiled", PillTone.WARN)
-    StatusBadge.UNKNOWN, null -> if (statusLoading) Pill("Checking…", PillTone.NEUTRAL) else null
+fun pillFor(statusLoading: Boolean, badge: StatusBadge?): BadgePill? = when (badge) {
+    StatusBadge.SPEED_OK -> BadgePill(R.string.apps_pill_speed_ok, PillTone.OK)
+    StatusBadge.SPEED_PROFILE -> BadgePill(R.string.apps_pill_speed_profile, PillTone.WARN)
+    StatusBadge.NEEDS_RECOMPILE -> BadgePill(R.string.apps_pill_not_compiled, PillTone.WARN)
+    StatusBadge.UNKNOWN, null -> if (statusLoading) BadgePill(R.string.apps_pill_checking, PillTone.NEUTRAL) else null
 }
 
 /** The row pill for a maintained app, or null when the app is not maintained. */
@@ -117,7 +121,7 @@ class AppsViewModel(
         }
     }
 
-    fun pill(pkg: String): Pill? = _state.value.let { pillFor(it.statusLoading, it.statuses[pkg]) }
+    fun pill(pkg: String): BadgePill? = _state.value.let { pillFor(it.statusLoading, it.statuses[pkg]) }
 
     /**
      * Resolves a package name to its installed app, or null when the name is not a

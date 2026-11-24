@@ -29,15 +29,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.ui.about.rememberQrBitmap
 import io.github.devjardins.sidespeed.ui.apps.AppIcon
 import io.github.devjardins.sidespeed.apps.IconSource
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -55,14 +61,17 @@ import io.github.devjardins.sidespeed.updates.updateSourceLine
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
-const val RUNNING_NOTE = "A compile is running — please wait until it finishes."
-
-const val COMPILE_NOTE = "This can take several minutes for large apps (about 3 min on a Fire TV Cube)"
-
-/** "Success" / "Failure", plus the message only when it adds something (avoids "Success: Success"). */
-fun resultBanner(success: Boolean, message: String): String {
-    val label = if (success) "Success" else "Failure"
-    return if (message.isBlank() || message == label) label else "$label: $message"
+/** "Success" / "Failure", plus the reason when the outcome adds one. */
+fun resultBanner(outcome: CompileOutcome): UiText = when (outcome) {
+    CompileOutcome.Success -> UiText.Res(R.string.compile_result_success)
+    CompileOutcome.Failure -> UiText.Res(R.string.compile_result_failure)
+    CompileOutcome.ConnectionLost ->
+        uiText(R.string.compile_result_failure_detail, UiText.Res(R.string.maint_job_connection_lost))
+    is CompileOutcome.Error -> {
+        val reason = outcome.detail?.takeIf { it.isNotBlank() }?.let(UiText::Raw)
+            ?: UiText.Res(R.string.maint_job_error)
+        uiText(R.string.compile_result_failure_detail, reason)
+    }
 }
 
 fun formatElapsed(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
@@ -129,7 +138,7 @@ fun CompileScreen(
             availableUpdate?.let {
                 UpdateAvailableCard(
                     it,
-                    installedVersion = app.versionName ?: "unknown",
+                    installedVersion = app.versionName ?: stringResource(R.string.compile_update_version_unknown),
                     pickedVariant = pickedVariant,
                     updateState = appUpdateState,
                     updatePkg = updatePkg,
@@ -149,14 +158,19 @@ fun CompileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("Mode", style = SsType.Caption, color = SsColors.TextSecondary)
+                    Text(stringResource(R.string.compile_mode_label), style = SsType.Caption, color = SsColors.TextSecondary)
                     CompileMode.entries.forEach { m ->
                         SsButton(
                             onClick = { onModeChange(m) },
                             selected = m == mode,
                             enabled = !launchBusy,
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                        ) { Text(if (m == mode) "✓ ${m.arg}" else m.arg, style = SsType.Caption) }
+                        ) {
+                            Text(
+                                if (m == mode) stringResource(R.string.compile_selected, m.arg) else m.arg,
+                                style = SsType.Caption,
+                            )
+                        }
                     }
                 }
             }
@@ -165,14 +179,18 @@ fun CompileScreen(
                 state.running -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsSpinner(24.dp)
-                        Text("Compiling… ${formatElapsed(elapsed)}", style = SsType.Title, color = SsColors.TextPrimary)
+                        Text(
+                            stringResource(R.string.compile_compiling_elapsed, formatElapsed(elapsed)),
+                            style = SsType.Title,
+                            color = SsColors.TextPrimary,
+                        )
                     }
-                    Text(RUNNING_NOTE, style = SsType.Body, color = SsColors.TextSecondary)
+                    Text(stringResource(R.string.compile_running_note), style = SsType.Body, color = SsColors.TextSecondary)
                 }
                 result == null -> {
-                    Text(COMPILE_NOTE, style = SsType.Body, color = SsColors.TextBody)
+                    Text(stringResource(R.string.compile_note), style = SsType.Body, color = SsColors.TextBody)
                     SsButton(
-                        "Start compile",
+                        stringResource(R.string.compile_start),
                         onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode, app.label) },
                         enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
@@ -181,9 +199,13 @@ fun CompileScreen(
                 }
                 result.success -> SsCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("✓ " + successTitle(mode), style = SsType.Title, color = SsColors.Accent)
                         Text(
-                            successDetail(state.durationSeconds, mode, state.badge),
+                            uiText(R.string.compile_success_title_checked, successTitle(mode)).resolve(),
+                            style = SsType.Title,
+                            color = SsColors.Accent,
+                        )
+                        Text(
+                            successDetail(state.durationSeconds, mode, state.badge).resolve(),
                             style = SsType.Body,
                             color = SsColors.TextBody,
                         )
@@ -191,8 +213,8 @@ fun CompileScreen(
                 }
                 else -> SsCard(Modifier.fillMaxWidth(), container = SsColors.DangerCardBg, content = SsColors.DangerCardText) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(resultBanner(false, result.message), style = SsType.Title, color = SsColors.DangerCardText)
-                        Text("See the log below for details.", style = SsType.Body, color = SsColors.DangerCardText)
+                        Text(resultBanner(result.outcome).resolve(), style = SsType.Title, color = SsColors.DangerCardText)
+                        Text(stringResource(R.string.compile_failure_see_log), style = SsType.Body, color = SsColors.DangerCardText)
                     }
                 }
             }
@@ -200,31 +222,31 @@ fun CompileScreen(
             if (result != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     SsButton(
-                        "Back to apps",
+                        stringResource(R.string.compile_back_to_apps),
                         onClick = onBack,
                         enabled = !launchBusy,
                         modifier = Modifier.focusRequester(backFocus),
                     )
                     SsButton(
-                        "Compile again",
+                        stringResource(R.string.compile_again),
                         onClick = { if (pkg != null) vm.startMaybeTimed(pkg, mode, app.label) },
                         enabled = pkg != null && !launchBusy,
                         modifier = Modifier.focusRequester(startFocus),
                     )
                     if (state.offerKeepOptimized && pkg != null) {
                         SsButton(
-                            "Keep this app optimized",
+                            stringResource(R.string.compile_keep_optimized),
                             onClick = { vm.keepOptimized(pkg, onKeepOptimized) },
                             enabled = !launchBusy,
                         )
                     }
                     SsButton(
-                        if (showLog) "Hide log" else "Show log",
+                        stringResource(if (showLog) R.string.compile_hide_log else R.string.compile_show_log),
                         onClick = { showLog = !showLog },
                         enabled = !launchBusy,
                     )
-                    if (result.message == "Connection lost") {
-                        SsButton("Check helper", onClick = onCheckHelper, enabled = !launchBusy)
+                    if (result.outcome is CompileOutcome.ConnectionLost) {
+                        SsButton(stringResource(R.string.compile_check_helper), onClick = onCheckHelper, enabled = !launchBusy)
                     }
                 }
             }
@@ -270,7 +292,7 @@ private fun UpdateAvailableCard(
             updateState is AppUpdateUiState.Installing)
     SsCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Update available", style = SsType.Title, color = SsColors.TextPrimary)
+            Text(stringResource(R.string.compile_update_available), style = SsType.Title, color = SsColors.TextPrimary)
             Text(
                 updateCardTitle(update.name, update.versionName, installedVersion),
                 style = SsType.Body,
@@ -281,7 +303,7 @@ private fun UpdateAvailableCard(
             }
             if (elsewhereRunning) {
                 Text(
-                    "Another app is updating. Wait for it to finish.",
+                    stringResource(R.string.compile_update_elsewhere_running),
                     style = SsType.Body,
                     color = SsColors.TextBody,
                 )
@@ -292,12 +314,12 @@ private fun UpdateAvailableCard(
             if (!link.isNullOrBlank()) {
                 Image(
                     rememberQrBitmap(link),
-                    contentDescription = "QR code for $link",
+                    contentDescription = stringResource(R.string.compile_update_qr_cd, link),
                     modifier = Modifier.size(160.dp),
                 )
                 Text(link, style = SsType.Body, color = SsColors.TextBody)
                 Text(
-                    "Scan with your phone, or type the link into a browser on this TV.",
+                    stringResource(R.string.compile_update_scan_or_type),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
@@ -333,45 +355,55 @@ private fun UpdateNowSection(
     when (updateState) {
         is AppUpdateUiState.Idle -> {
             Text(
-                "Downloads ${formatUpdateSize(variant.size)} from ${updateHost(variant.url)}. " +
-                    "SideSpeed checks it is a real update of the app you have, then installs it. " +
-                    "Your data in the app stays.",
+                stringResource(R.string.compile_update_summary, formatUpdateSize(variant.size), updateHost(variant.url)),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
-            SsButton("Update now", onClick = onUpdateNow)
+            SsButton(stringResource(R.string.compile_update_now), onClick = onUpdateNow)
         }
         is AppUpdateUiState.Downloading -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SsSpinner(24.dp)
-                    Text("Downloading… ${updateState.percent}%", style = SsType.Title, color = SsColors.TextPrimary)
+                    Text(
+                        stringResource(R.string.compile_update_downloading, updateState.percent),
+                        style = SsType.Title,
+                        color = SsColors.TextPrimary,
+                    )
                 }
             }
         }
         is AppUpdateUiState.Checking -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
-                Text("Checking the download…", style = SsType.Title, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.compile_update_checking), style = SsType.Title, color = SsColors.TextPrimary)
             }
         }
         is AppUpdateUiState.Installing -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
-                Text("Installing…", style = SsType.Title, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.compile_update_installing), style = SsType.Title, color = SsColors.TextPrimary)
             }
         }
         is AppUpdateUiState.AwaitingConfirmation -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(progressFocus)) {
-                Text("Your TV will ask you to confirm the install.", style = SsType.Body, color = SsColors.TextBody)
+                Text(stringResource(R.string.compile_update_confirm), style = SsType.Body, color = SsColors.TextBody)
             }
         }
         is AppUpdateUiState.Done -> {
             SsRow(onClick = {}, modifier = Modifier.fillMaxWidth().focusRequester(doneFocus)) {
-                Text("Updated to ${updateState.versionName}.", style = SsType.Title, color = SsColors.Accent)
+                Text(
+                    stringResource(R.string.compile_update_done, updateState.versionName),
+                    style = SsType.Title,
+                    color = SsColors.Accent,
+                )
             }
         }
         is AppUpdateUiState.Failed -> {
             Text(updateState.reason, style = SsType.Body, color = SsColors.TextBody)
-            SsButton("Try again", onClick = onUpdateNow, modifier = Modifier.focusRequester(retryFocus))
+            SsButton(
+                stringResource(R.string.compile_update_try_again),
+                onClick = onUpdateNow,
+                modifier = Modifier.focusRequester(retryFocus),
+            )
         }
     }
 }
@@ -379,9 +411,9 @@ private fun UpdateNowSection(
 @Composable
 private fun KeepToggle(kept: Boolean, pkg: PackageName, vm: CompileViewModel, onKept: () -> Unit, enabled: Boolean = true) {
     if (kept) {
-        SsButton("✓ Kept optimized (tap to stop)", onClick = { vm.stopKeeping(pkg) }, enabled = enabled)
+        SsButton(stringResource(R.string.compile_kept_optimized), onClick = { vm.stopKeeping(pkg) }, enabled = enabled)
     } else {
-        SsButton("Keep this app optimized", onClick = { vm.keepOptimized(pkg, onKept) }, enabled = enabled)
+        SsButton(stringResource(R.string.compile_keep_optimized), onClick = { vm.keepOptimized(pkg, onKept) }, enabled = enabled)
     }
 }
 

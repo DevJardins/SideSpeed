@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
@@ -191,7 +192,7 @@ fun AppsScreen(
                                 // An available update wins: a kept app always has a maintenance pill.
                                 available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
                                     ?: maintenancePill(app.packageName, maintenanceState)
-                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
+                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName])?.let { Pill(stringResource(it.label), it.tone) },
                                 icon,
                                 Modifier.weight(1f)
                                     .focusRequester(rowFocusers.getOrPut(app.packageName) { FocusRequester() }),
