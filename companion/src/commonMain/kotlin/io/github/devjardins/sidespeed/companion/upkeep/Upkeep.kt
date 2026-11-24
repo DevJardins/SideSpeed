@@ -31,6 +31,7 @@ import io.github.devjardins.sidespeed.companion.tv.TvSession
 import io.github.devjardins.sidespeed.companion.tv.TvSessions
 import io.github.devjardins.sidespeed.companion.tv.TvUnproven
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
+import io.github.devjardins.sidespeed.companion.tv.TvWrongDevice
 import io.github.devjardins.sidespeed.companion.tv.VisitResult
 import io.github.devjardins.sidespeed.companion.tv.open
 import kotlinx.coroutines.CancellationException
@@ -69,9 +70,10 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   ([CompanionStore.promptedHosts], 24 h) and skipped by later re-finds; user actions clear that list.
  *
  * Outcomes:
- * - [TvUnreachable], a lost connection ([AdbConnectionLost]) and [VisitResult.WrongDevice] are failed checks:
- *   `offlineCount` grows. Unreachable or lost keep the last known status until the third consecutive failure,
- *   which is [TvStatus.OFFLINE]; WrongDevice shows [TvStatus.WRONG_DEVICE]. No faster retry.
+ * - [TvUnreachable], a lost connection ([AdbConnectionLost]), [VisitResult.WrongDevice] and [TvWrongDevice]
+ *   are failed checks: `offlineCount` grows. Unreachable or lost keep the last known status until the third
+ *   consecutive failure, which is [TvStatus.OFFLINE]. WrongDevice, including a mismatched serial at the gate,
+ *   shows [TvStatus.WRONG_DEVICE]. No faster retry.
  * - Unreachable and WrongDevice can lead to a re-find (a lost connection means our TV answered at that address):
  *   once `offlineCount >= 3` and an hour has passed since the last re-find (or the clock moved back), scan the
  *   Trusted Network's subnet for port 5555 (starting around the TV's last address), keep only usable host
@@ -394,6 +396,9 @@ class Upkeep(
         Attempt.NeedsAttention
     } catch (e: TvUnproven) {
         Attempt.Unproven
+    } catch (e: TvWrongDevice) {
+        // The gate already closed the session after the first serial. Same outcome as the helper's own check.
+        Attempt.Visited(VisitResult.WrongDevice)
     }
 
     /**

@@ -18,6 +18,13 @@ class FakeTvSession(
 ) : TvSession {
     val outputs: MutableMap<String, String> = outputs.toMutableMap()
 
+    /**
+     * Answers taken in order for one command. Once this queue is empty, [outputs] is used.
+     * A first serial that is wrong and a later one that is right is how a test shows the gate
+     * must not hand the session back.
+     */
+    val nextAnswers: MutableMap<String, ArrayDeque<String>> = mutableMapOf()
+
     /** Encrypted opens require this. Tests that stand in for a finished TLS handshake leave it true. */
     override var tlsNegotiated: Boolean = true
 
@@ -49,6 +56,8 @@ class FakeTvSession(
             closed = true
             throw AdbConnectionLost("scripted connection loss")
         }
+        val queued = nextAnswers[command]?.removeFirstOrNull()
+        if (queued != null) return queued.trim()
         return outputs[command]?.trim() ?: throw AssertionError("Unscripted command sent to TV: $command")
     }
 

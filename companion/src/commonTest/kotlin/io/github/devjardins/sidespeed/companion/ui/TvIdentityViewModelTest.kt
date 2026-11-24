@@ -343,6 +343,50 @@ class TvIdentityViewModelTest {
         assertEquals(Copy.DIFFERENT_DEVICE, mismatchVm.state.value.error)
     }
 
+    @Test fun aRePairWithAWrongFirstSerialShowsDifferentDeviceAndSavesNothing() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val mismatch = scripted(line)
+        mismatch.nextAnswers[TvCommands.SERIAL] = ArrayDeque(listOf("OTHER"))
+        val kept = savedTv()
+        val mismatchStore = InMemoryCompanionStore(
+            tvs = listOf(kept),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val mismatchVm = model(
+            mismatch, mismatchStore,
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        mismatchVm.pairSaved("tv-1")
+        mismatchVm.submitPair("123456", "37000")
+        assertEquals(listOf(TvCommands.SERIAL), mismatch.sent)
+        assertTrue(mismatch.closed)
+        assertEquals(null, mismatchStore.tv("tv-1").identitySecret)
+        assertEquals(kept.link, mismatchStore.tv("tv-1").link)
+        assertEquals(kept.address, mismatchStore.tv("tv-1").address)
+        assertEquals(false, mismatchStore.tv("tv-1").unproven)
+        assertEquals(Copy.DIFFERENT_DEVICE, mismatchVm.state.value.error)
+    }
+
+    @Test fun aPollSendsNothingAfterAMismatchedFirstSerial() = runTest(UnconfinedTestDispatcher()) {
+        val fake = scripted("${TvProof.expected(secret, nonce, sha256 = true)}  -")
+        fake.nextAnswers[TvCommands.SERIAL] = ArrayDeque(listOf("OTHER"))
+        fake.outputs[TvCommands.STATUS_QUERY] = "Row: 0 v=1, state=compiling, pkg=com.example.app, label=Example, mode=speed, started_ms=1, queue=0, last_pkg=, last_label=, last_result=, last_ms=0, self=optimized, version=0.2.1"
+        val store = InMemoryCompanionStore(
+            tvs = listOf(savedTv().copy(status = TvStatus.RUNNING)),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(fake, store)
+        vm.setHomeVisible(true)
+        runCurrent()
+        assertEquals(listOf(TvCommands.SERIAL), fake.sent)
+        assertTrue(fake.closed)
+        assertEquals(TvStatus.RUNNING, store.tv("tv-1").status)
+        assertEquals(false, store.tv("tv-1").unproven)
+        assertEquals(null, store.tv("tv-1").identitySecret)
+        vm.setHomeVisible(false)
+    }
+
     @Test fun anActionOnAParkedTvSendsNoCommand() = runTest(UnconfinedTestDispatcher()) {
         val fake = scripted("${TvProof.expected(secret, nonce, sha256 = true)}  -")
         val store = InMemoryCompanionStore(
