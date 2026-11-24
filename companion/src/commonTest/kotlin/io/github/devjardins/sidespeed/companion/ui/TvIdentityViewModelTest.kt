@@ -248,6 +248,101 @@ class TvIdentityViewModelTest {
         assertTrue(cancelled)
     }
 
+    @Test fun rePairingASavedTvProvesFirstAndKeepsTheOldSecret() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = scripted(line)
+        val store = InMemoryCompanionStore(
+            tvs = listOf(savedTv().copy(identitySecret = secret)),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(
+            fake, store,
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { 37_123 },
+            random = { nonce.hexToBytes() },
+        )
+        vm.pairSaved("tv-1")
+        vm.submitPair("123456", "37000")
+        val prove = TvCommands.proveSecret(companionId, nonce)
+        val proveAt = fake.sent.indexOf(prove)
+        val serialAt = fake.sent.indexOf(TvCommands.SERIAL)
+        assertTrue(proveAt >= 0 && serialAt > proveAt, fake.sent.joinToString("\n"))
+        assertTrue(fake.sent.none { it == TvCommands.writeSecret(companionId, secret) }, fake.sent.joinToString("\n"))
+        assertEquals(secret, store.tv("tv-1").identitySecret)
+        assertEquals(TvLink.Encrypted(37_123), store.tv("tv-1").link)
+    }
+
+    @Test fun aFailedRePairProofSendsNoSerialAndSavesNothing() = runTest(UnconfinedTestDispatcher()) {
+        val fake = scripted("nope")
+        val original = savedTv().copy(identitySecret = secret, link = TvLink.Encrypted(37_000), status = TvStatus.RUNNING)
+        val store = InMemoryCompanionStore(
+            tvs = listOf(original),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(
+            fake, store,
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { 37_123 },
+            random = { nonce.hexToBytes() },
+        )
+        vm.pairSaved("tv-1")
+        vm.submitPair("123456", "37000")
+        assertEquals(listOf(TvCommands.proveSecret(companionId, nonce)), fake.sent)
+        val saved = store.tv("tv-1")
+        assertEquals(secret, saved.identitySecret)
+        assertEquals(original.link, saved.link)
+        assertEquals(original.address, saved.address)
+        assertEquals(true, saved.unproven)
+        assertEquals(TvStatus.CHECK_FAILED, saved.status)
+        val card = vm.state.value.tvs.single()
+        assertEquals("Stopped: check failed", card.statusLabel)
+        assertEquals(Copy.TV_UNPROVEN, card.note)
+        assertEquals(true, fake.closed)
+    }
+
+    @Test fun aLegacyTvEnrollsOnlyAfterItsSerialMatches() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val fake = scripted(line)
+        val store = InMemoryCompanionStore(
+            tvs = listOf(savedTv()),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(
+            fake, store,
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.pairSaved("tv-1")
+        vm.submitPair("123456", "37000")
+        val write = TvCommands.writeSecret(companionId, secret)
+        val serialAt = fake.sent.indexOf(TvCommands.SERIAL)
+        val writeAt = fake.sent.indexOf(write)
+        val modelAt = fake.sent.indexOf(TvCommands.MODEL)
+        assertTrue(serialAt >= 0 && writeAt > serialAt && modelAt > writeAt, fake.sent.joinToString("\n"))
+        assertEquals(1, fake.sent.count { it == write })
+        assertEquals(secret, store.tv("tv-1").identitySecret)
+        assertEquals(TvLink.Encrypted(37_123), store.tv("tv-1").link)
+
+        val mismatch = scripted(line).also { it.outputs[TvCommands.SERIAL] = "OTHER" }
+        val kept = savedTv()
+        val mismatchStore = InMemoryCompanionStore(
+            tvs = listOf(kept),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val mismatchVm = model(
+            mismatch, mismatchStore,
+            pairer = Pairer { _, _, _ -> PairResult.Paired },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        mismatchVm.pairSaved("tv-1")
+        mismatchVm.submitPair("123456", "37000")
+        assertTrue(mismatch.sent.none { it == write }, mismatch.sent.joinToString("\n"))
+        assertEquals(null, mismatchStore.tv("tv-1").identitySecret)
+        assertEquals(kept.link, mismatchStore.tv("tv-1").link)
+        assertEquals(kept.address, mismatchStore.tv("tv-1").address)
+        assertEquals(Copy.DIFFERENT_DEVICE, mismatchVm.state.value.error)
+    }
+
     @Test fun anActionOnAParkedTvSendsNoCommand() = runTest(UnconfinedTestDispatcher()) {
         val fake = scripted("${TvProof.expected(secret, nonce, sha256 = true)}  -")
         val store = InMemoryCompanionStore(

@@ -977,6 +977,65 @@ class CompanionViewModelTest {
     }
 
     @Test
+    fun pollRechecksTheNetworkBeforeEachTv() = runTest(UnconfinedTestDispatcher()) {
+        val away = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        var fp: NetworkFingerprint = home
+        var statusQueries = 0
+        class Scripted(val serial: String) : io.github.devjardins.sidespeed.companion.tv.TvSession {
+            val sent = mutableListOf<String>()
+            var closed = false
+            override var tlsNegotiated: Boolean = true
+            override suspend fun run(command: String): String {
+                sent += command
+                if (command == TvCommands.STATUS_QUERY) {
+                    statusQueries += 1
+                    if (statusQueries >= 3) fp = away
+                }
+                return when (command) {
+                    TvCommands.SERIAL -> serial
+                    TvCommands.STATUS_QUERY -> compilingRow
+                    else -> error("unscripted $command")
+                }
+            }
+            override fun close() {
+                closed = true
+            }
+        }
+        val first = Scripted("SER-1")
+        val second = Scripted("SER-2")
+        val connector = TvConnector { address, _ ->
+            when (address) {
+                "192.168.5.20" -> first
+                "192.168.5.21" -> second
+                else -> error(address)
+            }
+        }
+        val store = InMemoryCompanionStore(networks = listOf(homeNet))
+        store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING, link = allowed))
+        store.saveTv(SavedTv("tv-2", "Stick", "192.168.5.21", "SER-2", "home", status = TvStatus.RUNNING, link = allowed))
+        val source = FingerprintSource { fp }
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner()) { 1_000_000L }
+        val vm = CompanionViewModel(
+            store, source, upkeep, connector, Discovery(listOf(SweepSource), FakeLan()), this, { 1_000_000L }, { "tv-1" },
+        )
+        vm.refreshNow()
+        runCurrent()
+        vm.setHomeVisible(true)
+        runCurrent()
+        assertEquals(1, first.sent.count { it == TvCommands.STATUS_QUERY })
+        assertEquals(1, second.sent.count { it == TvCommands.STATUS_QUERY })
+        assertEquals(false, second.closed)
+        advanceTimeBy(3_000)
+        runCurrent()
+        assertEquals(2, first.sent.count { it == TvCommands.STATUS_QUERY })
+        assertEquals(1, second.sent.count { it == TvCommands.STATUS_QUERY }, second.sent.joinToString())
+        assertEquals(true, second.closed)
+        assertEquals(false, first.closed)
+        vm.setHomeVisible(false)
+        runCurrent()
+    }
+
+    @Test
     fun pollStopsWhenTheTrustedNetworkIsLost() = runTest(UnconfinedTestDispatcher()) {
         val r = activityRig()
         r.vm.setHomeVisible(true)
@@ -1088,6 +1147,107 @@ class CompanionViewModelTest {
         r.vm.addTvByAddress("192.168.5.20", acknowledged = true)
         assertEquals(TvLink.Classic(1_000_000L), r.store.tvs().single().link)
         assertTrue(r.fake.opened.any { it == "192.168.5.20:5555" })
+    }
+
+    @Test
+    fun classicAckSaysTheNetworkCanChangeCommands() {
+        assertEquals(
+            "This TV can't use an encrypted connection. SideSpeed can still connect the older way. " +
+                "Anyone on your network could see or change the commands it sends.",
+            Copy.CLASSIC_ACK,
+        )
+    }
+
+    @Test
+    fun submitPairOnAnUntrustedNetworkSendsNoPairingRequest() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        var paired = false
+        val vm = CompanionViewModel(
+            r.store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { _, _, _ ->
+                paired = true
+                PairResult.Paired
+            },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.startPairing("192.168.5.20")
+        vm.submitPair("123456", "37000")
+        assertEquals(false, paired)
+        assertTrue(r.fake.opened.isEmpty())
+        assertEquals(Copy.NOT_TRUSTED_ADD, vm.state.value.error)
+        assertTrue(r.store.tvs().isEmpty())
+    }
+
+    @Test
+    fun upgradingASavedTvOffItsTrustedNetworkOpensNoSession() = runTest(UnconfinedTestDispatcher()) {
+        val office = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        val store = InMemoryCompanionStore(
+            tvs = listOf(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING, link = allowed)),
+            networks = listOf(homeNet, TrustedNetwork("office", "Office", office)),
+        )
+        val r = Rig(this, store, tv(), office)
+        var paired = false
+        val vm = CompanionViewModel(
+            store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { _, _, _ ->
+                paired = true
+                PairResult.Paired
+            },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.refreshNow()
+        runCurrent()
+        vm.pairSaved("tv-1")
+        vm.submitPair("123456", "37000")
+        assertEquals(false, paired)
+        assertTrue(r.fake.opened.isEmpty())
+        assertEquals(Copy.NOT_TRUSTED_ADD, vm.state.value.error)
+        assertEquals(allowed, store.tv("tv-1").link)
+    }
+
+    @Test
+    fun aNetworkChangeBetweenPairingAndConnectingOpensNothing() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = true)
+        r.store.saveTv(SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", link = allowed))
+        val away = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        var paired = false
+        val vm = CompanionViewModel(
+            r.store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { _, _, _ ->
+                paired = true
+                r.fp = away
+                PairResult.Paired
+            },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.refreshNow()
+        runCurrent()
+        vm.pairSaved("tv-1")
+        vm.submitPair("123456", "37000")
+        assertEquals(true, paired)
+        assertTrue(r.fake.opened.isEmpty(), r.fake.opened.joinToString())
+        assertEquals(Copy.NOT_TRUSTED_ADD, vm.state.value.error)
+        assertEquals(allowed, r.store.tv("tv-1").link)
+    }
+
+    @Test
+    fun submitPairOnTheTrustedNetworkStillConnects() = runTest(UnconfinedTestDispatcher()) {
+        val seen = mutableListOf<String>()
+        val r = rig(trusted = true)
+        val vm = CompanionViewModel(
+            r.store, r.source, r.upkeep, r.connector, r.discovery, this, { 1_000_000L }, { "tv-1" },
+            pairer = Pairer { host, port, code ->
+                seen += "$host:$port:$code"
+                PairResult.Paired
+            },
+            ports = ConnectPortFinder { 37_123 },
+        )
+        vm.startPairing("192.168.5.20")
+        vm.submitPair("123456", "37000")
+        assertEquals(listOf("192.168.5.20:37000:123456"), seen)
+        assertEquals(TvLink.Encrypted(37_123), r.store.tvs().single().link)
+        assertTrue(r.fake.opened.any { it == "192.168.5.20:37123" })
     }
 
     @Test
