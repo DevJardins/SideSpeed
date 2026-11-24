@@ -2,11 +2,35 @@ package io.github.devjardins.sidespeed.l10n
 
 import io.github.devjardins.sidespeed.testing.EnglishStrings
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 
 class AllStringsFormatTest {
     private val placeholderRegex = Regex("""%(\d+)\$([sd])""")
+    private val forbiddenLiterals = listOf("3503400", "sidespeed.app", "github.com/")
+
+    @Test
+    fun no_literal_codes_or_urls_in_strings_xml() {
+        val resources = EnglishStrings.allResources()
+        val hits = mutableListOf<String>()
+        resources.strings.forEach { (name, value) ->
+            forbiddenLiterals.filter { value.contains(it) }.forEach { literal ->
+                hits += "string/$name contains '$literal'"
+            }
+        }
+        resources.plurals.forEach { (name, quantities) ->
+            quantities.forEach { (quantity, value) ->
+                forbiddenLiterals.filter { value.contains(it) }.forEach { literal ->
+                    hits += "plurals/$name[$quantity] contains '$literal'"
+                }
+            }
+        }
+        assertTrue(
+            "Codes and URLs must be passed as UiText.Ltr placeholders, not embedded in strings.xml:\n${hits.joinToString("\n")}",
+            hits.isEmpty(),
+        )
+    }
 
     @Test
     fun every_string_formats_with_its_placeholders() {

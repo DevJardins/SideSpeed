@@ -57,6 +57,11 @@ import io.github.devjardins.sidespeed.ui.theme.SsScreen
 import io.github.devjardins.sidespeed.ui.theme.SsSpinner
 import io.github.devjardins.sidespeed.ui.theme.SsType
 
+internal const val RELEASES_URL = "github.com/DevJardins/SideSpeed/releases"
+
+internal fun setupFireOsCompanionHint(): UiText =
+    uiText(R.string.setup_fire_os_companion_hint, UiText.Ltr(RELEASES_URL))
+
 @Composable
 fun SetupScreen(vm: SetupViewModel, onReady: () -> Unit) {
     val state by vm.state.collectAsState()
@@ -301,7 +306,7 @@ private fun FireOsContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
             )
         }
         Text(
-            stringResource(R.string.setup_fire_os_companion_hint),
+            setupFireOsCompanionHint().resolve(),
             style = SsType.Body, color = SsColors.TextBody,
         )
     }

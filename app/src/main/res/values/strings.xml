@@ -2,7 +2,7 @@
     <string name="app_name" translatable="false">SideSpeed</string>
 
     <!-- Shared -->
-    <!-- Back button label shown at the top of sub-screens. Arrow points back; in right-to-left languages use › -->
+    <!-- Back button label shown at the top of sub-screens. Keep ‹ as it is, because right-to-left languages mirror it automatically. -->
     <string name="common_back">‹ Back</string>
 
     <!-- Maintenance -->
@@ -272,8 +272,8 @@
     <string name="update_banner_out">SideSpeed %1$s is out</string>
     <!-- SideSpeed update banner note when another job blocks updating. -->
     <string name="update_banner_busy">Available when the current job finishes.</string>
-    <!-- SideSpeed update banner fallback instructions. Keep: Downloader, 3503400, sidespeed.app/tv -->
-    <string name="update_banner_manual">In Downloader, enter 3503400, or go to sidespeed.app/tv.</string>
+    <!-- SideSpeed update banner fallback instructions. %1$s is the Downloader code and %2$s is the download URL; both are filled in by the app. Keep: Downloader -->
+    <string name="update_banner_manual">In Downloader, enter %1$s, or go to %2$s.</string>
     <string name="update_banner_update_now">Update now</string>
     <string name="update_banner_dismiss">Dismiss</string>
     <string name="update_banner_cancel">Cancel</string>
@@ -545,8 +545,8 @@
     <string name="setup_step_start_helper_companion">Start the helper from your phone or computer</string>
     <!-- Warning on Fire TV setup when an older helper is running. Keep: SideSpeed, SideSpeed Companion. Match setup_other_ways_show label. -->
     <string name="setup_fire_os_stale_helper">The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.</string>
-    <!-- Body text on step 2 of Fire TV setup. Keep: SideSpeed Companion, github.com/DevJardins/SideSpeed/releases -->
-    <string name="setup_fire_os_companion_hint">Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from github.com/DevJardins/SideSpeed/releases</string>
+    <!-- Body text on step 2 of Fire TV setup. %1$s is the releases URL, filled in by the app. Keep: SideSpeed Companion -->
+    <string name="setup_fire_os_companion_hint">Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from %1$s</string>
     <!-- Toggle button on Fire TV setup that collapses the PC ADB steps. -->
     <string name="setup_other_ways_hide">Hide other ways</string>
     <!-- Toggle button on Fire TV setup that expands the PC ADB steps. -->

@@ -83,6 +83,12 @@ fun UpdateBannerSlot(
     }
 }
 
+internal const val DOWNLOADER_CODE = "3503400"
+internal const val TV_DOWNLOAD_URL = "sidespeed.app/tv"
+
+internal fun updateBannerManual(): UiText =
+    uiText(R.string.update_banner_manual, UiText.Ltr(DOWNLOADER_CODE), UiText.Ltr(TV_DOWNLOAD_URL))
+
 /** "SideSpeed X is out" banner with in-app update. */
 @Composable
 fun UpdateBanner(
@@ -135,7 +141,7 @@ fun UpdateBanner(
                     )
                 }
                 Text(
-                    stringResource(R.string.update_banner_manual),
+                    updateBannerManual().resolve(),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
