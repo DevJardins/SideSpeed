@@ -100,6 +100,9 @@ the code may have a bug.
 
 ## 5. Helper and security
 
+`SECURITY.md` explains these rules and their known limits for readers.
+Keep it true when you change anything below.
+
 - The helper answers only SideSpeed's uid.
 - `HelperServer.kt` checks the caller against the allowed uid
   (via `/proc/net/tcp{,6}` in `HelperMain.kt`) before reading any request byte,
