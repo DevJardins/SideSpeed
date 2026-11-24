@@ -130,11 +130,13 @@ fun CompileScreen(
         // The scroll clips to the column bounds, which would cut the first and last
         // focusables' 2dp focus ring and focus scale: bleed the column out
         // symmetrically and pad the scroll content by the same amount, so resting
-        // edges stay aligned.
+        // edges stay aligned. Width only: a fixed minimum height would make bleed's
+        // reported size smaller than the minimum when the content is short, and the
+        // layout would then center the content 8dp lower than before.
         val scrollInset = 8.dp
         Column(
             Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .bleed(horizontal = scrollInset, vertical = scrollInset)
                 .verticalScroll(rememberScrollState())
                 .padding(scrollInset),
