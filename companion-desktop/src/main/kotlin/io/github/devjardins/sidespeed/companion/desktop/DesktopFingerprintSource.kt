@@ -37,14 +37,7 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
         // `gateway` is a validated IPv4 literal, so it is safe as a command argument.
         // Warm the ARP entry first so the MAC read below doesn't miss on a quiet network; ignore the result.
         runCommand(*pingCommand(gateway))
-        val macAddr = FingerprintParsers.gatewayMac(
-            when {
-                mac -> runCommand("arp", "-n", gateway)
-                windows -> runCommand("arp", "-a", gateway)
-                else -> runCommand("ip", "neigh", "show", gateway)
-            },
-            gateway,
-        )
+        val macAddr = readGatewayMac(mac, windows, gateway, ::runCommand)
         NetworkFingerprint(gateway, subnet, dns, macAddr, ownIp)
     }
 
@@ -67,4 +60,29 @@ class DesktopFingerprintSource(private val os: String = System.getProperty("os.n
             }.firstOrNull()
     }.getOrNull()
 
+}
+
+/**
+ * The gateway's MAC from the OS neighbour table. [run] is one fixed command, the same shape as [runCommand].
+ * The per-host lookup is enough when it prints a MAC. On macOS that lookup reports "no entry" for an
+ * interface-scoped row the full table still shows, so a miss reads the whole table.
+ */
+internal fun readGatewayMac(
+    mac: Boolean,
+    windows: Boolean,
+    gateway: String,
+    run: (Array<out String>) -> String,
+): String? {
+    val specific = when {
+        mac -> arrayOf("arp", "-n", gateway)
+        windows -> arrayOf("arp", "-a", gateway)
+        else -> arrayOf("ip", "neigh", "show", gateway)
+    }
+    FingerprintParsers.gatewayMac(run(specific), gateway)?.let { return it }
+    val table = when {
+        mac -> arrayOf("arp", "-an")
+        windows -> arrayOf("arp", "-a")
+        else -> arrayOf("ip", "neigh", "show")
+    }
+    return FingerprintParsers.gatewayMac(run(table), gateway)
 }

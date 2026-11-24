@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.OverlayTrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
@@ -145,11 +146,8 @@ class Upkeep(
         // A store saved by a newer copy is read-only: upkeep still checks and restarts, but saves nothing.
         val readOnly = store.savedByNewerVersion
         val fp = fingerprints.current()
-        val matched = TrustMatcher.currentTrusted(fp, store.trustedNetworks())
-        // A match on a record made before the gateway MAC or Wi-Fi name was read hardens that record.
-        val lan = if (fp != null && matched != null && !readOnly) {
-            TrustMatcher.upgraded(matched, fp)?.let { store.saveTrustedNetwork(it); it } ?: matched
-        } else matched
+        // A match on a record made before the gateway MAC was read stores that MAC.
+        val lan = hardened(store, fp)
         val tailnet = currentOverlay()
         if (lan == null && tailnet == null) {
             return@withLock UpkeepReport(gated = true, visited = emptyMap(), restartedNames = emptyList())
@@ -468,12 +466,26 @@ class Upkeep(
     }
 }
 
+/**
+ * The Trusted Network matching [current], with a missing gateway MAC copied from it and saved.
+ * Null when there is no usable network or none matches. A MAC already stored is left as it is.
+ * A store saved by a newer copy is not written.
+ */
+internal suspend fun hardened(store: CompanionStore, current: NetworkFingerprint?): TrustedNetwork? {
+    if (current == null) return null
+    val matched = TrustMatcher.currentTrusted(current, store.trustedNetworks()) ?: return null
+    if (store.savedByNewerVersion) return matched
+    val upgraded = TrustMatcher.upgraded(matched, current) ?: return matched
+    store.saveTrustedNetwork(upgraded)
+    return upgraded
+}
+
 /** True when the current fingerprint is still [trusted]. This is the classic re-find gate. */
 internal suspend fun stillOnTrustedNetwork(
     fingerprints: FingerprintSource,
     store: CompanionStore,
     trusted: TrustedNetwork,
-): Boolean = TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())?.id == trusted.id
+): Boolean = hardened(store, fingerprints.current())?.id == trusted.id
 
 /**
  * Whether an encrypted TV may be saved at a newly advertised address. Same gate as a classic

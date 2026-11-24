@@ -113,11 +113,12 @@ These are known limits. Each one is a choice, and the reason is given.
   and could send their own while it is connected.
   That includes the TV's secret, once, when the TV is first added.
   If the TV later offers an encrypted link, the Companion stops and asks you to pair it.
-- **A look-alike network can be searched.** On desktop, once the router's hardware
-  address is known, a copy needs your router's address, subnet, a DNS server
+- **A look-alike network can be searched.** On Windows and Linux, once the router's
+  hardware address is known, a copy needs your router's address, subnet, a DNS server
   and that hardware address.
-  On Android the hardware address is not read,
-  so a copy needs the router's address, subnet and exactly the same DNS servers.
+  On Android the hardware address is not read, and on a Mac, macOS can hide it
+  from the app. Without it, a copy needs the router's address, subnet
+  and exactly the same DNS servers.
   Many routers hand out their own address as the DNS server, and many use the same
   factory address. On those networks, another router left on its factory settings
   can look the same. The Companion may then search that network.
