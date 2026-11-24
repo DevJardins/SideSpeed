@@ -44,9 +44,20 @@ import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
 import io.github.devjardins.sidespeed.companion.upkeep.JoinPoll
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.about_download
+import io.github.devjardins.sidespeed.companion.resources.app_name
+import io.github.devjardins.sidespeed.companion.resources.home_restart_now
+import io.github.devjardins.sidespeed.companion.resources.notif_restarted
+import io.github.devjardins.sidespeed.companion.resources.tray_open
+import io.github.devjardins.sidespeed.companion.resources.tray_pause
+import io.github.devjardins.sidespeed.companion.resources.tray_quit
+import io.github.devjardins.sidespeed.companion.resources.tray_resume
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +65,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import java.io.File
 import java.io.RandomAccessFile
 import kotlin.system.exitProcess
@@ -148,8 +160,12 @@ fun main() {
 
         suspend fun runAndNotify(trigger: Trigger) {
             val report = upkeep.runOnce(trigger)
-            if (store.settings().notifications) {
-                report.restartedNames.forEach { tray.sendNotification(Notification("SideSpeed Companion", "SideSpeed restarted on $it")) }
+            if (store.settings().notifications && report.restartedNames.isNotEmpty()) {
+                val title = UiText.Res(Res.string.app_name).resolveSuspend()
+                report.restartedNames.forEach {
+                    val body = UiText.Res(Res.string.notif_restarted, listOf(UiText.Ltr(it))).resolveSuspend()
+                    tray.sendNotification(Notification(title, body))
+                }
             }
             vm.refreshNow()
         }
@@ -206,22 +222,25 @@ fun main() {
 
         Tray(
             icon = icon,
-            tooltip = "SideSpeed Companion",
+            tooltip = stringResource(Res.string.app_name),
             state = tray,
             onAction = { windowVisible = true },
             menu = {
-                Item("Restart now", onClick = { vm.restartNow() })
-                Item("Open SideSpeed Companion", onClick = { windowVisible = true })
-                Item(if (paused) "Resume checks" else "Pause checks", onClick = { paused = !paused })
+                Item(stringResource(Res.string.home_restart_now), onClick = { vm.restartNow() })
+                Item(stringResource(Res.string.tray_open), onClick = { windowVisible = true })
+                Item(
+                    stringResource(if (paused) Res.string.tray_resume else Res.string.tray_pause),
+                    onClick = { paused = !paused },
+                )
                 Separator()
-                Item("Quit", onClick = { lock.close(); exitApplication() })
+                Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
             },
         )
         // Closing the window keeps the app in the tray.
         Window(
             onCloseRequest = { windowVisible = false },
             visible = windowVisible,
-            title = "SideSpeed Companion",
+            title = stringResource(Res.string.app_name),
             icon = windowIcon,
             state = rememberWindowState(size = DpSize(420.dp, 640.dp)),
             resizable = true,
@@ -235,7 +254,7 @@ fun main() {
                 onCheckUpdates = desktopUpdater::checkNow,
                 updateAction = {
                     if (updateState is CompanionUpdateState.Available) {
-                        SsButton("Download", onClick = desktopUpdater::openDownload)
+                        SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
                     }
                 },
             )

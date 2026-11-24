@@ -304,6 +304,52 @@
     <string name="about_downloading">Downloading… %1$s</string>
     <!-- Status line on the Android About screen after confirming an update install. -->
     <string name="about_installing">Installing…</string>
+    <!-- Primary button on the Android About screen starting an in-app update download and install. -->
+    <string name="about_update_now">Update now</string>
+    <!-- Button on the desktop About screen opening the installer download page. -->
+    <string name="about_download">Download</string>
+    <!-- Error when SHA256SUMS has no entry for the Companion APK. %1$s is the APK filename. -->
+    <string name="update_no_checksum">No checksum found for %1$s.</string>
+    <!-- Safety warning shown when the downloaded Companion APK fails SHA-256 verification. -->
+    <string name="update_checksum_mismatch">Checksum mismatch.</string>
+    <!-- Error when parsing the downloaded Android package fails. Keep: APK -->
+    <string name="update_apk_unreadable">Could not read the downloaded APK.</string>
+    <!-- Safety error when the downloaded APK carries a different application ID. %1$s is the package name. -->
+    <string name="update_wrong_package">Wrong package: %1$s.</string>
+    <!-- Safety warning shown when signing certificates could not be read from the APK or installed app. -->
+    <string name="update_signer_unknown">Signer unknown: refusing the update.</string>
+    <!-- Safety warning shown when the APK signing certificate differs from the installed app. -->
+    <string name="update_signer_mismatch">Signer does not match the installed app.</string>
+    <!-- Generic fallback error when an unexpected failure stops the Companion update. -->
+    <string name="update_failed">Update failed.</string>
+    <!-- Error when starting an Android Companion update without a resolved latest release tag. -->
+    <string name="update_check_failed">Couldn't check for updates. Try again later.</string>
+    <!-- Prompt on Android 8+ after opening unknown-sources permission settings for self-update. Keep: SideSpeed Companion -->
+    <string name="update_allow_install">Allow SideSpeed Companion to install apps, then try again.</string>
+    <!-- Error when fetching SHA256SUMS fails during Companion update. -->
+    <string name="update_checksums_download_failed">Could not download the checksums.</string>
+    <!-- Error when downloading the updated Companion APK fails. -->
+    <string name="update_download_failed">Download failed.</string>
+    <!-- Error when handing the verified APK to Android PackageInstaller fails without details. -->
+    <string name="update_install_failed">Install failed.</string>
+    <!-- Error when Android PackageInstaller returns a failure status with a system message. %1$s is the untranslated system message. -->
+    <string name="update_install_failed_detail">Install failed. %1$s</string>
+    <!-- Error when the Android system installer does not report back within 5 minutes. -->
+    <string name="update_install_timeout">Install didn't finish. Try again.</string>
+    <!-- Status when the user aborts the Android system install confirmation. -->
+    <string name="update_cancelled">Update cancelled.</string>
     <!-- Licence and Android robot attribution text on the About screen. Keep: SideSpeed Companion, GPL-3.0, Android, Google, Creative Commons 3.0 Attribution License -->
     <string name="about_licence_text">SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.</string>
+
+    <!-- Notifications and desktop tray -->
+    <!-- Notification body shown when background upkeep restarts the helper on a TV. %1$s is the TV name. Keep: SideSpeed -->
+    <string name="notif_restarted">SideSpeed restarted on %1$s</string>
+    <!-- Desktop tray menu item bringing the main window to the front. Keep: SideSpeed Companion -->
+    <string name="tray_open">Open SideSpeed Companion</string>
+    <!-- Desktop tray menu item pausing background TV checks. -->
+    <string name="tray_pause">Pause checks</string>
+    <!-- Desktop tray menu item resuming paused background TV checks. -->
+    <string name="tray_resume">Resume checks</string>
+    <!-- Desktop tray menu item exiting SideSpeed Companion. -->
+    <string name="tray_quit">Quit</string>
 </resources>

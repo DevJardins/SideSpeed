@@ -1,5 +1,0 @@
-companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/update/CompanionUpdate.kt
-companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt
-companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/AndroidUpdateAction.kt
-companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/Notifier.kt
-companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/Main.kt

@@ -87,7 +87,6 @@ class NoHardCodedTextTest {
     fun no_hard_coded_text_in_companion_kotlin() {
         val root = repoRoot()
         val allowlist = readList("/l10n/hardcoded-text-allowlist.txt").toSet()
-        val notMigratedYet = readList("/l10n/not-migrated-yet.txt").toSet()
         val sourceRoots = listOf(
             "companion/src/commonMain/kotlin",
             "companion/src/desktopMain/kotlin",
@@ -105,7 +104,6 @@ class NoHardCodedTextTest {
                 .sortedBy { it.path }
                 .forEach { file ->
                     val relPath = file.relativeTo(root).invariantSeparatorsPath
-                    if (relPath in notMigratedYet) return@forEach
 
                     var prevLine = ""
                     file.readLines().forEachIndexed { zeroBasedLine, line ->
@@ -121,13 +119,6 @@ class NoHardCodedTextTest {
             violations.isEmpty(),
             "Hard-coded text found (move to strings.xml or allowlist):\n${violations.joinToString("\n")}",
         )
-    }
-
-    @Test
-    fun not_migrated_list_only_names_existing_files() {
-        val root = repoRoot()
-        val missing = readList("/l10n/not-migrated-yet.txt").filter { !File(root, it).isFile }
-        assertTrue(missing.isEmpty(), "Missing files in not-migrated-yet.txt: $missing")
     }
 
     private fun readList(resourcePath: String): List<String> {

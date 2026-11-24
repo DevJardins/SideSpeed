@@ -66,7 +66,7 @@ fun AboutScreen(
                 is CompanionUpdateState.Downloading ->
                     UiText.Res(Res.string.about_downloading, listOf("${update.percent}%")).resolve()
                 CompanionUpdateState.Installing -> stringResource(Res.string.about_installing)
-                is CompanionUpdateState.Failed -> update.reason
+                is CompanionUpdateState.Failed -> update.reason.resolve()
             }
             line?.let { SsText(it) }
             updateAction()
