@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.companion.l10n
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class NoHardCodedTextTest {
@@ -35,6 +36,7 @@ class NoHardCodedTextTest {
         if (ignoredLineTokens.any { line.contains(it) }) return emptyList()
         if (trimmed.startsWith("import ")) return emptyList()
 
+        val effectiveInUiCall = inUiCall || lineHasUiMarker(line)
         val hits = LinkedHashSet<String>()
         fun recordIfNotAllowed(literal: String, shapeNeedsTechnicalCheck: Boolean = false) {
             val unquoted = literal.removeSurrounding("\"").removeSurrounding("\"\"\"")
@@ -70,7 +72,7 @@ class NoHardCodedTextTest {
         for (match in tripleQuotedLiteral.findAll(line)) {
             recordIfNotAllowed(match.value, shapeNeedsTechnicalCheck = true)
         }
-        if (inUiCall) {
+        if (effectiveInUiCall) {
             for (match in anyQuotedLiteral.findAll(line)) {
                 val literal = match.value
                 val unquoted = literal.removeSurrounding("\"")
@@ -82,7 +84,102 @@ class NoHardCodedTextTest {
         return hits.toList()
     }
 
-    private fun netParens(line: String): Int = line.count { it == '(' } - line.count { it == ')' }
+    internal fun netParensOutsideStrings(line: String): Int {
+        var net = 0
+        var i = 0
+        var inQuote = false
+        var inRaw = false
+        while (i < line.length) {
+            when {
+                !inQuote && line.startsWith("\"\"\"", i) -> {
+                    inRaw = !inRaw
+                    i += 3
+                }
+                !inRaw && line[i] == '"' -> {
+                    val escaped = i > 0 && line[i - 1] == '\\'
+                    if (!escaped) inQuote = !inQuote
+                    i++
+                }
+                !inQuote && !inRaw -> {
+                    when (line[i]) {
+                        '(' -> net++
+                        ')' -> net--
+                    }
+                    i++
+                }
+                else -> i++
+            }
+        }
+        return net
+    }
+
+    internal fun lineHasUiMarker(line: String): Boolean = uiCallMarkers.any { line.contains(it) }
+
+    internal fun rawStringLineHits(line: String, inRaw: Boolean, relPath: String, allowlist: Set<String>): Pair<Boolean, List<String>> {
+        var inside = inRaw
+        val hits = mutableListOf<String>()
+        val inner = StringBuilder()
+        var i = 0
+        while (i < line.length) {
+            if (line.startsWith("\"\"\"", i)) {
+                if (inside) {
+                    val chunk = inner.toString()
+                    inner.clear()
+                    if (hasLetters.containsMatchIn(chunk) &&
+                        !isAllowlisted(relPath, chunk, allowlist) &&
+                        !isTechnicalLiteral(chunk.trim(), line)
+                    ) {
+                        hits += "\"\"\"$chunk\"\"\""
+                    }
+                    inside = false
+                } else {
+                    inside = true
+                }
+                i += 3
+                continue
+            }
+            if (inside) inner.append(line[i])
+            i++
+        }
+        if (inside && inner.isNotEmpty() && hasLetters.containsMatchIn(inner.toString())) {
+            val chunk = inner.toString()
+            if (!isAllowlisted(relPath, chunk, allowlist) && !isTechnicalLiteral(chunk.trim(), line)) {
+                hits += "\"\"\"$chunk\"\"\""
+            }
+        }
+        return inside to hits
+    }
+
+    private fun isAllowlisted(relPath: String, unquoted: String, allowlist: Set<String>): Boolean =
+        "$relPath|\"$unquoted\"" in allowlist || "$relPath|$unquoted" in allowlist
+
+    internal fun scanLines(
+        lines: List<String>,
+        relPath: String = "",
+        allowlist: Set<String> = emptySet(),
+    ): List<String> {
+        val violations = mutableListOf<String>()
+        var uiDepth = 0
+        var inRaw = false
+        lines.forEachIndexed { zeroBasedLine, line ->
+            val inUiCall = uiDepth > 0 || lineHasUiMarker(line)
+            for (literal in findViolations(line, relPath, allowlist, inUiCall)) {
+                violations += "$relPath:${zeroBasedLine + 1}: $literal"
+            }
+            val (nextRaw, rawHits) = rawStringLineHits(line, inRaw, relPath, allowlist)
+            inRaw = nextRaw
+            for (hit in rawHits) {
+                violations += "$relPath:${zeroBasedLine + 1}: $hit"
+            }
+            if (uiDepth == 0 && lineHasUiMarker(line)) {
+                if (line.contains('(')) uiDepth = netParensOutsideStrings(line).coerceAtLeast(1)
+            } else if (uiDepth > 0) {
+                uiDepth += netParensOutsideStrings(line)
+            }
+            if (uiDepth <= 0) uiDepth = 0
+        }
+        return violations
+    }
 
     private fun isTechnicalLiteral(unquoted: String, line: String): Boolean {
         if (line.contains("Regex(")) return true
@@ -93,6 +190,13 @@ class NoHardCodedTextTest {
         if (unquoted.contains(Regex("""(?i)(script|sha-?\d|tls\d|unicode|adb-|\.pem|\.json|\.dmg|\.msi|\.deb|\.rpm|\.apk)"""))) return true
         if (unquoted.endsWith("-") || unquoted.startsWith("activity-")) return true
         if (line.contains("setOf(") && unquoted.length <= 5) return true
+        if (unquoted.contains("<?xml") || unquoted.contains("<!DOCTYPE") || unquoted.contains("<plist")) return true
+        if (unquoted.contains("<dict>") || unquoted.contains("</plist>")) return true
+        if (unquoted.contains("Desktop Entry") || unquoted.startsWith("Type=") || unquoted.startsWith("Name=")) return true
+        if (unquoted.contains("X-GNOME")) return true
+        if (unquoted.contains("ProgramArguments") || unquoted.contains("RunAtLoad")) return true
+        if (unquoted.contains("\\b(") || unquoted.contains("\\d{") || unquoted.contains("(?<!")) return true
+        if (unquoted.contains(" at (\\S+)")) return true
         return false
     }
 
@@ -119,6 +223,29 @@ class NoHardCodedTextTest {
             listOf("\"Pair steps go here\"", "\"\"\"Pair steps go here\"\"\""),
             findViolations("val steps = \"\"\"Pair steps go here\"\"\""),
         )
+        assertEquals(listOf("\"offline\""), findViolations("""SsText("offline", Ss.caption)"""))
+        assertEquals(
+            listOf("example/Foo.kt:2: \"\"\"Pair steps go here\"\"\""),
+            scanLines(
+                listOf(
+                    "val steps = \"\"\"",
+                    "Pair steps go here",
+                    "\"\"\".trimIndent()",
+                ),
+                "example/Foo.kt",
+            ),
+        )
+        assertEquals(
+            listOf("\"Save (draft)\"", "\"leaked\""),
+            scanLines(
+                listOf(
+                    """SsButton("Save (draft)", onSave)""",
+                    """val tag = "leaked"""",
+                ),
+            ).map { it.substringAfterLast(':').trim() },
+        )
+        assertEquals(0, netParensOutsideStrings("""SsButton("Save (draft)", onSave)"""))
+        assertEquals(0, netParensOutsideStrings("""SsText("ok", Ss.body)"""))
 
         assertEquals(emptyList(), findViolations("""Log.w(TAG, "Some message here")"""))
         assertEquals(emptyList(), findViolations("""SsText("✓", Ss.body)"""))
@@ -149,20 +276,7 @@ class NoHardCodedTextTest {
                 .sortedBy { it.path }
                 .forEach { file ->
                     val relPath = file.relativeTo(root).invariantSeparatorsPath
-
-                    var uiDepth = 0
-                    file.readLines().forEachIndexed { zeroBasedLine, line ->
-                        val inUiCall = uiDepth > 0
-                        for (literal in findViolations(line, relPath, allowlist, inUiCall)) {
-                            violations += "$relPath:${zeroBasedLine + 1}: $literal"
-                        }
-                        if (uiDepth == 0 && uiCallMarkers.any { line.contains(it) }) {
-                            if (line.contains('(')) uiDepth = netParens(line).coerceAtLeast(1)
-                        } else if (uiDepth > 0) {
-                            uiDepth += netParens(line)
-                        }
-                        if (uiDepth <= 0) uiDepth = 0
-                    }
+                    violations += scanLines(file.readLines(), relPath, allowlist)
                 }
         }
 

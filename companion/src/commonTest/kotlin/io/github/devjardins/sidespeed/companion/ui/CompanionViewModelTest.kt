@@ -43,6 +43,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -161,23 +162,29 @@ class CompanionViewModelTest {
     @Test
     fun savedDefaultNamesNeverContainBidiIsolates() = runTest(UnconfinedTestDispatcher()) {
         val isolate = Regex("[\u2066\u2067\u2068\u2069]")
-        val r = rig(trusted = false)
-        r.vm.trustCurrentNetwork("")
-        assertFalse(isolate.containsMatchIn(r.store.trustedNetworks().single().name))
-        val fake = FakeTvSession(
-            mapOf(
-                TvCommands.SERIAL to "SER-3",
-                TvCommands.MODEL to "",
-                TvCommands.MANUFACTURER to "Amazon",
-                TvCommands.PKG_PATH to "package:$apk",
-                TvCommands.PIDOF to "123",
-                TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
-            ),
-        )
-        val r2 = rig(trusted = true, fake = fake)
-        r2.vm.addSaved("192.168.5.21")
-        runCurrent()
-        assertFalse(isolate.containsMatchIn(r2.store.tvs().single().name))
+        val savedLocale = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar"))
+            val r = rig(trusted = false)
+            r.vm.trustCurrentNetwork("")
+            assertFalse(isolate.containsMatchIn(r.store.trustedNetworks().single().name))
+            val fake = FakeTvSession(
+                mapOf(
+                    TvCommands.SERIAL to "SER-3",
+                    TvCommands.MODEL to "",
+                    TvCommands.MANUFACTURER to "Amazon",
+                    TvCommands.PKG_PATH to "package:$apk",
+                    TvCommands.PIDOF to "123",
+                    TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
+                ),
+            )
+            val r2 = rig(trusted = true, fake = fake)
+            r2.vm.addSaved("192.168.5.21")
+            runCurrent()
+            assertFalse(isolate.containsMatchIn(r2.store.tvs().single().name))
+        } finally {
+            Locale.setDefault(savedLocale)
+        }
     }
 
     @Test

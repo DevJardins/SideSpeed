@@ -5,6 +5,7 @@ import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.about_check_failed
 import io.github.devjardins.sidespeed.companion.resources.about_downloading
 import io.github.devjardins.sidespeed.companion.resources.home_checked_min_ago
+import io.github.devjardins.sidespeed.companion.resources.notif_restarted
 import io.github.devjardins.sidespeed.companion.testing.english
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.PluralStringResource
@@ -12,6 +13,7 @@ import org.jetbrains.compose.resources.StringResource
 import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class UiTextTest {
     private val placeholderRegex = Regex("""%(\d+)\$[ds]""")
@@ -86,6 +88,15 @@ class UiTextTest {
     @Test
     fun fsi_isolated_in_rtl_layout() {
         assertEquals("\u2068Living room\u2069", UiText.Fsi("Living room").resolve(fake, rtl = true))
+    }
+
+    @Test
+    fun restarted_notification_tv_name_uses_fsi_not_ltr() = runBlocking {
+        val name = "Living room"
+        val withFsi = UiText.Res(Res.string.notif_restarted, listOf(UiText.Fsi(name))).resolveSuspend(rtl = true)
+        val withLtr = UiText.Res(Res.string.notif_restarted, listOf(UiText.Ltr(name))).resolveSuspend(rtl = true)
+        assertTrue(withFsi.contains("\u2068$name\u2069"))
+        assertTrue(withLtr.contains("\u2066$name\u2069"))
     }
 
     @Test

@@ -20,7 +20,7 @@ class Notifier(private val context: Context) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
         val rtl = context.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
-        val text = UiText.Res(Res.string.notif_restarted, listOf(UiText.Ltr(tvName))).resolveSuspend(rtl)
+        val text = UiText.Res(Res.string.notif_restarted, listOf(UiText.Fsi(tvName))).resolveSuspend(rtl)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, context.getString(R.string.channel_restarts), NotificationManager.IMPORTANCE_LOW),
