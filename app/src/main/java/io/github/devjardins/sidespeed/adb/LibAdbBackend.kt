@@ -45,7 +45,7 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
     override suspend fun pair(host: String, port: Int, code: String): Result<Unit> =
         runCatchingCancellable {
             runInterruptible(Dispatchers.IO) {
-                if (!manager.pair(host, port, code)) throw IOException("ADB pairing failed")
+                if (!manager.pair(host, port, code)) throw AdbPairingFailedException()
             }
         }
 

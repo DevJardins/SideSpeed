@@ -14,12 +14,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.tools.AnimationLevel
 import io.github.devjardins.sidespeed.tools.Animations
 import io.github.devjardins.sidespeed.tools.ToolResult
 import io.github.devjardins.sidespeed.tools.ToolsStore
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -35,7 +39,7 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
     var selected by remember { mutableStateOf<AnimationLevel?>(null) }
     var unreadable by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<UiText?>(null) }
 
     suspend fun refreshSelection() {
         val current = animations.current()
@@ -47,12 +51,12 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
         refreshSelection()
     }
 
-    fun message(result: ToolResult<Unit>): String? = when (result) {
+    fun message(result: ToolResult<Unit>): UiText? = when (result) {
         is ToolResult.Ok -> null
-        is ToolResult.HelperDown -> "Helper not running. Start the helper, then try again."
-        is ToolResult.HelperOutdated -> "Restart the helper to use this."
-        is ToolResult.Refused -> "The helper refused this setting."
-        is ToolResult.Failed -> result.message
+        is ToolResult.HelperDown -> UiText.Res(R.string.tools_helper_down)
+        is ToolResult.HelperOutdated -> UiText.Res(R.string.tools_helper_outdated)
+        is ToolResult.Refused -> UiText.Res(R.string.tools_animations_refused)
+        is ToolResult.Failed -> UiText.Raw(result.message)
     }
 
     SsCard(Modifier.fillMaxWidth()) {
@@ -61,32 +65,33 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Animations", style = SsType.Title, color = SsColors.TextPrimary, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.tools_animations_title), style = SsType.Title, color = SsColors.TextPrimary, modifier = Modifier.weight(1f))
                 if (busy) SsSpinner()
             }
             Text(
-                "Makes menus and screen changes move faster. It does not make apps load faster. " +
-                    "Off removes animations completely; a few apps may look odd.",
+                stringResource(R.string.tools_animations_body),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
             if (unreadable && status == null) {
                 Text(
-                    "Current values couldn't be read — the helper may not be running.",
+                    stringResource(R.string.tools_animations_unreadable),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AnimationLevel.entries.forEach { level ->
-                    val base = when (level) {
-                        AnimationLevel.NORMAL -> "Normal (1×)"
-                        AnimationLevel.FASTER -> "Faster (0.5×)"
-                        AnimationLevel.OFF -> "Off"
-                    }
+                    val base = stringResource(
+                        when (level) {
+                            AnimationLevel.NORMAL -> R.string.tools_animations_normal
+                            AnimationLevel.FASTER -> R.string.tools_animations_faster
+                            AnimationLevel.OFF -> R.string.tools_animations_off
+                        },
+                    )
                     // Same ✓-prefix convention as the Apps mode buttons: focus must never
                     // hide which option is active.
-                    val label = if (selected == level) "✓ $base" else base
+                    val label = if (selected == level) stringResource(R.string.tools_selected, base) else base
                     SsButton(
                         label,
                         onClick = {
@@ -104,19 +109,19 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
             }
             if (animations.isFireOs) {
                 Text(
-                    "On Fire TV, app animations stay at normal speed so the Settings menu keeps working.",
+                    stringResource(R.string.tools_animations_fire_tv_note),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
             if (originals != null) {
                 Text(
-                    "Restores the values from before SideSpeed changed them.",
+                    stringResource(R.string.tools_animations_restore_note),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
                 SsButton(
-                    "Restore original",
+                    stringResource(R.string.tools_animations_restore),
                     onClick = {
                         busy = true
                         scope.launch {
@@ -129,7 +134,7 @@ fun AnimationsCard(animations: Animations, store: ToolsStore) {
                 )
             }
             status?.let {
-                Text(it, style = SsType.Body, color = SsColors.DangerCardText)
+                Text(it.resolve(), style = SsType.Body, color = SsColors.DangerCardText)
             }
         }
     }

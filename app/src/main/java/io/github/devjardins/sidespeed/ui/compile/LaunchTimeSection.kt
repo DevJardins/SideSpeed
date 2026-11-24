@@ -19,8 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -31,8 +36,11 @@ import io.github.devjardins.sidespeed.ui.theme.SsType
 import java.util.Locale
 import kotlin.math.roundToInt
 
+private fun formatLaunchSecondsNumber(ms: Long): String = "%.1f".format(Locale.US, ms / 1000.0)
+
 /** "1.9 s": one decimal, locale-independent so TVs never render "1,9 s". */
-fun formatLaunchMs(ms: Long): String = "%.1f s".format(Locale.US, ms / 1000.0)
+fun formatLaunchMs(ms: Long): UiText =
+    uiText(R.string.compile_launch_seconds, UiText.Ltr(formatLaunchSecondsNumber(ms)))
 
 /**
  * "Launch: 1.9 s → 1.1 s (42% faster)", "Launch: 1.1 s" when there is no
@@ -40,20 +48,22 @@ fun formatLaunchMs(ms: Long): String = "%.1f s".format(Locale.US, ms / 1000.0)
  * "(no faster)" when the app got 5%+ slower, and a "from an older version"
  * suffix when the app updated since the timing.
  */
-fun formatLaunchResult(beforeMs: Long?, afterMs: Long, stale: Boolean): String {
+fun formatLaunchResult(beforeMs: Long?, afterMs: Long, stale: Boolean): UiText {
+    val after = formatLaunchMs(afterMs)
     val base = if (beforeMs == null) {
-        "Launch: ${formatLaunchMs(afterMs)}"
+        uiText(R.string.compile_launch_result_single, after)
     } else {
         val pct = if (beforeMs > 0) (beforeMs - afterMs) * 100.0 / beforeMs else 0.0
         val verdict = when {
-            formatLaunchMs(beforeMs) == formatLaunchMs(afterMs) -> "about the same"
-            pct >= 5.0 -> "${pct.roundToInt()}% faster"
-            pct <= -5.0 -> "no faster"
-            else -> "about the same"
+            formatLaunchSecondsNumber(beforeMs) == formatLaunchSecondsNumber(afterMs) ->
+                UiText.Res(R.string.compile_launch_verdict_same)
+            pct >= 5.0 -> uiText(R.string.compile_launch_verdict_faster, pct.roundToInt())
+            pct <= -5.0 -> UiText.Res(R.string.compile_launch_verdict_slower)
+            else -> UiText.Res(R.string.compile_launch_verdict_same)
         }
-        "Launch: ${formatLaunchMs(beforeMs)} → ${formatLaunchMs(afterMs)} ($verdict)"
+        uiText(R.string.compile_launch_result_pair, formatLaunchMs(beforeMs), after, verdict)
     }
-    return if (stale) "$base · from an older version" else base
+    return if (stale) uiText(R.string.compile_launch_result_stale, base) else base
 }
 
 /**
@@ -86,49 +96,51 @@ fun LaunchTimeSection(
     }
     SsCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Launch time", style = SsType.Title, color = SsColors.TextPrimary)
+            Text(stringResource(R.string.compile_launch_title), style = SsType.Title, color = SsColors.TextPrimary)
             val stored = launch.stored
             if (stored != null) {
                 Text(
-                    formatLaunchResult(stored.beforeMs, stored.afterMs, launch.stale),
+                    formatLaunchResult(stored.beforeMs, stored.afterMs, launch.stale).resolve(),
                     style = SsType.Body,
                     color = SsColors.TextBody,
                 )
             }
             if (!launch.launchable && stored == null) {
                 Text(
-                    "This app can't be opened from SideSpeed",
+                    stringResource(R.string.compile_launch_not_launchable),
                     style = SsType.Body,
                     color = SsColors.TextSecondary,
                 )
                 return@Column
             }
             if (launch.launchable && launch.needsBefore) {
+                val label = stringResource(R.string.compile_launch_time_before_after)
                 SsButton(
-                    if (launch.checked) "✓ Time the launch before and after" else "Time the launch before and after",
+                    if (launch.checked) stringResource(R.string.compile_selected, label) else label,
                     onClick = { onCheckedChange(!launch.checked) },
                     enabled = launch.busy == null,
                 )
                 Text(
-                    "Opens the app on screen while timing.",
+                    stringResource(R.string.compile_launch_time_before_after_hint),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
             if (launch.launchable) {
                 SsButton(
-                    "Measure now",
+                    stringResource(R.string.compile_launch_measure_now),
                     onClick = onMeasure,
                     enabled = launch.busy == null,
                     modifier = Modifier.focusRequester(measureFocus),
                 )
                 Text(
-                    "Opens the app on screen twice. Takes a few minutes for large apps.",
+                    stringResource(R.string.compile_launch_measure_hint),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
-            if (launch.busy != null) {
+            val busyText = launch.busy
+            if (busyText != null) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -141,11 +153,12 @@ fun LaunchTimeSection(
                         .padding(12.dp),
                 ) {
                     SsSpinner(24.dp)
-                    Text(launch.busy, style = SsType.Body, color = SsColors.TextBody)
+                    Text(busyText.resolve(), style = SsType.Body, color = SsColors.TextBody)
                 }
             }
-            if (launch.error != null) {
-                Text(launch.error, style = SsType.Body, color = SsColors.DangerCardText)
+            val errorText = launch.error
+            if (errorText != null) {
+                Text(errorText.resolve(), style = SsType.Body, color = SsColors.DangerCardText)
             }
         }
     }

@@ -1,5 +1,9 @@
 package io.github.devjardins.sidespeed.status
 
+import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
+
 /** Which of this TV's own addresses are worth showing, so the user can type one into another device. */
 object TvAddress {
     /** Strict dotted quad (four decimal octets, 0..255) as a long, or null. */
@@ -46,6 +50,8 @@ object TvAddress {
     }
 
     /** "This TV: 192.168.5.140 · 100.123.103.8", or null when there is nothing to show. */
-    fun label(addresses: List<String>): String? =
-        addresses.takeIf { it.isNotEmpty() }?.let { "This TV: " + it.joinToString(" · ") }
+    fun label(addresses: List<String>): UiText? =
+        addresses.takeIf { it.isNotEmpty() }?.let {
+            uiText(R.string.home_tv_address, UiText.Ltr(it.joinToString(" · ")))
+        }
 }

@@ -31,10 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.tools.ManualCheckResult
 import io.github.devjardins.sidespeed.tools.displayVersion
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -82,28 +87,32 @@ fun AboutScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SsButton("‹ Back", onClick = onBack, modifier = Modifier.focusRequester(backFocus))
+                SsButton(stringResource(R.string.common_back), onClick = onBack, modifier = Modifier.focusRequester(backFocus))
                 Spacer(Modifier.width(16.dp))
-                Text("About", style = SsType.Headline, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.about_title), style = SsType.Headline, color = SsColors.TextPrimary)
             }
             SsCard(Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("SideSpeed", style = SsType.Title, color = SsColors.TextPrimary)
-                    Text("Version $versionName", style = SsType.Body, color = SsColors.TextBody)
+                    Text(stringResource(R.string.app_name), style = SsType.Title, color = SsColors.TextPrimary)
+                    Text(
+                        uiText(R.string.about_version, UiText.Ltr(versionName)).resolve(),
+                        style = SsType.Body,
+                        color = SsColors.TextBody,
+                    )
                     SsButton(
-                        "Check for updates",
+                        stringResource(R.string.about_check_for_updates),
                         onClick = { viewModel.checkNow() },
                         enabled = !ui.checking,
                     )
                     // A newer release opens the prompt below instead of a line here;
                     // UpToDate/Failed keep their inline text.
                     val line = when {
-                        ui.checking -> "Checking…"
-                        ui.result is ManualCheckResult.UpToDate -> "You have the latest version."
-                        ui.result is ManualCheckResult.Failed -> "Couldn't reach GitHub. Try again later."
+                        ui.checking -> stringResource(R.string.about_checking)
+                        ui.result is ManualCheckResult.UpToDate -> stringResource(R.string.about_up_to_date)
+                        ui.result is ManualCheckResult.Failed -> stringResource(R.string.about_check_failed)
                         else -> null
                     }
                     line?.let {
@@ -116,14 +125,14 @@ fun AboutScreen(
                     Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Made with ♥ by DevJardins", style = SsType.Body, color = SsColors.TextBody)
-                    Text("devjardins.com", style = SsType.Body, color = SsColors.TextBody)
+                    Text(stringResource(R.string.about_made_by), style = SsType.Body, color = SsColors.TextBody)
+                    Text(UiText.Ltr("devjardins.com").resolve(), style = SsType.Body, color = SsColors.TextBody)
                     Text(
-                        "Support SideSpeed on Ko-fi",
+                        stringResource(R.string.about_support_kofi),
                         style = SsType.Title,
                         color = SsColors.TextPrimary,
                     )
-                    Text("ko-fi.com/devjardins", style = SsType.Body, color = SsColors.TextBody)
+                    Text(UiText.Ltr("ko-fi.com/devjardins").resolve(), style = SsType.Body, color = SsColors.TextBody)
                     // Focusable with no action: this lets the D-pad scroll the QR
                     // into view, like any other focused content on this screen.
                     // The Box sizes itself around the fixed image, so the focus
@@ -142,12 +151,12 @@ fun AboutScreen(
                     ) {
                         Image(
                             qr,
-                            contentDescription = "QR code for ko-fi.com/devjardins",
+                            contentDescription = uiText(R.string.about_kofi_qr_cd, UiText.Ltr("ko-fi.com/devjardins")).resolve(),
                             modifier = Modifier.size(160.dp),
                         )
                     }
                     Text(
-                        "Scan with your phone.",
+                        stringResource(R.string.about_scan_phone),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
@@ -199,16 +208,19 @@ private fun UpdatePromptDialog(
             ) {
                 Text(
                     when (updateState) {
-                        is UpdateUiState.Downloading -> "Downloading… ${(updateState as UpdateUiState.Downloading).percent}%"
-                        is UpdateUiState.Installing -> "Installing… SideSpeed will close and reopen."
-                        else -> "SideSpeed ${displayVersion(tag)} is available"
+                        is UpdateUiState.Downloading -> stringResource(
+                            R.string.update_banner_downloading,
+                            (updateState as UpdateUiState.Downloading).percent,
+                        )
+                        is UpdateUiState.Installing -> stringResource(R.string.update_banner_installing)
+                        else -> uiText(R.string.about_update_available, UiText.Ltr(displayVersion(tag))).resolve()
                     },
                     style = SsType.Title,
                     color = SsColors.TextPrimary,
                 )
                 if (updateState is UpdateUiState.Failed) {
                     Text(
-                        (updateState as UpdateUiState.Failed).reason,
+                        (updateState as UpdateUiState.Failed).reason.resolve(),
                         style = SsType.Body,
                         color = SsColors.TextBody,
                     )
@@ -217,7 +229,7 @@ private fun UpdatePromptDialog(
                     (updateState == UpdateUiState.Available && isBusy)
                 if (showBusyCaption) {
                     Text(
-                        "Available when the current job finishes.",
+                        stringResource(R.string.update_banner_busy),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
@@ -226,7 +238,7 @@ private fun UpdatePromptDialog(
                     when (updateState) {
                         is UpdateUiState.Downloading -> {
                             SsButton(
-                                "Cancel",
+                                stringResource(R.string.update_banner_cancel),
                                 onClick = { selfUpdater.cancel() },
                                 modifier = Modifier.focusRequester(primaryFocus),
                             )
@@ -236,20 +248,20 @@ private fun UpdatePromptDialog(
                         }
                         is UpdateUiState.Failed -> {
                             SsButton(
-                                "Retry",
+                                stringResource(R.string.update_banner_retry),
                                 onClick = onUpdateNow,
                                 modifier = Modifier.focusRequester(primaryFocus),
                             )
-                            SsButton("Later", onClick = onLater)
+                            SsButton(stringResource(R.string.about_update_later), onClick = onLater)
                         }
                         else -> {
                             SsButton(
-                                "Update now",
+                                stringResource(R.string.update_banner_update_now),
                                 onClick = onUpdateNow,
                                 enabled = updateState == UpdateUiState.Available && !isBusy,
                                 modifier = Modifier.focusRequester(primaryFocus),
                             )
-                            SsButton("Later", onClick = onLater)
+                            SsButton(stringResource(R.string.about_update_later), onClick = onLater)
                         }
                     }
                 }

@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.status
 
+import io.github.devjardins.sidespeed.testing.EnglishStrings
+import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.resolve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -29,7 +32,14 @@ class TvAddressTest {
         assertEquals(emptyList<String>(), TvAddress.pick(listOf("1.2.3", "a.b.c.d", "256.1.1.1", "")))
 
     @Test fun labelJoinsUpToNothing() {
-        assertEquals("This TV: 192.168.5.140 · 100.123.103.8", TvAddress.label(listOf("192.168.5.140", "100.123.103.8")))
+        assertEquals(
+            "This TV: 192.168.5.140 · 100.123.103.8",
+            TvAddress.label(listOf("192.168.5.140", "100.123.103.8"))?.english(),
+        )
+        assertEquals(
+            "This TV: \u2066192.168.5.140 · 100.123.103.8\u2069",
+            TvAddress.label(listOf("192.168.5.140", "100.123.103.8"))?.resolve(EnglishStrings, rtl = true),
+        )
         assertNull(TvAddress.label(emptyList()))
     }
 }

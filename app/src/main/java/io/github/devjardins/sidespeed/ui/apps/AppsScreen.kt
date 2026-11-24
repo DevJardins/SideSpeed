@@ -31,15 +31,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsDimens
@@ -92,7 +96,7 @@ fun AppsScreen(
     // on a removed entry.
     val filter = filterFromSaved(filterName)
     // A short note under the filter row, e.g. when a locked box is pressed.
-    var lockedNote by remember { mutableStateOf<String?>(null) }
+    var lockedNote by remember { mutableStateOf<UiText?>(null) }
     LaunchedEffect(lockedNote) {
         if (lockedNote != null) {
             delay(4000)
@@ -111,10 +115,10 @@ fun AppsScreen(
     SsScreen {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SsButton("‹ Back", onClick = onBack)
+                SsButton(stringResource(R.string.common_back), onClick = onBack)
                 Spacer(Modifier.width(16.dp))
                 Text(
-                    "My Apps",
+                    stringResource(R.string.apps_title),
                     style = SsType.Headline,
                     color = SsColors.TextPrimary,
                     maxLines = 1,
@@ -132,12 +136,12 @@ fun AppsScreen(
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                         modifier = if (f == filter) Modifier.focusRequester(filterFocus) else Modifier,
                     ) {
-                        Text(f.label, style = SsType.Body)
+                        Text(stringResource(f.label), style = SsType.Body)
                     }
                 }
             }
             lockedNote?.let {
-                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(it.resolve(), style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             val apps = remember(state.apps, filter) {
                 if (filter == AppsFilter.SIDELOADED) state.apps.filter { it.isSideloaded } else state.apps
@@ -171,8 +175,8 @@ fun AppsScreen(
                 restoreDone = true
             }
             when {
-                state.loading -> Text("Loading apps…", style = SsType.Body, color = SsColors.TextSecondary)
-                apps.isEmpty() -> Text("No apps found.", style = SsType.Body, color = SsColors.TextSecondary)
+                state.loading -> Text(stringResource(R.string.apps_loading), style = SsType.Body, color = SsColors.TextSecondary)
+                apps.isEmpty() -> Text(stringResource(R.string.apps_empty), style = SsType.Body, color = SsColors.TextSecondary)
                 else -> LazyColumn(
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -191,7 +195,7 @@ fun AppsScreen(
                                 // An available update wins: a kept app always has a maintenance pill.
                                 available?.let { Pill(updatePillLabel(it.versionName), PillTone.WARN) }
                                     ?: maintenancePill(app.packageName, maintenanceState)
-                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName]),
+                                    ?: pillFor(state.statusLoading, state.statuses[app.packageName])?.let { Pill(UiText.Res(it.label), it.tone) },
                                 icon,
                                 Modifier.weight(1f)
                                     .focusRequester(rowFocusers.getOrPut(app.packageName) { FocusRequester() }),
@@ -246,9 +250,8 @@ private fun KeepBoxButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSource, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
-    val secondary = remember(last, app.packageName) {
-        last?.let { "compiled " + dateFormat.format(Date(it.epochMs)) } ?: app.packageName
-    }
+    val formattedDate = remember(last) { last?.let { dateFormat.format(Date(it.epochMs)) } }
+    val secondary = formattedDate?.let { stringResource(R.string.apps_row_compiled, it) } ?: app.packageName
     SsRow(onClick = onClick, modifier = modifier) {
         Row(
             Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
@@ -267,9 +270,10 @@ private fun AppRow(app: AppEntry, last: LastCompile?, pill: Pill?, icon: IconSou
 
 @Composable
 fun StatusPill(pill: Pill) {
+    val label = pill.label.resolve()
     when (pill.tone) {
-        PillTone.OK -> SsPill(pill.label, SsColors.OkPillBg, SsColors.OkPillText)
-        PillTone.WARN -> SsPill(pill.label, SsColors.WarnPillBg, SsColors.WarnPillText)
-        PillTone.NEUTRAL -> SsPill(pill.label, SsColors.Button, SsColors.TextSecondary)
+        PillTone.OK -> SsPill(label, SsColors.OkPillBg, SsColors.OkPillText)
+        PillTone.WARN -> SsPill(label, SsColors.WarnPillBg, SsColors.WarnPillText)
+        PillTone.NEUTRAL -> SsPill(label, SsColors.Button, SsColors.TextSecondary)
     }
 }
