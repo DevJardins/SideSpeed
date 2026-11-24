@@ -19,9 +19,57 @@ class TrustedNetworksTest {
     @Test fun differentSubnet() = assertFalse(TrustMatcher.matches(fp(subnet = "192.168.6.0/24"), fp()))
     @Test fun sameSubnetUnnormalisedMatches() = assertTrue(TrustMatcher.matches(fp(subnet = "192.168.5.140/24"), fp()))
     @Test fun disjointDns() = assertFalse(TrustMatcher.matches(fp(dns = setOf("9.9.9.9")), fp()))
-    @Test fun intersectingDns() =
-        assertTrue(TrustMatcher.matches(fp(dns = setOf("b", "c")), fp(dns = setOf("a", "b"))))
-    @Test fun bothDnsEmpty() = assertTrue(TrustMatcher.matches(fp(dns = emptySet()), fp(dns = emptySet())))
+    @Test fun intersectingDnsWithMac() =
+        assertTrue(TrustMatcher.matches(
+            fp(dns = setOf("b", "c"), mac = "aa:bb:cc:dd:ee:ff"),
+            fp(dns = setOf("a", "b"), mac = "aa:bb:cc:dd:ee:ff"),
+        ))
+    @Test fun noMacOverlappingIpv4DnsDoesNotMatch() =
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("192.168.1.1", "8.8.8.8")),
+            fp(dns = setOf("8.8.8.8")),
+        ))
+    @Test fun noMacIdenticalIpv4DnsMatchesInAnyOrderAndWithSpaces() {
+        val spaced = fp(dns = setOf(" 192.168.1.1 ", "8.8.8.8"))
+        val ordered = fp(dns = setOf("8.8.8.8", "192.168.1.1"))
+        assertTrue(TrustMatcher.matches(spaced, ordered))
+        assertTrue(TrustMatcher.matches(ordered, spaced))
+    }
+    @Test fun noMacIdenticalIpv4DnsIgnoresIpv6() {
+        val v4 = setOf("192.168.1.1", "8.8.8.8")
+        assertTrue(TrustMatcher.matches(fp(dns = v4 + "2001:db8::1"), fp(dns = v4 + "fe80::1")))
+        assertTrue(TrustMatcher.matches(fp(dns = v4 + "2001:db8::1"), fp(dns = v4)))
+    }
+    @Test fun noMacWithoutIpv4DnsDoesNotMatch() {
+        assertFalse(TrustMatcher.matches(fp(dns = emptySet()), fp(dns = emptySet())))
+        assertFalse(TrustMatcher.matches(fp(dns = setOf("2001:db8::1")), fp(dns = setOf("2001:db8::1"))))
+        assertFalse(TrustMatcher.matches(fp(dns = setOf("fe80::1")), fp(dns = emptySet())))
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("8.8.8.8", "2001:db8::1")),
+            fp(dns = setOf("2001:db8::1")),
+        ))
+    }
+    @Test fun noMacIgnoresOverlayDnsOnEitherSide() {
+        val saved = fp(dns = setOf("1.1.1.1", "8.8.8.8"))
+        val withOverlay = fp(dns = setOf("100.100.100.100", "1.1.1.1", "8.8.8.8"))
+        assertTrue(TrustMatcher.matches(withOverlay, saved))
+        assertTrue(TrustMatcher.matches(saved, withOverlay))
+    }
+    @Test fun noMacOverlayDnsAloneDoesNotMatch() =
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("100.100.100.100")),
+            fp(dns = setOf("100.100.100.100")),
+        ))
+    @Test fun noMacDifferentServerStillFailsWithOverlayDns() =
+        assertFalse(TrustMatcher.matches(
+            fp(dns = setOf("100.100.100.100", "1.1.1.1", "9.9.9.9")),
+            fp(dns = setOf("1.1.1.1", "8.8.8.8")),
+        ))
+    @Test fun bothDnsEmptyWithMacMatches() =
+        assertTrue(TrustMatcher.matches(
+            fp(dns = emptySet(), mac = "aa:bb:cc:dd:ee:ff"),
+            fp(dns = emptySet(), mac = "aa:bb:cc:dd:ee:ff"),
+        ))
     @Test fun oneDnsEmpty() = assertFalse(TrustMatcher.matches(fp(dns = emptySet()), fp()))
     @Test fun macsDiffer() = assertFalse(TrustMatcher.matches(fp(mac = "aa:bb:cc:dd:ee:01"), fp(mac = "aa:bb:cc:dd:ee:02")))
     @Test fun oneMacMissingIgnored() = assertTrue(TrustMatcher.matches(fp(mac = "aa:bb:cc:dd:ee:01"), fp()))

@@ -41,6 +41,42 @@ class FingerprintParsersTest {
         assertEquals(listOf("1.1.1.1", "8.8.8.8"), FingerprintParsers.macDns(scutil).toList())
     }
 
+    /** Shape taken from `scutil --dns` with Tailscale's supplemental resolver present. */
+    @Test fun macDnsKeepsSupplementalTailscaleResolver() {
+        val tailscale = """
+            DNS configuration
+
+            resolver #1
+              search domain[0] : example.ts.net
+              nameserver[0] : 100.100.100.100
+              nameserver[1] : fd7a:115c:a1e0::53
+              if_index : 21 (utun5)
+              flags    : Supplemental, Request A records, Request AAAA records
+              reach    : 0x00000003 (Reachable,Transient Connection)
+              order    : 101400
+
+            resolver #2
+              nameserver[0] : 1.1.1.1
+              nameserver[1] : 8.8.8.8
+              flags    : Request A records, Request AAAA records
+              reach    : 0x00000002 (Reachable)
+              order    : 200000
+
+            resolver #3
+              domain   : example.ts.net.
+              nameserver[0] : 100.100.100.100
+              nameserver[1] : fd7a:115c:a1e0::53
+              if_index : 21 (utun5)
+              flags    : Supplemental, Request A records, Request AAAA records
+              reach    : 0x00000003 (Reachable,Transient Connection)
+              order    : 101401
+        """.trimIndent()
+        assertEquals(
+            listOf("100.100.100.100", "1.1.1.1", "8.8.8.8"),
+            FingerprintParsers.macDns(tailscale).toList(),
+        )
+    }
+
     @Test fun macArp() {
         val out = "? (192.168.4.1) at 02:42:ac:11:00:02 on en0 ifscope [ethernet]"
         assertEquals("02:42:ac:11:00:02", FingerprintParsers.gatewayMac(out, "192.168.4.1"))
