@@ -198,7 +198,7 @@
     <string name="add_keep_scanning">Keep scanning</string>
     <!-- Button label for a discovered TV while adding it is in progress. Keep both spaces before Adding…. %1$s is the TV IP address. -->
     <string name="add_host_adding">%1$s  Adding…</string>
-    <!-- Instructions for wireless debugging pairing on Android TV / Google TV. Match Android's Wireless debugging settings labels. -->
+    <!-- Instructions for wireless debugging pairing on Android TV / Google TV. Match Android's Wireless debugging settings labels. On Fire TV use the device's own label for the Network debugging setting, not a literal translation. -->
     <string name="pair_steps">On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code.</string>
     <!-- Label above the 6-digit pairing code text field. -->
     <string name="pair_code_label">Pairing code</string>
@@ -228,7 +228,7 @@
     <string name="pair_failed">Pairing did not finish. Check the code and the port, then try again.</string>
     <!-- Scan diagnosis help when at least one TV was found. Keep: SideSpeed -->
     <string name="diag_found">Tap a TV above to add it, or type the address shown in SideSpeed on the TV</string>
-    <!-- Scan diagnosis help when hosts answered without ADB open. Keep: ADB, SideSpeed -->
+    <!-- Scan diagnosis help when hosts answered without ADB open. Keep: ADB, SideSpeed. Use the device's own label for the Network debugging setting on Fire TV. -->
     <string name="diag_no_adb_on_live_hosts">Devices answered on this network, but none has ADB open. Turn on ADB or Network debugging on the TV, accept the prompt, then scan again, or type the address shown in SideSpeed on the TV</string>
     <!-- Scan diagnosis help when only a wireless debugging (TLS) host answered. Keep: SideSpeed -->
     <string name="diag_tls_only">A TV answered over an encrypted connection. Pair it from the list, or type the address shown in SideSpeed on the TV</string>
@@ -300,8 +300,8 @@
     <string name="about_available">SideSpeed Companion %1$s is available.</string>
     <!-- Status line on the About screen when the manual update check fails. Keep: GitHub -->
     <string name="about_check_failed">Couldn't reach GitHub. Try again later.</string>
-    <!-- Status line on About while an app update is downloading. %1$s is a percentage like 42%. -->
-    <string name="about_downloading">Downloading… %1$s</string>
+    <!-- Status line on About while an app update is downloading. %1$d is the percent; the % after the placeholder is literal (reorder for your locale). -->
+    <string name="about_downloading">Downloading… %1$d%</string>
     <!-- Status line on the Android About screen after confirming an update install. -->
     <string name="about_installing">Installing…</string>
     <!-- Primary button on the Android About screen starting an in-app update download and install. -->

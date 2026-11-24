@@ -124,7 +124,7 @@ fun formatActivityElapsed(elapsedMs: Long): String {
 fun lastCaption(label: String, lastMs: Long, nowMs: Long, labelIsLtr: Boolean = false): UiText? {
     if (label.isEmpty() || lastMs <= 0L) return null
     val diff = (nowMs - lastMs).coerceAtLeast(0L)
-    val labelArg: UiText = if (labelIsLtr) UiText.Ltr(label) else UiText.Raw(label)
+    val labelArg: UiText = if (labelIsLtr) UiText.Ltr(label) else UiText.Fsi(label)
     return when {
         diff < 60_000L -> UiText.Res(Res.string.activity_last_just_now, listOf(labelArg))
         diff < 3_600_000L -> {

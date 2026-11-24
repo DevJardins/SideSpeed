@@ -54,8 +54,8 @@ import org.jetbrains.compose.resources.stringResource
 
 /** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
 fun trustBanner(state: CompanionUiState): UiText? =
-    state.trustedNetworkName?.let { UiText.Res(Res.string.home_trust_banner, listOf(UiText.Ltr(it))) }
-        ?: state.tailnet?.takeIf { it.trusted }?.let { UiText.Res(Res.string.home_trust_tailnet_banner, listOf(UiText.Ltr(it.name))) }
+    state.trustedNetworkName?.let { UiText.Res(Res.string.home_trust_banner, listOf(UiText.Fsi(it))) }
+        ?: state.tailnet?.takeIf { it.trusted }?.let { UiText.Res(Res.string.home_trust_tailnet_banner, listOf(UiText.Fsi(it.name))) }
 
 @Composable
 fun HomeScreen(
@@ -189,7 +189,7 @@ fun HomeScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
                                 SsText(
-                                    UiText.Res(Res.string.home_remove_confirm, listOf(UiText.Ltr(tv.name))).resolve(),
+                                    UiText.Res(Res.string.home_remove_confirm, listOf(UiText.Fsi(tv.name))).resolve(),
                                     Ss.caption,
                                     Modifier.weight(1f),
                                 )

@@ -145,7 +145,7 @@ internal fun FinishedRow(done: TvActivity) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (ok) CheckCircle(Ss.accent, Ss.surface) else WarnMark()
         val labelText = if (done.lastLabel.isNotEmpty()) done.lastLabel else UiText.Ltr(done.lastPkg).resolve()
-        val labelArg: UiText = if (done.lastLabel.isNotEmpty()) UiText.Raw(done.lastLabel) else UiText.Ltr(done.lastPkg)
+        val labelArg: UiText = if (done.lastLabel.isNotEmpty()) UiText.Fsi(done.lastLabel) else UiText.Ltr(done.lastPkg)
         SsText(
             if (ok) labelText else UiText.Res(Res.string.activity_compile_failed, listOf(labelArg)).resolve(),
             Ss.body,
@@ -169,7 +169,7 @@ private fun WaitingRow(a: TvActivity) {
 
 @Composable
 private fun InterruptedRow(a: TvActivity) {
-    val labelArg: UiText = if (a.label.isNotEmpty()) UiText.Raw(a.label) else UiText.Ltr(a.pkg)
+    val labelArg: UiText = if (a.label.isNotEmpty()) UiText.Fsi(a.label) else UiText.Ltr(a.pkg)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         WarnMark()
         SsText(

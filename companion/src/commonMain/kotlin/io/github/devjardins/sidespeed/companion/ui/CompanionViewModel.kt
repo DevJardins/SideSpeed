@@ -180,7 +180,7 @@ object Copy {
         UiText.Plural(Res.plurals.add_scan_progress, total, listOf(scanned, total))
 
     fun keptAliveWhileOn(network: String): UiText =
-        UiText.Res(Res.string.home_kept_alive_while_on, listOf(UiText.Ltr(network)))
+        UiText.Res(Res.string.home_kept_alive_while_on, listOf(UiText.Fsi(network)))
 
     /** A saved status shown where the TV can't be checked from here: it may be stale. */
     fun lastSeen(label: UiText): UiText = UiText.Res(Res.string.home_last_seen, listOf(label))
@@ -317,7 +317,7 @@ class CompanionViewModel(
     private val ports: ConnectPortFinder = ConnectPortFinder { null },
     private val linkOffer: LinkOffer = LinkOffer { false },
     private val identity: TvIdentity? = null,
-    private val formatText: suspend (UiText) -> String = { it.resolveSuspend() },
+    private val formatText: suspend (UiText) -> String = { it.resolveSuspend(rtl = false) },
 ) {
     private val overlayGate = overlay?.let(::OverlayGate)
     private val sessions = TvSessions(

@@ -51,7 +51,7 @@ fun FirstRunScreen(
         if (tailnet != null && tailnet.ready) {
             SsCard {
                 SsText(
-                    UiText.Res(Res.string.first_run_tailnet, listOf(UiText.Ltr(tailnet.name))).resolve(),
+                    UiText.Res(Res.string.first_run_tailnet, listOf(UiText.Fsi(tailnet.name))).resolve(),
                     Ss.caption,
                 )
             }

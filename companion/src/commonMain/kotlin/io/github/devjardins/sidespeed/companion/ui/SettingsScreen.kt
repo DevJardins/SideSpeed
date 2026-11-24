@@ -104,7 +104,7 @@ fun SettingsScreen(
                     SsText(
                         UiText.Res(
                             Res.string.settings_tailnet_row,
-                            listOf(UiText.Ltr(o.name), UiText.Ltr(o.tailnet)),
+                            listOf(UiText.Fsi(o.name), UiText.Ltr(o.tailnet)),
                         ).resolve(),
                         modifier = Modifier.weight(1f),
                         maxLines = 1,

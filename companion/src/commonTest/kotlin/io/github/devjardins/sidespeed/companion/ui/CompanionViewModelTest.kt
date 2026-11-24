@@ -45,6 +45,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -127,6 +128,56 @@ class CompanionViewModelTest {
         assertEquals(home, saved.fingerprint)
         assertEquals(false, r.vm.state.value.firstRun)
         assertEquals("Living room", r.vm.state.value.trustedNetworkName)
+    }
+
+    @Test
+    fun emptyTrustedNetworkLabelUsesNumberedDefault() = runTest(UnconfinedTestDispatcher()) {
+        val r = rig(trusted = false)
+        r.vm.trustCurrentNetwork("")
+        assertEquals("Trusted Network 1", r.store.trustedNetworks().single().name)
+        r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
+        r.vm.trustCurrentNetwork("")
+        assertEquals("Trusted Network 2", r.store.trustedNetworks()[1].name)
+    }
+
+    @Test
+    fun blankTvModelUsesAddressInDefaultName() = runTest(UnconfinedTestDispatcher()) {
+        val fake = FakeTvSession(
+            mapOf(
+                TvCommands.SERIAL to "SER-2",
+                TvCommands.MODEL to "",
+                TvCommands.MANUFACTURER to "Amazon",
+                TvCommands.PKG_PATH to "package:$apk",
+                TvCommands.PIDOF to "123",
+                TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
+            ),
+        )
+        val r = rig(trusted = true, fake = fake)
+        r.vm.addSaved("192.168.5.20")
+        runCurrent()
+        assertEquals("TV at 192.168.5.20", r.store.tvs().single().name)
+    }
+
+    @Test
+    fun savedDefaultNamesNeverContainBidiIsolates() = runTest(UnconfinedTestDispatcher()) {
+        val isolate = Regex("[\u2066\u2067\u2068\u2069]")
+        val r = rig(trusted = false)
+        r.vm.trustCurrentNetwork("")
+        assertFalse(isolate.containsMatchIn(r.store.trustedNetworks().single().name))
+        val fake = FakeTvSession(
+            mapOf(
+                TvCommands.SERIAL to "SER-3",
+                TvCommands.MODEL to "",
+                TvCommands.MANUFACTURER to "Amazon",
+                TvCommands.PKG_PATH to "package:$apk",
+                TvCommands.PIDOF to "123",
+                TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
+            ),
+        )
+        val r2 = rig(trusted = true, fake = fake)
+        r2.vm.addSaved("192.168.5.21")
+        runCurrent()
+        assertFalse(isolate.containsMatchIn(r2.store.tvs().single().name))
     }
 
     @Test
