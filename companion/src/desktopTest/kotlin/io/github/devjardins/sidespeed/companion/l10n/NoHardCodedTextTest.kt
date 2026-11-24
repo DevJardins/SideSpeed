@@ -127,7 +127,7 @@ class NoHardCodedTextTest {
                     inner.clear()
                     if (hasLetters.containsMatchIn(chunk) &&
                         !isAllowlisted(relPath, chunk, allowlist) &&
-                        !isTechnicalLiteral(chunk.trim(), line)
+                        !isTechnicalRaw(chunk.trim(), line)
                     ) {
                         hits += "\"\"\"$chunk\"\"\""
                     }
@@ -143,7 +143,7 @@ class NoHardCodedTextTest {
         }
         if (inside && inner.isNotEmpty() && hasLetters.containsMatchIn(inner.toString())) {
             val chunk = inner.toString()
-            if (!isAllowlisted(relPath, chunk, allowlist) && !isTechnicalLiteral(chunk.trim(), line)) {
+            if (!isAllowlisted(relPath, chunk, allowlist) && !isTechnicalRaw(chunk.trim(), line)) {
                 hits += "\"\"\"$chunk\"\"\""
             }
         }
@@ -172,13 +172,23 @@ class NoHardCodedTextTest {
                 violations += "$relPath:${zeroBasedLine + 1}: $hit"
             }
             if (uiDepth == 0 && lineHasUiMarker(line)) {
-                if (line.contains('(')) uiDepth = netParensOutsideStrings(line).coerceAtLeast(1)
+                uiDepth = netParensOutsideStrings(line).coerceAtLeast(0)
             } else if (uiDepth > 0) {
                 uiDepth += netParensOutsideStrings(line)
             }
             if (uiDepth <= 0) uiDepth = 0
         }
         return violations
+    }
+
+    // Raw strings are mostly prose, so only plist, desktop-entry and regex content counts as technical.
+    private fun isTechnicalRaw(unquoted: String, line: String): Boolean {
+        if (line.contains("Regex(")) return true
+        if (unquoted.contains("<?xml") || unquoted.contains("<!DOCTYPE") || unquoted.contains("<plist")) return true
+        if (unquoted.startsWith("<") && unquoted.endsWith(">")) return true
+        if (unquoted.contains("Desktop Entry") || unquoted.contains('=')) return true
+        if (unquoted.contains("\\b(") || unquoted.contains("\\d{") || unquoted.contains("(?<!") || unquoted.contains("\\S")) return true
+        return false
     }
 
     private fun isTechnicalLiteral(unquoted: String, line: String): Boolean {
@@ -243,6 +253,22 @@ class NoHardCodedTextTest {
                     """val tag = "leaked"""",
                 ),
             ).map { it.substringAfterLast(':').trim() },
+        )
+        assertEquals(
+            listOf("\"Save (draft)\""),
+            scanLines(
+                listOf(
+                    """SsButton("Save (draft)", onSave)""",
+                    """    "plain",""",
+                ),
+            ).map { it.substringAfterLast(':').trim() },
+        )
+        assertEquals(
+            listOf("example/Foo.kt:2: \"\"\"Open Settings. Then tap Save.\"\"\""),
+            scanLines(
+                listOf("val steps = \"\"\"", "Open Settings. Then tap Save.", "\"\"\".trimIndent()"),
+                "example/Foo.kt",
+            ),
         )
         assertEquals(0, netParensOutsideStrings("""SsButton("Save (draft)", onSave)"""))
         assertEquals(0, netParensOutsideStrings("""SsText("ok", Ss.body)"""))
