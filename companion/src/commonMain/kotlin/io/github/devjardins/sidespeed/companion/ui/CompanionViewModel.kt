@@ -54,6 +54,7 @@ import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayVerdict
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import io.github.devjardins.sidespeed.companion.upkeep.hardened
 import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -572,7 +573,10 @@ class CompanionViewModel(
         }
         val saved = store.tvs().map { it.address }.toSet()
         // The live address, not the saved one: DHCP moves it, and networks saved before ownIp existed have none.
-        val own = fingerprints.current()?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
+        // This second read can be the first to see the gateway MAC; store it when the record lacks one.
+        val live = fingerprints.current()
+        hardened(store, live)
+        val own = live?.ownIp?.let(Ipv4::parse) ?: trusted.fingerprint.ownIp?.let(Ipv4::parse)
         val gateway = Ipv4.parse(trusted.fingerprint.gatewayIp)
         val scope = when (val c = scanRangeFor(findRange, trusted)) {
             RangeChoice.Invalid -> {
@@ -818,8 +822,7 @@ class CompanionViewModel(
         }
     }
 
-    private suspend fun currentTrusted(): TrustedNetwork? =
-        TrustMatcher.currentTrusted(fingerprints.current(), store.trustedNetworks())
+    private suspend fun currentTrusted(): TrustedNetwork? = hardened(store, fingerprints.current())
 
     /**
      * Whether upkeep could contact [tv] right now: a LAN TV when the current Trusted Network is the one it is
@@ -1075,13 +1078,10 @@ class CompanionViewModel(
     ) {
         val fp = fingerprints.current()
         val networks = store.trustedNetworks()
-        val matched = TrustMatcher.currentTrusted(fp, networks)
-        // A match on a record made before the gateway MAC was read hardens that record.
-        val upgraded = if (fp != null && matched != null) TrustMatcher.upgraded(matched, fp) else null
-        if (upgraded != null) store.saveTrustedNetwork(upgraded)
-        val trusted = upgraded ?: matched
-        // The upgrade above rewrote the record, so the state reads the saved copy.
-        val networksNow = if (upgraded != null) store.trustedNetworks() else networks
+        // A match on a record made before the gateway MAC was read stores that MAC.
+        val trusted = hardened(store, fp)
+        val networksNow = if (trusted != null && networks.firstOrNull { it.id == trusted.id }?.fingerprint != trusted.fingerprint)
+            store.trustedNetworks() else networks
         val overlays = store.trustedOverlays()
         val tailnet = overlay?.source?.snapshot()?.let { snap ->
             TailnetState(snap.tailnet, overlays.any { o -> OverlayTrustMatcher.matches(snap, o) }, snap.running && snap.tun)
