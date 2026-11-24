@@ -27,7 +27,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.about_licence_text
+import io.github.devjardins.sidespeed.companion.resources.common_back
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
+import org.jetbrains.compose.resources.stringResource
 
 enum class Page { HOME, ADD, SETTINGS, ABOUT }
 
@@ -39,7 +44,7 @@ private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 fun CompanionApp(
     vm: CompanionViewModel,
     desktop: Boolean,
-    aboutText: String = "SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.",
+    aboutText: UiText = UiText.Res(Res.string.about_licence_text),
     aboutVersion: String = "",
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
@@ -80,7 +85,7 @@ fun CompanionApp(
                 Screen.FIRST_RUN ->
                     FirstRunScreen(
                         state.currentNetwork, state.tailnet,
-                        { vm.trustCurrentNetwork("Trusted Network 1") }, { vm.trustCurrentOverlay("Tailnet 1") },
+                        { vm.trustCurrentNetwork("") }, { vm.trustCurrentOverlay("") },
                         { dismissedFirstRun = true },
                     )
                 Screen.HOME -> HomeScreen(
@@ -108,7 +113,7 @@ fun CompanionApp(
                 }
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
-                    { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
+                    { vm.trustCurrentNetwork("") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
                 )
@@ -129,7 +134,7 @@ fun CompanionApp(
 @Composable
 fun Header(title: String, onBack: (() -> Unit)? = null, trailing: @Composable () -> Unit = {}) {
     Row(Modifier.padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (onBack != null) SsIconButton(onBack, "Back") { SsGlyph(Glyph.BACK) }
+        if (onBack != null) SsIconButton(onBack, stringResource(Res.string.common_back)) { SsGlyph(Glyph.BACK) }
         SsText(title, Ss.title, Modifier.weight(1f))
         trailing()
     }

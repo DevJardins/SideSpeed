@@ -51,6 +51,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.brand_sidespeed
+import org.jetbrains.compose.resources.stringResource
 
 private const val CLICK_DEBOUNCE_MS = 300L
 
@@ -297,7 +300,7 @@ fun SsSpinner(size: Dp = 16.dp, stroke: Dp? = null) {
 fun SsLogoMark(size: Dp) {
     Image(
         painter = rememberSsLogoPainter(),
-        contentDescription = "SideSpeed",
+        contentDescription = stringResource(Res.string.brand_sidespeed),
         modifier = Modifier.size(size).clip(RoundedCornerShape(percent = 28)),
         contentScale = ContentScale.Crop,
     )

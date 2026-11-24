@@ -6,6 +6,34 @@
     <string name="brand_sidespeed" translatable="false">SideSpeed</string>
     <!-- Retry button label shown after a failed update or TV connection check. -->
     <string name="common_try_again">Try again</string>
+    <!-- Accessibility description for the header back arrow button. -->
+    <string name="common_back">Back</string>
+    <!-- Button cancelling pairing or removing a TV. -->
+    <string name="common_cancel">Cancel</string>
+    <!-- Button submitting a TV address or connect port. -->
+    <string name="common_add">Add</string>
+    <!-- Confirmation button removing a saved TV, network, or tailnet. -->
+    <string name="common_remove">Remove</string>
+    <!-- Button saving a renamed Trusted Network label. -->
+    <string name="common_save">Save</string>
+    <!-- Button confirming the classic ADB warning to start checking a saved TV. -->
+    <string name="common_continue">Continue</string>
+
+    <!-- First run -->
+    <!-- Heading on the first-run screen. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="first_run_title">Choose your Trusted Network</string>
+    <!-- Safety warning: translate the meaning accurately; do not soften. Explains that network scanning is opt-in per chosen network. Keep: SideSpeed Companion -->
+    <string name="first_run_body">SideSpeed Companion only works on networks you choose. It never connects or scans anywhere else.</string>
+    <!-- Summary of the current Wi-Fi or Ethernet network on First Run. %1$s is the router IP, %2$s is the subnet CIDR. -->
+    <string name="first_run_router">Router %1$s · %2$s</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Explains who can reach a TV added over Tailscale. %1$s is the Tailscale tailnet name. Keep: Tailscale -->
+    <string name="first_run_tailnet">Tailscale network %1$s. Anyone who administers it could reach a TV added through it.</string>
+    <!-- Primary button on First Run to trust the current local network. -->
+    <string name="first_run_trust">Trust this network</string>
+    <!-- Button on First Run to trust the current Tailscale network. Keep: Tailscale -->
+    <string name="first_run_use_tailscale">Use Tailscale</string>
+    <!-- Button on First Run to skip trusting any network for now. -->
+    <string name="first_run_not_now">Not now</string>
 
     <!-- Home -->
     <!-- Line under a TV status showing minutes since last check. %1$d is minutes. -->
@@ -61,6 +89,28 @@
     <string name="home_status_check_failed">Stopped: check failed</string>
     <!-- TV card status label before the TV has been checked for the first time. -->
     <string name="home_status_unknown">Not checked yet</string>
+    <!-- Status banner at top of Home when on a Trusted Network. %1$s is the network name. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="home_trust_banner">Trusted Network: %1$s ✓</string>
+    <!-- Status banner at top of Home when only a trusted Tailscale network is connected. %1$s is the tailnet name. -->
+    <string name="home_trust_tailnet_banner">Trusted tailnet: %1$s ✓</string>
+    <!-- Warning banner at top of Home when neither a Trusted Network nor a trusted tailnet is active. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="home_not_trusted">Not on a Trusted Network</string>
+    <!-- Empty state heading on Home when no TVs are saved. -->
+    <string name="home_empty_title">No TVs yet</string>
+    <!-- Empty state explanation on Home. Use the glossary term for Companion. Keep: Fire TV, SideSpeed, Google TV -->
+    <string name="home_empty_body">Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.</string>
+    <!-- Button on Home and heading on Add TV to add a new TV. -->
+    <string name="home_add_tv">Add a TV</string>
+    <!-- Temporary status line on a TV card while Restart now is running. -->
+    <string name="home_restarting">Restarting…</string>
+    <!-- Button on a TV card and desktop tray menu to check and restart the helper immediately. -->
+    <string name="home_restart_now">Restart now</string>
+    <!-- Brief confirmation text shown next to Restart now after the helper restarts. -->
+    <string name="home_restarted">Restarted ✓</string>
+    <!-- Inline confirmation prompt before removing a saved TV. %1$s is the TV name. -->
+    <string name="home_remove_confirm">Remove %1$s?</string>
+    <!-- Button on a TV card asking to remove the saved TV. -->
+    <string name="home_remove_tv">Remove TV</string>
 
     <!-- Live activity -->
     <!-- Caption under an idle TV card when the last compile finished under a minute ago. %1$s is the app name. -->
@@ -80,6 +130,31 @@
         <item quantity="one">Last: %1$s · %2$d d ago</item>
         <item quantity="other">Last: %1$s · %2$d d ago</item>
     </plurals>
+    <!-- Caption on a TV card when the TV app is older than the live-activity provider. Keep: SideSpeed -->
+    <string name="activity_needs_update">Update SideSpeed on the TV to see live compiles.</string>
+    <!-- Caption under the active compile row showing how many apps remain in the queue. %1$d is the count. -->
+    <plurals name="activity_more_waiting">
+        <item quantity="one">%1$d more waiting</item>
+        <item quantity="other">%1$d more waiting</item>
+    </plurals>
+    <!-- Temporary row shown for 2.5 s when a background app compile fails. %1$s is the app name or package. -->
+    <string name="activity_compile_failed">Couldn't compile %1$s</string>
+    <!-- Status row inside a TV card when compiles are queued waiting for the helper process. -->
+    <string name="activity_waiting_helper">Waiting for the helper</string>
+    <!-- Status row inside a TV card when a compile stopped mid-run. %1$s is the app name or package. -->
+    <string name="activity_interrupted">%1$s was interrupted</string>
+    <!-- Caption under an interrupted compile explaining what happens next. Keep: SideSpeed -->
+    <string name="activity_interrupted_note">SideSpeed retries it when the helper is back.</string>
+    <!-- Status row inside a TV card when no compiles are queued or running. -->
+    <string name="activity_all_caught_up">All caught up</string>
+    <!-- Status next to SideSpeed's own row while optimizing itself on the TV. -->
+    <string name="activity_self_optimizing">Optimizing…</string>
+    <!-- Status pill on SideSpeed's own row after self-optimization completes. -->
+    <string name="activity_self_optimized">Optimized</string>
+    <!-- Status pill on SideSpeed's own row before self-optimization runs. -->
+    <string name="activity_self_not_optimized">Not optimized yet</string>
+    <!-- Caption explaining when SideSpeed finishes self-optimization on the TV. -->
+    <string name="activity_self_pending_note">It optimizes itself when you leave it on the TV.</string>
 
     <!-- Add TV and pairing -->
     <!-- Empty state on Add TV after a scan finishes with no new TVs. -->
@@ -113,6 +188,16 @@
         <item quantity="one">Scanned %1$d of %2$d</item>
         <item quantity="other">Scanned %1$d of %2$d</item>
     </plurals>
+    <!-- Button on Add TV that scans the network for TVs. -->
+    <string name="add_find_tvs">Find TVs</string>
+    <!-- Label above the optional CIDR subnet input on Add TV. -->
+    <string name="add_range_label">Range to scan (optional)</string>
+    <!-- Button on Add TV stopping an active network scan. -->
+    <string name="add_stop">Stop</string>
+    <!-- Button on Add TV resuming a stopped or truncated network scan. -->
+    <string name="add_keep_scanning">Keep scanning</string>
+    <!-- Button label for a discovered TV while adding it is in progress. Keep both spaces before Adding…. %1$s is the TV IP address. -->
+    <string name="add_host_adding">%1$s  Adding…</string>
     <!-- Instructions for wireless debugging pairing on Android TV / Google TV. Match Android's Wireless debugging settings labels. -->
     <string name="pair_steps">On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code.</string>
     <!-- Label above the 6-digit pairing code text field. -->
@@ -157,6 +242,40 @@
     <string name="diag_partial">The scan covered only part of the network. Keep scanning to cover the rest, or type the address shown in SideSpeed on the TV</string>
 
     <!-- Settings -->
+    <!-- Title for the Settings screen and accessibility label for the Home Settings button. -->
+    <string name="settings_title">Settings</string>
+    <!-- Card heading in Settings listing saved Trusted Networks. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="settings_trusted_networks">Trusted Networks</string>
+    <!-- Button next to a saved Trusted Network allowing the user to rename it. -->
+    <string name="settings_rename">Rename</string>
+    <!-- Button in Settings to save the current network as trusted. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="settings_add_trusted_network">Add as Trusted Network</string>
+    <!-- Card heading in Settings for trusted Tailscale networks. -->
+    <string name="settings_tailnets">Tailnets</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Explains who can reach TVs over Tailscale. Keep: Tailscale -->
+    <string name="settings_tailnets_note">TVs you add through Tailscale are kept alive wherever Tailscale is connected. Anyone who administers the tailnet can reach them.</string>
+    <!-- Row in Settings listing a saved tailnet. %1$s is the saved label, %2$s is the tailnet name. -->
+    <string name="settings_tailnet_row">%1$s · %2$s</string>
+    <!-- Note shown in Settings when Tailscale is disconnected or unavailable. Keep: Tailscale -->
+    <string name="settings_tailscale_disconnected">Tailscale is not connected.</string>
+    <!-- Card heading in Settings for notification preferences. -->
+    <string name="settings_notifications">Notifications</string>
+    <!-- Switch row label enabling alerts when a TV needs user action or fails. -->
+    <string name="settings_notify_attention">Notify me when a TV needs attention</string>
+    <!-- Card heading in Settings above the background upkeep interval selector. -->
+    <string name="settings_check_every">Check every</string>
+    <!-- Upkeep interval option in minutes (currently 15). %1$d is the minute count. -->
+    <plurals name="settings_interval_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <!-- Upkeep interval option in hours (currently 1). %1$d is the hour count. -->
+    <plurals name="settings_interval_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <!-- Desktop Settings switch row label launching SideSpeed Companion automatically at login. -->
+    <string name="settings_start_at_login">Start when I log in</string>
     <!-- Error when trying to trust a network while disconnected. -->
     <string name="settings_no_network_to_trust">No network to trust</string>
     <!-- Error when trying to trust Tailscale while Tailscale is off or disconnected. Keep: Tailscale -->
@@ -167,8 +286,24 @@
     <string name="tailnet_default_name">Tailnet %1$d</string>
 
     <!-- About and updates -->
-    <!-- Status line on About when the manual update check fails. Keep: GitHub -->
+    <!-- Button in Settings and header title on the About screen. -->
+    <string name="about_title">About and licences</string>
+    <!-- Version line on the About screen. %1$s is the app version string. -->
+    <string name="about_version">Version %1$s</string>
+    <!-- Button on the About screen triggering a manual release check. -->
+    <string name="about_check_updates">Check for updates</string>
+    <!-- Status line on the About screen while checking GitHub releases. -->
+    <string name="about_checking">Checking…</string>
+    <!-- Status line on the About screen when running the newest release. -->
+    <string name="about_up_to_date">You have the latest version.</string>
+    <!-- Status line on the About screen when a newer release exists. %1$s is the version number. Keep: SideSpeed Companion -->
+    <string name="about_available">SideSpeed Companion %1$s is available.</string>
+    <!-- Status line on the About screen when the manual update check fails. Keep: GitHub -->
     <string name="about_check_failed">Couldn't reach GitHub. Try again later.</string>
     <!-- Status line on About while an app update is downloading. %1$s is a percentage like 42%. -->
     <string name="about_downloading">Downloading… %1$s</string>
+    <!-- Status line on the Android About screen after confirming an update install. -->
+    <string name="about_installing">Installing…</string>
+    <!-- Licence and Android robot attribution text on the About screen. Keep: SideSpeed Companion, GPL-3.0, Android, Google, Creative Commons 3.0 Attribution License -->
+    <string name="about_licence_text">SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.</string>
 </resources>

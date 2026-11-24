@@ -27,15 +27,35 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.brand_sidespeed
+import io.github.devjardins.sidespeed.companion.resources.common_add
+import io.github.devjardins.sidespeed.companion.resources.common_cancel
+import io.github.devjardins.sidespeed.companion.resources.common_continue
+import io.github.devjardins.sidespeed.companion.resources.common_remove
+import io.github.devjardins.sidespeed.companion.resources.home_add_tv
+import io.github.devjardins.sidespeed.companion.resources.home_empty_body
+import io.github.devjardins.sidespeed.companion.resources.home_empty_title
+import io.github.devjardins.sidespeed.companion.resources.home_not_trusted
+import io.github.devjardins.sidespeed.companion.resources.home_remove_confirm
+import io.github.devjardins.sidespeed.companion.resources.home_remove_tv
+import io.github.devjardins.sidespeed.companion.resources.home_restart_now
+import io.github.devjardins.sidespeed.companion.resources.home_restarted
+import io.github.devjardins.sidespeed.companion.resources.home_restarting
+import io.github.devjardins.sidespeed.companion.resources.home_trust_banner
+import io.github.devjardins.sidespeed.companion.resources.home_trust_tailnet_banner
+import io.github.devjardins.sidespeed.companion.resources.settings_title
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import org.jetbrains.compose.resources.stringResource
 
 /** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
-fun trustBanner(state: CompanionUiState): String? =
-    state.trustedNetworkName?.let { "Trusted Network: $it ✓" }
-        ?: state.tailnet?.takeIf { it.trusted }?.let { "Trusted tailnet: ${it.name} ✓" }
+fun trustBanner(state: CompanionUiState): UiText? =
+    state.trustedNetworkName?.let { UiText.Res(Res.string.home_trust_banner, listOf(UiText.Ltr(it))) }
+        ?: state.tailnet?.takeIf { it.trusted }?.let { UiText.Res(Res.string.home_trust_tailnet_banner, listOf(UiText.Ltr(it.name))) }
 
 @Composable
 fun HomeScreen(
@@ -91,8 +111,8 @@ fun HomeScreen(
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SsLogoMark(30.dp)
-            SsText("SideSpeed", Ss.title, Modifier.weight(1f))
-            SsIconButton(onSettings, "Settings") { SsGlyph(Glyph.SETTINGS) }
+            SsText(stringResource(Res.string.brand_sidespeed), Ss.title, Modifier.weight(1f))
+            SsIconButton(onSettings, stringResource(Res.string.settings_title)) { SsGlyph(Glyph.SETTINGS) }
         }
         val banner = trustBanner(state)
         val trusted = banner != null
@@ -103,7 +123,7 @@ fun HomeScreen(
         ) {
             SsStatusDot(if (trusted) StatusKind.GOOD else StatusKind.WAITING)
             SsText(
-                banner ?: "Not on a Trusted Network",
+                banner?.resolve() ?: stringResource(Res.string.home_not_trusted),
                 Ss.body.copy(color = if (trusted) Ss.okText else Ss.warnText),
             )
         }
@@ -115,9 +135,11 @@ fun HomeScreen(
         if (state.tvs.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 SsCard {
-                    SsText("No TVs yet", Ss.heading)
-                    SsText("Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.", Ss.caption)
-                    Box(Modifier.padding(top = 8.dp)) { SsButton("Add a TV", onAdd, primary = true) }
+                    SsText(stringResource(Res.string.home_empty_title), Ss.heading)
+                    SsText(stringResource(Res.string.home_empty_body), Ss.caption)
+                    Box(Modifier.padding(top = 8.dp)) {
+                        SsButton(stringResource(Res.string.home_add_tv), onAdd, primary = true)
+                    }
                 }
             }
         } else {
@@ -130,8 +152,12 @@ fun HomeScreen(
                             SsStatusDot(cardDot(tv.status, tv.checkableHere, tv.attention, parked), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        SsText(tv.address, Ss.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        SsText(if (restarting) "Restarting…" else if (tv.checkableHere) tv.statusLabel.resolve() else Copy.lastSeen(tv.statusLabel).resolve())
+                        SsText(UiText.Ltr(tv.address).resolve(), Ss.caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        SsText(
+                            if (restarting) stringResource(Res.string.home_restarting)
+                            else if (tv.checkableHere) tv.statusLabel.resolve()
+                            else Copy.lastSeen(tv.statusLabel).resolve(),
+                        )
                         cardCheckedLine(tv.attention, tv.checkableHere, tv.checkedAtEpochMs, now, parked)
                             ?.let { SsText(it.resolve(), Ss.caption) }
                         tv.note?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.warnText)) }
@@ -146,31 +172,37 @@ fun HomeScreen(
                         if (TvCardAction.RESTART in cardActions(tv)) {
                             Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 SsButton(
-                                    "Restart now",
+                                    stringResource(Res.string.home_restart_now),
                                     { restartingId = tv.id; onRestart(tv.id) },
                                     enabled = restartingId == null && tv.attention == TvAttention.NONE,
                                 )
                                 if (restarting) SsSpinner()
                                 when (messages[tv.id]?.outcome) {
-                                    RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
-                                    RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE.resolve(), Ss.body.copy(color = Ss.warnText))
+                                    RestartOutcome.RESTARTED ->
+                                        SsText(stringResource(Res.string.home_restarted), Ss.body.copy(color = Ss.okText))
+                                    RestartOutcome.NOT_CHECKED ->
+                                        SsText(Copy.NOT_CHECKED_HERE.resolve(), Ss.body.copy(color = Ss.warnText))
                                     else -> Unit
                                 }
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
-                                SsText("Remove ${tv.name}?", Ss.caption, Modifier.weight(1f))
-                                SsButton("Remove", { confirmRemoveId = null; onRemove(tv.id) })
-                                SsButton("Cancel", { confirmRemoveId = null })
+                                SsText(
+                                    UiText.Res(Res.string.home_remove_confirm, listOf(UiText.Ltr(tv.name))).resolve(),
+                                    Ss.caption,
+                                    Modifier.weight(1f),
+                                )
+                                SsButton(stringResource(Res.string.common_remove), { confirmRemoveId = null; onRemove(tv.id) })
+                                SsButton(stringResource(Res.string.common_cancel), { confirmRemoveId = null })
                             } else {
-                                SsButton("Remove TV", { confirmRemoveId = tv.id }, enabled = !restarting)
+                                SsButton(stringResource(Res.string.home_remove_tv), { confirmRemoveId = tv.id }, enabled = !restarting)
                             }
                         }
                     }
                 }
             }
-            SsButton("Add a TV", onAdd, primary = true, modifier = Modifier.fillMaxWidth())
+            SsButton(stringResource(Res.string.home_add_tv), onAdd, primary = true, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -199,7 +231,7 @@ private fun AttentionBlock(
             SsText(Copy.NOT_CONTACTED.resolve(), Ss.caption)
             SsText(Copy.CLASSIC_ACK.resolve(), Ss.caption)
             SsCheckRow(Copy.CLASSIC_ACK_CHECK.resolve(), checked) { checked = it }
-            SsButton("Continue", { onAcknowledge(tv.id) }, enabled = checked)
+            SsButton(stringResource(Res.string.common_continue), { onAcknowledge(tv.id) }, enabled = checked)
         }
         TvAttention.LEGACY_PAIR -> {
             SsText(Copy.NOT_CONTACTED.resolve(), Ss.caption)
@@ -221,7 +253,7 @@ private fun AttentionBlock(
             if (typing) {
                 SsText(Copy.CONNECT_PORT_HINT.resolve(), Ss.caption)
                 SsTextField(port, { port = it }, "37123")
-                SsButton("Add", { onPort(tv.id, port) }, enabled = port.isNotBlank())
+                SsButton(stringResource(Res.string.common_add), { onPort(tv.id, port) }, enabled = port.isNotBlank())
             }
         }
         TvAttention.NONE -> Unit
