@@ -7,6 +7,9 @@ import java.security.SecureRandom
 /** The TV did not prove it holds its secret. The session is already closed. */
 class TvUnproven : Exception("This TV didn't prove it's the one you added")
 
+/** The first serial did not match the saved TV. The session is already closed. */
+class TvWrongDevice : Exception("A different device answered at that address")
+
 /** Writing or proving the secret failed, so the TV was not added. The session is already closed. */
 class TvCheckNotSaved : Exception("SideSpeed couldn't save its check on this TV")
 
@@ -15,7 +18,7 @@ sealed class Prepared {
     /** [enrolled] is true when this call wrote a secret the caller still has to store. */
     data class Ready(val secret: String, val enrolled: Boolean) : Prepared()
 
-    /** The serial did not match, so nothing was written. The session is still open. */
+    /** The serial did not match, so nothing was written. The session is closed. */
     data object WrongDevice : Prepared()
 
     /** The proof failed and the session is closed. */
@@ -78,7 +81,10 @@ class TvIdentity(
             return Prepared.Ready(secret, enrolled = false)
         }
         val serial = session.run(TvCommands.SERIAL).trim()
-        if (serial != tv.serial) return Prepared.WrongDevice
+        if (serial != tv.serial) {
+            session.close()
+            return Prepared.WrongDevice
+        }
         val created = enroll(session) ?: return Prepared.Failed
         return Prepared.Ready(created, enrolled = true)
     }

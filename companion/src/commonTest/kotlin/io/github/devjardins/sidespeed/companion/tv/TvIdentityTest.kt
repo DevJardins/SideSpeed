@@ -106,10 +106,34 @@ class TvIdentityTest {
     @Test fun firstUseDoesNotWriteWhenTheSerialDoesNotMatch() = runBlocking {
         val fake = FakeTvSession(mapOf(TvCommands.SERIAL to "OTHER"))
         val store = InMemoryCompanionStore(listOf(saved(secret = null)))
-        TvSessions(fake.connector(), store, identity = checker(secret, nonce)).open(store.tv("tv-1"))
+        assertFailsWith<TvWrongDevice> {
+            TvSessions(fake.connector(), store, identity = checker(secret, nonce)).open(store.tv("tv-1"))
+        }
         assertEquals(listOf(TvCommands.SERIAL), fake.sent)
         assertNull(store.tv("tv-1").identitySecret)
-        assertFalse(fake.closed)
+        assertTrue(fake.closed)
+    }
+
+    @Test fun aWrongFirstSerialClosesBeforeTheHelperReadsAgain() = runBlocking {
+        val apk = "/data/app/x/base.apk"
+        val fake = FakeTvSession(
+            mapOf(
+                TvCommands.SERIAL to "SER-1",
+                TvCommands.PKG_PATH to "package:$apk",
+                TvCommands.PIDOF to "123",
+                TvCommands.cmdline(123) to "app_process\u0000--apk=$apk",
+            ),
+        )
+        fake.nextAnswers[TvCommands.SERIAL] = ArrayDeque(listOf("OTHER"))
+        val store = InMemoryCompanionStore(listOf(saved(secret = null)))
+        assertFailsWith<TvWrongDevice> {
+            TvSessions(fake.connector(), store, identity = checker(secret, nonce))
+                .open(store.tv("tv-1"))
+                .use { HelperKeeper().visit(it, "SER-1") }
+        }
+        assertEquals(listOf(TvCommands.SERIAL), fake.sent)
+        assertTrue(fake.closed)
+        assertNull(store.tv("tv-1").identitySecret)
     }
 
     private fun String.hexToBytes(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()

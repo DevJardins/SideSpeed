@@ -195,7 +195,8 @@ class TvSessions(
 
     /**
      * Proves [saved] before the caller can send anything. No identity, or no saved TV (an add that has not
-     * been written yet), leaves the session alone.
+     * been written yet), leaves the session alone. A serial that does not match closes the session and
+     * throws [TvWrongDevice]. The caller never receives that session.
      */
     private suspend fun gate(session: TvSession, saved: SavedTv?): TvSession {
         val checker = identity
@@ -213,7 +214,12 @@ class TvSessions(
                 }
                 session
             }
-            Prepared.WrongDevice -> session
+            Prepared.WrongDevice -> {
+                // prepare already closed it. Close again so a caller cannot keep a mismatched session
+                // even if a future prepare forgets to.
+                session.close()
+                throw TvWrongDevice()
+            }
             Prepared.Failed -> throw TvUnproven()
         }
     }

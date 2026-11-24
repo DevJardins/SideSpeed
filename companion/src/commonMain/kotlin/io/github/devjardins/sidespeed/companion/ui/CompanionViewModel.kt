@@ -47,6 +47,7 @@ import io.github.devjardins.sidespeed.companion.tv.TvSessions
 import io.github.devjardins.sidespeed.companion.tv.TvTarget
 import io.github.devjardins.sidespeed.companion.tv.TvUnproven
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
+import io.github.devjardins.sidespeed.companion.tv.TvWrongDevice
 import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
 import io.github.devjardins.sidespeed.companion.upkeep.encryptedMoveAllowed
@@ -686,7 +687,8 @@ class CompanionViewModel(
      * The Home screen appeared (true) or went away (false). Polling runs only while it is visible
      * and the app is in the foreground (see [setForeground]): one pass over the checkable, running
      * TVs every [ACTIVITY_POLL_MS], reusing one ADB session per TV. Three consecutive failures park
-     * a TV until the next visit; unparsable output keeps the previous state. This never runs from
+     * a TV until the next visit; unparsable output keeps the previous state. A mismatched serial at the
+     * gate is one of those failures: that pass sends nothing else. This never runs from
      * background upkeep: upkeep never calls it.
      */
     fun setHomeVisible(visible: Boolean) {
@@ -764,15 +766,23 @@ class CompanionViewModel(
             store.updateTv(tv.id) { it.copy(unproven = true, status = TvStatus.CHECK_FAILED, reach = Reach.UNREACHABLE) }
             parkedTvIds += tv.id
             refresh()
+        } catch (_: TvWrongDevice) {
+            // The gate already closed the session. This pass sends nothing and does not change the saved TV.
+            recordPollFailure(tv.id)
         } catch (_: Exception) {
-            runCatching { pollSessions.remove(tv.id)?.close() }
-            val count = (pollFailures[tv.id] ?: 0) + 1
-            if (count >= MAX_ACTIVITY_FAILURES) {
-                pollFailures.remove(tv.id)
-                parkedTvIds += tv.id
-            } else {
-                pollFailures[tv.id] = count
-            }
+            recordPollFailure(tv.id)
+        }
+    }
+
+    /** One failed activity check. Three in a row park the TV until Home is opened again. */
+    private fun recordPollFailure(id: String) {
+        runCatching { pollSessions.remove(id)?.close() }
+        val count = (pollFailures[id] ?: 0) + 1
+        if (count >= MAX_ACTIVITY_FAILURES) {
+            pollFailures.remove(id)
+            parkedTvIds += id
+        } else {
+            pollFailures[id] = count
         }
     }
 
@@ -1025,6 +1035,10 @@ class CompanionViewModel(
         null
     } catch (e: AdbConnectionLost) {
         refresh(error = Copy.UNREACHABLE)
+        null
+    } catch (_: TvWrongDevice) {
+        // The first serial did not match. Nothing else was sent, and nothing is saved.
+        refresh(error = Copy.DIFFERENT_DEVICE)
         null
     } catch (_: TvUnproven) {
         // Same outcome as a failed check elsewhere: park the TV, save nothing about this pairing, and do not retry.

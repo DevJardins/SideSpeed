@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class UpkeepTest {
@@ -541,6 +542,20 @@ class UpkeepTest {
         store.prompted = listOf(PromptedHost("home", "192.168.5.23", now))
         store.saveTv(tv("b", "192.168.5.51"))
         assertTrue(store.promptedHosts().isEmpty())
+    }
+
+    @Test fun aMismatchedFirstSerialIsWrongDeviceAndSendsNothingElse() = runTest {
+        val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
+        val stranger = runningTv("SER-a")
+        stranger.nextAnswers[TvCommands.SERIAL] = ArrayDeque(listOf("OTHER"))
+        val net = FakeNet().also { it.sessions["192.168.5.50"] = stranger }
+        val identity = TvIdentity("0123456789abcdef") { ByteArray(32) }
+        upkeep(store, net, identity = identity).runOnce(Trigger.BACKGROUND)
+        assertEquals(TvStatus.WRONG_DEVICE, store.tv("a").status)
+        assertEquals(1, store.tv("a").offlineCount)
+        assertNull(store.tv("a").identitySecret)
+        assertEquals(listOf(TvCommands.SERIAL), stranger.sent)
+        assertTrue(stranger.closed)
     }
 
     @Test fun wrongDeviceThreeTimesStartsRefind() = runTest {
