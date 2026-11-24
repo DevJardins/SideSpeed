@@ -51,7 +51,6 @@ class NoHardCodedTextTest {
     @Test
     fun no_sentence_literals_in_kotlin() {
         val sourceRoot = sourceRoot()
-        val notMigrated = readList("/l10n/not-migrated-yet.txt").toSet()
         val allowlist = readList("/l10n/hardcoded-text-allowlist.txt").toSet()
 
         val violations = mutableListOf<String>()
@@ -61,7 +60,7 @@ class NoHardCodedTextTest {
             .sortedBy { it.path }
             .forEach { file ->
                 val relPath = file.relativeTo(sourceRoot).invariantSeparatorsPath
-                if (relPath.startsWith("helper/") || relPath in notMigrated) return@forEach
+                if (relPath.startsWith("helper/")) return@forEach
 
                 file.readLines().forEachIndexed { zeroBasedLine, line ->
                     for (literal in findViolations(line, relPath, allowlist)) {
@@ -73,18 +72,6 @@ class NoHardCodedTextTest {
         assertTrue(
             "Hard-coded sentence literals found (move to strings.xml or allowlist):\n${violations.joinToString("\n")}",
             violations.isEmpty(),
-        )
-    }
-
-    @Test
-    fun not_migrated_list_only_names_existing_files() {
-        val sourceRoot = sourceRoot()
-        val missing = readList("/l10n/not-migrated-yet.txt")
-            .filter { !File(sourceRoot, it).isFile }
-
-        assertTrue(
-            "not-migrated-yet.txt names non-existent files:\n${missing.joinToString("\n")}",
-            missing.isEmpty(),
         )
     }
 

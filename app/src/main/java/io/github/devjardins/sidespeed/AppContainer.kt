@@ -148,7 +148,7 @@ class AppContainer(context: Context) {
      */
     val appUpdater: AppUpdater by lazy {
         // The Compile screen's retry button says "Try again", so the fallback names that.
-        val fallback = FallbackInstaller(appContext, "Try again")
+        val fallback = FallbackInstaller(appContext, R.string.compile_update_try_again)
         AppUpdater(
             download = UpdateDownload(UpdateDownload::httpOpen),
             readApkFacts = { readApkFacts(appContext.packageManager, it) },

@@ -584,4 +584,56 @@
     <string name="setup_reason_adb_unreachable">ADB not reachable</string>
     <!-- Short reason shown after "Last check:" when the helper fails to start after ADB connects. -->
     <string name="setup_reason_helper_not_started">Helper did not start</string>
+
+    <!-- About and self-update -->
+    <!-- Home header address line showing the TV's IP addresses. %1$s is one or more addresses separated by middle dots. -->
+    <string name="home_tv_address">This TV: %1$s</string>
+    <!-- Headline on the About screen. -->
+    <string name="about_title">About</string>
+    <!-- Version line on the About screen. %1$s is the SideSpeed version name. -->
+    <string name="about_version">Version %1$s</string>
+    <!-- Button on About triggering a manual update check. -->
+    <string name="about_check_for_updates">Check for updates</string>
+    <!-- Status line on About while checking GitHub for a newer release. -->
+    <string name="about_checking">Checking…</string>
+    <!-- Status line on About when no newer release is available. -->
+    <string name="about_up_to_date">You have the latest version.</string>
+    <!-- Status line on About when the manual update check fails. Keep: GitHub -->
+    <string name="about_check_failed">Couldn\'t reach GitHub. Try again later.</string>
+    <!-- Credit line on About. Keep: DevJardins -->
+    <string name="about_made_by">Made with ♥ by DevJardins</string>
+    <!-- Donation card title on About. Keep: SideSpeed, Ko-fi -->
+    <string name="about_support_kofi">Support SideSpeed on Ko-fi</string>
+    <!-- Accessibility description for the Ko-fi QR code on About. %1$s is the URL. -->
+    <string name="about_kofi_qr_cd">QR code for %1$s</string>
+    <!-- Caption under the Ko-fi QR code on About. -->
+    <string name="about_scan_phone">Scan with your phone.</string>
+    <!-- Update prompt title on About when a newer SideSpeed release is found. %1$s is the version name. Keep: SideSpeed -->
+    <string name="about_update_available">SideSpeed %1$s is available</string>
+    <!-- Secondary button dismissing the update prompt on About. -->
+    <string name="about_update_later">Later</string>
+    <!-- Error shown when SideSpeed lacks permission to install APKs from unknown sources. %1$s is the retry button label ("Retry" or "Try again"). Keep: SideSpeed -->
+    <string name="update_unknown_sources">Allow SideSpeed to install apps, then press %1$s.</string>
+    <!-- Self-update failure when the GitHub release tag is malformed. -->
+    <string name="update_error_invalid_version">Not a valid release version.</string>
+    <!-- Self-update failure when downloading SHA256SUMS.txt fails. -->
+    <string name="update_error_checksums_download">Could not download the checksums.</string>
+    <!-- Self-update failure when SHA256SUMS.txt has no entry for the downloaded APK. %1$s is the APK file name. -->
+    <string name="update_error_no_checksum_for_file">No checksum found for %1$s.</string>
+    <!-- Update verification failure when no expected SHA-256 checksum was provided. -->
+    <string name="update_verify_no_checksum">No checksum found for this update.</string>
+    <!-- Update verification failure when the downloaded APK hash does not match the expected checksum. -->
+    <string name="update_verify_checksum_mismatch">Checksum mismatch.</string>
+    <!-- Update verification failure when the downloaded APK archive cannot be parsed. -->
+    <string name="update_verify_unreadable_apk">Could not read the downloaded APK.</string>
+    <!-- Update verification failure when the APK package name does not match the expected app. %1$s is the APK package name. -->
+    <string name="update_verify_wrong_package">Wrong package: %1$s.</string>
+    <!-- Update verification failure when the APK version code does not match the catalog entry. -->
+    <string name="update_verify_version_mismatch">Version does not match the update.</string>
+    <!-- Update verification failure when the APK version code is not higher than the installed version. -->
+    <string name="update_verify_not_newer">Not newer than the installed version.</string>
+    <!-- Update verification failure when either the APK or installed app has no readable signing certificate. -->
+    <string name="update_verify_signer_unknown">Signer unknown: refusing the update.</string>
+    <!-- Update verification failure when the APK signing certificates do not match the installed app. -->
+    <string name="update_verify_signer_mismatch">Signer does not match the installed app.</string>
 </resources>

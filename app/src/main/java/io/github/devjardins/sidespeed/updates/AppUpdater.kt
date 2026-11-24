@@ -133,7 +133,7 @@ class AppUpdater(
             )
         ) {
             is VerifyResult.Ok -> Unit
-            is VerifyResult.Rejected -> return fail(UiText.Raw(verdict.reason))
+            is VerifyResult.Rejected -> return fail(verdict.reason)
         }
         _state.value = AppUpdateUiState.Installing
         // A down helper reports HelperDown without touching the APK, so the fallback below

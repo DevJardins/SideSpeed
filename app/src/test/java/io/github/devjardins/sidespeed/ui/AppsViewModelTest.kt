@@ -140,11 +140,11 @@ class AppsViewModelTest {
     @Test fun headerCaptionCombinations() {
         assertEquals(
             "This TV: 192.168.5.140 · 100.79.202.46 · Maintenance: 11 waiting",
-            headerCaption("This TV: 192.168.5.140 · 100.79.202.46", UiText.Raw("Maintenance: 11 waiting"))?.english(),
+            headerCaption(UiText.Raw("This TV: 192.168.5.140 · 100.79.202.46"), UiText.Raw("Maintenance: 11 waiting"))?.english(),
         )
         assertEquals(
             "This TV: 192.168.5.140",
-            headerCaption("This TV: 192.168.5.140", null)?.english(),
+            headerCaption(UiText.Raw("This TV: 192.168.5.140"), null)?.english(),
         )
         assertEquals(
             "Maintenance: 11 waiting",

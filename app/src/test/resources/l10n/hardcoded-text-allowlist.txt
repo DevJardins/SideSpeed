@@ -1,4 +1,20 @@
 # Path relative to app/src/main/java/io/github/devjardins/sidespeed/ and literal, separated by |
 # Format: path|"literal"
+# Every entry must have a reason comment above it (brand-only, debug-only, or never user-visible).
+
+# never user-visible: DateTimeFormatter pattern for timestamps
 ui/tools/SpaceCard.kt|"EEE HH:mm"
+
+# never user-visible: internal exception message mapped to setup_reason_adb_unreachable
 adb/LibAdbBackend.kt|"ADB connection refused"
+
+# never user-visible: internal download exception messages (callers map failures to translated UiText)
+update/UpdateDownload.kt|"Content length ${opened.contentLength} exceeds cap $maxBytes"
+update/UpdateDownload.kt|"Download exceeds cap $maxBytes"
+update/UpdateDownload.kt|"Short body: got $total of ${opened.contentLength}"
+update/UpdateDownload.kt|"Could not move download into place"
+update/UpdateDownload.kt|"Text length ${opened.contentLength} exceeds cap $maxBytes"
+update/UpdateDownload.kt|"Text exceeds cap $maxBytes"
+update/UpdateDownload.kt|"Redirect without Location from $current"
+update/UpdateDownload.kt|"HTTP $code from $current"
+update/UpdateDownload.kt|"Too many redirects from $url"

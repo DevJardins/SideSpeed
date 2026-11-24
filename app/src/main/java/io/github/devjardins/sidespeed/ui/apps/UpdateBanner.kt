@@ -122,7 +122,7 @@ fun UpdateBanner(
                 )
                 if (state is UpdateUiState.Failed) {
                     Text(
-                        state.reason,
+                        state.reason.resolve(),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )

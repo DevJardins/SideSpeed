@@ -1,8 +1,0 @@
-# Files relative to app/src/main/java/io/github/devjardins/sidespeed/ pending migration to strings.xml.
-AppContainer.kt
-status/TvAddress.kt
-ui/about/AboutScreen.kt
-update/FallbackInstaller.kt
-update/SelfUpdater.kt
-update/UpdateDownload.kt
-update/UpdateVerify.kt

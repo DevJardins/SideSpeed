@@ -36,6 +36,7 @@ import io.github.devjardins.sidespeed.ui.apps.headerCaption
 import io.github.devjardins.sidespeed.ui.apps.maintenanceLine
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
+import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsPill
@@ -71,7 +72,7 @@ fun HomeScreen(
     onOpenTools: () -> Unit,
     onOpenAbout: () -> Unit,
     banner: @Composable () -> Unit = {},
-    tvAddress: String? = null,
+    tvAddress: UiText? = null,
     selfCompile: Flow<SelfCompile?>,
     selfVersionCode: Long,
     selfLastUpdateTime: Long,

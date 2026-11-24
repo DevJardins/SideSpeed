@@ -83,12 +83,12 @@ fun maintenanceLine(state: MaintenanceState): UiText? = when {
  * The second header line: the "This TV: …" caption and the maintenance line joined with " · ".
  * Shows whichever exists, or null when neither does.
  */
-fun headerCaption(tvAddress: String?, maintenance: UiText?): UiText? {
-    val tv = tvAddress?.takeIf { it.isNotBlank() }
+fun headerCaption(tvAddress: UiText?, maintenance: UiText?): UiText? {
+    val tv = if (tvAddress is UiText.Raw && tvAddress.text.isBlank()) null else tvAddress
     val line = if (maintenance is UiText.Raw && maintenance.text.isBlank()) null else maintenance
     return when {
-        tv != null && line != null -> uiText(R.string.home_header_caption, UiText.Raw(tv), line)
-        tv != null -> UiText.Raw(tv)
+        tv != null && line != null -> uiText(R.string.home_header_caption, tv, line)
+        tv != null -> tv
         line != null -> line
         else -> null
     }
