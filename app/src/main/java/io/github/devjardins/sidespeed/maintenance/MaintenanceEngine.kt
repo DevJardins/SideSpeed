@@ -10,6 +10,8 @@ import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.ui.text.StringLookup
+import io.github.devjardins.sidespeed.ui.text.resolve
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -52,6 +54,7 @@ class MaintenanceEngine(
     private val badges: suspend (Collection<String>) -> Map<String, StatusBadge> = { emptyMap() },
     private val scope: CoroutineScope,
     private val ownPackage: String,
+    private val strings: StringLookup,
     /** Package with an in-flight launch measurement; never compiled or queued while set. */
     private val measuring: () -> String? = { null },
     /** Fires once per helper down→up transition so a pending restore can retry. */
@@ -220,7 +223,8 @@ class MaintenanceEngine(
                     done[pkg] = app.lastUpdateTime
                     failures.remove(pkg)
                 }
-                store.addHistory(JobRecord(pkg, app.label, clock(), true, JobMessage.SUCCESS.name, JobMessage.SUCCESS.name))
+                val message = JobMessage.SUCCESS.text(null).resolve(strings, rtl = false)
+                store.addHistory(JobRecord(pkg, app.label, clock(), true, message, JobMessage.SUCCESS.name))
             }
             !helperUp() -> {
                 status?.onHelperLost()
@@ -232,7 +236,8 @@ class MaintenanceEngine(
                     ((failures[pkg]?.attempts ?: 0) + 1).also { failures[pkg] = Failure(app.lastUpdateTime, it, false) }
                 }
                 val (jobMessage, detail) = classifyJobFailure(result.outcome)
-                store.addHistory(JobRecord(pkg, app.label, clock(), false, detail ?: jobMessage.name, jobMessage.name, detail))
+                val message = jobMessage.text(detail).resolve(strings, rtl = false)
+                store.addHistory(JobRecord(pkg, app.label, clock(), false, message, jobMessage.name, detail))
                 if (attempts <= maxRetries) {
                     scope.launch {
                         delay(retryDelayMs)

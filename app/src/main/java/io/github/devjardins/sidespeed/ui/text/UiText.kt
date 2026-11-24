@@ -18,6 +18,8 @@ sealed interface UiText {
 
 fun uiText(@StringRes id: Int, vararg args: Any): UiText = UiText.Res(id, args.toList())
 
+fun stringLookup(context: Context): StringLookup = ContextStringLookup(context)
+
 interface StringLookup {
     fun string(@StringRes id: Int, args: Array<Any>): String
     fun plural(@PluralsRes id: Int, count: Int, args: Array<Any>): String

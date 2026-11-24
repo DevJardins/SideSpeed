@@ -67,10 +67,10 @@ fun resultBanner(outcome: CompileOutcome): UiText = when (outcome) {
     CompileOutcome.Failure -> UiText.Res(R.string.compile_result_failure)
     CompileOutcome.ConnectionLost ->
         uiText(R.string.compile_result_failure_detail, UiText.Res(R.string.maint_job_connection_lost))
-    is CompileOutcome.Error -> {
-        val reason = outcome.detail?.takeIf { it.isNotBlank() }?.let(UiText::Raw)
-            ?: UiText.Res(R.string.maint_job_error)
-        uiText(R.string.compile_result_failure_detail, reason)
+    is CompileOutcome.Error -> when {
+        outcome.detail == null -> uiText(R.string.compile_result_failure_detail, UiText.Res(R.string.maint_job_error))
+        outcome.detail.isBlank() -> UiText.Res(R.string.compile_result_failure)
+        else -> uiText(R.string.compile_result_failure_detail, UiText.Raw(outcome.detail))
     }
 }
 

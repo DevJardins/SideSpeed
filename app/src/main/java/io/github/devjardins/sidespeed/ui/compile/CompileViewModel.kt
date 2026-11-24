@@ -117,7 +117,7 @@ class CompileViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            finished = CompileEvent.Finished(false, false, CompileOutcome.Error(e.message?.takeIf { it.isNotEmpty() }))
+            finished = CompileEvent.Finished(false, false, CompileOutcome.Error(e.message))
         }
         val result = finished ?: CompileEvent.Finished(false, false, CompileOutcome.Failure)
         if (result.success) status?.onFinish(pkg.value, label, true)

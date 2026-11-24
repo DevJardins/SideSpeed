@@ -14,6 +14,7 @@ import io.github.devjardins.sidespeed.status.CompilePhase
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
 import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.testing.EnglishStrings
 import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -95,6 +96,7 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false, sta
         badges = { pkgs -> if (badgesFail) error("dumpsys failed") else badges.filterKeys { it in pkgs } },
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
+        strings = EnglishStrings,
         status = status,
         clock = { now },
         measuring = { measuring },
@@ -587,26 +589,32 @@ class MaintenanceEngineTest {
         val byPkg = h.store.historyFlow.value.associateBy { it.pkg }
         assertEquals(JobMessage.SUCCESS.name, byPkg.getValue("ok.app").messageKey)
         assertNull(byPkg.getValue("ok.app").detail)
+        assertEquals("Success", byPkg.getValue("ok.app").message)
         assertEquals("Success", byPkg.getValue("ok.app").display.english())
 
         assertEquals(JobMessage.FAILURE.name, byPkg.getValue("fail.app").messageKey)
         assertNull(byPkg.getValue("fail.app").detail)
+        assertEquals("Failure", byPkg.getValue("fail.app").message)
         assertEquals("Failure", byPkg.getValue("fail.app").display.english())
 
         assertEquals(JobMessage.CONNECTION_LOST.name, byPkg.getValue("conn.lost.app").messageKey)
         assertNull(byPkg.getValue("conn.lost.app").detail)
+        assertEquals("Connection lost", byPkg.getValue("conn.lost.app").message)
         assertEquals("Connection lost", byPkg.getValue("conn.lost.app").display.english())
 
         assertEquals(JobMessage.ERROR.name, byPkg.getValue("ex.msg.app").messageKey)
         assertEquals("boom", byPkg.getValue("ex.msg.app").detail)
+        assertEquals("boom", byPkg.getValue("ex.msg.app").message)
         assertEquals("boom", byPkg.getValue("ex.msg.app").display.english())
 
         assertEquals(JobMessage.ERROR.name, byPkg.getValue("ex.null.app").messageKey)
         assertNull(byPkg.getValue("ex.null.app").detail)
+        assertEquals("Error", byPkg.getValue("ex.null.app").message)
         assertEquals("Error", byPkg.getValue("ex.null.app").display.english())
 
         assertEquals(JobMessage.FAILURE.name, byPkg.getValue("empty.app").messageKey)
         assertNull(byPkg.getValue("empty.app").detail)
+        assertEquals("Failure", byPkg.getValue("empty.app").message)
         assertEquals("Failure", byPkg.getValue("empty.app").display.english())
     }
 }

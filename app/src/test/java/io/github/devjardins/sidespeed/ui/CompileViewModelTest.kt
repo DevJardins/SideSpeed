@@ -1,6 +1,8 @@
 package io.github.devjardins.sidespeed.ui
 
+import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
 import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.CompileRunner
@@ -267,12 +269,36 @@ class CompileViewModelTest {
         assertEquals("com.nuvio.tv", row?.current?.pkg)
         assertEquals("Nuvio", row?.current?.label)
     }
+
+    @Test fun exceptionWithNullMessageShowsFailureErrorBanner() = runTest(timeout = 10.seconds) {
+        val throwingRunner = object : CommandRunner {
+            override fun shell(command: String): Flow<ShellEvent> = kotlinx.coroutines.flow.flow { throw IllegalStateException() }
+        }
+        val v = CompileViewModel(CompileRunner(throwingRunner), StatusChecker(fake()), FakePrefs(), dispatcher)
+        v.start(pkg, CompileMode.SPEED, "Nuvio"); dispatcher.scheduler.advanceUntilIdle()
+        val outcome = v.state.value.result!!.outcome
+        assertEquals(CompileOutcome.Error(null), outcome)
+        assertEquals("Failure: Error", resultBanner(outcome).english())
+    }
+
+    @Test fun exceptionWithEmptyMessageShowsFailureBanner() = runTest(timeout = 10.seconds) {
+        val throwingRunner = object : CommandRunner {
+            override fun shell(command: String): Flow<ShellEvent> = kotlinx.coroutines.flow.flow { throw IllegalStateException("") }
+        }
+        val v = CompileViewModel(CompileRunner(throwingRunner), StatusChecker(fake()), FakePrefs(), dispatcher)
+        v.start(pkg, CompileMode.SPEED, "Nuvio"); dispatcher.scheduler.advanceUntilIdle()
+        val outcome = v.state.value.result!!.outcome
+        assertEquals(CompileOutcome.Error(""), outcome)
+        assertEquals("Failure", resultBanner(outcome).english())
+    }
 }
 
 class ResultBannerTest {
     @Test fun sameMessageIsNotRepeated() {
         assertEquals("Success", resultBanner(CompileOutcome.Success).english())
         assertEquals("Failure", resultBanner(CompileOutcome.Failure).english())
+        assertEquals("Failure", resultBanner(CompileOutcome.Error("")).english())
+        assertEquals("Failure", resultBanner(CompileOutcome.Error("   ")).english())
     }
 
     @Test fun differentMessageIsAppended() {

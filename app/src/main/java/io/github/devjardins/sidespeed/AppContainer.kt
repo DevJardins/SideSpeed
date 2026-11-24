@@ -48,6 +48,7 @@ import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
 import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.DataStoreCompileStatusStore
+import io.github.devjardins.sidespeed.ui.text.stringLookup
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
@@ -287,6 +288,7 @@ class AppContainer(context: Context) {
             badges = { statusChecker.badges(it) },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> }),
             ownPackage = appContext.packageName,
+            strings = stringLookup(appContext),
             measuring = { launchRunner.measuring.value },
             onHelperUp = { appScope.launch { launchRunner.restorePending() } },
             status = compileStatus,
