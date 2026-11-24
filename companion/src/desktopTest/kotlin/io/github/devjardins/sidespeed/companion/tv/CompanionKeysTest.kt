@@ -7,6 +7,7 @@ import java.nio.file.attribute.PosixFilePermissions
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class CompanionKeysTest {
@@ -34,8 +35,24 @@ class CompanionKeysTest {
             } else {
                 println("POSIX permission check skipped: not a POSIX file system")
             }
+
+            val id = CompanionKeys.currentCompanionId()
+            assertEquals(id, CompanionKeys.currentCompanionId())
+            assertTrue(id.matches(Regex("^[0-9a-f]{16}$")))
+            CompanionKeys.ensureReady(dir.resolve("other"))
+            assertNotEquals(id, CompanionKeys.currentCompanionId())
+            CompanionKeys.ensureReady(keyDir)
+            assertEquals(id, CompanionKeys.currentCompanionId())
         } finally {
             dir.deleteRecursively()
         }
+    }
+
+    @Test fun companionIdDependsOnlyOnThePublicKeyBytes() {
+        val one = "one-key".encodeToByteArray()
+        val two = "two-key".encodeToByteArray()
+        assertEquals(CompanionKeys.companionId(one), CompanionKeys.companionId(one))
+        assertNotEquals(CompanionKeys.companionId(one), CompanionKeys.companionId(two))
+        assertTrue(CompanionKeys.companionId(one).matches(Regex("^[0-9a-f]{16}$")))
     }
 }

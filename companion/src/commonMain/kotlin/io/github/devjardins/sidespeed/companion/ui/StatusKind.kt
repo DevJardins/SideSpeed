@@ -25,7 +25,7 @@ enum class StatusKind { GOOD, WAITING, BAD, UNKNOWN }
 
 fun statusKind(s: TvStatus): StatusKind = when (s) {
     TvStatus.RUNNING -> StatusKind.GOOD
-    TvStatus.WAITING_FOR_ALLOW, TvStatus.NEEDS_ATTENTION -> StatusKind.WAITING
+    TvStatus.WAITING_FOR_ALLOW, TvStatus.NEEDS_ATTENTION, TvStatus.CHECK_FAILED -> StatusKind.WAITING
     TvStatus.NOT_RUNNING, TvStatus.OFFLINE, TvStatus.NOT_INSTALLED, TvStatus.WRONG_DEVICE, TvStatus.START_FAILED -> StatusKind.BAD
     TvStatus.UNKNOWN -> StatusKind.UNKNOWN
 }

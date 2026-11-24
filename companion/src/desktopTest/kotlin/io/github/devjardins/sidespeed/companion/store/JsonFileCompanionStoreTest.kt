@@ -239,10 +239,10 @@ class JsonFileCompanionStoreTest {
     }
 
     @Test fun newerFileIsNeverRewrittenAndFlagIsSet() = runBlocking {
-        val original = """{"version":4,"tvs":[{"id":"tv1","name":"TV","address":"192.168.5.50","serial":"S","trustedNetworkId":"net1","status":"RUNNING"}],"trustedNetworks":[],"trustedOverlays":[],"promptedHosts":[],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false}}"""
+        val original = """{"version":5,"tvs":[{"id":"tv1","name":"TV","address":"192.168.5.50","serial":"S","trustedNetworkId":"net1","status":"RUNNING"}],"trustedNetworks":[],"trustedOverlays":[],"promptedHosts":[],"settings":{"notifications":false,"intervalMinutes":15,"startAtLogin":false}}"""
         file.writeText(original)
         val s = JsonFileCompanionStore(dir)
-        assertTrue(s.savedByNewerVersion, "a v4 file sets the newer-data flag")
+        assertTrue(s.savedByNewerVersion, "a v5 file sets the newer-data flag")
         assertEquals(listOf("tv1"), s.tvs().map { it.id }, "a newer file still loads what can be read")
         s.saveTv(tv.copy(id = "tv2", serial = "S2"))
         assertFalse(s.updateTv("tv1") { it.copy(name = "Renamed") })
@@ -265,7 +265,7 @@ class JsonFileCompanionStoreTest {
         assertEquals(original, bak.readText(), "the original v1 file is kept next to the new one")
         assertEquals(null, dir.listFiles()!!.firstOrNull { it.name.endsWith(".v9.bak") }, "only the most recent backup is kept")
         val text = file.readText()
-        assertTrue(text.contains("\"version\":3"), "the upgraded file says v3: $text")
+        assertTrue(text.contains("\"version\":4"), "the upgraded file says v4: $text")
         assertEquals(60, JsonFileCompanionStore(dir).settings().intervalMinutes)
         s.saveSettings(CompanionSettings(intervalMinutes = 30))
         assertEquals(original, bak.readText(), "the backup is taken only on the first save")
@@ -279,7 +279,7 @@ class JsonFileCompanionStoreTest {
         assertFalse(s.savedByNewerVersion)
         s.saveSettings(CompanionSettings())
         assertEquals(original, File(dir, "${JsonFileCompanionStore.FILE_NAME}.v1.bak").readText())
-        assertTrue(file.readText().contains("\"version\":3"))
+        assertTrue(file.readText().contains("\"version\":4"))
     }
 
     @Test fun invalidVersionIsTreatedAsV1() = runBlocking {
@@ -295,7 +295,7 @@ class JsonFileCompanionStoreTest {
         val s = JsonFileCompanionStore(dir)
         s.saveTv(tv)
         s.saveSettings(CompanionSettings(intervalMinutes = 60))
-        assertTrue(file.readText().contains("\"version\":3"), "fresh saves say v3")
+        assertTrue(file.readText().contains("\"version\":4"), "fresh saves say v4")
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") }, "no backup for a current file")
         val r = JsonFileCompanionStore(dir)
         assertFalse(r.savedByNewerVersion)
@@ -303,6 +303,25 @@ class JsonFileCompanionStoreTest {
         r.saveSettings(CompanionSettings(intervalMinutes = 30))
         assertTrue(dir.listFiles()!!.none { it.name.endsWith(".bak") })
         assertEquals(30, JsonFileCompanionStore(dir).settings().intervalMinutes)
+    }
+
+    @Test fun secretRoundTripsAndAnOldFileLoadsWithoutOne() = runBlocking {
+        val secret = "ab".repeat(32)
+        val s = JsonFileCompanionStore(dir)
+        s.saveTv(tv.copy(identitySecret = secret, unproven = true))
+        val loaded = JsonFileCompanionStore(dir).tvs().single()
+        assertEquals(secret, loaded.identitySecret)
+        assertEquals(true, loaded.unproven)
+
+        file.writeText("""{"version":3,"tvs":[{"id":"a","name":"A","address":"1.2.3.4","serial":"S","trustedNetworkId":"n"}],"settings":{}}""")
+        val old = JsonFileCompanionStore(dir).tvs().single()
+        assertEquals(null, old.identitySecret)
+        assertEquals(false, old.unproven)
+
+        file.writeText("""{"version":4,"tvs":[{"id":"a","name":"A","address":"1.2.3.4","serial":"S","trustedNetworkId":"n","identitySecret":"NOPE"}],"settings":{}}""")
+        assertEquals(null, JsonFileCompanionStore(dir).tvs().single().identitySecret)
+        assertFailsWith<IllegalArgumentException> { s.saveTv(tv.copy(identitySecret = "AB".repeat(32))) }
+        Unit
     }
 
     @Test fun fileAndDirectoryAreOwnerOnly() = runBlocking {

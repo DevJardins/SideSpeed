@@ -3,7 +3,12 @@ package io.github.devjardins.sidespeed.companion.store
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.net.TrustedOverlay
 
-enum class TvStatus { RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, NEEDS_ATTENTION, UNKNOWN }
+enum class TvStatus {
+    RUNNING, NOT_RUNNING, OFFLINE, WAITING_FOR_ALLOW, NOT_INSTALLED, WRONG_DEVICE, START_FAILED, NEEDS_ATTENTION,
+    /** The identity check failed. Nothing opens this TV again; the user removes it and adds it again. */
+    CHECK_FAILED,
+    UNKNOWN,
+}
 
 /**
  * How the last check reached a TV: on the home network (a LAN address), over Tailscale (a 100.64.0.0/10
@@ -55,13 +60,26 @@ data class SavedTv(
      * Classic, unacknowledged, until a save says otherwise. Files written before links existed load this way.
      */
     val link: TvLink = TvLink.Classic(ackAtEpochMs = null),
+    /**
+     * 64 lowercase hex characters: the secret this companion wrote on the TV.
+     * Null for a TV saved before the check existed, until the first session that still matches writes one.
+     */
+    val identitySecret: String? = null,
+    /**
+     * The TV failed the check. Nothing connects to it again until the user removes it and adds it again.
+     */
+    val unproven: Boolean = false,
 ) {
     companion object {
         /** @throws IllegalArgumentException if [tv] has a blank id or serial. */
         fun requireValid(tv: SavedTv) {
             require(tv.id.isNotBlank()) { "A saved TV needs an id" }
             require(tv.serial.isNotBlank()) { "A saved TV needs its serial" }
+            val secret = tv.identitySecret
+            require(secret == null || secret.matches(SECRET)) { "A saved TV's secret must be 64 lowercase hex characters" }
         }
+
+        private val SECRET = Regex("^[0-9a-f]{64}$")
     }
 }
 

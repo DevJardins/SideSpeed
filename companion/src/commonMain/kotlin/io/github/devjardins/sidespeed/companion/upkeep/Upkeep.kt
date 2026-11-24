@@ -24,7 +24,10 @@ import io.github.devjardins.sidespeed.companion.tv.HelperKeeper
 import io.github.devjardins.sidespeed.companion.tv.TvAuthPending
 import io.github.devjardins.sidespeed.companion.tv.TvCommands
 import io.github.devjardins.sidespeed.companion.tv.TvConnector
+import io.github.devjardins.sidespeed.companion.tv.TvIdentity
+import io.github.devjardins.sidespeed.companion.tv.TvSession
 import io.github.devjardins.sidespeed.companion.tv.TvSessions
+import io.github.devjardins.sidespeed.companion.tv.TvUnproven
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.VisitResult
 import io.github.devjardins.sidespeed.companion.tv.open
@@ -71,8 +74,9 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   once `offlineCount >= 3` and an hour has passed since the last re-find (or the clock moved back), scan the
  *   Trusted Network's subnet for port 5555 (starting around the TV's last address), keep only usable host
  *   addresses inside it, open each host not recently prompted, read only [TvCommands.SERIAL], close, and take
- *   the first host whose serial equals the saved one. The
- *   address is updated and the TV visited there. Hosts with another serial get nothing else.
+ *   the first host whose serial equals the saved one and, when a secret is in use, whose proof
+ *   passes. The address is updated and the TV visited there. Hosts with another serial get nothing else.
+ *   A matching serial that fails the proof parks the TV; it is not treated as found.
  *   `lastRefindEpochMs` is set whenever the scan runs.
  * - [TvAuthPending] is [TvStatus.WAITING_FOR_ALLOW] and sets the skip flag; the TV answered, so `offlineCount`
  *   resets.
@@ -85,6 +89,7 @@ data class UpkeepReport(val gated: Boolean, val visited: Map<String, TvStatus>, 
  *   (`adb-<serial>-` plus a suffix). The new address and port are saved only while [gateOpen] is open,
  *   the host is a private IPv4 address, the connection works, and the serial there matches. A mismatch
  *   saves nothing.
+ * - A failed proof is [TvStatus.CHECK_FAILED]. The TV is parked and is not opened again.
  *
  * Runs are serialised: a second [runOnce] waits for the first.
  */
@@ -97,6 +102,7 @@ class Upkeep(
     private val overlay: OverlayAccess? = null,
     private val ports: ConnectPortFinder = ConnectPortFinder { null },
     private val classicTls: suspend (String) -> Boolean = { false },
+    private val identity: TvIdentity? = null,
     private val clock: () -> Long,
 ) {
     private val mutex = Mutex()
@@ -108,6 +114,7 @@ class Upkeep(
         ports,
         clock,
         relocateAllowed = { encryptedMoveAllowed(fingerprints, store, it.id) },
+        identity = identity,
     )
 
     private sealed interface Attempt {
@@ -116,12 +123,14 @@ class Upkeep(
         data object AuthPending : Attempt
         data object Lost : Attempt
         data object NeedsAttention : Attempt
+        data object Unproven : Attempt
     }
 
     private sealed interface Refind {
         data class Found(val host: String) : Refind
         data object NotFound : Refind
         data object GateClosed : Refind
+        data object Unproven : Refind
     }
 
     /**
@@ -157,6 +166,8 @@ class Upkeep(
             // Fresh copy: the user may have removed or edited it since the run started.
             val saved = store.tvs().firstOrNull { it.id == id } ?: continue
             if (saved.trustedNetworkId !in scopeIds || saved.serial.isBlank()) continue
+            // A failed proof is not retried. The user removes the TV and adds it again.
+            if (saved.unproven) continue
             if (saved.skipBackgroundUntilUserAction && !userAction) continue
 
             val checked = if (tailnet != null && saved.trustedNetworkId == tailnet.id) {
@@ -224,6 +235,7 @@ class Upkeep(
         skipBackgroundUntilUserAction = result.skipBackgroundUntilUserAction,
         reach = result.reach,
         address = if (result.address != before.address && current.address == before.address) result.address else current.address,
+        unproven = result.unproven,
     )
 
     /** Checks one TV and, when due, re-finds it. */
@@ -242,9 +254,12 @@ class Upkeep(
         return when (val r = refind(scanned, trusted, now)) {
             Refind.NotFound -> Checked(scanned)
             Refind.GateClosed -> Checked(scanned, gateClosed = true)
+            Refind.Unproven -> Checked(scanned.copy(unproven = true, status = TvStatus.CHECK_FAILED))
             is Refind.Found -> {
-                // The serial matched, so the new address is safe to keep even if the visit can't happen now.
-                val moved = scanned.copy(address = r.host)
+                // The proof passed, so the new address is safe to keep even if the visit can't happen now.
+                // Reload the secret a proof just stored; [scanned] was copied before that write.
+                val secretNow = store.tvs().firstOrNull { it.id == scanned.id }?.identitySecret
+                val moved = scanned.copy(address = r.host, identitySecret = secretNow ?: scanned.identitySecret)
                 if (!gateOpen(trusted)) return Checked(moved, gateClosed = true)
                 Checked(apply(moved, attempt(moved), now, restarted, dialled = r.host))
             }
@@ -272,6 +287,7 @@ class Upkeep(
         val seen = mutableSetOf<String>()
         var found: String? = null
         var gateClosed = false
+        var failedProof = false
         try {
             coroutineScope {
                 // The sweep can run a minute; leaving the network stops it instead of connecting from it.
@@ -298,19 +314,26 @@ class Upkeep(
                             sweep.cancel(CancellationException("no longer on the trusted network"))
                             return@collect
                         }
-                        val serial = try {
-                            connector.open(host).use { it.run(TvCommands.SERIAL) }
+                        val outcome = try {
+                            connector.open(host).use { session -> hostOutcome(session, tv) }
                         } catch (e: TvUnreachable) {
-                            return@collect
+                            HostOutcome.Miss
                         } catch (e: TvAuthPending) {
                             rememberPrompted(trusted.id, host, now)
-                            return@collect
+                            HostOutcome.Miss
                         } catch (e: AdbConnectionLost) {
-                            return@collect
+                            HostOutcome.Miss
                         }
-                        if (serial.isNotEmpty() && serial == tv.serial) {
-                            found = host
-                            sweep.cancel(CancellationException("serial matched; sweep no longer needed"))
+                        when (outcome) {
+                            HostOutcome.Miss -> Unit
+                            HostOutcome.Unproven -> {
+                                failedProof = true
+                                sweep.cancel(CancellationException("serial matched but the proof failed"))
+                            }
+                            HostOutcome.Match -> {
+                                found = host
+                                sweep.cancel(CancellationException("serial matched; sweep no longer needed"))
+                            }
                         }
                     }
                 } finally {
@@ -318,13 +341,34 @@ class Upkeep(
                 }
             }
         } catch (e: CancellationException) {
-            if (found == null && !gateClosed) throw e
+            if (found == null && !gateClosed && !failedProof) throw e
         }
+        if (failedProof) return Refind.Unproven
         if (gateClosed) return Refind.GateClosed
         val match = found
         if (match != null) return Refind.Found(match)
         return Refind.NotFound
     }
+
+    /** Serial first, so a stranger never receives a secret. A match still has to pass the proof. */
+    private suspend fun hostOutcome(session: TvSession, tv: SavedTv): HostOutcome {
+        val serial = session.run(TvCommands.SERIAL).trim()
+        if (serial.isEmpty() || serial != tv.serial) return HostOutcome.Miss
+        val checker = identity ?: return HostOutcome.Match
+        val secret = checker.acceptMatched(session, tv) ?: return HostOutcome.Unproven
+        if (tv.identitySecret == null) {
+            store.updateTv(tv.id) { current ->
+                if (current.identitySecret == null && current.serial == tv.serial) {
+                    current.copy(identitySecret = secret, unproven = false)
+                } else {
+                    current
+                }
+            }
+        }
+        return HostOutcome.Match
+    }
+
+    private enum class HostOutcome { Miss, Match, Unproven }
 
     private suspend fun rememberPrompted(networkId: String, host: String, now: Long) {
         if (store.savedByNewerVersion) return
@@ -346,6 +390,8 @@ class Upkeep(
         Attempt.NeedsAttention
     } catch (e: EncryptedPortUnknown) {
         Attempt.NeedsAttention
+    } catch (e: TvUnproven) {
+        Attempt.Unproven
     }
 
     /**
@@ -382,6 +428,12 @@ class Upkeep(
             Attempt.NeedsAttention -> tv.copy(
                 status = TvStatus.NEEDS_ATTENTION,
                 skipBackgroundUntilUserAction = false,
+                lastCheckedEpochMs = now,
+                reach = Reach.UNREACHABLE,
+            )
+            Attempt.Unproven -> tv.copy(
+                unproven = true,
+                status = TvStatus.CHECK_FAILED,
                 lastCheckedEpochMs = now,
                 reach = Reach.UNREACHABLE,
             )

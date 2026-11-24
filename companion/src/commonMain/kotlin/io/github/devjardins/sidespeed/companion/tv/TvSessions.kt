@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.companion.store.CompanionStore
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import kotlinx.coroutines.CancellationException
+import java.util.concurrent.ConcurrentHashMap
 
 /** How long a classic address that offered no encrypted connection stays remembered. */
 private const val NO_ENCRYPTED_OFFER_MS = 10 * 60 * 1000L
@@ -56,25 +57,37 @@ class TvSessions(
     private val ports: ConnectPortFinder = ConnectPortFinder { null },
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val relocateAllowed: suspend (TvTarget) -> Boolean = { false },
+    private val identity: TvIdentity? = null,
 ) {
     /** Address to the instant a remembered "no encrypted offer" result expires. A positive offer is never stored. */
-    private val noEncryptedOfferUntil = mutableMapOf<String, Long>()
+    private val noEncryptedOfferUntil = ConcurrentHashMap<String, Long>()
 
-    suspend fun open(tv: SavedTv): TvSession = open(tv.toTarget())
+    suspend fun open(tv: SavedTv): TvSession = open(tv.toTarget(), tv)
 
-    suspend fun open(target: TvTarget): TvSession = when (val link = target.link) {
-        is TvLink.Classic -> openClassic(target, link)
-        is TvLink.Encrypted -> openEncrypted(target, link)
+    suspend fun open(target: TvTarget): TvSession = open(target, saved = null)
+
+    /**
+     * A parked TV is refused here, before any connection, for every caller: upkeep, the activity poll,
+     * and a user action that still has the saved id.
+     */
+    private suspend fun open(target: TvTarget, saved: SavedTv?): TvSession {
+        if (saved?.unproven == true || store.tvs().any { it.id == target.id && it.unproven }) throw TvUnproven()
+        return openLink(target, saved)
     }
 
-    private suspend fun openClassic(target: TvTarget, link: TvLink.Classic): TvSession {
+    private suspend fun openLink(target: TvTarget, saved: SavedTv?): TvSession = when (val link = target.link) {
+        is TvLink.Classic -> openClassic(target, link, saved)
+        is TvLink.Encrypted -> openEncrypted(target, link, saved)
+    }
+
+    private suspend fun openClassic(target: TvTarget, link: TvLink.Classic, saved: SavedTv?): TvSession {
         if (link.ackAtEpochMs == null) throw ClassicNotAcknowledged()
         if (!rememberedNoEncryptedOffer(target.address)) {
             val offered = classicTls(target.address) || ports.find(target.address) != null
             if (offered) throw EncryptedAvailable()
             noEncryptedOfferUntil[target.address] = clock() + NO_ENCRYPTED_OFFER_MS
         }
-        return connector.open(target.address, TvConnector.DEFAULT_PORT)
+        return gate(connector.open(target.address, TvConnector.DEFAULT_PORT), saved)
     }
 
     /** True while a recent check found no encrypted offer for [address]. A positive result is never remembered. */
@@ -83,11 +96,11 @@ class TvSessions(
         return clock() < until
     }
 
-    private suspend fun openEncrypted(target: TvTarget, link: TvLink.Encrypted): TvSession {
+    private suspend fun openEncrypted(target: TvTarget, link: TvLink.Encrypted, saved: SavedTv?): TvSession {
         val last = link.lastPort?.takeIf { usableEncryptedPort(it) }
         if (last != null) {
             try {
-                return connector.open(target.address, last)
+                return gate(connector.open(target.address, last), saved)
             } catch (e: TvUnreachable) {
                 // The saved port is stale. Look up the one the TV is advertising now.
             }
@@ -107,18 +120,22 @@ class TvSessions(
             store.updateTv(target.id) { current ->
                 if (current.link is TvLink.Encrypted) current.copy(link = TvLink.Encrypted(found)) else current
             }
-            return session
+            return gate(session, saved)
         }
         if (listed == null) throw EncryptedPortUnknown()
-        return openMovedEncrypted(target, listed)
+        return openMovedEncrypted(target, listed, saved)
     }
 
     /**
      * The saved address is not advertising. Accept a different private host only when the caller's
      * gate is open and the device there reports the saved serial.
      */
-    private suspend fun openMovedEncrypted(target: TvTarget, services: List<TlsConnectService>): TvSession {
-        val saved = store.tvs().firstOrNull { it.id == target.id } ?: throw EncryptedPortUnknown()
+    private suspend fun openMovedEncrypted(
+        target: TvTarget,
+        services: List<TlsConnectService>,
+        hinted: SavedTv?,
+    ): TvSession {
+        val saved = hinted ?: store.tvs().firstOrNull { it.id == target.id } ?: throw EncryptedPortUnknown()
         val match = serviceForSerial(saved.serial, services) ?: throw EncryptedPortUnknown()
         if (!usableEncryptedPort(match.port) || match.host == target.address) throw EncryptedPortUnknown()
         val ip = Ipv4.parse(match.host)
@@ -128,6 +145,12 @@ class TvSessions(
             connector.open(match.host, match.port)
         } catch (e: TvUnreachable) {
             throw EncryptedPortUnknown()
+        }
+        val checker = identity
+        // A TV that already has a secret proves it before the serial is read.
+        if (checker != null && saved.identitySecret != null && !checker.prove(session, saved.identitySecret)) {
+            session.close()
+            throw TvUnproven()
         }
         val serial = try {
             session.run(TvCommands.SERIAL).trim()
@@ -142,6 +165,20 @@ class TvSessions(
             session.close()
             throw EncryptedPortUnknown()
         }
+        if (checker != null && saved.identitySecret == null) {
+            if (saved.unproven) {
+                session.close()
+                throw TvUnproven()
+            }
+            val created = checker.enroll(session) ?: throw TvUnproven()
+            store.updateTv(saved.id) { current ->
+                if (current.identitySecret == null && current.serial == saved.serial) {
+                    current.copy(identitySecret = created, unproven = false)
+                } else {
+                    current
+                }
+            }
+        }
         store.updateTv(target.id) { current ->
             if (current.link is TvLink.Encrypted && current.serial == saved.serial && current.address == target.address) {
                 current.copy(address = match.host, link = TvLink.Encrypted(match.port))
@@ -150,6 +187,31 @@ class TvSessions(
             }
         }
         return session
+    }
+
+    /**
+     * Proves [saved] before the caller can send anything. No identity, or no saved TV (an add that has not
+     * been written yet), leaves the session alone.
+     */
+    private suspend fun gate(session: TvSession, saved: SavedTv?): TvSession {
+        val checker = identity
+        if (checker == null || saved == null) return session
+        return when (val prepared = checker.prepare(session, saved)) {
+            is Prepared.Ready -> {
+                if (prepared.enrolled) {
+                    store.updateTv(saved.id) { current ->
+                        if (current.identitySecret == null) {
+                            current.copy(identitySecret = prepared.secret, unproven = false)
+                        } else {
+                            current
+                        }
+                    }
+                }
+                session
+            }
+            Prepared.WrongDevice -> session
+            Prepared.Failed -> throw TvUnproven()
+        }
     }
 
     private fun usableEncryptedPort(port: Int): Boolean =

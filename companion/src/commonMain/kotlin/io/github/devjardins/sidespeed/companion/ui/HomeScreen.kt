@@ -135,17 +135,19 @@ fun HomeScreen(
                         if (tv.attention != TvAttention.NONE) {
                             AttentionBlock(tv, state.pairing, onAcknowledge, onPair, onRestart, onPort, onSubmitPair, onSubmitConnectPort, onCancelPair)
                         }
-                        Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            SsButton(
-                                "Restart now",
-                                { restartingId = tv.id; onRestart(tv.id) },
-                                enabled = restartingId == null && tv.attention == TvAttention.NONE,
-                            )
-                            if (restarting) SsSpinner()
-                            when (messages[tv.id]?.outcome) {
-                                RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
-                                RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE, Ss.body.copy(color = Ss.warnText))
-                                else -> Unit
+                        if (TvCardAction.RESTART in cardActions(tv)) {
+                            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                SsButton(
+                                    "Restart now",
+                                    { restartingId = tv.id; onRestart(tv.id) },
+                                    enabled = restartingId == null && tv.attention == TvAttention.NONE,
+                                )
+                                if (restarting) SsSpinner()
+                                when (messages[tv.id]?.outcome) {
+                                    RestartOutcome.RESTARTED -> SsText("Restarted ✓", Ss.body.copy(color = Ss.okText))
+                                    RestartOutcome.NOT_CHECKED -> SsText(Copy.NOT_CHECKED_HERE, Ss.body.copy(color = Ss.warnText))
+                                    else -> Unit
+                                }
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

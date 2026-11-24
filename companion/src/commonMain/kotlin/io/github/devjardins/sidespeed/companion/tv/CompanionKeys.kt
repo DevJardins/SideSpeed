@@ -4,6 +4,8 @@ import com.flyfishxu.kadb.cert.KadbCert
 import com.flyfishxu.kadb.cert.KadbPrivateKeyStore
 import java.io.File
 import java.io.IOException
+import java.security.MessageDigest
+import java.security.cert.CertificateFactory
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
@@ -29,6 +31,22 @@ object CompanionKeys {
             configuredFor = file.path
         }
         KadbCert.ensureReady()
+    }
+
+    /**
+     * First 16 hex characters of the SHA-256 of [publicKey] (the key's encoded form, not the certificate
+     * wrapped around it). Phone and desktop each get their own id, so each gets its own file on the TV.
+     */
+    fun companionId(publicKey: ByteArray): String {
+        require(publicKey.isNotEmpty()) { "public key is empty" }
+        return MessageDigest.getInstance("SHA-256").digest(publicKey).toHex().take(16)
+    }
+
+    /** The id of the key [ensureReady] last configured. The same key always produces the same id. */
+    fun currentCompanionId(): String {
+        val pem = KadbCert.exportIdentityOrNull()?.certificatePem ?: error("Companion key is not ready")
+        val cert = CertificateFactory.getInstance("X.509").generateCertificate(pem.inputStream())
+        return companionId(cert.publicKey.encoded)
     }
 }
 
