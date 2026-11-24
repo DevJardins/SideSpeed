@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.companion.discovery.AdbProbe
 import io.github.devjardins.sidespeed.companion.discovery.ConnectPortFinder
+import io.github.devjardins.sidespeed.companion.discovery.TlsConnectService
 import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.FakeLan
@@ -1092,5 +1093,42 @@ class CompanionViewModelTest {
         r.vm.acknowledgeClassic("tv-1")
         assertEquals(TvLink.Classic(1_000_000L), r.store.tv("tv-1").link)
         assertTrue(r.fake.opened.any { it == "192.168.5.20:5555" })
+    }
+
+    @Test fun homeSavesAnEncryptedTvThatMovedWhenTheSerialMatches() = runTest(UnconfinedTestDispatcher()) {
+        val session = tv().also { it.outputs[TvCommands.STATUS_QUERY] = compilingRow }
+        val opened = mutableListOf<String>()
+        val connector = TvConnector { address, port ->
+            opened += "$address:$port"
+            if (address == "192.168.5.20") throw io.github.devjardins.sidespeed.companion.tv.TvUnreachable(null)
+            session
+        }
+        val services = listOf(
+            TlsConnectService("192.168.5.88", 38_001, "adb-SER-11-cccccc"),
+            TlsConnectService("192.168.8.40", 39_001, "adb-SER-1-bbbbbb"),
+        )
+        val ports = object : ConnectPortFinder {
+            override suspend fun find(host: String) = services.firstOrNull { it.host == host }?.port
+            override suspend fun servicesFor(host: String): List<TlsConnectService> = services
+        }
+        val store = InMemoryCompanionStore(networks = listOf(homeNet))
+        store.saveTv(
+            SavedTv("tv-1", "Cube", "192.168.5.20", "SER-1", "home", status = TvStatus.RUNNING, link = TvLink.Encrypted(37_000)),
+        )
+        val source = FingerprintSource { home }
+        val upkeep = Upkeep(store, source, connector, HelperKeeper(), TcpScanner(), ports = ports) { 1_000_000L }
+        val vm = CompanionViewModel(
+            store, source, upkeep, connector, Discovery(listOf(SweepSource), FakeLan()), this,
+            { 1_000_000L }, { "tv-1" }, ports = ports,
+        )
+        vm.refreshNow()
+        runCurrent()
+        vm.setHomeVisible(true)
+        runCurrent()
+        assertEquals("192.168.8.40", store.tv("tv-1").address)
+        assertEquals(TvLink.Encrypted(39_001), store.tv("tv-1").link)
+        assertEquals(listOf("192.168.5.20:37000", "192.168.8.40:39001"), opened)
+        vm.setHomeVisible(false)
+        runCurrent()
     }
 }

@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.companion.upkeep
 
+import io.github.devjardins.sidespeed.companion.discovery.ConnectPortFinder
+import io.github.devjardins.sidespeed.companion.discovery.TlsConnectService
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
@@ -63,10 +65,12 @@ class UpkeepTest {
         val wrappers = mutableMapOf<String, TvSession>()
         val opened = mutableListOf<String>()
         var onOpen: suspend (String) -> Unit = {}
+        /** Encrypted visits dial a wireless-debugging port. Classic visits still have to use 5555. */
+        var anyPort = false
         val connector = TvConnector { address, port ->
             opened += address
             onOpen(address)
-            assertEquals(TvConnector.DEFAULT_PORT, port)
+            if (!anyPort) assertEquals(TvConnector.DEFAULT_PORT, port)
             val s = sessions[address] ?: throw TvUnreachable(null)
             s.connector().open(address, port)
             wrappers[address] ?: s
@@ -102,7 +106,11 @@ class UpkeepTest {
         net: FakeNet,
         scanner: FakeScanner = FakeScanner(),
         source: FingerprintSource = FingerprintSource { home },
-    ) = Upkeep(store, source, net.connector, HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), scanner) { now }
+        ports: ConnectPortFinder = ConnectPortFinder { null },
+    ) = Upkeep(
+        store, source, net.connector, HelperKeeper(pollIntervalMs = 100, pollTimeoutMs = 1_000), scanner,
+        ports = ports,
+    ) { now }
 
     @Test fun untrustedFingerprintIsGated() = runTest {
         val store = InMemoryCompanionStore(listOf(tv("a", "192.168.5.50")), listOf(homeNet))
@@ -661,5 +669,54 @@ class UpkeepTest {
         assertTrue(scanner.calls.isEmpty())
         assertEquals(TvStatus.NEEDS_ATTENTION, store.tv("a").status)
         assertEquals(false, store.tv("a").skipBackgroundUntilUserAction)
+    }
+
+    @Test fun anEncryptedTvWhoseAddressChangedIsSavedWhenTheSerialMatches() = runTest {
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(37_000))),
+            listOf(homeNet),
+        )
+        val found = runningTv("SER-a")
+        val net = FakeNet().also {
+            it.anyPort = true
+            it.sessions["192.168.5.77"] = found
+        }
+        val scanner = FakeScanner(listOf("192.168.5.90"))
+        val services = listOf(
+            TlsConnectService("192.168.5.88", 38_001, "adb-SER-aaaaaa-cccccc"),
+            TlsConnectService("10.0.0.8", 38_002, "adb-OTHER-aaaaaa"),
+            TlsConnectService("192.168.5.77", 37_111, "adb-SER-a-bbbbbb"),
+        )
+        upkeep(store, net, scanner, ports = namedPorts(services)).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50", "192.168.5.77"), net.opened)
+        assertEquals("192.168.5.77", store.tv("a").address)
+        assertEquals(TvLink.Encrypted(37_111), store.tv("a").link)
+        assertEquals(TvStatus.RUNNING, store.tv("a").status)
+        assertTrue(scanner.calls.isEmpty(), "encrypted TVs are not re-found by a subnet sweep")
+    }
+
+    @Test fun anEncryptedTvIsNotMovedWhenTheTrustedNetworkGateCloses() = runTest {
+        val store = InMemoryCompanionStore(
+            listOf(tv("a", "192.168.5.50").copy(link = TvLink.Encrypted(37_000))),
+            listOf(homeNet),
+        )
+        val net = FakeNet().also {
+            it.anyPort = true
+            it.sessions["192.168.5.77"] = runningTv("SER-a")
+        }
+        // The saved address is tried while the network is still trusted. The move is judged after that.
+        val source = object : FingerprintSource {
+            override suspend fun current() = if (net.opened.isNotEmpty()) cafe else home
+        }
+        val services = listOf(TlsConnectService("192.168.5.77", 37_111, "adb-SER-a-bbbbbb"))
+        upkeep(store, net, source = source, ports = namedPorts(services)).runOnce(Trigger.BACKGROUND)
+        assertEquals(listOf("192.168.5.50"), net.opened)
+        assertEquals("192.168.5.50", store.tv("a").address)
+        assertEquals(TvLink.Encrypted(37_000), store.tv("a").link)
+    }
+
+    private fun namedPorts(services: List<TlsConnectService>) = object : ConnectPortFinder {
+        override suspend fun find(host: String) = services.firstOrNull { it.host == host }?.port
+        override suspend fun servicesFor(host: String): List<TlsConnectService> = services
     }
 }

@@ -45,6 +45,7 @@ import io.github.devjardins.sidespeed.companion.tv.TvTarget
 import io.github.devjardins.sidespeed.companion.tv.TvUnreachable
 import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
+import io.github.devjardins.sidespeed.companion.upkeep.encryptedMoveAllowed
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayVerdict
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
@@ -235,6 +236,8 @@ class CompanionViewModel(
         store,
         classicTls = { address -> linkOffer.encryptedAvailable(address) },
         ports = ports,
+        clock = clock,
+        relocateAllowed = { encryptedMoveAllowed(fingerprints, store, it.id) },
     )
     /** Whether a saved classic TV offered TLS the last time Home asked. Avoids asking on every refresh. */
     private val tlsOffer = mutableMapOf<String, Boolean>()
