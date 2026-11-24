@@ -2,7 +2,7 @@
     <string name="app_name" translatable="false">SideSpeed</string>
 
     <!-- Shared -->
-    <!-- Back button label shown at the top of sub-screens. -->
+    <!-- Back button label shown at the top of sub-screens. Arrow points back; in right-to-left languages use › -->
     <string name="common_back">‹ Back</string>
 
     <!-- Maintenance -->
@@ -139,7 +139,7 @@
     <string name="compile_launch_seconds">%1$s s</string>
     <!-- Launch time summary when only an after-compile measurement exists. %1$s is formatted seconds. -->
     <string name="compile_launch_result_single">Launch: %1$s</string>
-    <!-- Launch time comparison before and after compilation. %1$s is before, %2$s is after, %3$s is the verdict. -->
+    <!-- Launch time comparison before and after compilation. %1$s is before, %2$s is after, %3$s is the verdict. Arrow points from before to after; in right-to-left languages use ←. -->
     <string name="compile_launch_result_pair">Launch: %1$s → %2$s (%3$s)</string>
     <!-- Appended to the launch time summary when the app was updated since measurement. %1$s is the formatted launch result. -->
     <string name="compile_launch_result_stale">%1$s · from an older version</string>
@@ -438,12 +438,12 @@
     <string name="extras_confirm_home_off_body">Your TV will keep using %1$s. You can turn it back on with Restore everything.</string>
     <string name="extras_turn_off">Turn off</string>
     <string name="extras_confirm_home_on_title">Turn on a home screen app?</string>
-    <!-- Body of the confirm-turn-on prompt for a home screen app. %1$s is the app being turned back on. -->
+    <!-- Body of the confirm-turn-on prompt for a home screen app. %1$s is the app being turned back on. Arrow points from Tools to Home screen; in right-to-left languages use ←. -->
     <string name="extras_confirm_home_on_body">Your TV may go back to %1$s as its home screen. You can pick your home screen in Tools → Home screen.</string>
     <string name="extras_turn_on">Turn on</string>
     <!-- Caption under a row on Turn off extras that is a home screen app. -->
     <string name="extras_row_home_caption">This is a home screen app.</string>
-    <!-- Caption under a home screen row when it cannot be turned off yet. -->
+    <!-- Caption under a home screen row when it cannot be turned off yet. Arrow points from Tools to Home screen; in right-to-left languages use ←. -->
     <string name="extras_row_home_blocked">Choose another home screen first in Tools → Home screen.</string>
     <!-- Short reason shown after "Failed: " when the helper refuses an action on a package. -->
     <string name="extras_row_refused">refused</string>
@@ -527,7 +527,9 @@
     <string name="setup_keypad_clr">Clr</string>
     <!-- Button submitting the pairing code and port. -->
     <string name="setup_pairing_submit">Pair</string>
+    <!-- Toggle button inside the pairing card that collapses the PC ADB steps. -->
     <string name="setup_pairing_hide_pc">Hide PC steps</string>
+    <!-- Toggle button inside the pairing card that expands the PC ADB steps. -->
     <string name="setup_pairing_show_pc">Start from a PC instead</string>
     <!-- Intro above PC ADB commands for Google TV. Match Android's "Wireless debugging" label. -->
     <string name="setup_pc_google_tv_intro">From a PC on the same network, using the addresses shown under Wireless debugging:</string>
@@ -545,8 +547,11 @@
     <string name="setup_fire_os_stale_helper">The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.</string>
     <!-- Body text on step 2 of Fire TV setup. Keep: SideSpeed Companion, github.com/DevJardins/SideSpeed/releases -->
     <string name="setup_fire_os_companion_hint">Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from github.com/DevJardins/SideSpeed/releases</string>
+    <!-- Toggle button on Fire TV setup that collapses the PC ADB steps. -->
     <string name="setup_other_ways_hide">Hide other ways</string>
+    <!-- Toggle button on Fire TV setup that expands the PC ADB steps. -->
     <string name="setup_other_ways_show">Other ways to run it</string>
+    <!-- Intro above PC ADB commands on Fire TV setup. -->
     <string name="setup_pc_fire_os_intro">From a PC on the same network, run:</string>
     <!-- Step 3 title on Fire TV setup. -->
     <string name="setup_step_helper_starts">Helper starts</string>

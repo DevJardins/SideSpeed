@@ -41,7 +41,6 @@ private val keypadRows = listOf(
 /** D-pad number grid for entering a code (digits only). The "1" key takes initial focus when asked. */
 @Composable
 fun PairingCodeGrid(
-    label: String,
     value: String,
     maxLength: Int,
     onValueChange: (String) -> Unit,
@@ -51,7 +50,6 @@ fun PairingCodeGrid(
     val first = remember { FocusRequester() }
     LaunchedEffect(focusFirst) { if (focusFirst) runCatching { first.requestFocus() } }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = SsType.Caption, color = SsColors.TextSecondary)
         Text(
             value.padEnd(maxLength, '·').toList().joinToString(" "),
             style = SsType.Title,

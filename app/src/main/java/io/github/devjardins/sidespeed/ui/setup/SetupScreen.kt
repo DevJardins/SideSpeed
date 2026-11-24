@@ -237,10 +237,18 @@ private fun PairingContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
             )
             var code by remember { mutableStateOf("") }
             var port by remember { mutableStateOf("") }
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                    PairingCodeGrid(stringResource(R.string.setup_pairing_code_label), code, 6, { code = it }, focusFirst = true)
-                    PairingCodeGrid(stringResource(R.string.setup_pairing_port_label), port, 5, { port = it })
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.setup_pairing_code_label), style = SsType.Caption, color = SsColors.TextSecondary)
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        PairingCodeGrid(code, 6, { code = it }, focusFirst = true)
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.setup_pairing_port_label), style = SsType.Caption, color = SsColors.TextSecondary)
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        PairingCodeGrid(port, 5, { port = it })
+                    }
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
