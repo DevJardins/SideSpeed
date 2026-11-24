@@ -79,7 +79,7 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 
 **Live status:** while the companion's home screen is open, each TV card shows what SideSpeed is compiling right now, how many apps are waiting, and the last result. The TV needs SideSpeed 0.4.0 or later.
 
-**TV card borders** show how the last check reached the TV: green on a Trusted Network, blue over Tailscale, red when it could not be reached. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
+**TV card borders** show how the last check reached the TV: green on a Trusted Network, blue over Tailscale, red when it could not be reached. The border is orange while it waits for you to trust it. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
 
 **Limits:** IPv6-only networks are never trusted. Find TVs sweeps the Trusted Network's own subnet (a large network shrinks to the /16 around this device or the gateway). You can also type a range from /16 to /30 on the same network instead.
 

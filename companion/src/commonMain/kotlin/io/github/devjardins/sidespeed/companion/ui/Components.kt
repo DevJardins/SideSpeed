@@ -119,8 +119,18 @@ fun SsCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() ->
 fun glowColor(glow: Glow?): Color? = when (glow) {
     Glow.GREEN -> Ss.glowLan
     Glow.BLUE -> Ss.glowTailnet
+    Glow.ORANGE -> Ss.glowTrust
     Glow.RED -> Ss.glowUnreachable
     null -> null
+}
+
+/** The status-dot colour for [kind]. */
+fun statusDotColor(kind: StatusKind): Color = when (kind) {
+    StatusKind.GOOD -> Ss.okText
+    StatusKind.WAITING -> Ss.warnText
+    StatusKind.TRUST -> Ss.glowTrust
+    StatusKind.BAD -> Ss.dangerText
+    StatusKind.UNKNOWN -> Ss.textSecondary
 }
 
 /**
@@ -260,12 +270,7 @@ fun SsSegmented(options: List<String>, selectedIndex: Int, onSelect: (Int) -> Un
 /** A small status dot; it pulses while [pulsing]. */
 @Composable
 fun SsStatusDot(kind: StatusKind, pulsing: Boolean = false) {
-    val colour = when (kind) {
-        StatusKind.GOOD -> Ss.okText
-        StatusKind.WAITING -> Ss.warnText
-        StatusKind.BAD -> Ss.dangerText
-        StatusKind.UNKNOWN -> Ss.textSecondary
-    }
+    val colour = statusDotColor(kind)
     // The infinite transition only exists while pulsing, so idle dots never keep the frame clock running.
     val alpha = if (pulsing) {
         val pulse = rememberInfiniteTransition(label = "dot")

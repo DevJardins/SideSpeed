@@ -7,6 +7,7 @@ import io.github.devjardins.sidespeed.companion.net.FingerprintSource
 import io.github.devjardins.sidespeed.companion.net.NetworkFingerprint
 import io.github.devjardins.sidespeed.companion.net.TrustedNetwork
 import io.github.devjardins.sidespeed.companion.store.InMemoryCompanionStore
+import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
@@ -31,6 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class TvIdentityViewModelTest {
@@ -277,7 +279,7 @@ class TvIdentityViewModelTest {
         assertEquals(Copy.TV_UNPROVEN, vm.state.value.tvs.single().note)
     }
 
-    @Test fun aParkedTvCardUsesAttentionStyleAndOnlyRemove() = runTest(UnconfinedTestDispatcher()) {
+    @Test fun aParkedTvCardIsRedAndOnlyOffersRemove() = runTest(UnconfinedTestDispatcher()) {
         val store = InMemoryCompanionStore(
             tvs = listOf(
                 savedTv().copy(unproven = true, status = TvStatus.RUNNING, identitySecret = secret),
@@ -293,12 +295,130 @@ class TvIdentityViewModelTest {
         assertEquals(listOf("tv-1", "tv-2"), cards.map { it.id })
         for (card in cards) {
             assertEquals("Stopped: check failed", card.statusLabel)
-            assertEquals(StatusKind.WAITING, cardDot(card.status, card.checkableHere))
+            assertEquals(Glow.RED, cardGlow(card.reach, card.checkableHere, card.attention, parked = true))
+            assertEquals(StatusKind.BAD, cardDot(card.status, card.checkableHere, card.attention, parked = true))
             assertEquals(Copy.TV_UNPROVEN, card.note)
             assertEquals(TvAttention.NONE, card.attention)
             assertEquals(listOf(TvCardAction.REMOVE), cardActions(card))
         }
         assertTrue(store.tvs().none { it.status == TvStatus.RUNNING })
+    }
+
+    @Test fun aTvWaitingForTrustSaysWaitingForYou() = runTest(UnconfinedTestDispatcher()) {
+        val store = InMemoryCompanionStore(
+            tvs = listOf(
+                savedTv().copy(status = TvStatus.NEEDS_ATTENTION, reach = Reach.UNREACHABLE, lastCheckedEpochMs = 0L),
+                savedTv().copy(
+                    id = "tv-2", serial = "SER-2", address = "192.168.5.21", name = "Stick",
+                    link = TvLink.Classic(null),
+                    status = TvStatus.NEEDS_ATTENTION, reach = Reach.UNREACHABLE, lastCheckedEpochMs = 0L,
+                ),
+                savedTv().copy(
+                    id = "tv-3", serial = "SER-3", address = "192.168.5.22", name = "Tube",
+                    identitySecret = secret, link = TvLink.Classic(1L),
+                    status = TvStatus.NEEDS_ATTENTION, reach = Reach.UNREACHABLE, lastCheckedEpochMs = 0L,
+                ),
+            ),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(scripted(""), store)
+        val cards = vm.state.value.tvs
+        assertEquals(
+            listOf(TvAttention.CONFIRM, TvAttention.LEGACY_ACK, TvAttention.LEGACY_PAIR),
+            cards.map { it.attention },
+        )
+        for (card in cards) {
+            val line = cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, nowMs = 60_000L)
+            assertEquals(Copy.WAITING_FOR_YOU, line, card.id)
+            assertFalse(line!!.contains("Checked"), line)
+            assertEquals(Glow.ORANGE, cardGlow(card.reach, card.checkableHere, card.attention), card.id)
+            assertEquals(StatusKind.TRUST, cardDot(card.status, card.checkableHere, card.attention), card.id)
+        }
+    }
+
+    @Test fun wirelessOffStaysAConnectionProblem() = runTest(UnconfinedTestDispatcher()) {
+        val store = InMemoryCompanionStore(
+            tvs = listOf(
+                savedTv().copy(
+                    identitySecret = secret,
+                    link = TvLink.Encrypted(null),
+                    status = TvStatus.NEEDS_ATTENTION,
+                    reach = Reach.UNREACHABLE,
+                    lastCheckedEpochMs = 0L,
+                ),
+            ),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val card = model(scripted(""), store).state.value.tvs.single()
+        assertEquals(TvAttention.WIRELESS_OFF, card.attention)
+        assertEquals(Glow.RED, cardGlow(card.reach, card.checkableHere, card.attention))
+        assertEquals(StatusKind.WAITING, cardDot(card.status, card.checkableHere, card.attention))
+        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L))
+    }
+
+    @Test fun trustOffThisNetworkKeepsTheLastSeenCard() = runTest(UnconfinedTestDispatcher()) {
+        val store = InMemoryCompanionStore(
+            tvs = listOf(
+                savedTv().copy(
+                    trustedNetworkId = "away",
+                    status = TvStatus.NEEDS_ATTENTION,
+                    reach = Reach.UNREACHABLE,
+                    lastCheckedEpochMs = 0L,
+                ),
+            ),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val card = model(scripted(""), store).state.value.tvs.single()
+        assertEquals(TvAttention.CONFIRM, card.attention)
+        assertEquals(false, card.checkableHere)
+        assertNull(cardGlow(card.reach, card.checkableHere, card.attention))
+        assertEquals(StatusKind.UNKNOWN, cardDot(card.status, card.checkableHere, card.attention))
+        assertEquals("Checked 1 min ago", cardCheckedLine(card.attention, card.checkableHere, card.checkedAtEpochMs, 60_000L))
+    }
+
+    @Test fun confirmThenASuccessfulCheckIsGreenAndRunning() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val store = InMemoryCompanionStore(
+            tvs = listOf(
+                savedTv().copy(status = TvStatus.NEEDS_ATTENTION, reach = Reach.UNREACHABLE, lastCheckedEpochMs = 1L),
+            ),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(scripted(line), store)
+        assertEquals(TvAttention.CONFIRM, vm.state.value.tvs.single().attention)
+        vm.confirmTv("tv-1")
+        val card = vm.state.value.tvs.single()
+        assertEquals(TvAttention.NONE, card.attention)
+        assertEquals(TvStatus.RUNNING, card.status)
+        assertEquals(Reach.REACHED_LAN, card.reach)
+        assertEquals(Reach.REACHED_LAN, store.tv("tv-1").reach)
+        assertEquals(Glow.GREEN, cardGlow(card.reach, card.checkableHere, card.attention))
+        assertEquals(StatusKind.GOOD, cardDot(card.status, card.checkableHere, card.attention))
+    }
+
+    @Test fun acknowledgeThenASuccessfulCheckIsGreenAndRunning() = runTest(UnconfinedTestDispatcher()) {
+        val line = "${TvProof.expected(secret, nonce, sha256 = true)}  -"
+        val store = InMemoryCompanionStore(
+            tvs = listOf(
+                savedTv().copy(
+                    link = TvLink.Classic(null),
+                    status = TvStatus.NEEDS_ATTENTION,
+                    reach = Reach.UNREACHABLE,
+                    lastCheckedEpochMs = 1L,
+                ),
+            ),
+            networks = listOf(TrustedNetwork("home", "Living room", home)),
+        )
+        val vm = model(scripted(line), store)
+        assertEquals(TvAttention.LEGACY_ACK, vm.state.value.tvs.single().attention)
+        vm.acknowledgeClassic("tv-1")
+        val card = vm.state.value.tvs.single()
+        assertEquals(TvAttention.NONE, card.attention)
+        assertEquals(TvStatus.RUNNING, card.status)
+        assertEquals(Reach.REACHED_LAN, card.reach)
+        assertEquals(Reach.REACHED_LAN, store.tv("tv-1").reach)
+        assertEquals(Glow.GREEN, cardGlow(card.reach, card.checkableHere, card.attention))
+        assertEquals(StatusKind.GOOD, cardDot(card.status, card.checkableHere, card.attention))
     }
 
     @Test fun aParkedTvIsNotPolled() = runTest(UnconfinedTestDispatcher()) {
