@@ -252,7 +252,7 @@ private fun AttentionBlock(
             }
             if (typing) {
                 SsText(Copy.CONNECT_PORT_HINT.resolve(), Ss.caption)
-                SsTextField(port, { port = it }, "37123")
+                SsTextField(port, { port = it }, "37123", ltr = true)
                 SsButton(stringResource(Res.string.common_add), { onPort(tv.id, port) }, enabled = port.isNotBlank())
             }
         }

@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.companion.desktop
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -7,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.DpSize
@@ -57,6 +59,7 @@ import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForLocale
 import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
@@ -68,6 +71,7 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import java.io.File
 import java.io.RandomAccessFile
+import java.util.Locale
 import kotlin.system.exitProcess
 
 /** Holds a lock file for the life of the process so two copies never share the store. Null if already running. */
@@ -246,18 +250,22 @@ fun main() {
             resizable = true,
         ) {
             val updateState by desktopUpdater.state.collectAsState()
-            CompanionApp(
-                vm,
-                desktop = true,
-                aboutVersion = CompanionVersion.APP_VERSION,
-                updateState = updateState,
-                onCheckUpdates = desktopUpdater::checkNow,
-                updateAction = {
-                    if (updateState is CompanionUpdateState.Available) {
-                        SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
-                    }
-                },
-            )
+            CompositionLocalProvider(
+                LocalLayoutDirection provides layoutDirectionForLocale(Locale.getDefault()),
+            ) {
+                CompanionApp(
+                    vm,
+                    desktop = true,
+                    aboutVersion = CompanionVersion.APP_VERSION,
+                    updateState = updateState,
+                    onCheckUpdates = desktopUpdater::checkNow,
+                    updateAction = {
+                        if (updateState is CompanionUpdateState.Available) {
+                            SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
+                        }
+                    },
+                )
+            }
         }
     }
 }

@@ -49,7 +49,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.brand_sidespeed
@@ -310,7 +312,8 @@ fun SsLogoMark(size: Dp) {
 @Composable
 fun SsGlyph(kind: Glyph) {
     val colour = Ss.textPrimary
-    Canvas(Modifier.size(20.dp)) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Canvas(Modifier.size(20.dp).graphicsLayer { if (kind == Glyph.BACK && rtl) scaleX = -1f }) {
         val s = this.size.minDimension
         val st = Stroke(s * 0.1f, cap = StrokeCap.Round)
         when (kind) {

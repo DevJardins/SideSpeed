@@ -26,6 +26,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.about_licence_text
@@ -68,13 +70,15 @@ fun CompanionApp(
         page == Page.SETTINGS -> Screen.SETTINGS
         else -> Screen.ABOUT
     }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
             targetState = screen,
             modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
             transitionSpec = {
                 val forward = targetState.ordinal > initialState.ordinal
-                val dir = if (forward) 1 else -1
+                val sign = if (rtl) -1 else 1
+                val dir = (if (forward) 1 else -1) * sign
                 (fadeIn(tween(200)) + slideInHorizontally(tween(220)) { dir * it / 14 }) togetherWith
                     (fadeOut(tween(120)) + slideOutHorizontally(tween(220)) { -dir * it / 14 })
             },
