@@ -45,6 +45,7 @@ val syncL10nComposeResources = tasks.register<Sync>("syncL10nComposeResources") 
             val tag = LanguageGate.qualifierToTag(dir.name) ?: return@mapNotNull null
             if (tag !in kept) dir.name else null
         }.orEmpty()
+    inputs.property("droppedLanguageFolders", dropped.sorted())
     from(file("src/commonMain/composeResources")) {
         dropped.forEach { exclude("$it/**") }
     }
