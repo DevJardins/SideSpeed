@@ -69,10 +69,32 @@ class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false, f
 @Composable
 fun rememberCompanionNav(): CompanionNav = rememberSaveable(saver = CompanionNav.Saver) { CompanionNav() }
 
+/** The page one level up, where Back goes; Home has none, so Back there leaves the app. */
+fun Page.up(): Page? = when (this) {
+    Page.HOME -> null
+    Page.ADD, Page.SETTINGS -> Page.HOME
+    Page.ABOUT, Page.LANGUAGE -> Page.SETTINGS
+}
+
+/**
+ * Goes one page up, as the on-screen and system Back do. Coming back from Language puts focus
+ * on the Language button, where the user left from.
+ */
+fun CompanionNav.goUp() {
+    val target = page.up() ?: return
+    if (page == Page.LANGUAGE) focusLanguage = true
+    page = target
+}
+
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
 private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
 
-/** Root of the companion UI, shared by the Android and desktop apps. */
+/**
+ * Root of the companion UI, shared by the Android and desktop apps.
+ *
+ * [systemBack] lets the platform route its own Back (Android's Back button or gesture) to the
+ * page above: it is called with whether there is one and what to do. Desktop has no system Back.
+ */
 @Composable
 fun CompanionApp(
     vm: CompanionViewModel,
@@ -82,6 +104,7 @@ fun CompanionApp(
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
+    systemBack: @Composable (enabled: Boolean, onBack: () -> Unit) -> Unit = { _, _ -> },
     language: LanguageController? = null,
     nav: CompanionNav = rememberCompanionNav(),
 ) {
@@ -106,6 +129,8 @@ fun CompanionApp(
         page == Page.LANGUAGE -> Screen.SETTINGS
         else -> Screen.ABOUT
     }
+    val up = page.up().takeIf { screen != Screen.LOADING && screen != Screen.FIRST_RUN }
+    systemBack(up != null) { nav.goUp() }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
@@ -143,7 +168,7 @@ fun CompanionApp(
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
                     AddTvScreen(
                         state, vm::findTvsIn, vm::addTvByAddress, vm::cancelFind, vm::keepScanning,
-                        onBack = { page = Page.HOME },
+                        onBack = { nav.goUp() },
                         onClassicCheck = vm::setClassicChecked,
                         onStartPair = { vm.startPairing(it) },
                         onSubmitPair = vm::submitPair,
@@ -155,7 +180,7 @@ fun CompanionApp(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
-                    { page = Page.ABOUT }, { page = Page.HOME },
+                    { page = Page.ABOUT }, { nav.goUp() },
                     language = language,
                     onLanguage = { page = Page.LANGUAGE },
                     focusLanguage = focusLanguage,
@@ -167,7 +192,7 @@ fun CompanionApp(
                     if (controller != null) {
                         LanguageScreen(
                             controller = controller,
-                            onBack = { focusLanguage = true; page = Page.SETTINGS },
+                            onBack = { nav.goUp() },
                         )
                     }
                 }
@@ -176,7 +201,7 @@ fun CompanionApp(
                     versionName = aboutVersion,
                     update = updateState,
                     onCheckUpdates = onCheckUpdates,
-                    onBack = { page = Page.SETTINGS },
+                    onBack = { nav.goUp() },
                     updateAction = updateAction,
                 )
             }
