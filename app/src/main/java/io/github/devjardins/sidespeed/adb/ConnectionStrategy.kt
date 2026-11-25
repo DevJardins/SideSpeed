@@ -1,8 +1,10 @@
 package io.github.devjardins.sidespeed.adb
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -20,7 +22,7 @@ enum class StartCause { REFUSED, OTHER }
 sealed interface Readiness {
     data object HelperReady : Readiness
     data object HelperNeedsRestart : Readiness
-    data class NeedsHelperStart(val reason: String, val cause: StartCause = StartCause.OTHER) : Readiness
+    data class NeedsHelperStart(val reason: UiText, val cause: StartCause = StartCause.OTHER) : Readiness
     data object WaitingForAllowPrompt : Readiness
 }
 
@@ -73,13 +75,13 @@ class ConnectionStrategy(
         if (ping != null) {
             return if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
         }
-        if (isFireOs) return Readiness.NeedsHelperStart("Fire OS blocks on-box ADB")
+        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
         return connectAndLaunch(killFirst = false, onLaunch)
     }
 
     /** Google TV only: kills the stale helper over own-ADB, then relaunches it. */
     suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness {
-        if (isFireOs) return Readiness.NeedsHelperStart("Fire OS blocks on-box ADB")
+        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
         return connectAndLaunch(killFirst = true, onLaunch)
     }
 
@@ -101,7 +103,7 @@ class ConnectionStrategy(
         }
         if (!connected) {
             return Readiness.NeedsHelperStart(
-                "ADB not reachable",
+                UiText.Res(R.string.setup_reason_adb_unreachable),
                 if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
             )
         }
@@ -114,11 +116,11 @@ class ConnectionStrategy(
             }
             withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command()).collect { } }
         } catch (e: TimeoutCancellationException) {
-            return Readiness.NeedsHelperStart("Helper did not start")
+            return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            return Readiness.NeedsHelperStart("Helper did not start")
+            return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
         }
         var waited = 0L
         while (true) {
@@ -127,7 +129,7 @@ class ConnectionStrategy(
             delay(POLL_INTERVAL_MS)
             waited += POLL_INTERVAL_MS
         }
-        return Readiness.NeedsHelperStart("Helper did not start")
+        return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
     }
 
     /** A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library). */

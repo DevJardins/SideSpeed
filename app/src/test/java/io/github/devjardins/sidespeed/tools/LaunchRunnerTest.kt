@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -224,7 +225,7 @@ class LaunchRunnerTest {
         val job = r.measure(pkg) { p, m -> uiCompile(script, p, m) }!!
         runCurrent()
         assertEquals("com.nuvio.tv", waitedFor)
-        assertEquals("Waiting for SideSpeed to finish optimizing this app…", r.progress.value["com.nuvio.tv"]?.busy)
+        assertEquals("Waiting for SideSpeed to finish optimizing this app…", r.progress.value["com.nuvio.tv"]?.busy?.english())
         assertTrue("no reset while the engine is busy", resetCmd !in script.commands)
         gate.complete(Unit)
         job.join()

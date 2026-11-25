@@ -1,7 +1,9 @@
 package io.github.devjardins.sidespeed.updates
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.helper.HelperMain
 import io.github.devjardins.sidespeed.helper.InstallOutcome
+import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.update.ApkFacts
 import io.github.devjardins.sidespeed.update.CONFIRM_POLL_MS
 import io.github.devjardins.sidespeed.update.CONFIRM_TIMEOUT_MS
@@ -33,7 +35,7 @@ sealed interface AppUpdateUiState {
      */
     data object AwaitingConfirmation : AppUpdateUiState
     data class Done(val versionName: String) : AppUpdateUiState
-    data class Failed(val reason: String) : AppUpdateUiState
+    data class Failed(val reason: UiText) : AppUpdateUiState
 }
 
 private const val APP_UPDATES_DIR = "app-updates"
@@ -88,7 +90,7 @@ class AppUpdater(
                 throw e
             } catch (e: Exception) {
                 deleteUpdateFiles()
-                _state.value = AppUpdateUiState.Failed("Update failed.")
+                _state.value = AppUpdateUiState.Failed(UiText.Res(R.string.update_error_failed))
             }
         }
     }
@@ -111,18 +113,18 @@ class AppUpdater(
     }
 
     private suspend fun execute(pkg: String, variant: ApkVariant, versionName: String) {
-        if (freeSpace() < variant.size * 2) return fail("Not enough free space on the TV.")
+        if (freeSpace() < variant.size * 2) return fail(UiText.Res(R.string.update_error_no_space))
         _state.value = AppUpdateUiState.Downloading(0)
         val dir = File(cacheDir, APP_UPDATES_DIR).apply { mkdirs() }
         val apk = File(dir, "$pkg.apk")
         download.downloadTo(variant.url, apk, maxBytes = variant.size, onProgress = {
             _state.value = AppUpdateUiState.Downloading(it)
-        }).getOrElse { return fail("Download failed.") }
+        }).getOrElse { return fail(UiText.Res(R.string.update_error_download_failed)) }
         _state.value = AppUpdateUiState.Checking
         val (installedVersion, installedSigners) = try {
             installed(pkg)
         } catch (_: Exception) {
-            return fail("Could not read the installed app.")
+            return fail(UiText.Res(R.string.update_error_read_installed))
         }
         when (
             val verdict = verifyUpdate(
@@ -150,7 +152,7 @@ class AppUpdater(
                     deleteUpdateFiles()
                     _state.value = AppUpdateUiState.Done(versionName)
                 } else {
-                    return fail("Couldn't confirm the update. Check the app's version, then try again.")
+                    return fail(UiText.Res(R.string.update_error_confirm_timeout))
                 }
             }
             is InstallOutcome.Started -> {
@@ -160,10 +162,12 @@ class AppUpdater(
                     deleteUpdateFiles()
                     _state.value = AppUpdateUiState.Done(versionName)
                 } else {
-                    return fail("The update didn't install.")
+                    return fail(UiText.Res(R.string.update_error_didnt_install))
                 }
             }
-            is InstallOutcome.Failed -> return fail(outcome.lastLine ?: "Install failed.")
+            is InstallOutcome.Failed -> return fail(
+                outcome.lastLine?.let(UiText::Raw) ?: UiText.Res(R.string.update_error_install_failed),
+            )
         }
     }
 
@@ -178,9 +182,11 @@ class AppUpdater(
                 deleteUpdateFiles() // session committed; the system takes over
                 _state.value = AppUpdateUiState.AwaitingConfirmation
             }
-            is InstallOutcome.Disconnected -> return fail("Helper not running.")
-            is InstallOutcome.Failed -> return fail(fb.lastLine ?: "Install failed.")
-            is InstallOutcome.HelperDown -> return fail("Helper not running.")
+            is InstallOutcome.Disconnected -> return fail(UiText.Res(R.string.update_error_helper_down))
+            is InstallOutcome.Failed -> return fail(
+                fb.lastLine?.let(UiText::Raw) ?: UiText.Res(R.string.update_error_install_failed),
+            )
+            is InstallOutcome.HelperDown -> return fail(UiText.Res(R.string.update_error_helper_down))
         }
     }
 
@@ -202,7 +208,7 @@ class AppUpdater(
         }
     }
 
-    private suspend fun fail(reason: String) {
+    private suspend fun fail(reason: UiText) {
         deleteUpdateFiles()
         _state.value = AppUpdateUiState.Failed(reason)
     }

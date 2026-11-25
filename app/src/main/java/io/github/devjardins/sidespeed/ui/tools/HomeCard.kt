@@ -14,8 +14,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.tools.HomeCardState
 import io.github.devjardins.sidespeed.tools.HomeResult
@@ -23,6 +25,9 @@ import io.github.devjardins.sidespeed.tools.HomeSwitcher
 import io.github.devjardins.sidespeed.tools.homeCouldntChangeMessage
 import io.github.devjardins.sidespeed.tools.Launcher
 import io.github.devjardins.sidespeed.ui.apps.AppIcon
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -37,7 +42,7 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<HomeCardState?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<UiText?>(null) }
     var confirmTarget by remember { mutableStateOf<Launcher?>(null) }
     var confirmBack by remember { mutableStateOf(false) }
     var statusIsError by remember { mutableStateOf(false) }
@@ -48,22 +53,17 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
 
     LaunchedEffect(Unit) { refresh() }
 
-    suspend fun message(result: HomeResult, changed: Boolean): String = when (result) {
-        is HomeResult.Ok -> if (changed) {
-            "Home screen changed. Your remote's Home button may still open the previous home screen on some TVs."
-        } else {
-            "Back to your first home screen."
-        }
+    suspend fun message(result: HomeResult, changed: Boolean): UiText = when (result) {
+        is HomeResult.Ok -> UiText.Res(if (changed) R.string.tools_home_changed else R.string.tools_home_restored)
         is HomeResult.CouldntChange -> homeCouldntChangeMessage(
             runCatching { switcher.currentWithFallback()?.pkg }.getOrNull(),
         )
-        is HomeResult.NoOriginal -> "No earlier home screen was saved."
-        is HomeResult.StockDisabledElsewhere ->
-            "Your first home screen was turned off by something else, so SideSpeed can't turn it back on."
-        is HomeResult.FireOs -> "Fire TV doesn't allow other home screens."
-        is HomeResult.HelperDown -> "Helper not running. Start the helper, then try again."
-        is HomeResult.HelperOutdated -> "Restart the helper to use this."
-        is HomeResult.Refused -> "The helper refused this change."
+        is HomeResult.NoOriginal -> UiText.Res(R.string.tools_home_no_original)
+        is HomeResult.StockDisabledElsewhere -> UiText.Res(R.string.tools_home_stock_disabled_elsewhere)
+        is HomeResult.FireOs -> UiText.Res(R.string.tools_home_fire_os)
+        is HomeResult.HelperDown -> UiText.Res(R.string.tools_helper_down)
+        is HomeResult.HelperOutdated -> UiText.Res(R.string.tools_helper_outdated)
+        is HomeResult.Refused -> UiText.Res(R.string.tools_home_refused)
         is HomeResult.Failed -> result.message
     }
 
@@ -73,20 +73,20 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Home screen", style = SsType.Title, color = SsColors.TextPrimary, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.tools_home_title), style = SsType.Title, color = SsColors.TextPrimary, modifier = Modifier.weight(1f))
                 if (busy) SsSpinner()
             }
             when (val s = state) {
-                null -> Text("Checking…", style = SsType.Body, color = SsColors.TextBody)
+                null -> Text(stringResource(R.string.tools_home_checking), style = SsType.Body, color = SsColors.TextBody)
                 is HomeCardState.FireOs -> Text(
-                    "Fire TV doesn't allow other home screens.",
+                    stringResource(R.string.tools_home_fire_os),
                     style = SsType.Body,
                     color = SsColors.TextBody,
                 )
                 is HomeCardState.NoOtherLauncher -> {
                     CurrentHomeLine(s.current, switcher.launchers().firstOrNull { it.component == s.current }, icons)
                     Text(
-                        "Install another home screen app first, then come back here.",
+                        stringResource(R.string.tools_home_no_other),
                         style = SsType.Body,
                         color = SsColors.TextBody,
                     )
@@ -96,7 +96,7 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                     CurrentHomeLine(s.current, currentLauncher, icons)
                     if (s.drifted) {
                         Text(
-                            "Your home screen changed back on its own. The first home screen is still saved below.",
+                            stringResource(R.string.tools_home_drifted),
                             style = SsType.Caption,
                             color = SsColors.TextSecondary,
                         )
@@ -116,10 +116,10 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                                 modifier = Modifier.weight(1f),
                             )
                             if (isCurrent) {
-                                SsPill("Current", SsColors.OkPillBg, SsColors.OkPillText)
+                                SsPill(stringResource(R.string.tools_home_current_pill), SsColors.OkPillBg, SsColors.OkPillText)
                             } else if (confirmTarget?.component != launcher.component) {
                                 SsButton(
-                                    "Make this Home",
+                                    stringResource(R.string.tools_home_make_home),
                                     onClick = { confirmTarget = launcher; confirmBack = false; status = null },
                                     enabled = !busy,
                                 )
@@ -127,13 +127,13 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                         }
                         if (confirmTarget?.component == launcher.component) {
                             Text(
-                                "Make ${launcher.label} your home screen?",
+                                stringResource(R.string.tools_home_confirm_make, launcher.label),
                                 style = SsType.Body,
                                 color = SsColors.TextBody,
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 SsButton(
-                                    "Make this Home",
+                                    stringResource(R.string.tools_home_make_home),
                                     onClick = {
                                         busy = true
                                         scope.launch {
@@ -148,7 +148,7 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                                     enabled = !busy,
                                 )
                                 SsButton(
-                                    "Cancel",
+                                    stringResource(R.string.tools_cancel),
                                     onClick = { confirmTarget = null },
                                     enabled = !busy,
                                 )
@@ -157,20 +157,20 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                     }
                     if (s.original != null && !confirmBack) {
                         SsButton(
-                            "Back to stock",
+                            stringResource(R.string.tools_home_back_to_stock),
                             onClick = { confirmBack = true; confirmTarget = null; status = null },
                             enabled = !busy,
                         )
                     }
                     if (confirmBack) {
                         Text(
-                            "Go back to the home screen this TV had before SideSpeed changed it?",
+                            stringResource(R.string.tools_home_confirm_back),
                             style = SsType.Body,
                             color = SsColors.TextBody,
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             SsButton(
-                                "Back to stock",
+                                stringResource(R.string.tools_home_back_to_stock),
                                 onClick = {
                                     busy = true
                                     scope.launch {
@@ -185,7 +185,7 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                                 enabled = !busy,
                             )
                             SsButton(
-                                "Cancel",
+                                stringResource(R.string.tools_cancel),
                                 onClick = { confirmBack = false },
                                 enabled = !busy,
                             )
@@ -194,7 +194,7 @@ fun HomeCard(switcher: HomeSwitcher, icons: IconSource) {
                 }
             }
             status?.let {
-                Text(it, style = SsType.Body, color = if (statusIsError) SsColors.DangerCardText else SsColors.TextBody)
+                Text(it.resolve(), style = SsType.Body, color = if (statusIsError) SsColors.DangerCardText else SsColors.TextBody)
             }
         }
     }
@@ -214,9 +214,9 @@ private fun CurrentHomeLine(
         if (current != null) AppIcon(current.pkg, icons)
         Text(
             when {
-                current == null -> "Current Home: unknown"
-                launcher != null -> "Current Home: ${launcher.label}"
-                else -> "Current Home: ${current.pkg}"
+                current == null -> stringResource(R.string.tools_home_current_unknown)
+                launcher != null -> stringResource(R.string.tools_home_current, launcher.label)
+                else -> uiText(R.string.tools_home_current, UiText.Ltr(current.pkg)).resolve()
             },
             style = SsType.Body,
             color = SsColors.TextBody,

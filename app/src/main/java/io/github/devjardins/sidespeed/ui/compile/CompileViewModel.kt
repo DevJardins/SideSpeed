@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
@@ -16,6 +17,7 @@ import io.github.devjardins.sidespeed.status.StatusChecker
 import io.github.devjardins.sidespeed.tools.LaunchResult
 import io.github.devjardins.sidespeed.tools.LaunchRunner
 import io.github.devjardins.sidespeed.tools.needsBeforeMeasure
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -55,8 +57,8 @@ data class LaunchUiState(
     val stale: Boolean = false,
     val needsBefore: Boolean = false,
     val checked: Boolean = true,
-    val busy: String? = null,
-    val error: String? = null,
+    val busy: UiText? = null,
+    val error: UiText? = null,
 )
 
 class CompileViewModel(
@@ -115,9 +117,9 @@ class CompileViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            finished = CompileEvent.Finished(false, false, e.message ?: "Error")
+            finished = CompileEvent.Finished(false, false, CompileOutcome.Error(e.message))
         }
-        val result = finished ?: CompileEvent.Finished(false, false, "Failure")
+        val result = finished ?: CompileEvent.Finished(false, false, CompileOutcome.Failure)
         if (result.success) status?.onFinish(pkg.value, label, true)
         else if (!helperUp()) status?.onHelperLost()
         else status?.onFinish(pkg.value, label, false)

@@ -36,10 +36,10 @@ the code may have a bug.
   UI copy, README, site or notes. Downloader (code 3503400),
   the app used to get SideSpeed onto the TV, is not a launcher and may be named.
 - When no other home screen app is installed, the whole message is
-  `ui/tools/HomeCard.kt`'s line:
+  `ui/tools/HomeCard.kt`'s line (string `tools_home_no_other`):
   "Install another home screen app first, then come back here."
 - On Fire OS the Home card shows only its own line
-  (`ui/tools/HomeCard.kt`):
+  (`ui/tools/HomeCard.kt`, string `tools_home_fire_os`):
   "Fire TV doesn't allow other home screens."
   No switching is offered there.
 - Never tell people what to install.
@@ -53,14 +53,17 @@ the code may have a bug.
   See `first_run_title`, `home_trust_banner`, `settings_trusted_networks` in `companion/src/commonMain/composeResources/values/strings.xml`.
 - State caveats plainly, next to the choice they qualify.
 - Setup warns that ADB debugging must stay on and that anyone
-  on the network could ask the TV for access (`ui/setup/SetupScreen.kt`).
+  on the network could ask the TV for access
+  (`ui/setup/SetupScreen.kt`, string `setup_lan_warning`).
 - The animation speed card says "It does not make apps load faster"
-  (`ui/tools/AnimationsCard.kt`).
+  (`ui/tools/AnimationsCard.kt`, string `tools_animations_body`).
 - Companion UI copy lives in `companion/src/commonMain/composeResources/values/strings.xml`
   (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references).
   `companion-android/src/main/res/values/strings.xml` holds only `app_name` and `channel_restarts`.
   Never hard-code user-visible text in Companion Kotlin (`NoHardCodedTextTest` fails the build).
-- TV copy sits with its screen; keep each string next to the control it explains.
+- TV copy lives in `app/src/main/res/values/strings.xml`, grouped by screen,
+  with a translator note where the meaning isn't obvious.
+  Never hard-code user-visible text in Kotlin (`NoHardCodedTextTest` fails).
 
 ## 3. TV focus and D-pad
 

@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.update
 
 import io.github.devjardins.sidespeed.helper.InstallOutcome
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -148,7 +149,7 @@ class SelfUpdaterTest {
         val u = updater(sumsText = { _ -> "${"f".repeat(64)}  SideSpeed.apk\n" })
         u.start("v0.5.0")
         val end = u.awaitState { it is UpdateUiState.Failed }
-        assertTrue((end as UpdateUiState.Failed).reason.isNotEmpty())
+        assertEquals("Checksum mismatch.", (end as UpdateUiState.Failed).reason.english())
         assertFalse(File(tmp.root, "update/SideSpeed.apk").exists())
     }
 
@@ -223,7 +224,7 @@ class SelfUpdaterTest {
         val u = updater(helperResult = InstallOutcome.Started)
         u.start("v0.5.0")
         val end = u.awaitState { it is UpdateUiState.Failed }
-        assertEquals("The update didn't install.", (end as UpdateUiState.Failed).reason)
+        assertEquals("The update didn't install.", (end as UpdateUiState.Failed).reason.english())
         assertFalse(File(tmp.root, "update/SideSpeed.apk").exists())
     }
 
@@ -231,8 +232,37 @@ class SelfUpdaterTest {
         val u = updater(helperResult = InstallOutcome.Failed(3, "boom"))
         u.start("v0.5.0")
         val end = u.awaitState { it is UpdateUiState.Failed }
-        assertEquals("boom", (end as UpdateUiState.Failed).reason)
+        assertEquals("boom", (end as UpdateUiState.Failed).reason.english())
         assertFalse(File(tmp.root, "update/SideSpeed.apk").exists())
+    }
+
+    @Test fun failure_reasons_preserve_exact_english() = runBlocking {
+        val badTag = updater()
+        badTag.start("not a version")
+        assertEquals("Not a valid release version.", (badTag.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
+
+        val sumsFail = updater(open = { error("offline") })
+        sumsFail.start("v0.5.0")
+        assertEquals("Could not download the checksums.", (sumsFail.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
+
+        val missingSum = updater(sumsText = { "" })
+        missingSum.start("v0.5.0")
+        assertEquals("No checksum found for SideSpeed.apk.", (missingSum.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
+
+        val dlFail = updater(open = { url ->
+            if (url.endsWith("SHA256SUMS.txt")) UpdateDownload.Opened(url, -1, "${"a".repeat(64)}  SideSpeed.apk\n".byteInputStream())
+            else error("network lost")
+        })
+        dlFail.start("v0.5.0")
+        assertEquals("Download failed.", (dlFail.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
+
+        val fbDown = updater(helperUp = false, fallbackResult = InstallOutcome.HelperDown)
+        fbDown.start("v0.5.0")
+        assertEquals("Helper not running.", (fbDown.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
+
+        val fbNull = updater(helperUp = false, fallbackResult = InstallOutcome.Failed(1, null))
+        fbNull.start("v0.5.0")
+        assertEquals("Install failed.", (fbNull.awaitState { it is UpdateUiState.Failed } as UpdateUiState.Failed).reason.english())
     }
 
     @Test fun cancel_during_download_returns_available_and_deletes() = runBlocking {

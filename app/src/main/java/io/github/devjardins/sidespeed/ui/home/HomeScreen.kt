@@ -19,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
@@ -34,6 +36,8 @@ import io.github.devjardins.sidespeed.ui.apps.headerCaption
 import io.github.devjardins.sidespeed.ui.apps.maintenanceLine
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import io.github.devjardins.sidespeed.ui.apps.selfOptimizedPill
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsPill
 import io.github.devjardins.sidespeed.ui.theme.SsRow
@@ -68,7 +72,7 @@ fun HomeScreen(
     onOpenTools: () -> Unit,
     onOpenAbout: () -> Unit,
     banner: @Composable () -> Unit = {},
-    tvAddress: String? = null,
+    tvAddress: UiText? = null,
     selfCompile: Flow<SelfCompile?>,
     selfVersionCode: Long,
     selfLastUpdateTime: Long,
@@ -112,7 +116,7 @@ fun HomeScreen(
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "SideSpeed",
+                    stringResource(R.string.app_name),
                     style = SsType.Headline,
                     color = SsColors.TextPrimary,
                     maxLines = 1,
@@ -123,10 +127,10 @@ fun HomeScreen(
                     StatusPill(it)
                     Spacer(Modifier.width(8.dp))
                 }
-                SsPill("● Helper running", SsColors.OkPillBg, SsColors.OkPillText)
+                SsPill(stringResource(R.string.home_helper_running), SsColors.OkPillBg, SsColors.OkPillText)
             }
             headerCaption(tvAddress, maintenanceLine(maintenanceState))?.let {
-                Text(it, style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it.resolve(), style = SsType.Caption, color = SsColors.TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             banner()
             Row(
@@ -134,26 +138,26 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 HomeTile(
-                    "My Apps",
-                    myAppsStatus(state.apps, state.loading, updateCount),
+                    stringResource(R.string.home_tile_my_apps),
+                    myAppsStatus(state.apps, state.loading, updateCount).resolve(),
                     onClick = onOpenMyApps,
                     modifier = Modifier.weight(1f).focusRequester(myAppsFocus),
                 )
                 HomeTile(
-                    "Auto-optimize",
-                    autoOptimizeStatus(optimizeMode, maintenanceState),
+                    stringResource(R.string.home_tile_auto_optimize),
+                    autoOptimizeStatus(optimizeMode, maintenanceState).resolve(),
                     onClick = onOpenAutoOptimize,
                     modifier = Modifier.weight(1f).focusRequester(autoOptimizeFocus),
                 )
                 HomeTile(
-                    "Tools",
-                    TOOLS_STATUS,
+                    stringResource(R.string.home_tile_tools),
+                    TOOLS_STATUS.resolve(),
                     onClick = onOpenTools,
                     modifier = Modifier.weight(1f).focusRequester(toolsFocus),
                 )
                 HomeTile(
-                    "About",
-                    aboutStatus(versionName),
+                    stringResource(R.string.home_tile_about),
+                    aboutStatus(versionName).resolve(),
                     onClick = onOpenAbout,
                     modifier = Modifier.weight(1f).focusRequester(aboutFocus),
                 )
@@ -174,7 +178,7 @@ private fun HomeTile(title: String, status: String, onClick: () -> Unit, modifie
                 status,
                 style = SsType.Caption,
                 color = SsColors.TextSecondary,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
         }

@@ -5,6 +5,7 @@ import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +63,7 @@ class ConnectionStrategyTest {
         val adb = FakeAdbBackend()
         val r = strategy(adb, fire = true) { null }.ensureReady()
         assertTrue(r is Readiness.NeedsHelperStart)
+        assertEquals("Fire OS blocks on-box ADB", (r as Readiness.NeedsHelperStart).reason.english())
         assertTrue(adb.connectAttempts.isEmpty())
     }
 
@@ -79,7 +81,8 @@ class ConnectionStrategyTest {
     @Test fun helperThatNeverStartsReportsNotStarted() = runTest(timeout = 20.seconds) {
         val adb = FakeAdbBackend()
         val r = strategy(adb) { null }.ensureReady()
-        assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
+        assertEquals("Helper did not start", (r as Readiness.NeedsHelperStart).reason.english())
+        assertEquals(StartCause.OTHER, r.cause)
     }
 
     @Test fun hangingConnectWaitsForAllowPrompt() = runTest(timeout = 10.seconds) {
@@ -92,14 +95,15 @@ class ConnectionStrategyTest {
     @Test fun nothingConnects() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { failConnect = RuntimeException("handshake failed") }
         val r = strategy(adb) { null }.ensureReady()
-        assertEquals(Readiness.NeedsHelperStart("ADB not reachable"), r)
-        assertEquals(StartCause.OTHER, (r as Readiness.NeedsHelperStart).cause)
+        assertEquals("ADB not reachable", (r as Readiness.NeedsHelperStart).reason.english())
+        assertEquals(StartCause.OTHER, r.cause)
     }
 
     @Test fun closedPortIsReportedAsRefused() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { failConnect = ConnectException("Connection refused") }
         val r = strategy(adb) { null }.ensureReady()
-        assertEquals(Readiness.NeedsHelperStart("ADB not reachable", StartCause.REFUSED), r)
+        assertEquals("ADB not reachable", (r as Readiness.NeedsHelperStart).reason.english())
+        assertEquals(StartCause.REFUSED, r.cause)
     }
 
     @Test fun wrappedConnectExceptionIsRefused() = runTest(timeout = 10.seconds) {
@@ -154,14 +158,14 @@ class ConnectionStrategyTest {
     @Test fun stalledLaunchStreamTimesOut() = runTest(timeout = 20.seconds) {
         val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.command() }
         val r = strategy(adb) { null }.ensureReady()
-        assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
+        assertEquals("Helper did not start", (r as Readiness.NeedsHelperStart).reason.english())
         assertEquals(ConnectionStrategy.SHELL_TIMEOUT_MS, testScheduler.currentTime)
     }
 
     @Test fun stalledKillTimesOutOnRestart() = runTest(timeout = 20.seconds) {
         val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.KILL_COMMAND }
         val r = strategy(adb) { HelperPing(1, "/old") }.restartHelper()
-        assertEquals(Readiness.NeedsHelperStart("Helper did not start"), r)
+        assertEquals("Helper did not start", (r as Readiness.NeedsHelperStart).reason.english())
         assertEquals(listOf(HelperLaunch.KILL_COMMAND), adb.commands)
     }
 
