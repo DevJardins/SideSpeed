@@ -8,8 +8,6 @@ Translate in the Weblate project:
 
 <https://hosted.weblate.org/projects/sidespeed/>
 
-<!-- Owner: confirm the Weblate project link above before sharing this guide. -->
-
 Make every change in Weblate only. Never edit the translation files in git by hand. Weblate sends the changes as pull requests, and a check reviews them.
 
 ## How the app writes
@@ -83,6 +81,6 @@ Companion app:
 
 Each translation pull request carries a summary from the translation check. Read it first.
 
-Weblate sends one pull request per component, not one per language. The summary groups the changes by language.
+Weblate sends one pull request for all translations, from the `weblate-sidespeed-tv-app` branch. The TV app and Companion components share it. The summary groups the changes by app and language.
 
 For a language you cannot read, paste a few changed safety strings into any translator and compare the meaning with the English. Then merge. This takes five minutes and is not a full review.

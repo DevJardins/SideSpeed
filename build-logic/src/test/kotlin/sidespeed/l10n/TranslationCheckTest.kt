@@ -22,9 +22,9 @@ class TranslationCheckTest {
     private fun layout(
         translations: Map<String, String>,
         format: TranslationCheck.Format = TranslationCheck.Format.ANDROID,
+        english: String = resource("english.xml"),
     ): TranslationCheck.Module {
         val root = tmp.newFolder()
-        val english = resource("english.xml")
         val englishFile = File(root, "english.xml").apply { writeText(english) }
         val resDir = File(root, "res").apply { mkdir() }
         File(resDir, "values").apply { mkdir() }.resolve("strings.xml").apply { writeText(english) }
@@ -39,8 +39,9 @@ class TranslationCheckTest {
         baseRef: String? = null,
         changedKeys: Map<String, Set<String>> = emptyMap(),
         format: TranslationCheck.Format = TranslationCheck.Format.ANDROID,
+        english: String = resource("english.xml"),
     ): TranslationCheck.Result {
-        val module = layout(translations, format)
+        val module = layout(translations, format, english)
         val byPath = changedKeys.mapKeys { (folder, _) ->
             File(module.resDir, folder).resolve("strings.xml").path
         }
@@ -228,6 +229,22 @@ class TranslationCheckTest {
         val xml = fr(mapOf("hello" to "<string name=\"hello\">Bonjour &lt;b&gt;de SideSpeed</string>"))
         val result = check(mapOf("values-fr" to xml))
         assertTrue(result.errors.any { it.key == "hello" })
+    }
+
+    @Test
+    fun angle_bracket_that_english_has_passes() {
+        val english = "<resources><string name=\"path\">Settings &gt; System</string></resources>"
+        val xml = "<resources><string name=\"path\">Param\u00e8tres &gt; Syst\u00e8me</string></resources>"
+        val result = check(mapOf("values-fr" to xml), english = english)
+        assertTrue(result.errors.isEmpty())
+    }
+
+    @Test
+    fun extra_angle_bracket_fails_even_when_english_has_some() {
+        val english = "<resources><string name=\"path\">Settings &gt; System</string></resources>"
+        val xml = "<resources><string name=\"path\">Param\u00e8tres &gt; &lt;b&gt;Syst\u00e8me</string></resources>"
+        val result = check(mapOf("values-fr" to xml), english = english)
+        assertTrue(result.errors.any { it.key == "path" })
     }
 
     @Test
