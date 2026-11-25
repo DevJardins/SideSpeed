@@ -190,6 +190,9 @@ Keep it true when you change anything below.
   for the Downloader code and sidespeed.app links.
 - Publishing the draft is manual and needs the owner's go-ahead.
 - Before tagging, merge the open Weblate translation PRs whose checks pass.
+- Merge Weblate PRs (branch `weblate-sidespeed-tv-app`) with a merge commit,
+  never squash or rebase. Weblate needs its own commits on `main`; otherwise
+  it fails to merge and locks its components (`docs/TRANSLATING.md`).
 - The release notes list the included languages and any with English mixed in,
   taken from the gate's output (`build-logic/.../LanguageGate.kt`).
 - Every release also updates sidespeed.app (separate repo:
