@@ -420,9 +420,4 @@
     <string name="update_verify_not_newer">ليس أحدث من الإصدار المثبّت.</string>
     <string name="update_verify_signer_unknown">جهة التوقيع غير معروفة؛ تم رفض التحديث.</string>
     <string name="update_verify_signer_mismatch">جهة التوقيع لا تطابق التطبيق المثبّت.</string>
-    <string name="about_language"></string>
-    <string name="about_language_selected"></string>
-    <string name="about_language_not_complete"></string>
-    <string name="app_name" translatable="false"></string>
-    <string name="about_language_same_as_device"></string>
 </resources>
