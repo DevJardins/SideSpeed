@@ -12,9 +12,12 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.content.ContextCompat
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.SideSpeedApp
 import io.github.devjardins.sidespeed.tools.CleanupThreshold
 import io.github.devjardins.sidespeed.tools.shortLabel
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,14 +33,13 @@ import kotlin.time.Duration.Companion.hours
  * Notification text for the current engine state. [armed] is compile maintenance (a ticked app or a
  * covering mode); cleanup-only runs show the threshold. When both are on, the compile text wins.
  */
-fun notificationText(state: MaintenanceState, armed: Boolean, threshold: CleanupThreshold): String = when {
-    state.helperDown && state.queueLength > 0 -> "Waiting for the helper"
-    state.queueLength > 0 -> "Optimizing apps (${state.queueLength} left)"
-    armed && state.maintained.isEmpty() -> "Watching for apps to optimize"
-    armed && state.maintained.size == 1 -> "Keeping 1 app optimized"
-    armed -> "Keeping ${state.maintained.size} apps optimized"
-    threshold == CleanupThreshold.OFF -> "Watching for apps to optimize"
-    else -> "Keeping free space above ${threshold.shortLabel()}"
+fun notificationText(state: MaintenanceState, armed: Boolean, threshold: CleanupThreshold): UiText = when {
+    state.helperDown && state.queueLength > 0 -> UiText.Res(R.string.maint_notif_waiting_helper)
+    state.queueLength > 0 -> UiText.Plural(R.plurals.maint_notif_optimizing, state.queueLength, listOf(state.queueLength))
+    armed && state.maintained.isEmpty() -> UiText.Res(R.string.maint_notif_watching)
+    armed -> UiText.Plural(R.plurals.maint_notif_keeping, state.maintained.size, listOf(state.maintained.size))
+    threshold == CleanupThreshold.OFF -> UiText.Res(R.string.maint_notif_watching)
+    else -> UiText.Res(R.string.maint_notif_free_space, listOf(threshold.shortLabel()))
 }
 
 /**
@@ -69,7 +71,7 @@ class MaintenanceService : Service() {
         val engine = container.maintenance
         try {
             val initial = engine.state.value
-            promote(notification(notificationText(initial, initial.maintained.isNotEmpty(), CleanupThreshold.OFF)))
+            promote(notification(notificationText(initial, initial.maintained.isNotEmpty(), CleanupThreshold.OFF).resolve(this)))
         } catch (_: Exception) {
             // The platform refused the foreground start (boot or background restrictions): run one
             // engine + cleanup pass without the loop, then stop.
@@ -113,7 +115,10 @@ class MaintenanceService : Service() {
                 if (!needed || text == null) {
                     stopSelf()
                 } else {
-                    getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text))
+                    getSystemService(NotificationManager::class.java).notify(
+                        NOTIFICATION_ID,
+                        notification(text.resolve(this@MaintenanceService)),
+                    )
                 }
             }
         }
@@ -147,13 +152,13 @@ class MaintenanceService : Service() {
     private fun notification(text: String): Notification {
         if (Build.VERSION.SDK_INT >= 26) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Keeping apps optimized", NotificationManager.IMPORTANCE_MIN),
+                NotificationChannel(CHANNEL_ID, getString(R.string.maint_channel_name), NotificationManager.IMPORTANCE_MIN),
             )
         }
         val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ID) else @Suppress("DEPRECATION") Notification.Builder(this)
         return builder
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("SideSpeed")
+            .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setOngoing(true)
             .build()

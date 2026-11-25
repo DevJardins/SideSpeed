@@ -1,12 +1,15 @@
 package io.github.devjardins.sidespeed.ui.setup
 
 import androidx.lifecycle.ViewModelStore
+import io.github.devjardins.sidespeed.adb.AdbPairingFailedException
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
 import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -108,8 +111,8 @@ class SetupViewModelTest {
         settings: SettingsReader = FakeSettings(),
     ) = SetupViewModel(readier, adb, prefs, fire, { ip }, settings, dispatcher).also { created += it }
 
-    private val needsStart = Readiness.NeedsHelperStart("x")
-    private val refused = Readiness.NeedsHelperStart("ADB not reachable", StartCause.REFUSED)
+    private val needsStart = Readiness.NeedsHelperStart(UiText.Raw("x"))
+    private val refused = Readiness.NeedsHelperStart(UiText.Raw("ADB not reachable"), StartCause.REFUSED)
     private val wifiOn = mutableMapOf(SettingsReader.ADB_WIFI_ENABLED to 1)
 
     private fun connecting(v: SetupViewModel) = v.state.value as SetupUiState.Connecting
@@ -235,7 +238,7 @@ class SetupViewModelTest {
         scheduler.advanceTimeBy(5_000)
         v.pair("123456", "37000"); settle()
         assertTrue(connecting(v).pairing)
-        assertEquals(SetupViewModel.WAITING_FOR_CHECK, connecting(v).pairMessage)
+        assertEquals("Waiting for the current check…", connecting(v).pairMessage?.english())
         v.stopRetrying() // Home, or Settings to look at Paired devices
         scheduler.advanceTimeBy(60_000); settle()
         v.start(); settle()
@@ -248,7 +251,7 @@ class SetupViewModelTest {
         val v = vm(FakeReadier(needsStart), adb)
         v.start(); settle()
         v.pair("123456", "37000"); settle()
-        assertEquals("Pairing…", connecting(v).pairMessage)
+        assertEquals("Pairing…", connecting(v).pairMessage?.english())
         v.stopRetrying(); settle()
         assertFalse(connecting(v).pairing)
     }
@@ -259,13 +262,13 @@ class SetupViewModelTest {
         val v = vm(r, adb)
         v.start(); settle()
         v.pair("123456", "37000"); settle()
-        assertEquals(SetupViewModel.WAITING_FOR_CHECK, connecting(v).pairMessage)
+        assertEquals("Waiting for the current check…", connecting(v).pairMessage?.english())
         scheduler.advanceTimeBy(20_000); settle()
-        assertEquals("Pairing…", connecting(v).pairMessage)
+        assertEquals("Pairing…", connecting(v).pairMessage?.english())
         scheduler.advanceTimeBy(SetupViewModel.PAIR_TIMEOUT_MS - 1); settle()
         assertTrue(connecting(v).pairing)
         scheduler.advanceTimeBy(1); settle()
-        assertEquals("Pairing timed out", connecting(v).pairMessage)
+        assertEquals("Pairing timed out", connecting(v).pairMessage?.english())
     }
 
     @Test fun startResetsRefusalCount() = runSetup {
@@ -340,7 +343,7 @@ class SetupViewModelTest {
     }
 
     @Test fun nonRefusedFailureDoesNotCount() = runSetup {
-        val r = FakeReadier(Readiness.NeedsHelperStart("ADB not reachable", StartCause.OTHER))
+        val r = FakeReadier(Readiness.NeedsHelperStart(UiText.Raw("ADB not reachable"), StartCause.OTHER))
         val v = vm(r, settings = FakeSettings(wifiOn))
         v.start(); settle()
         repeat(5) { scheduler.advanceTimeBy(SetupViewModel.RETRY_DELAY_MS); settle() }
@@ -404,9 +407,9 @@ class SetupViewModelTest {
         val prefs = FakePrefs(true)
         val v = resultVm(FakeAdbBackend(), prefs)
         v.pair("123", "4000"); settle()
-        assertEquals("Enter the 6-digit code and the pairing port.", connecting(v).pairMessage)
+        assertEquals("Enter the 6-digit code and the pairing port.", connecting(v).pairMessage?.english())
         v.pair("123456", ""); settle()
-        assertEquals("Enter the 6-digit code and the pairing port.", connecting(v).pairMessage)
+        assertEquals("Enter the 6-digit code and the pairing port.", connecting(v).pairMessage?.english())
         assertTrue(!prefs.tls.value)
     }
 
@@ -417,6 +420,7 @@ class SetupViewModelTest {
         v.start(); settle()
         v.pair("123456", "37000"); settle()
         assertTrue(prefs.tls.value)
+        assertEquals("Paired. Connecting…", connecting(v).pairMessage?.english())
         assertEquals(2, readier.ensureCalls)
     }
 
@@ -426,11 +430,27 @@ class SetupViewModelTest {
         val v = resultVm(adb, prefs)
         v.pair("123456", "37000"); settle()
         assertTrue(!prefs.tls.value)
-        assertEquals("Pairing failed: bad code", connecting(v).pairMessage)
+        assertEquals("Pairing failed: bad code", connecting(v).pairMessage?.english())
         // The message survives the next retry.
         scheduler.advanceTimeBy(SetupViewModel.RETRY_DELAY_MS); settle()
-        assertEquals("Pairing failed: bad code", connecting(v).pairMessage)
+        assertEquals("Pairing failed: bad code", connecting(v).pairMessage?.english())
         assertTrue(connecting(v).showPairing)
+    }
+
+    @Test fun pairFailureEdgeCasesAndTypedException() = runSetup {
+        val prefs = FakePrefs(true)
+        val adb = FakeAdbBackend().apply { pairResult = Result.failure(AdbPairingFailedException()) }
+        val v = resultVm(adb, prefs)
+        v.pair("123456", "37000"); settle()
+        assertEquals("Pairing failed: ADB pairing failed", connecting(v).pairMessage?.english())
+
+        adb.pairResult = Result.failure(RuntimeException(null as String?))
+        v.pair("123456", "37000"); settle()
+        assertEquals("Pairing failed: unknown error", connecting(v).pairMessage?.english())
+
+        adb.pairResult = Result.failure(RuntimeException(""))
+        v.pair("123456", "37000"); settle()
+        assertEquals("Pairing failed: ", connecting(v).pairMessage?.english())
     }
 
     @Test fun pairFallsBackToWifiIp() = runSetup {
@@ -465,7 +485,7 @@ class SetupViewModelTest {
         assertTrue(connecting(v).pairing)
         scheduler.advanceTimeBy(1); settle()
         val s = connecting(v)
-        assertEquals("Pairing timed out", s.pairMessage)
+        assertEquals("Pairing timed out", s.pairMessage?.english())
         assertEquals(false, s.pairing)
         assertTrue(!prefs.tls.value)
         assertEquals(t0 + SetupViewModel.PAIR_TIMEOUT_MS, scheduler.currentTime)

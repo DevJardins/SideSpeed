@@ -59,6 +59,7 @@ import io.github.devjardins.sidespeed.updates.AppUpdateUiState
 import io.github.devjardins.sidespeed.ui.setup.SetupScreen
 import io.github.devjardins.sidespeed.ui.setup.SetupViewModel
 import io.github.devjardins.sidespeed.ui.setup.StrategyReadier
+import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.theme.SideSpeedTheme
 
 class MainActivity : ComponentActivity() {
@@ -189,7 +190,7 @@ class MainActivity : ComponentActivity() {
                 val app = selected ?: selectedPkg?.let { p -> remember(p) { appsVm.findApp(p) } }
                 // The header's address line follows the network: recomputed off the main thread on
                 // every resume and whenever the default network's link properties change or drop.
-                var tvAddress by remember { mutableStateOf<String?>(null) }
+                var tvAddress by remember { mutableStateOf<UiText?>(null) }
                 val refreshScope = rememberCoroutineScope()
                 fun refreshTvAddress() {
                     refreshScope.launch {
