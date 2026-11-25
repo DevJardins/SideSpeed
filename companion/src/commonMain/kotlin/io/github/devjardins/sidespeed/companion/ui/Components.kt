@@ -4,10 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -46,10 +46,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -177,7 +180,9 @@ fun SsIconButton(onClick: () -> Unit, contentDescription: String, content: @Comp
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .background(fill, CircleShape).border(2.dp, ring, CircleShape)
             .hoverable(source)
-            .clickable(interactionSource = source, indication = null, onClickLabel = contentDescription) {
+            // The glyph has no text, so the button carries its name for screen readers.
+            .semantics { this.contentDescription = contentDescription }
+            .clickable(interactionSource = source, indication = null, role = Role.Button) {
                 val now = System.currentTimeMillis()
                 if (now - lastClick >= CLICK_DEBOUNCE_MS) { lastClick = now; onClick() }
             }
