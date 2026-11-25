@@ -14,11 +14,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import io.github.devjardins.sidespeed.companion.android.update.AndroidUpdateAction
+import io.github.devjardins.sidespeed.companion.android.l10n.AndroidLanguage
+import io.github.devjardins.sidespeed.companion.android.l10n.AndroidLanguageController
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 
 class MainActivity : ComponentActivity() {
     private lateinit var vm: CompanionViewModel
+
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(AndroidLanguage.wrap(base))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge(
@@ -29,6 +35,7 @@ class MainActivity : ComponentActivity() {
         vm = (application as CompanionApplication).graph.viewModel
         // A recreated Activity (rotation) isn't "opening the app": don't check every TV again.
         skipNextOpen = savedInstanceState != null
+        val language = AndroidLanguageController(this)
         setContent {
             val state by vm.state.collectAsState()
             val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -58,6 +65,7 @@ class MainActivity : ComponentActivity() {
                 updateState = updateState,
                 onCheckUpdates = updater::checkNow,
                 updateAction = { AndroidUpdateAction(updateState, updater) },
+                language = language,
             )
         }
     }

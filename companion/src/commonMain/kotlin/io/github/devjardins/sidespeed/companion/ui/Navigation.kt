@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.about_licence_text
 import io.github.devjardins.sidespeed.companion.resources.common_back
+import io.github.devjardins.sidespeed.companion.l10n.LanguageController
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import org.jetbrains.compose.resources.stringResource
@@ -51,6 +52,7 @@ fun CompanionApp(
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
+    language: LanguageController? = null,
 ) {
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }

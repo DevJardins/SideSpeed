@@ -88,6 +88,8 @@ data class CompanionSettings(
     val notifications: Boolean = false,
     val intervalMinutes: Int = 15,
     val startAtLogin: Boolean = false,
+    /** BCP 47 tag chosen in the Language picker, or null for the device language. */
+    val language: String? = null,
 )
 
 /**
