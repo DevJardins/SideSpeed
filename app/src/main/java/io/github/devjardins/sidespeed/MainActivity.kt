@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
@@ -24,6 +25,7 @@ import androidx.lifecycle.ViewModelProvider
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.compile.CompileMode
 import androidx.lifecycle.lifecycleScope
+import io.github.devjardins.sidespeed.l10n.AppLanguage
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.isServiceNeeded
 import kotlinx.coroutines.Dispatchers
@@ -123,6 +125,8 @@ class MainActivity : ComponentActivity() {
                 ) as T
         })[CompileViewModel::class.java]
     }
+
+    override fun attachBaseContext(base: Context) = super.attachBaseContext(AppLanguage.wrap(base))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
