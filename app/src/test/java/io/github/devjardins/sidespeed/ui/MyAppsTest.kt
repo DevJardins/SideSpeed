@@ -6,6 +6,7 @@ import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.maintenance.AutoOptimizeMode
 import io.github.devjardins.sidespeed.maintenance.JobPhase
 import io.github.devjardins.sidespeed.maintenance.MaintenanceState
+import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.ui.apps.AppsFilter
 import io.github.devjardins.sidespeed.ui.apps.TOOLS_STATUS
 import io.github.devjardins.sidespeed.ui.apps.aboutStatus
@@ -59,17 +60,17 @@ class MyAppsTest {
     @Test fun missingFilterFallsBackToAll() = assertEquals(AppsFilter.ALL, filterFromSaved(null))
 
     @Test fun buttonLabelSelected() =
-        assertEquals("Auto-optimize: Selected apps", autoOptimizeButtonLabel(AutoOptimizeMode.SELECTED))
+        assertEquals("Auto-optimize: Selected apps", autoOptimizeButtonLabel(AutoOptimizeMode.SELECTED).english())
 
     @Test fun buttonLabelSideloaded() =
-        assertEquals("Auto-optimize: Sideloaded only", autoOptimizeButtonLabel(AutoOptimizeMode.SIDELOADED))
+        assertEquals("Auto-optimize: Sideloaded only", autoOptimizeButtonLabel(AutoOptimizeMode.SIDELOADED).english())
 
     @Test fun buttonLabelAll() =
-        assertEquals("Auto-optimize: All apps", autoOptimizeButtonLabel(AutoOptimizeMode.ALL))
+        assertEquals("Auto-optimize: All apps", autoOptimizeButtonLabel(AutoOptimizeMode.ALL).english())
 
     @Test fun lockedMessageNamesMode() = assertEquals(
         "Kept optimized by Auto-optimize (All apps). Change it on the Auto-optimize screen.",
-        lockedMessage(AutoOptimizeMode.ALL),
+        lockedMessage(AutoOptimizeMode.ALL).english(),
     )
 
     @Test fun noLastCompileMeansSpeed() = assertEquals(CompileMode.SPEED, initialCompileMode(null))
@@ -79,34 +80,53 @@ class MyAppsTest {
 
     @Test fun myAppsStatusCountsSideloaded() {
         val apps = listOf(app("a.a"), app("b.b", "com.android.vending"), app("c.c"))
-        assertEquals("3 apps · 2 sideloaded", myAppsStatus(apps, loading = false))
+        assertEquals("3 apps · 2 sideloaded", myAppsStatus(apps, loading = false).english())
+    }
+
+    @Test fun myAppsStatusPluralsZeroOneTwo() {
+        assertEquals("0 apps · 0 sideloaded", myAppsStatus(emptyList(), loading = false).english())
+        assertEquals("1 apps · 1 sideloaded", myAppsStatus(listOf(app("a.a")), loading = false).english())
+        assertEquals("2 apps · 2 sideloaded", myAppsStatus(listOf(app("a.a"), app("b.b")), loading = false).english())
+        assertEquals("1 apps · 1 update", myAppsStatus(listOf(app("a.a")), loading = false, updates = 1).english())
+        assertEquals("2 apps · 2 updates", myAppsStatus(listOf(app("a.a"), app("b.b")), loading = false, updates = 2).english())
     }
 
     @Test fun myAppsStatusLoading() =
-        assertEquals("Loading apps…", myAppsStatus(emptyList(), loading = true))
+        assertEquals("Loading apps…", myAppsStatus(emptyList(), loading = true).english())
 
     @Test fun autoOptimizeStatusUpToDate() =
-        assertEquals("All apps · up to date", autoOptimizeStatus(AutoOptimizeMode.ALL, MaintenanceState()))
+        assertEquals("All apps · up to date", autoOptimizeStatus(AutoOptimizeMode.ALL, MaintenanceState()).english())
 
     @Test fun autoOptimizeStatusWaiting() {
         val state = MaintenanceState(
             phases = mapOf("a.a" to JobPhase.WAITING, "b.b" to JobPhase.WAITING, "c.c" to JobPhase.RUNNING),
         )
-        assertEquals("All apps · 3 waiting", autoOptimizeStatus(AutoOptimizeMode.ALL, state))
+        assertEquals("All apps · 3 waiting", autoOptimizeStatus(AutoOptimizeMode.ALL, state).english())
+        assertEquals(
+            "All apps · 1 waiting",
+            autoOptimizeStatus(AutoOptimizeMode.ALL, MaintenanceState(phases = mapOf("a.a" to JobPhase.WAITING))).english(),
+        )
+        assertEquals(
+            "All apps · 2 waiting",
+            autoOptimizeStatus(
+                AutoOptimizeMode.ALL,
+                MaintenanceState(phases = mapOf("a.a" to JobPhase.WAITING, "b.b" to JobPhase.RUNNING)),
+            ).english(),
+        )
     }
 
     @Test fun autoOptimizeStatusHelperDown() {
         val state = MaintenanceState(phases = mapOf("a.a" to JobPhase.WAITING), helperDown = true)
-        assertEquals("All apps · waiting for the helper", autoOptimizeStatus(AutoOptimizeMode.ALL, state))
+        assertEquals("All apps · waiting for the helper", autoOptimizeStatus(AutoOptimizeMode.ALL, state).english())
     }
 
     @Test fun autoOptimizeStatusNullModeIsEmpty() =
-        assertEquals("", autoOptimizeStatus(null, MaintenanceState()))
+        assertEquals("", autoOptimizeStatus(null, MaintenanceState()).english())
 
     @Test fun toolsStatusLine() =
-        assertEquals("Space, animations, extras, home screen", TOOLS_STATUS)
+        assertEquals("Space, animations, extras, home screen", TOOLS_STATUS.english())
 
-    @Test fun aboutStatusNamesVersion() = assertEquals("Version 0.7.0", aboutStatus("0.7.0"))
+    @Test fun aboutStatusNamesVersion() = assertEquals("Version 0.7.0", aboutStatus("0.7.0").english())
 
     @Test fun homeTileRestoresTools() = assertEquals(HomeTile.TOOLS, homeTileFromSaved("TOOLS"))
 

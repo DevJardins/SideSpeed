@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.updates
 
 import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.helper.CommandAllowlist
+import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.ui.apps.myAppsStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -167,7 +168,7 @@ class AppUpdatesTest {
     @Test fun newerByNameBadges() {
         val u = updateFor(app(versionName = "1.2.9", versionCode = 0L), "1.2.9", entry(versionName = "1.2.10"))
         assertEquals("1.2.10", u!!.versionName)
-        assertEquals("Update: 1.2.10", updatePillLabel(u.versionName))
+        assertEquals("Update: 1.2.10", updatePillLabel(u.versionName).english())
     }
 
     @Test fun vPrefixNewerBadges() {
@@ -238,34 +239,34 @@ class AppUpdatesTest {
     }
 
     @Test fun cardTitle() {
-        assertEquals("SmartTube 29.47 is out. You have 29.46.", updateCardTitle("SmartTube", "29.47", "29.46"))
+        assertEquals("SmartTube 29.47 is out. You have 29.46.", updateCardTitle("SmartTube", "29.47", "29.46").english())
     }
 
     @Test fun sourceLines() {
-        assertEquals("From GitHub.", updateSourceLine("github"))
-        assertEquals("From F-Droid.", updateSourceLine("fdroid"))
-        assertEquals("From IzzyOnDroid.", updateSourceLine("izzy"))
+        assertEquals("From GitHub.", updateSourceLine("github")!!.english())
+        assertEquals("From F-Droid.", updateSourceLine("fdroid")!!.english())
+        assertEquals("From IzzyOnDroid.", updateSourceLine("izzy")!!.english())
         assertNull(updateSourceLine("unknown"))
         assertNull(updateSourceLine(null))
     }
 
     @Test fun statusShowsUpdateCount() {
         val apps = listOf(app("a.a"), app("b.b", installer = "com.android.vending"))
-        assertEquals("2 apps · 2 updates", myAppsStatus(apps, loading = false, updates = 2))
+        assertEquals("2 apps · 2 updates", myAppsStatus(apps, loading = false, updates = 2).english())
     }
 
     @Test fun statusSingularUpdate() {
-        assertEquals("1 apps · 1 update", myAppsStatus(listOf(app("a.a")), loading = false, updates = 1))
+        assertEquals("1 apps · 1 update", myAppsStatus(listOf(app("a.a")), loading = false, updates = 1).english())
     }
 
     @Test fun statusZeroUpdatesUnchanged() {
         val apps = listOf(app("a.a"), app("b.b", installer = "com.android.vending"))
-        assertEquals("2 apps · 1 sideloaded", myAppsStatus(apps, loading = false, updates = 0))
-        assertEquals("2 apps · 1 sideloaded", myAppsStatus(apps, loading = false))
+        assertEquals("2 apps · 1 sideloaded", myAppsStatus(apps, loading = false, updates = 0).english())
+        assertEquals("2 apps · 1 sideloaded", myAppsStatus(apps, loading = false).english())
     }
 
     @Test fun statusLoadingWinsOverUpdates() {
-        assertEquals("Loading apps…", myAppsStatus(emptyList(), loading = true, updates = 3))
+        assertEquals("Loading apps…", myAppsStatus(emptyList(), loading = true, updates = 3).english())
     }
 
     @Test fun countsOnlyBadgedApps() {

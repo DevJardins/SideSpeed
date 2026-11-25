@@ -1,7 +1,10 @@
 package io.github.devjardins.sidespeed.ui
 
+import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
@@ -11,6 +14,7 @@ import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.ui.compile.CompileUiState
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
 import io.github.devjardins.sidespeed.ui.compile.formatDuration
@@ -106,7 +110,7 @@ class CompileViewModelTest {
         adb.dropAfterLines(cmd, 0)
         val v = vm(adb)
         v.start(pkg, CompileMode.SPEED, "Nuvio"); dispatcher.scheduler.advanceUntilIdle()
-        assertEquals("Connection lost", v.state.value.result?.message)
+        assertEquals(CompileOutcome.ConnectionLost, v.state.value.result?.outcome)
         assertNotNull(v.state.value.result)
     }
 
@@ -265,64 +269,96 @@ class CompileViewModelTest {
         assertEquals("com.nuvio.tv", row?.current?.pkg)
         assertEquals("Nuvio", row?.current?.label)
     }
+
+    @Test fun exceptionWithNullMessageShowsFailureErrorBanner() = runTest(timeout = 10.seconds) {
+        val throwingRunner = object : CommandRunner {
+            override fun shell(command: String): Flow<ShellEvent> = kotlinx.coroutines.flow.flow { throw IllegalStateException() }
+        }
+        val v = CompileViewModel(CompileRunner(throwingRunner), StatusChecker(fake()), FakePrefs(), dispatcher)
+        v.start(pkg, CompileMode.SPEED, "Nuvio"); dispatcher.scheduler.advanceUntilIdle()
+        val outcome = v.state.value.result!!.outcome
+        assertEquals(CompileOutcome.Error(null), outcome)
+        assertEquals("Failure: Error", resultBanner(outcome).english())
+    }
+
+    @Test fun exceptionWithEmptyMessageShowsFailureBanner() = runTest(timeout = 10.seconds) {
+        val throwingRunner = object : CommandRunner {
+            override fun shell(command: String): Flow<ShellEvent> = kotlinx.coroutines.flow.flow { throw IllegalStateException("") }
+        }
+        val v = CompileViewModel(CompileRunner(throwingRunner), StatusChecker(fake()), FakePrefs(), dispatcher)
+        v.start(pkg, CompileMode.SPEED, "Nuvio"); dispatcher.scheduler.advanceUntilIdle()
+        val outcome = v.state.value.result!!.outcome
+        assertEquals(CompileOutcome.Error(""), outcome)
+        assertEquals("Failure", resultBanner(outcome).english())
+    }
 }
 
 class ResultBannerTest {
     @Test fun sameMessageIsNotRepeated() {
-        assertEquals("Success", resultBanner(true, "Success"))
-        assertEquals("Failure", resultBanner(false, "Failure"))
-        assertEquals("Success", resultBanner(true, ""))
+        assertEquals("Success", resultBanner(CompileOutcome.Success).english())
+        assertEquals("Failure", resultBanner(CompileOutcome.Failure).english())
+        assertEquals("Failure", resultBanner(CompileOutcome.Error("")).english())
+        assertEquals("Failure", resultBanner(CompileOutcome.Error("   ")).english())
     }
 
     @Test fun differentMessageIsAppended() {
-        assertEquals("Failure: Connection lost", resultBanner(false, "Connection lost"))
-        assertEquals("Success: done", resultBanner(true, "done"))
+        assertEquals("Failure: Connection lost", resultBanner(CompileOutcome.ConnectionLost).english())
+        assertEquals("Failure: Error", resultBanner(CompileOutcome.Error(null)).english())
+        assertEquals("Failure: done", resultBanner(CompileOutcome.Error("done")).english())
     }
-
 }
 
 class ResultTextTest {
     @Test fun durationUnderAMinuteIsSecondsOnly() {
-        assertEquals("51 s", formatDuration(51))
-        assertEquals("0 s", formatDuration(0))
-        assertEquals("59 s", formatDuration(59))
+        assertEquals("51 s", formatDuration(51).english())
+        assertEquals("0 s", formatDuration(0).english())
+        assertEquals("59 s", formatDuration(59).english())
     }
 
     @Test fun durationWithMinutes() {
-        assertEquals("2 min 58 s", formatDuration(178))
-        assertEquals("1 min 0 s", formatDuration(60))
-        assertEquals("12 min 5 s", formatDuration(725))
+        assertEquals("2 min 58 s", formatDuration(178).english())
+        assertEquals("1 min 0 s", formatDuration(60).english())
+        assertEquals("12 min 5 s", formatDuration(725).english())
+    }
+
+    @Test fun duration_reads_as_before() {
+        assertEquals("0 s", formatDuration(0).english())
+        assertEquals("1 s", formatDuration(1).english())
+        assertEquals("59 s", formatDuration(59).english())
+        assertEquals("1 min 0 s", formatDuration(60).english())
+        assertEquals("1 min 1 s", formatDuration(61).english())
+        assertEquals("2 min 58 s", formatDuration(178).english())
     }
 
     @Test fun successTitle() {
-        assertEquals("Compiled to speed", successTitle(CompileMode.SPEED))
-        assertEquals("Compiled to speed-profile", successTitle(CompileMode.SPEED_PROFILE))
+        assertEquals("Compiled to speed", successTitle(CompileMode.SPEED).english())
+        assertEquals("Compiled to speed-profile", successTitle(CompileMode.SPEED_PROFILE).english())
     }
 
     @Test fun successDetailWithConfirmedBadge() {
         assertEquals(
             "Took 2 min 58 s · status confirmed speed ✓",
-            successDetail(178, CompileMode.SPEED, StatusBadge.SPEED_OK),
+            successDetail(178, CompileMode.SPEED, StatusBadge.SPEED_OK).english(),
         )
         assertEquals(
             "Took 51 s · status confirmed speed-profile",
-            successDetail(51, CompileMode.SPEED_PROFILE, StatusBadge.SPEED_PROFILE),
+            successDetail(51, CompileMode.SPEED_PROFILE, StatusBadge.SPEED_PROFILE).english(),
         )
     }
 
     @Test fun successDetailWithoutUsableBadge() {
-        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, null))
-        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, StatusBadge.UNKNOWN))
+        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, null).english())
+        assertEquals("Took 51 s", successDetail(51, CompileMode.SPEED, StatusBadge.UNKNOWN).english())
     }
 
     @Test fun successDetailWhenStatusDisagrees() {
         assertEquals(
             "Took 51 s · status shows speed-profile",
-            successDetail(51, CompileMode.SPEED, StatusBadge.SPEED_PROFILE),
+            successDetail(51, CompileMode.SPEED, StatusBadge.SPEED_PROFILE).english(),
         )
         assertEquals(
             "Took 51 s · status shows Not compiled",
-            successDetail(51, CompileMode.SPEED, StatusBadge.NEEDS_RECOMPILE),
+            successDetail(51, CompileMode.SPEED, StatusBadge.NEEDS_RECOMPILE).english(),
         )
     }
 }

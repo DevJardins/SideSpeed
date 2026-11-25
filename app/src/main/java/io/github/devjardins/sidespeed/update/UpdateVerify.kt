@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.update
 
+import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import java.io.File
 import java.security.MessageDigest
 
@@ -13,7 +16,7 @@ data class ApkFacts(val packageName: String, val versionCode: Long, val signerSh
 /** Either verified or rejected with a one-line plain reason. */
 sealed interface VerifyResult {
     object Ok : VerifyResult
-    data class Rejected(val reason: String) : VerifyResult
+    data class Rejected(val reason: UiText) : VerifyResult
 }
 
 /**
@@ -51,20 +54,26 @@ fun verifyUpdate(
     expectedPackage: String = SELF_UPDATE_PACKAGE,
     expectedVersionCode: Long? = null,
 ): VerifyResult {
-    if (expectedSha256 == null) return VerifyResult.Rejected("No checksum found for this update.")
+    if (expectedSha256 == null) return VerifyResult.Rejected(UiText.Res(R.string.update_verify_no_checksum))
     if (!fileSha256.equals(expectedSha256, ignoreCase = true)) {
-        return VerifyResult.Rejected("Checksum mismatch.")
+        return VerifyResult.Rejected(UiText.Res(R.string.update_verify_checksum_mismatch))
     }
-    if (apk == null) return VerifyResult.Rejected("Could not read the downloaded APK.")
-    if (apk.packageName != expectedPackage) return VerifyResult.Rejected("Wrong package: ${apk.packageName}.")
+    if (apk == null) return VerifyResult.Rejected(UiText.Res(R.string.update_verify_unreadable_apk))
+    if (apk.packageName != expectedPackage) {
+        return VerifyResult.Rejected(uiText(R.string.update_verify_wrong_package, UiText.Ltr(apk.packageName)))
+    }
     if (expectedVersionCode != null && apk.versionCode != expectedVersionCode) {
-        return VerifyResult.Rejected("Version does not match the update.")
+        return VerifyResult.Rejected(UiText.Res(R.string.update_verify_version_mismatch))
     }
-    if (apk.versionCode <= installedVersionCode) return VerifyResult.Rejected("Not newer than the installed version.")
+    if (apk.versionCode <= installedVersionCode) {
+        return VerifyResult.Rejected(UiText.Res(R.string.update_verify_not_newer))
+    }
     if (apk.signerSha256.isEmpty() || installedSignerSha256.isEmpty()) {
-        return VerifyResult.Rejected("Signer unknown: refusing the update.")
+        return VerifyResult.Rejected(UiText.Res(R.string.update_verify_signer_unknown))
     }
-    if (apk.signerSha256 != installedSignerSha256) return VerifyResult.Rejected("Signer does not match the installed app.")
+    if (apk.signerSha256 != installedSignerSha256) {
+        return VerifyResult.Rejected(UiText.Res(R.string.update_verify_signer_mismatch))
+    }
     return VerifyResult.Ok
 }
 

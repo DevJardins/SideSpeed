@@ -4,11 +4,14 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.ui.text.StringLookup
+import io.github.devjardins.sidespeed.ui.text.resolve
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -51,6 +54,7 @@ class MaintenanceEngine(
     private val badges: suspend (Collection<String>) -> Map<String, StatusBadge> = { emptyMap() },
     private val scope: CoroutineScope,
     private val ownPackage: String,
+    private val strings: StringLookup,
     /** Package with an in-flight launch measurement; never compiled or queued while set. */
     private val measuring: () -> String? = { null },
     /** Fires once per helper down→up transition so a pending restore can retry. */
@@ -206,9 +210,10 @@ class MaintenanceEngine(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            finished = CompileEvent.Finished(false, false, e.message ?: "Error")
+            val detail = e.message?.takeIf { it.isNotEmpty() }
+            finished = CompileEvent.Finished(false, false, CompileOutcome.Error(detail))
         }
-        val result = finished ?: CompileEvent.Finished(false, false, "Failure")
+        val result = finished ?: CompileEvent.Finished(false, false, CompileOutcome.Failure)
         when {
             result.success -> {
                 status?.onFinish(pkg, app.label, true)
@@ -218,7 +223,8 @@ class MaintenanceEngine(
                     done[pkg] = app.lastUpdateTime
                     failures.remove(pkg)
                 }
-                store.addHistory(JobRecord(pkg, app.label, clock(), true, result.message))
+                val message = JobMessage.SUCCESS.text(null).resolve(strings, rtl = false)
+                store.addHistory(JobRecord(pkg, app.label, clock(), true, message, JobMessage.SUCCESS.name))
             }
             !helperUp() -> {
                 status?.onHelperLost()
@@ -229,7 +235,9 @@ class MaintenanceEngine(
                 val attempts = synchronized(lock) {
                     ((failures[pkg]?.attempts ?: 0) + 1).also { failures[pkg] = Failure(app.lastUpdateTime, it, false) }
                 }
-                store.addHistory(JobRecord(pkg, app.label, clock(), false, result.message))
+                val (jobMessage, detail) = classifyJobFailure(result.outcome)
+                val message = jobMessage.text(detail).resolve(strings, rtl = false)
+                store.addHistory(JobRecord(pkg, app.label, clock(), false, message, jobMessage.name, detail))
                 if (attempts <= maxRetries) {
                     scope.launch {
                         delay(retryDelayMs)
@@ -239,6 +247,12 @@ class MaintenanceEngine(
                 }
             }
         }
+    }
+
+    private fun classifyJobFailure(outcome: CompileOutcome): Pair<JobMessage, String?> = when (outcome) {
+        CompileOutcome.Success, CompileOutcome.Failure -> JobMessage.FAILURE to null
+        CompileOutcome.ConnectionLost -> JobMessage.CONNECTION_LOST to null
+        is CompileOutcome.Error -> JobMessage.ERROR to outcome.detail?.takeIf { it.isNotEmpty() }
     }
 
     private fun setHelperDown(down: Boolean) {
