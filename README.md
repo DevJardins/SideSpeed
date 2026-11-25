@@ -42,6 +42,7 @@ If SideSpeed can't connect, choose **Pair with a code instead** and enter the co
 - **My Apps:** tick an app to keep it compiled after every update.
 - **Auto-optimize:** keep all your apps, or only sideloaded ones, compiled without ticking each one.
 - **Updates:** when a new version of SideSpeed is out, press **Update now** on the Home screen.
+- **Language:** pick it in **About** on the TV, or in **Settings** in the Companion.
 - **If the helper stops** (after a restart, or after updating SideSpeed): on Google TV, open SideSpeed; on Fire TV, open the Companion. The onn turns Wireless debugging off after a reboot, so turn it back on first.
 
 The rest of this page is the detail: every feature, how it works, and the full caveats.
@@ -85,9 +86,9 @@ The **Tools** button on the Home screen opens five cards:
 
 - **Box health:** device name, Android version, memory, storage and whether the helper is running.
 - **Free up space:** shows free and total storage. **Clean up now** clears app caches (apps keep their data but may download artwork again). **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free: while the helper runs, SideSpeed checks every few hours and clears only as much cache as it needs. It never runs on a timer. Off by default.
-- **Faster animations:** Normal, Faster or Off for Android's window, transition and animator scales. Menus and screen changes move faster; apps do not load faster. **Restore original** puts back the values you had before. On Fire TV, SideSpeed leaves the animator scale alone, because changing it stops the home screen's Settings menu from opening.
-- **Turn off extras:** disables (never uninstalls) apps your TV maker added that you don't use, from a list matched exactly to your box model. Pick packages and press **Turn off selected**. Any app on the list that is off can be turned back on with **Turn on selected**, even if something else turned it off; **Restore everything** still turns back on only what SideSpeed turned off. Lists come from the [CleanYourTV](https://github.com/Gathin23/cleanyourtv) project (MIT); When no list matches exactly but one names your TV's model and codename, SideSpeed suggests it: **Use this list** or **Not my TV**, and remembers your answer. TVs with neither show "No list for this TV yet."
-- **Home screen:** on Google TV and Android TV, pick an installed home screen app as Home. SideSpeed remembers the home screen the TV had first, and **Back to stock** returns to it. If no other home screen app is installed, install another home screen app first, then come back here. On Fire TV this card only says Fire TV doesn't allow other home screens.
+- **Animations:** Normal, Faster or Off for Android's window, transition and animator scales. Menus and screen changes move faster; apps do not load faster. **Restore original** puts back the values you had before. On Fire TV, app animations stay at normal speed so the Settings menu keeps working.
+- **Turn off extras:** opens a screen that disables (never uninstalls) apps your TV maker added that you don't use, from a list matched exactly to your box model. Pick packages and press **Turn off selected**. Any app on the list that is off can be turned back on with **Turn on selected**, even if something else turned it off; **Restore everything** still turns back on only what SideSpeed turned off. Lists come from the [CleanYourTV](https://github.com/Gathin23/cleanyourtv) project (MIT). When no list matches exactly but one names your TV's model and codename, SideSpeed suggests it: **Use this list** or **Not my TV**, and remembers your answer. TVs with neither show "No list for this TV yet."
+- **Home screen:** on Google TV and Android TV, pick an installed home screen app as Home. SideSpeed remembers the home screen the TV had first, and **Back to stock** returns to it. If no other home screen app is installed, install another home screen app first, then come back here. While Google TV's own home screen is on, it keeps that place: turn it off in **Turn off extras** first. On Fire TV this card only says Fire TV doesn't allow other home screens.
 
 **Launch time.** On an app's compile screen, SideSpeed can time how long the app takes to open before and after compiling (it opens the app briefly, three times each side, and shows the median), for example `1.9 s → 1.1 s (42% faster)`. **Measure** re-checks any app: it resets the app's compiled code, times it, compiles it back and times it again. The result is kept per app version; after an update it is marked as from an older version.
 
@@ -102,7 +103,7 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 - **Windows:** run the `.msi`. If SmartScreen blocks it, choose **More info**, then **Run anyway**.
 - **Linux:** install the `.deb` or the `.rpm`.
 
-**First use:** open the companion and choose your Trusted Network (**Trust this network**). Then **Add a TV**: type its address or use **Find TVs**, and tick **Always allow** when the TV asks. A TV with Wireless debugging pairs once with a code and then uses an encrypted connection. A TV that can't still connects the older way after you agree to it: anyone on your network could see or change the commands it sends. Before any other command, each TV proves it is the one you added.
+**First use:** open the companion and choose your Trusted Network (**Trust this network**). Then **Add a TV**: type its address or use **Find TVs**, and tick **Always allow** when the TV asks. A TV with Wireless debugging pairs once with a code and then uses an encrypted connection. A TV that can't still connects the older way after you agree to it: anyone on your network could see or change the commands it sends. Before any other command, each TV proves it is the one you added. A TV you added before that check existed waits until you press **Confirm** on Home; the Companion checks it is the same TV, then leaves the secret on it.
 
 **Trusted Networks:** you choose which networks the companion may act on. On any other network it does nothing and sends nothing. It needs no location permission. A network is recognised by its router's address, subnet and DNS servers, and by the router's hardware address once the companion has read it. Without the hardware address (always on Android, and often on a Mac), the DNS servers must be exactly the ones you saved. [SECURITY.md](SECURITY.md) explains the limits.
 
@@ -110,11 +111,17 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 
 **Live status:** while the companion's home screen is open, each TV card shows what SideSpeed is compiling right now, how many apps are waiting, and the last result. The TV needs SideSpeed 0.4.0 or later.
 
-**TV card borders** show how the last check reached the TV: green on a Trusted Network, blue over Tailscale, red when it could not be reached. The border is orange while it waits for you to trust it. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
+**TV card borders** show how the last check reached the TV: green on a Trusted Network, blue over Tailscale, red when it could not be reached. The border is orange, with "Waiting for you", while it waits for you to confirm it, pair it or allow the older connection. There is no colour when the TV cannot be checked from here (its saved status is shown as "Last seen") or when it has not been checked yet.
 
 **Limits:** IPv6-only networks are never trusted. Find TVs sweeps the Trusted Network's own subnet (a large network shrinks to the /16 around this device or the gateway). You can also type a range from /16 to /30 on the same network instead.
 
+**Back on Android:** the phone's Back button goes up one screen. On Home it leaves the app.
+
 **Keeping the Companion up to date:** its About screen shows the installed version and checks for updates when it opens, or when you press **Check for updates**. On Android, **Update now** downloads the new APK, checks it, and installs it. On desktop, **Download** gets the installer for your system.
+
+## Languages
+
+SideSpeed and the Companion are in English. Both have a **Language** setting (**About** on the TV, **Settings** in the Companion): **Same as device** or a language. A language ships once at least 70% of its text is translated. If a language you picked isn't complete in a version, the app says so and shows English. To help translate, see [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Requirements and caveats
 
@@ -137,10 +144,12 @@ Companion apps for Android phones and for Windows, macOS and Linux. They start t
 
 ## Building
 
-JDK 21 and the Android SDK. CI runs these test tasks:
+JDK 21 and the Android SDK. CI runs these checks:
 
 ```
 ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test
+./gradlew -p build-logic test
+./gradlew checkTranslations
 ```
 
 Release builds per module:
@@ -157,11 +166,13 @@ For signed APKs, copy `keystore.properties.example` to `keystore.properties` and
 
 ## Releasing
 
-1. Bump `sidespeed.versionName` in `gradle.properties`. The Android `versionCode`s (TV and companion, `major*10000 + minor*100 + patch`) and the desktop package version (`(major+1).minor.patch`) derive from it automatically — nothing else needs a hand bump.
-2. Write the release notes in `.github/release-notes/v<version>.md`.
-3. Merge to `main`, then tag and push: `git tag v<version> && git push origin v<version>`.
-4. CI builds everything and creates a **draft** release. It fails if either APK is not signed with the project key. The draft has versioned files, `SHA256SUMS.txt`, and copies under fixed names: `SideSpeed.apk`, `SideSpeed-Companion.apk`, `SideSpeed-Companion-macos-arm64.dmg`, `-windows-x64.msi`, `-linux-amd64.deb` and `-linux-x86_64.rpm`.
-5. Check the draft, then publish it.
+1. Merge the open Weblate translation pull requests whose checks pass.
+2. Bump `sidespeed.versionName` in `gradle.properties`. The Android `versionCode`s (TV and companion, `major*10000 + minor*100 + patch`) and the desktop package version (`(major+1).minor.patch`) derive from it automatically — nothing else needs a hand bump.
+3. Write the release notes in `.github/release-notes/v<version>.md`. List the languages included, and any that show some English, from the language check in the build output.
+4. Merge to `main`, then tag and push: `git tag v<version> && git push origin v<version>`.
+5. CI builds everything and creates a **draft** release. It fails if either APK is not signed with the project key. The draft has versioned files, `SHA256SUMS.txt`, and copies under fixed names: `SideSpeed.apk`, `SideSpeed-Companion.apk`, `SideSpeed-Companion-macos-arm64.dmg`, `-windows-x64.msi`, `-linux-amd64.deb` and `-linux-x86_64.rpm`.
+6. Check the draft, then publish it.
+7. Update sidespeed.app (its changes page and What's new) and this README.
 
 The Downloader code 3503400 and the sidespeed.app links (`/tv`, `/companion.apk`, `/mac`, `/windows`, `/linux`, `/linux-rpm`) fetch `releases/latest/download/<fixed name>`. So every release must include all of these files under exactly these names.
 
