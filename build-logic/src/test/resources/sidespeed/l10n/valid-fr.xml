@@ -1,0 +1,9 @@
+<resources>
+    <string name="hello">Bonjour de SideSpeed</string>
+    <string name="careful">Soyez prudent avec %1$s</string>
+    <plurals name="items">
+        <item quantity="one">%1$d article</item>
+        <item quantity="many">%1$d articles</item>
+        <item quantity="other">%1$d articles</item>
+    </plurals>
+</resources>
