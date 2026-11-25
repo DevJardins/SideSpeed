@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -58,6 +59,8 @@ class MainActivity : ComponentActivity() {
                 updateState = updateState,
                 onCheckUpdates = updater::checkNow,
                 updateAction = { AndroidUpdateAction(updateState, updater) },
+                // Back goes up one page; on Home it isn't handled, so it leaves the app.
+                systemBack = { enabled, onBack -> BackHandler(enabled, onBack) },
             )
         }
     }

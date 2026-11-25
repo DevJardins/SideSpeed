@@ -31,10 +31,22 @@ import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 
 enum class Page { HOME, ADD, SETTINGS, ABOUT }
 
+/** The page one level up, where Back goes; Home has none, so Back there leaves the app. */
+fun Page.up(): Page? = when (this) {
+    Page.HOME -> null
+    Page.ADD, Page.SETTINGS -> Page.HOME
+    Page.ABOUT -> Page.SETTINGS
+}
+
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
 private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 
-/** Root of the companion UI, shared by the Android and desktop apps. */
+/**
+ * Root of the companion UI, shared by the Android and desktop apps.
+ *
+ * [systemBack] lets the platform route its own Back (Android's Back button or gesture) to the
+ * page above: it is called with whether there is one and what to do. Desktop has no system Back.
+ */
 @Composable
 fun CompanionApp(
     vm: CompanionViewModel,
@@ -44,6 +56,7 @@ fun CompanionApp(
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
+    systemBack: @Composable (enabled: Boolean, onBack: () -> Unit) -> Unit = { _, _ -> },
 ) {
     val state by vm.state.collectAsState()
     var page by remember { mutableStateOf(Page.HOME) }
@@ -63,6 +76,8 @@ fun CompanionApp(
         page == Page.SETTINGS -> Screen.SETTINGS
         else -> Screen.ABOUT
     }
+    val up = page.up().takeIf { screen != Screen.LOADING && screen != Screen.FIRST_RUN }
+    systemBack(up != null) { up?.let { page = it } }
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
             targetState = screen,
@@ -98,7 +113,7 @@ fun CompanionApp(
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
                     AddTvScreen(
                         state, vm::findTvsIn, vm::addTvByAddress, vm::cancelFind, vm::keepScanning,
-                        onBack = { page = Page.HOME },
+                        onBack = { page = Page.ADD.up()!! },
                         onClassicCheck = vm::setClassicChecked,
                         onStartPair = { vm.startPairing(it) },
                         onSubmitPair = vm::submitPair,
@@ -110,14 +125,14 @@ fun CompanionApp(
                     state, desktop, vm::updateSettings,
                     { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
-                    { page = Page.ABOUT }, { page = Page.HOME },
+                    { page = Page.ABOUT }, { page = Page.SETTINGS.up()!! },
                 )
                 Screen.ABOUT -> AboutScreen(
                     aboutText = aboutText,
                     versionName = aboutVersion,
                     update = updateState,
                     onCheckUpdates = onCheckUpdates,
-                    onBack = { page = Page.SETTINGS },
+                    onBack = { page = Page.ABOUT.up()!! },
                     updateAction = updateAction,
                 )
             }
