@@ -7,13 +7,13 @@ import kotlin.test.assertTrue
 
 class LanguageOptionsTest {
     private val names =
-            mapOf(
-                    "en" to "English",
-                    "fr" to "Français",
-                    "ar" to "العربية",
-                    "de" to "Deutsch",
-                    "pt-BR" to "Português (Brasil)",
-            )
+        mapOf(
+            "en" to "English",
+            "fr" to "Français",
+            "ar" to "العربية",
+            "de" to "Deutsch",
+            "pt-BR" to "Português (Brasil)",
+        )
 
     private fun nameOf(tag: String): String = names.getValue(tag)
 
