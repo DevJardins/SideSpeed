@@ -84,3 +84,5 @@ Each translation pull request carries a summary from the translation check. Read
 Weblate sends one pull request for all translations, from the `weblate-sidespeed-tv-app` branch. The TV app and Companion components share it. The summary groups the changes by app and language.
 
 For a language you cannot read, paste a few changed safety strings into any translator and compare the meaning with the English. Then merge. This takes five minutes and is not a full review.
+
+Merge with **Create a merge commit**, never squash or rebase. Weblate needs its own commits on `main`. After a squash it cannot merge, and it locks both components. If that happens, open Operations, then Repository maintenance, and press **Reset and reapply translations**.
