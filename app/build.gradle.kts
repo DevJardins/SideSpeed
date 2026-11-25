@@ -110,6 +110,9 @@ androidComponents {
             generateShippedLanguages,
             GenerateShippedLanguages::resOutDir,
         )
+    }    // Pseudo-locales are on only in debug, so only debug keeps their resources.
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.androidResources.localeFilters.addAll(LanguageGate.PSEUDO_LOCALE_FILTERS)
     }
 }
 
@@ -177,11 +180,11 @@ android {
         }
     }
 
-    // Ships only English plus the languages at or above the gate; the pseudo-locales exist
-    // only in debug, so they are harmless in release. The filters go straight to aapt2 -c,
+    // Ships only English plus the languages at or above the gate; debug adds the
+    // pseudo-locales below (androidComponents). The filters go straight to aapt2 -c,
     // which wants qualifier syntax (en-rXA), not BCP-47 (en-XA).
     androidResources {
-        localeFilters += listOf("en") + gateResult.included.map { LanguageGate.tagToFilter(it.tag) } + listOf("en-rXA", "ar-rXB")
+        localeFilters += LanguageGate.releaseLocaleFilters(gateResult)
     }
 
     compileOptions {
