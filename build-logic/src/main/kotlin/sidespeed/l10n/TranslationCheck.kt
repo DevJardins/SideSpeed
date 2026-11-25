@@ -342,7 +342,7 @@ object TranslationCheck {
                     }
                     checkArgs(file, key, null, entry.text.args, want.text.args, errors, displayRoot)
                     checkKeeps(file, key, null, entry.text.text, want.keeps, errors, displayRoot)
-                    checkMarkup(file, key, entry.text.text, format, errors, displayRoot)
+                    checkMarkup(file, key, entry.text.text, want.text.text, format, errors, displayRoot)
                 }
                 is TransEntry.Group -> {
                     if (want.text != null) {
@@ -362,7 +362,7 @@ object TranslationCheck {
                             checkArgs(file, key, quantity, got.args, expected.args, errors, displayRoot)
                         }
                         checkKeeps(file, key, quantity, got.text, want.keeps, errors, displayRoot)
-                        checkMarkup(file, key, got.text, format, errors, displayRoot)
+                        checkMarkup(file, key, got.text, expected?.text.orEmpty(), format, errors, displayRoot)
                     }
                 }
             }
@@ -448,6 +448,7 @@ object TranslationCheck {
         file: File,
         key: String,
         text: String,
+        english: String,
         format: Format,
         errors: MutableList<Error>,
         displayRoot: File?,
@@ -455,7 +456,11 @@ object TranslationCheck {
         if (text.contains("@string/")) {
             errors.add(Error(display(displayRoot, file), key, "This translation must not use @string/ references."))
         }
-        if (text.contains('<') || text.contains('>')) {
+        // A literal < or > (written &lt; or &gt;) is fine where English has the same one,
+        // such as "Settings > System". Any extra one is a tag that does not belong.
+        if (text.count { it == '<' } > english.count { it == '<' } ||
+            text.count { it == '>' } > english.count { it == '>' }
+        ) {
             errors.add(Error(display(displayRoot, file), key, "This translation has an unbalanced tag. Tags must open and close in pairs."))
         }
         when (format) {
