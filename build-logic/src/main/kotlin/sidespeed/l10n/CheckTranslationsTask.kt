@@ -54,7 +54,12 @@ abstract class CheckTranslationsTask : DefaultTask() {
     fun run() {
         val modules = listOf(
             TranslationCheck.Module("TV", englishTv.get().asFile, resTv.get().asFile),
-            TranslationCheck.Module("Companion", englishCompanion.get().asFile, resCompanion.get().asFile),
+            TranslationCheck.Module(
+                "Companion",
+                englishCompanion.get().asFile,
+                resCompanion.get().asFile,
+                TranslationCheck.Format.COMPOSE,
+            ),
         )
         val changed = if (baseRef.isPresent) {
             collectChanged(project.projectDir, baseRef.get(), modules)

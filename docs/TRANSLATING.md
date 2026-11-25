@@ -23,7 +23,7 @@ Use these terms the same way every time. The first column is the English term. T
 | Term | What it means |
 | ---- | ------------- |
 | Trusted Network | A network the user marked as safe. The companion only looks for TVs there. Never write this as home network. |
-| Home | The TV's main screen, and the app that shows it. |
+| Home | The TV's main screen, and the app that shows it. Where a string's note says Keep: Home, leave it in English. |
 | Compile | Preparing an app on the TV so it opens faster. |
 | Companion | SideSpeed Companion, the phone or computer app that starts the helper and checks TVs. |
 | My Apps | The list of apps installed on the TV. |
@@ -35,7 +35,7 @@ Use these terms the same way every time. The first column is the English term. T
 
 Never translate these names. Some English strings also carry a Keep note. Keep those words exactly as written, with the same capitals.
 
-SideSpeed, SideSpeed Companion, Fire TV, Google TV, Tailscale, Downloader, Android, ADB, GitHub, F-Droid, IzzyOnDroid, CleanYourTV, DevJardins, Ko-fi, Home, APK, GPL-3.0, Google, Creative Commons 3.0 Attribution License, Allow debugging, Windows, PowerShell, Terminal, Command Prompt, adb shell, Fire OS.
+SideSpeed, SideSpeed Companion, Fire TV, Google TV, Tailscale, Downloader, Android, ADB, GitHub, F-Droid, IzzyOnDroid, CleanYourTV, DevJardins, Ko-fi, APK, GPL-3.0, Google, Creative Commons 3.0 Attribution License, Allow debugging, Windows, PowerShell, Terminal, Command Prompt, adb shell, Fire OS.
 
 ## What never to translate
 
@@ -46,7 +46,14 @@ Leave these exactly as they are:
 - Addresses, ports, versions, host names, and package names.
 - The exact button and setting names the text tells you to match.
 
-Never name or recommend apps. The English text never suggests an app to install, and neither should a translation. The sentence "Trusted Network" always follows the glossary above.
+Never name or recommend apps. The English text never suggests an app to install, and neither should a translation. Write "Trusted Network" as the glossary above says.
+
+## Apostrophes, quotes and percent signs
+
+The two apps read their files differently.
+
+- TV app: write `\'` for an apostrophe, `\"` for a quote, and `%%` for a percent sign.
+- Companion app: write `'`, `"` and `%` as they are, with no backslash and no doubled `%`.
 
 ## How a language ships
 

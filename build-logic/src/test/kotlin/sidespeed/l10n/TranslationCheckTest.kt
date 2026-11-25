@@ -19,7 +19,10 @@ class TranslationCheckTest {
     private fun resource(name: String): String =
         javaClass.getResource(name)!!.readText()
 
-    private fun layout(translations: Map<String, String>): TranslationCheck.Module {
+    private fun layout(
+        translations: Map<String, String>,
+        format: TranslationCheck.Format = TranslationCheck.Format.ANDROID,
+    ): TranslationCheck.Module {
         val root = tmp.newFolder()
         val english = resource("english.xml")
         val englishFile = File(root, "english.xml").apply { writeText(english) }
@@ -28,15 +31,16 @@ class TranslationCheckTest {
         for ((folder, xml) in translations) {
             File(resDir, folder).apply { mkdir() }.resolve("strings.xml").apply { writeText(xml) }
         }
-        return TranslationCheck.Module("TV", englishFile, resDir)
+        return TranslationCheck.Module("TV", englishFile, resDir, format)
     }
 
     private fun check(
         translations: Map<String, String>,
         baseRef: String? = null,
         changedKeys: Map<String, Set<String>> = emptyMap(),
+        format: TranslationCheck.Format = TranslationCheck.Format.ANDROID,
     ): TranslationCheck.Result {
-        val module = layout(translations)
+        val module = layout(translations, format)
         val byPath = changedKeys.mapKeys { (folder, _) ->
             File(module.resDir, folder).resolve("strings.xml").path
         }
@@ -179,6 +183,37 @@ class TranslationCheckTest {
         val xml = fr(mapOf("hello" to "<string name=\"hello\">Bonjour de SideSpeed 100%</string>"))
         val result = check(mapOf("values-fr" to xml))
         assertTrue(result.errors.any { it.key == "hello" })
+    }
+
+    // Compose resources only unescape \n, \t, \uXXXX and \\, and only replace %1$s-style
+    // placeholders, so \' shows its backslash and %% shows two percent signs.
+
+    @Test
+    fun compose_bare_apostrophe_and_quote_pass() {
+        val xml = fr(mapOf("hello" to "<string name=\"hello\">L'app \"SideSpeed\"</string>"))
+        val result = check(mapOf("values-fr" to xml), format = TranslationCheck.Format.COMPOSE)
+        assertTrue(result.errors.none { it.key == "hello" })
+    }
+
+    @Test
+    fun compose_escaped_apostrophe_fails() {
+        val xml = fr(mapOf("hello" to "<string name=\"hello\">L\\'app SideSpeed</string>"))
+        val result = check(mapOf("values-fr" to xml), format = TranslationCheck.Format.COMPOSE)
+        assertTrue(result.errors.any { it.key == "hello" && it.message.contains("backslash") })
+    }
+
+    @Test
+    fun compose_lone_percent_passes() {
+        val xml = fr(mapOf("careful" to "<string name=\"careful\">Soyez prudent avec %1${D}s 100%</string>"))
+        val result = check(mapOf("values-fr" to xml), format = TranslationCheck.Format.COMPOSE)
+        assertTrue(result.errors.none { it.key == "careful" })
+    }
+
+    @Test
+    fun compose_double_percent_fails() {
+        val xml = fr(mapOf("careful" to "<string name=\"careful\">Soyez prudent avec %1${D}s 100%%</string>"))
+        val result = check(mapOf("values-fr" to xml), format = TranslationCheck.Format.COMPOSE)
+        assertTrue(result.errors.any { it.key == "careful" && it.message.contains("%%") })
     }
 
     @Test

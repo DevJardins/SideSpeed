@@ -16,7 +16,21 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 object TranslationCheck {
 
-    data class Module(val name: String, val englishFile: File, val resDir: File)
+    /**
+     * How the strings are read at run time.
+     *
+     * [ANDROID]: aapt2 needs \' and \" escaped, and a literal percent sign is written %%.
+     * [COMPOSE]: Compose resources only unescape \n, \t, \uXXXX and \\, and only replace
+     * %1$s-style placeholders, so \' shows its backslash and %% shows two percent signs.
+     */
+    enum class Format { ANDROID, COMPOSE }
+
+    data class Module(
+        val name: String,
+        val englishFile: File,
+        val resDir: File,
+        val format: Format = Format.ANDROID,
+    )
 
     data class Error(val file: String, val key: String, val message: String) {
         override fun toString(): String = "$file: $key: $message"
@@ -57,7 +71,7 @@ object TranslationCheck {
             }
             val translationFiles = translationFiles(module.resDir)
             for (file in translationFiles) {
-                errors.addAll(checkFile(file, english, displayRoot))
+                errors.addAll(checkFile(file, english, module.format, displayRoot))
             }
             val gate = LanguageGate.evaluate(module.englishFile, module.resDir, bar)
             val scores = (gate.included.map { it to true } + gate.excluded.map { it to false })
@@ -292,7 +306,7 @@ object TranslationCheck {
 
     // Checks
 
-    private fun checkFile(file: File, english: EnglishFile, displayRoot: File?): List<Error> {
+    private fun checkFile(file: File, english: EnglishFile, format: Format, displayRoot: File?): List<Error> {
         val translated = try {
             parseTranslation(file.readText())
         } catch (e: Exception) {
@@ -328,7 +342,7 @@ object TranslationCheck {
                     }
                     checkArgs(file, key, null, entry.text.args, want.text.args, errors, displayRoot)
                     checkKeeps(file, key, null, entry.text.text, want.keeps, errors, displayRoot)
-                    checkMarkup(file, key, entry.text.text, errors, displayRoot)
+                    checkMarkup(file, key, entry.text.text, format, errors, displayRoot)
                 }
                 is TransEntry.Group -> {
                     if (want.text != null) {
@@ -348,7 +362,7 @@ object TranslationCheck {
                             checkArgs(file, key, quantity, got.args, expected.args, errors, displayRoot)
                         }
                         checkKeeps(file, key, quantity, got.text, want.keeps, errors, displayRoot)
-                        checkMarkup(file, key, got.text, errors, displayRoot)
+                        checkMarkup(file, key, got.text, format, errors, displayRoot)
                     }
                 }
             }
@@ -430,7 +444,47 @@ object TranslationCheck {
         }
     }
 
-    private fun checkMarkup(file: File, key: String, text: String, errors: MutableList<Error>, displayRoot: File?) {
+    private fun checkMarkup(
+        file: File,
+        key: String,
+        text: String,
+        format: Format,
+        errors: MutableList<Error>,
+        displayRoot: File?,
+    ) {
+        if (text.contains("@string/")) {
+            errors.add(Error(display(displayRoot, file), key, "This translation must not use @string/ references."))
+        }
+        if (text.contains('<') || text.contains('>')) {
+            errors.add(Error(display(displayRoot, file), key, "This translation has an unbalanced tag. Tags must open and close in pairs."))
+        }
+        when (format) {
+            Format.ANDROID -> checkAndroidEscapes(file, key, text, errors, displayRoot)
+            Format.COMPOSE -> checkComposeEscapes(file, key, text, errors, displayRoot)
+        }
+    }
+
+    private fun checkComposeEscapes(file: File, key: String, text: String, errors: MutableList<Error>, displayRoot: File?) {
+        if (text.contains("\\'") || text.contains("\\\"")) {
+            errors.add(
+                Error(
+                    display(displayRoot, file), key,
+                    "This translation puts a backslash before an apostrophe or quote. " +
+                        "The Companion shows that backslash, so write ' and \" without it.",
+                ),
+            )
+        }
+        if (text.contains("%%")) {
+            errors.add(
+                Error(
+                    display(displayRoot, file), key,
+                    "This translation has %%. The Companion shows that as two percent signs, so write a single %.",
+                ),
+            )
+        }
+    }
+
+    private fun checkAndroidEscapes(file: File, key: String, text: String, errors: MutableList<Error>, displayRoot: File?) {
         for (i in text.indices) {
             val c = text[i]
             if ((c == '\'' || c == '"') && (i == 0 || text[i - 1] != '\\')) {
@@ -438,12 +492,6 @@ object TranslationCheck {
                 errors.add(Error(display(displayRoot, file), key, "This translation has $what."))
                 break
             }
-        }
-        if (text.contains("@string/")) {
-            errors.add(Error(display(displayRoot, file), key, "This translation must not use @string/ references."))
-        }
-        if (text.contains('<') || text.contains('>')) {
-            errors.add(Error(display(displayRoot, file), key, "This translation has an unbalanced tag. Tags must open and close in pairs."))
         }
         var i = 0
         while (i < text.length) {
