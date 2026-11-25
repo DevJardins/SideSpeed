@@ -130,6 +130,10 @@ settings_interval_hours#one	%1$d hour
 settings_interval_hours#other	%1$d hours
 settings_interval_minutes#one	%1$d minute
 settings_interval_minutes#other	%1$d minutes
+settings_language	Language
+settings_language_not_complete	Not complete in this version. Showing English for now.
+settings_language_same_as_device	Same as device
+settings_language_selected	✓ %1$s
 settings_no_network_to_trust	No network to trust
 settings_no_overlay	Tailscale isn't running with a network connection, so there is no tailnet to trust
 settings_notifications	Notifications

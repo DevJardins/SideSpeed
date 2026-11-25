@@ -40,20 +40,27 @@ import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import org.jetbrains.compose.resources.stringResource
 
-enum class Page { HOME, ADD, SETTINGS, ABOUT }
+enum class Page { HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
 
 /**
  * Where the user is in the app. Held outside [CompanionApp] so a language switch, which rebuilds
  * the app's content, keeps the page; saveable so an Android activity recreate keeps it too.
  */
-class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false) {
+class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false, focusLanguage: Boolean = false) {
     var page by mutableStateOf(page)
     var dismissedFirstRun by mutableStateOf(dismissedFirstRun)
+    var focusLanguage by mutableStateOf(focusLanguage)
 
     companion object {
         val Saver: Saver<CompanionNav, Any> = listSaver(
-            save = { listOf(it.page.name, it.dismissedFirstRun) },
-            restore = { CompanionNav(Page.valueOf(it[0] as String), it[1] as Boolean) },
+            save = { listOf(it.page.name, it.dismissedFirstRun, it.focusLanguage) },
+            restore = {
+                CompanionNav(
+                    Page.valueOf(it[0] as String),
+                    it[1] as Boolean,
+                    it.getOrNull(2) as? Boolean ?: false,
+                )
+            },
         )
     }
 }
@@ -63,7 +70,7 @@ class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false) {
 fun rememberCompanionNav(): CompanionNav = rememberSaveable(saver = CompanionNav.Saver) { CompanionNav() }
 
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
-private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
+private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
 
 /** Root of the companion UI, shared by the Android and desktop apps. */
 @Composable
@@ -81,6 +88,7 @@ fun CompanionApp(
     val state by vm.state.collectAsState()
     var page by nav::page
     var dismissedFirstRun by nav::dismissedFirstRun
+    var focusLanguage by nav::focusLanguage
     // A TV was added from the Add screen: go Home, where its card is the confirmation.
     LaunchedEffect(state.addedAddress) {
         if (state.addedAddress != null) {
@@ -94,6 +102,7 @@ fun CompanionApp(
         page == Page.HOME -> Screen.HOME
         page == Page.ADD -> Screen.ADD
         page == Page.SETTINGS -> Screen.SETTINGS
+        page == Page.LANGUAGE -> Screen.LANGUAGE
         else -> Screen.ABOUT
     }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -146,7 +155,21 @@ fun CompanionApp(
                     { vm.trustCurrentNetwork("") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
+                    language = language,
+                    onLanguage = { page = Page.LANGUAGE },
+                    focusLanguage = focusLanguage,
+                    onConsumeLanguageFocus = { focusLanguage = false },
                 )
+                Screen.LANGUAGE -> {
+                    val controller = language
+                    // Unreachable: Settings shows the Language button only when a controller is set.
+                    if (controller != null) {
+                        LanguageScreen(
+                            controller = controller,
+                            onBack = { focusLanguage = true; page = Page.SETTINGS },
+                        )
+                    }
+                }
                 Screen.ABOUT -> AboutScreen(
                     aboutText = aboutText,
                     versionName = aboutVersion,
