@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -49,11 +50,18 @@ fun LanguageScreen(
     BackHandler(onBack = onBack)
     // Give the D-pad a starting point: the current language takes focus when the screen opens.
     val selectedFocus = remember { FocusRequester() }
+    val listState = rememberLazyListState()
     LaunchedEffect(options) {
-        // The screen just come from releases D-pad focus a frame after it leaves;
+        // The screen we came from releases D-pad focus a frame after it leaves;
         // wait that out so this request wins, as in HomeScreen.
         withFrameNanos { }
         withFrameNanos { }
+        // A lazy row off screen is not composed yet, so bring it into view first.
+        val index = options.indexOfFirst { it.selected }
+        if (index >= 0) {
+            listState.scrollToItem(index)
+            withFrameNanos { }
+        }
         runCatching { selectedFocus.requestFocus() }
     }
     SsScreen {
@@ -73,6 +81,7 @@ fun LanguageScreen(
                 Text(stringResource(R.string.about_language), style = SsType.Headline, color = SsColors.TextPrimary)
             }
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 4.dp, horizontal = 4.dp),
             ) {

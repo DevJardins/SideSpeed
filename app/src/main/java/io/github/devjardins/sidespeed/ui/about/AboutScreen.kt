@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -72,7 +73,14 @@ fun AboutScreen(
     // unless returning from the Language screen, which focuses the Language row instead.
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { if (!focusLanguageRow) runCatching { backFocus.requestFocus() } }
-    LaunchedEffect(focusLanguageRow) { if (focusLanguageRow) runCatching { languageRowFocus.requestFocus() } }
+    LaunchedEffect(focusLanguageRow) {
+        if (focusLanguageRow) {
+            // Wait out the Language screen releasing focus, as LanguageScreen does.
+            withFrameNanos { }
+            withFrameNanos { }
+            runCatching { languageRowFocus.requestFocus() }
+        }
+    }
     // Focus state via the interaction source (the same channel tv-material buttons
     // use), driving the QR frame's ring below.
     val qrInteraction = remember { MutableInteractionSource() }
