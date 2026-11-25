@@ -8,7 +8,6 @@ import android.os.StatFs
 import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.text.uiText
-import java.util.Locale
 
 data class StorageInfo(val freeBytes: Long, val totalBytes: Long)
 data class MemoryInfo(val availBytes: Long, val totalBytes: Long)
@@ -44,6 +43,6 @@ class AndroidDeviceInfo(private val context: Context) : DeviceInfo {
 /** 1000-based: whole MB below 1 GB, one decimal GB at or above. */
 fun formatBytes(bytes: Long): UiText {
     val b = bytes.coerceAtLeast(0)
-    if (b < 1_000_000_000) return uiText(R.string.tools_bytes_mb, UiText.Ltr((b / 1_000_000).toString()))
-    return uiText(R.string.tools_bytes_gb, UiText.Ltr(String.format(Locale.US, "%.1f", b / 1_000_000_000.0)))
+    if (b < 1_000_000_000) return uiText(R.string.tools_bytes_mb, UiText.Integer(b / 1_000_000))
+    return uiText(R.string.tools_bytes_gb, UiText.Decimal(b / 1_000_000_000.0, 1))
 }

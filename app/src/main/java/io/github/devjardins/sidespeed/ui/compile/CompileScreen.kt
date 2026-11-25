@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,8 @@ import io.github.devjardins.sidespeed.updates.AvailableUpdate
 import io.github.devjardins.sidespeed.updates.updateCardTitle
 import io.github.devjardins.sidespeed.updates.updateSourceLine
 import kotlinx.coroutines.delay
+import java.text.NumberFormat
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /** "Success" / "Failure", plus the reason when the outcome adds one. */
@@ -77,7 +80,15 @@ fun resultBanner(outcome: CompileOutcome): UiText = when (outcome) {
     }
 }
 
-fun formatElapsed(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
+/** "MM:SS" in the locale's digits; the colon is a separator, not a decimal point. */
+fun formatElapsed(seconds: Long, locale: Locale): String {
+    val s = seconds.coerceAtLeast(0)
+    val twoDigits = NumberFormat.getIntegerInstance(locale).apply {
+        isGroupingUsed = false
+        minimumIntegerDigits = 2
+    }
+    return "${twoDigits.format(s / 60)}:${twoDigits.format(s % 60)}"
+}
 
 @Composable
 fun CompileScreen(
@@ -197,7 +208,7 @@ fun CompileScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsSpinner(24.dp)
                         Text(
-                            stringResource(R.string.compile_compiling_elapsed, formatElapsed(elapsed)),
+                            stringResource(R.string.compile_compiling_elapsed, formatElapsed(elapsed, LocalContext.current.resources.configuration.locales[0])),
                             style = SsType.Title,
                             color = SsColors.TextPrimary,
                         )
@@ -278,8 +289,8 @@ fun CompileScreen(
 /** "12 MB", "12.5 MB": the update download size in whole or one-decimal megabytes. */
 fun formatUpdateSize(size: Long): UiText {
     val tenths = ((size / 1_048_576.0) * 10).roundToInt()
-    val number = if (tenths % 10 == 0) "${tenths / 10}" else "${tenths / 10}.${tenths % 10}"
-    return uiText(R.string.tools_bytes_mb, UiText.Ltr(number))
+    val number = if (tenths % 10 == 0) UiText.Integer((tenths / 10).toLong()) else UiText.Decimal(tenths / 10.0, 1)
+    return uiText(R.string.tools_bytes_mb, number)
 }
 
 /** The host of an update URL ("f-droid.org"), or the URL itself when it has none. */
