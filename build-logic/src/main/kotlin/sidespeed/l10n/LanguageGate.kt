@@ -21,6 +21,17 @@ object LanguageGate {
 
     /** The project ships every language at or above this share of English; also printed by [summary]. */
 
+    /**
+     * Debug's pseudo-locales (English stretched, and right-to-left), in localeFilters form.
+     * Only debug builds may add these: a release filter of `ar-rXB` also lets in every
+     * library's plain `ar` strings, shipping Arabic bits of a language we don't ship.
+     */
+    val PSEUDO_LOCALE_FILTERS = listOf("en-rXA", "ar-rXB")
+
+    /** localeFilters for every build: English plus the languages at or above the bar. */
+    fun releaseLocaleFilters(result: GateResult): List<String> =
+        listOf("en") + result.included.map { tagToFilter(it.tag) }
+
     /** aapt2 `-c` / localeFilters form of a BCP-47 tag: `pt-BR` -> `pt-rBR`, `sr-Latn` -> `b+sr+Latn`. */
     fun tagToFilter(tag: String): String {
         val parts = tag.split('-')

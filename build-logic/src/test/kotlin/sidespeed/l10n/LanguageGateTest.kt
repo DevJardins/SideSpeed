@@ -180,6 +180,20 @@ class LanguageGateTest {
     }
 
     @Test
+    fun release_filters_are_english_and_shipped_languages_only() {
+        val result = GateResult(
+            included = listOf(LanguageScore("fr", 10, 10), LanguageScore("pt-BR", 8, 10)),
+            excluded = listOf(LanguageScore("ar", 1, 10)),
+        )
+        assertEquals(listOf("en", "fr", "pt-rBR"), LanguageGate.releaseLocaleFilters(result))
+    }
+
+    @Test
+    fun pseudo_locale_filters_are_kept_apart_for_debug() {
+        assertEquals(listOf("en-rXA", "ar-rXB"), LanguageGate.PSEUDO_LOCALE_FILTERS)
+    }
+
+    @Test
     fun qualifier_to_tag() {
         assertEquals("fr", LanguageGate.qualifierToTag("values-fr"))
         assertEquals("pt-BR", LanguageGate.qualifierToTag("values-pt-rBR"))
