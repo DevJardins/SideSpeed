@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
@@ -28,7 +29,7 @@ object AppLanguage {
         if (Build.VERSION.SDK_INT >= 33) {
             val locales = context.getSystemService(LocaleManager::class.java)?.applicationLocales
             if (locales == null || locales.isEmpty) return null
-            return locales.toLanguageTags()
+            return locales[0].toLanguageTag()
         }
         return PrefsLanguageStore(context).chosen()
     }
@@ -45,7 +46,12 @@ object AppLanguage {
 
     fun wrap(base: Context): Context {
         if (Build.VERSION.SDK_INT >= 33) return base
-        val tag = PrefsLanguageStore(base).chosen() ?: return base
+        val tag = PrefsLanguageStore(base).chosen()
+        if (tag == null) {
+            // "Same as device" after another choice in this process: put the device language back.
+            Locale.setDefault(Resources.getSystem().configuration.locales[0])
+            return base
+        }
         val locale = localeFor(tag)
         Locale.setDefault(locale)
         val config = Configuration(base.resources.configuration)
