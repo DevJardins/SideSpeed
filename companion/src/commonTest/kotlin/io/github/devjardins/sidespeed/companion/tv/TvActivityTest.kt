@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.companion.tv
 
+import io.github.devjardins.sidespeed.companion.testing.EnglishStrings
+import io.github.devjardins.sidespeed.companion.testing.english
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -91,8 +94,16 @@ class TvActivityTest {
         val now = 1_731_000_000_000L
         assertNull(lastCaption("", 0L, now))
         assertNull(lastCaption("TizenTube", 0L, now))
-        assertEquals("Last: TizenTube · 3 min ago", lastCaption("TizenTube", now - 180_000L, now))
-        assertEquals("Last: TizenTube · just now", lastCaption("TizenTube", now - 10_000L, now))
-        assertEquals("Last: TizenTube · 2 h ago", lastCaption("TizenTube", now - 7_200_000L, now))
+        assertEquals("Last: TizenTube · 1 min ago", lastCaption("TizenTube", now - 60_000L, now)!!.english())
+        assertEquals("Last: TizenTube · 3 min ago", lastCaption("TizenTube", now - 180_000L, now)!!.english())
+        assertEquals("Last: TizenTube · just now", lastCaption("TizenTube", now - 10_000L, now)!!.english())
+        assertEquals("Last: TizenTube · 1 h ago", lastCaption("TizenTube", now - 3_600_000L, now)!!.english())
+        assertEquals("Last: TizenTube · 2 h ago", lastCaption("TizenTube", now - 7_200_000L, now)!!.english())
+        assertEquals("Last: TizenTube · 1 d ago", lastCaption("TizenTube", now - 86_400_000L, now)!!.english())
+        assertEquals("Last: TizenTube · 2 d ago", lastCaption("TizenTube", now - 172_800_000L, now)!!.english())
+        assertEquals(
+            "Last: \u2066com.example.app\u2069 · 3 min ago",
+            lastCaption("com.example.app", now - 180_000L, now, labelIsLtr = true)!!.resolve(EnglishStrings, rtl = true),
+        )
     }
 }

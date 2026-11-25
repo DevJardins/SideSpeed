@@ -1,4 +1,6 @@
 <resources>
-    <string name="app_name">SideSpeed Companion</string>
+    <!-- Application name shown by the Android launcher. Keep: SideSpeed Companion -->
+    <string name="app_name" translatable="false">SideSpeed Companion</string>
+    <!-- Notification channel name in Android system settings for helper restart alerts. -->
     <string name="channel_restarts">Helper restarts</string>
 </resources>

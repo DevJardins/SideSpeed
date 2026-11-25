@@ -1,0 +1,355 @@
+<resources>
+    <!-- App and shared -->
+    <!-- Application name shown in window title, tray tooltip, and About screen. Keep: SideSpeed Companion -->
+    <string name="app_name" translatable="false">SideSpeed Companion</string>
+    <!-- Brand name for the TV app. Keep: SideSpeed -->
+    <string name="brand_sidespeed" translatable="false">SideSpeed</string>
+    <!-- Retry button label shown after a failed update or TV connection check. -->
+    <string name="common_try_again">Try again</string>
+    <!-- Accessibility description for the header back arrow button. -->
+    <string name="common_back">Back</string>
+    <!-- Button cancelling pairing or removing a TV. -->
+    <string name="common_cancel">Cancel</string>
+    <!-- Button submitting a TV address or connect port. -->
+    <string name="common_add">Add</string>
+    <!-- Confirmation button removing a saved TV, network, or tailnet. -->
+    <string name="common_remove">Remove</string>
+    <!-- Button saving a renamed Trusted Network label. -->
+    <string name="common_save">Save</string>
+    <!-- Button confirming the classic ADB warning to start checking a saved TV. -->
+    <string name="common_continue">Continue</string>
+
+    <!-- First run -->
+    <!-- Heading on the first-run screen. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="first_run_title">Choose your Trusted Network</string>
+    <!-- Safety warning: translate the meaning accurately; do not soften. Explains that network scanning is opt-in per chosen network. Keep: SideSpeed Companion -->
+    <string name="first_run_body">SideSpeed Companion only works on networks you choose. It never connects or scans anywhere else.</string>
+    <!-- Summary of the current Wi-Fi or Ethernet network on First Run. %1$s is the router IP, %2$s is the subnet CIDR. -->
+    <string name="first_run_router">Router %1$s · %2$s</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Explains who can reach a TV added over Tailscale. %1$s is the Tailscale tailnet name. Keep: Tailscale -->
+    <string name="first_run_tailnet">Tailscale network %1$s. Anyone who administers it could reach a TV added through it.</string>
+    <!-- Primary button on First Run to trust the current local network. -->
+    <string name="first_run_trust">Trust this network</string>
+    <!-- Button on First Run to trust the current Tailscale network. Keep: Tailscale -->
+    <string name="first_run_use_tailscale">Use Tailscale</string>
+    <!-- Button on First Run to skip trusting any network for now. -->
+    <string name="first_run_not_now">Not now</string>
+
+    <!-- Home -->
+    <!-- Line under a TV status showing minutes since last check. %1$d is minutes. -->
+    <plurals name="home_checked_min_ago">
+        <item quantity="one">Checked %1$d min ago</item>
+        <item quantity="other">Checked %1$d min ago</item>
+    </plurals>
+    <!-- Note shown on non-Fire TV cards explaining how SideSpeed works there. Keep: Fire TV, SideSpeed, Google TV, Home -->
+    <string name="home_not_fire_tv_note">Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. On Google TV the helper is optional; Home shows what's compiling.</string>
+    <!-- Error when another TV answered at the saved or typed address. -->
+    <string name="home_different_device">A different device answered at that address.</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Shown when TV identity verification fails. Keep: SideSpeed -->
+    <string name="home_tv_unproven">This TV didn't prove it's the one you added, so SideSpeed stopped talking to it. If the TV was reset, remove it and add it again.</string>
+    <!-- Status message when restarting a TV that belongs to a different Trusted Network. -->
+    <string name="home_not_checked_here">Not checked: not on its network</string>
+    <!-- Persistent warning banner when the saved file was written by a newer version of the app. Keep: SideSpeed Companion -->
+    <string name="home_older_copy">This copy of SideSpeed Companion is older than the one that saved your TVs. Changes won't be saved; open the newest copy instead.</string>
+    <!-- Shown on a saved classic TV card when wireless debugging is available to upgrade to an encrypted link. -->
+    <string name="home_pair_offer">This TV can use an encrypted connection. Pair it to keep checking it.</string>
+    <!-- Shown on a saved TV card while waiting for user trust choice before contacting the TV. Keep: SideSpeed -->
+    <string name="home_not_contacted">SideSpeed isn't checking this TV until you choose.</string>
+    <!-- Prompt on a legacy TV card saved before device secrets existed. Keep: SideSpeed -->
+    <string name="home_confirm_tv">Confirm this is your TV before SideSpeed uses it.</string>
+    <!-- Button confirming ownership of a legacy TV. -->
+    <string name="home_confirm_button">Confirm</string>
+    <!-- Status line replacing "Checked N min ago" while a TV is waiting for a trust decision. -->
+    <string name="home_waiting_for_you">Waiting for you</string>
+    <!-- Shown on an encrypted TV card when its wireless debugging port is not reachable. -->
+    <string name="home_wireless_off">Turn wireless debugging back on to keep this TV up to date.</string>
+    <!-- Secondary button on an encrypted TV card to enter the wireless debugging port manually. -->
+    <string name="home_type_the_port">Type the port</string>
+    <!-- Scope note on a Tailscale-address TV saved under a Trusted Network. %1$s is the Trusted Network name. -->
+    <string name="home_kept_alive_while_on">Kept alive while on %1$s</string>
+    <!-- Prefix for a saved TV status shown when off its Trusted Network and potentially stale. %1$s is the status label. -->
+    <string name="home_last_seen">Last seen: %1$s</string>
+    <!-- TV card status label when the SideSpeed helper process is running on the TV. -->
+    <string name="home_status_running">Helper running</string>
+    <!-- TV card status label when the SideSpeed helper process is not running on the TV. -->
+    <string name="home_status_not_running">Not running</string>
+    <!-- TV card status label when the TV is offline or unreachable. -->
+    <string name="home_status_offline">Offline</string>
+    <!-- TV card status label when waiting for the user to accept the TV's USB debugging prompt. -->
+    <string name="home_status_waiting_for_allow">Waiting for you to allow</string>
+    <!-- TV card status label when SideSpeed is not installed on the TV. Keep: SideSpeed -->
+    <string name="home_status_not_installed">SideSpeed isn't installed</string>
+    <!-- TV card status label when another device answered at the TV's address. -->
+    <string name="home_status_wrong_device">Different device at this address</string>
+    <!-- TV card status label when starting the helper over ADB failed. -->
+    <string name="home_status_start_failed">Couldn't start the helper</string>
+    <!-- TV card status label when a TV requires user action before it can be checked. -->
+    <string name="home_status_needs_attention">Not checking</string>
+    <!-- TV card status label when a TV failed its identity check and is parked. -->
+    <string name="home_status_check_failed">Stopped: check failed</string>
+    <!-- TV card status label before the TV has been checked for the first time. -->
+    <string name="home_status_unknown">Not checked yet</string>
+    <!-- Status banner at top of Home when on a Trusted Network. %1$s is the network name. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="home_trust_banner">Trusted Network: %1$s ✓</string>
+    <!-- Status banner at top of Home when only a trusted Tailscale network is connected. %1$s is the tailnet name. -->
+    <string name="home_trust_tailnet_banner">Trusted tailnet: %1$s ✓</string>
+    <!-- Warning banner at top of Home when neither a Trusted Network nor a trusted tailnet is active. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="home_not_trusted">Not on a Trusted Network</string>
+    <!-- Empty state heading on Home when no TVs are saved. -->
+    <string name="home_empty_title">No TVs yet</string>
+    <!-- Empty state explanation on Home. Use the glossary term for Companion. Keep: Fire TV, SideSpeed, Google TV -->
+    <string name="home_empty_body">Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.</string>
+    <!-- Button on Home and heading on Add TV to add a new TV. -->
+    <string name="home_add_tv">Add a TV</string>
+    <!-- Temporary status line on a TV card while Restart now is running. -->
+    <string name="home_restarting">Restarting…</string>
+    <!-- Button on a TV card and desktop tray menu to check and restart the helper immediately. -->
+    <string name="home_restart_now">Restart now</string>
+    <!-- Brief confirmation text shown next to Restart now after the helper restarts. -->
+    <string name="home_restarted">Restarted ✓</string>
+    <!-- Inline confirmation prompt before removing a saved TV. %1$s is the TV name. -->
+    <string name="home_remove_confirm">Remove %1$s?</string>
+    <!-- Button on a TV card asking to remove the saved TV. -->
+    <string name="home_remove_tv">Remove TV</string>
+
+    <!-- Live activity -->
+    <!-- Caption under an idle TV card when the last compile finished under a minute ago. %1$s is the app name. -->
+    <string name="activity_last_just_now">Last: %1$s · just now</string>
+    <!-- Caption under an idle TV card when the last compile finished minutes ago. %1$s is app name, %2$d is minutes. -->
+    <plurals name="activity_last_min_ago">
+        <item quantity="one">Last: %1$s · %2$d min ago</item>
+        <item quantity="other">Last: %1$s · %2$d min ago</item>
+    </plurals>
+    <!-- Caption under an idle TV card when the last compile finished hours ago. %1$s is app name, %2$d is hours. -->
+    <plurals name="activity_last_hour_ago">
+        <item quantity="one">Last: %1$s · %2$d h ago</item>
+        <item quantity="other">Last: %1$s · %2$d h ago</item>
+    </plurals>
+    <!-- Caption under an idle TV card when the last compile finished days ago. %1$s is app name, %2$d is days. -->
+    <plurals name="activity_last_day_ago">
+        <item quantity="one">Last: %1$s · %2$d d ago</item>
+        <item quantity="other">Last: %1$s · %2$d d ago</item>
+    </plurals>
+    <!-- Caption on a TV card when the TV app is older than the live-activity provider. Keep: SideSpeed -->
+    <string name="activity_needs_update">Update SideSpeed on the TV to see live compiles.</string>
+    <!-- Caption under the active compile row showing how many apps remain in the queue. %1$d is the count. -->
+    <plurals name="activity_more_waiting">
+        <item quantity="one">%1$d more waiting</item>
+        <item quantity="other">%1$d more waiting</item>
+    </plurals>
+    <!-- Temporary row shown for 2.5 s when a background app compile fails. %1$s is the app name or package. -->
+    <string name="activity_compile_failed">Couldn't compile %1$s</string>
+    <!-- Status row inside a TV card when compiles are queued waiting for the helper process. -->
+    <string name="activity_waiting_helper">Waiting for the helper</string>
+    <!-- Status row inside a TV card when a compile stopped mid-run. %1$s is the app name or package. -->
+    <string name="activity_interrupted">%1$s was interrupted</string>
+    <!-- Caption under an interrupted compile explaining what happens next. Keep: SideSpeed -->
+    <string name="activity_interrupted_note">SideSpeed retries it when the helper is back.</string>
+    <!-- Status row inside a TV card when no compiles are queued or running. -->
+    <string name="activity_all_caught_up">All caught up</string>
+    <!-- Status next to SideSpeed's own row while optimizing itself on the TV. -->
+    <string name="activity_self_optimizing">Optimizing…</string>
+    <!-- Status pill on SideSpeed's own row after self-optimization completes. -->
+    <string name="activity_self_optimized">Optimized</string>
+    <!-- Status pill on SideSpeed's own row before self-optimization runs. -->
+    <string name="activity_self_not_optimized">Not optimized yet</string>
+    <!-- Caption explaining when SideSpeed finishes self-optimization on the TV. -->
+    <string name="activity_self_pending_note">It optimizes itself when you leave it on the TV.</string>
+
+    <!-- Add TV and pairing -->
+    <!-- Empty state on Add TV after a scan finishes with no new TVs. -->
+    <string name="add_no_tvs_found">No TVs found</string>
+    <!-- Error when trying to scan for TVs while not on a Trusted Network. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="add_not_trusted_error">Join a Trusted Network to find TVs</string>
+    <!-- Error when trying to add a TV while not on a Trusted Network or trusted tailnet. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="add_not_trusted_add">Join a Trusted Network to add a TV</string>
+    <!-- Instruction above the IP input on Add TV; "Always allow" refers to the TV's USB debugging prompt. -->
+    <string name="add_allow_step">Tick Always allow on your TV</string>
+    <!-- Validation error when an entered TV IP address is invalid. %1$s is an example IPv4 address like 192.168.1.50. -->
+    <string name="add_bad_address">Enter the TV's address, like %1$s</string>
+    <!-- Error when a device answers ADB without reporting a serial number. -->
+    <string name="add_no_serial">That device didn't identify itself, so it can't be added</string>
+    <!-- Error when adding a Tailscale node shared in from someone else's tailnet. -->
+    <string name="add_shared_peer">That device is shared in from another tailnet, so it can't be added</string>
+    <!-- Error when the current subnet cannot be swept automatically. -->
+    <string name="add_cant_scan">This network can't be scanned, so type the TV's address instead</string>
+    <!-- Error when an entered IP is outside private and Tailscale address ranges. Keep: Tailscale -->
+    <string name="add_outside_network">That isn't a private or Tailscale address</string>
+    <!-- Error when the entered or selected TV address did not respond. -->
+    <string name="add_unreachable">Couldn't reach that address on this network</string>
+    <!-- Error when writing or proving the identity secret on the TV fails during add. Keep: SideSpeed -->
+    <string name="add_tv_check_not_saved">SideSpeed couldn't save its check on this TV, so it wasn't added.</string>
+    <!-- Validation error when the custom scan CIDR range is invalid. %1$s is an example CIDR like 192.168.1.0/24. -->
+    <string name="add_bad_range">Enter a range on this network, like %1$s</string>
+    <!-- Fallback TV name when the device reports no model name. %1$s is the TV's IP address. -->
+    <string name="add_default_tv_name">TV at %1$s</string>
+    <!-- Progress line during a network scan on Add TV. %1$d is hosts scanned so far, %2$d is total hosts. -->
+    <plurals name="add_scan_progress">
+        <item quantity="one">Scanned %1$d of %2$d</item>
+        <item quantity="other">Scanned %1$d of %2$d</item>
+    </plurals>
+    <!-- Button on Add TV that scans the network for TVs. -->
+    <string name="add_find_tvs">Find TVs</string>
+    <!-- Label above the optional CIDR subnet input on Add TV. -->
+    <string name="add_range_label">Range to scan (optional)</string>
+    <!-- Button on Add TV stopping an active network scan. -->
+    <string name="add_stop">Stop</string>
+    <!-- Button on Add TV resuming a stopped or truncated network scan. -->
+    <string name="add_keep_scanning">Keep scanning</string>
+    <!-- Button label for a discovered TV while adding it is in progress. Keep both spaces before Adding…. %1$s is the TV IP address. -->
+    <string name="add_host_adding">%1$s  Adding…</string>
+    <!-- Instructions for wireless debugging pairing on Android TV / Google TV. Match Android's Wireless debugging settings labels. On Fire TV use the device's own label for the Network debugging setting, not a literal translation. -->
+    <string name="pair_steps">On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code.</string>
+    <!-- Label above the 6-digit pairing code text field. -->
+    <string name="pair_code_label">Pairing code</string>
+    <!-- Label above the numeric port text field in pairing. -->
+    <string name="pair_port_label">Port</string>
+    <!-- Button starting wireless debugging pairing or opening pairing for a saved classic TV. -->
+    <string name="pair_button">Pair</string>
+    <!-- Instructions for entering the Wireless debugging connect port when automatic lookup finds none. -->
+    <string name="pair_connect_port_hint">Type the port shown on the TV's Wireless debugging screen (after the colon in the IP address).</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Shown before connecting over unencrypted port 5555 ADB. Keep: SideSpeed -->
+    <string name="pair_classic_ack">This TV can't use an encrypted connection. SideSpeed can still connect the older way. Anyone on your network could see or change the commands it sends.</string>
+    <!-- Checkbox label confirming the cleartext ADB warning. -->
+    <string name="pair_classic_ack_check">I understand. Connect the older way.</string>
+    <!-- Validation error when entered Wireless debugging connect port is invalid. -->
+    <string name="pair_bad_connect_port">Enter the port shown on the TV's Wireless debugging screen.</string>
+    <!-- Pairing error when the TV rejects the 6-digit pairing code. -->
+    <string name="pair_wrong_code">That pairing code was not accepted. Check the code on the TV and try again.</string>
+    <!-- Pairing error when the TV is unreachable on the pairing port. -->
+    <string name="pair_unreachable">The TV could not be reached on that port.</string>
+    <!-- Pairing validation error when the code is not 6 digits. -->
+    <string name="pair_bad_code">Enter the 6-digit pairing code from the TV.</string>
+    <!-- Pairing validation error when the pairing port is invalid. -->
+    <string name="pair_bad_port">Enter the port shown next to the pairing code.</string>
+    <!-- Pairing validation error when the address is outside private networks. -->
+    <string name="pair_bad_host">That address is not on a private network.</string>
+    <!-- Fallback pairing error for unexpected failures. -->
+    <string name="pair_failed">Pairing did not finish. Check the code and the port, then try again.</string>
+    <!-- Scan diagnosis help when at least one TV was found. Keep: SideSpeed -->
+    <string name="diag_found">Tap a TV above to add it, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when hosts answered without ADB open. Keep: ADB, SideSpeed. Use the device's own label for the Network debugging setting on Fire TV. -->
+    <string name="diag_no_adb_on_live_hosts">Devices answered on this network, but none has ADB open. Turn on ADB or Network debugging on the TV, accept the prompt, then scan again, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when only a wireless debugging (TLS) host answered. Keep: SideSpeed -->
+    <string name="diag_tls_only">A TV answered over an encrypted connection. Pair it from the list, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when nothing answered the network scan. Keep: SideSpeed -->
+    <string name="diag_nothing_answered">Nothing answered on this network. Check the TV is on and on the same Wi-Fi, then scan again, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when the OS blocked local-network scanning. Keep: SideSpeed -->
+    <string name="diag_os_blocked">The system blocked the scan: allow local-network access for the companion, then scan again, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when a VPN hides the local network. Keep: SideSpeed -->
+    <string name="diag_vpn_active">A VPN is active, so the scan can't see your home network. Disconnect the VPN, then scan again, or type the address shown in SideSpeed on the TV</string>
+    <!-- Scan diagnosis help when the scan stopped early or hit the probe cap. Keep: SideSpeed -->
+    <string name="diag_partial">The scan covered only part of the network. Keep scanning to cover the rest, or type the address shown in SideSpeed on the TV</string>
+
+    <!-- Settings -->
+    <!-- Title for the Settings screen and accessibility label for the Home Settings button. -->
+    <string name="settings_title">Settings</string>
+    <!-- Card heading in Settings listing saved Trusted Networks. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="settings_trusted_networks">Trusted Networks</string>
+    <!-- Button next to a saved Trusted Network allowing the user to rename it. -->
+    <string name="settings_rename">Rename</string>
+    <!-- Button in Settings to save the current network as trusted. Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="settings_add_trusted_network">Add as Trusted Network</string>
+    <!-- Card heading in Settings for trusted Tailscale networks. -->
+    <string name="settings_tailnets">Tailnets</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Explains who can reach TVs over Tailscale. Keep: Tailscale -->
+    <string name="settings_tailnets_note">TVs you add through Tailscale are kept alive wherever Tailscale is connected. Anyone who administers the tailnet can reach them.</string>
+    <!-- Row in Settings listing a saved tailnet. %1$s is the saved label, %2$s is the tailnet name. -->
+    <string name="settings_tailnet_row">%1$s · %2$s</string>
+    <!-- Note shown in Settings when Tailscale is disconnected or unavailable. Keep: Tailscale -->
+    <string name="settings_tailscale_disconnected">Tailscale is not connected.</string>
+    <!-- Card heading in Settings for notification preferences. -->
+    <string name="settings_notifications">Notifications</string>
+    <!-- Switch row label enabling alerts when a TV needs user action or fails. -->
+    <string name="settings_notify_attention">Notify me when a TV needs attention</string>
+    <!-- Card heading in Settings above the background upkeep interval selector. -->
+    <string name="settings_check_every">Check every</string>
+    <!-- Upkeep interval option in minutes (currently 15). %1$d is the minute count. -->
+    <plurals name="settings_interval_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <!-- Upkeep interval option in hours (currently 1). %1$d is the hour count. -->
+    <plurals name="settings_interval_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <!-- Desktop Settings switch row label launching SideSpeed Companion automatically at login. -->
+    <string name="settings_start_at_login">Start when I log in</string>
+    <!-- Error when trying to trust a network while disconnected. -->
+    <string name="settings_no_network_to_trust">No network to trust</string>
+    <!-- Error when trying to trust Tailscale while Tailscale is off or disconnected. Keep: Tailscale -->
+    <string name="settings_no_overlay">Tailscale isn't running with a network connection, so there is no tailnet to trust</string>
+    <!-- Default label for a newly trusted LAN network. %1$d is 1, 2, ... Use the glossary term for Trusted Network; never translate as home network. -->
+    <string name="network_default_name">Trusted Network %1$d</string>
+    <!-- Default label for a newly trusted Tailscale network. %1$d is 1, 2, ... -->
+    <string name="tailnet_default_name">Tailnet %1$d</string>
+
+    <!-- About and updates -->
+    <!-- Button in Settings and header title on the About screen. -->
+    <string name="about_title">About and licences</string>
+    <!-- Version line on the About screen. %1$s is the app version string. -->
+    <string name="about_version">Version %1$s</string>
+    <!-- Button on the About screen triggering a manual release check. -->
+    <string name="about_check_updates">Check for updates</string>
+    <!-- Status line on the About screen while checking GitHub releases. -->
+    <string name="about_checking">Checking…</string>
+    <!-- Status line on the About screen when running the newest release. -->
+    <string name="about_up_to_date">You have the latest version.</string>
+    <!-- Status line on the About screen when a newer release exists. %1$s is the version number. Keep: SideSpeed Companion -->
+    <string name="about_available">SideSpeed Companion %1$s is available.</string>
+    <!-- Status line on the About screen when the manual update check fails. Keep: GitHub -->
+    <string name="about_check_failed">Couldn't reach GitHub. Try again later.</string>
+    <!-- Status line on About while an app update is downloading. %1$d is the percent; the % after the placeholder is literal (reorder for your locale). -->
+    <string name="about_downloading">Downloading… %1$d%</string>
+    <!-- Status line on the Android About screen after confirming an update install. -->
+    <string name="about_installing">Installing…</string>
+    <!-- Primary button on the Android About screen starting an in-app update download and install. -->
+    <string name="about_update_now">Update now</string>
+    <!-- Button on the desktop About screen opening the installer download page. -->
+    <string name="about_download">Download</string>
+    <!-- Error when SHA256SUMS has no entry for the Companion APK. %1$s is the APK filename. -->
+    <string name="update_no_checksum">No checksum found for %1$s.</string>
+    <!-- Safety warning shown when the downloaded Companion APK fails SHA-256 verification. -->
+    <string name="update_checksum_mismatch">Checksum mismatch.</string>
+    <!-- Error when parsing the downloaded Android package fails. Keep: APK -->
+    <string name="update_apk_unreadable">Could not read the downloaded APK.</string>
+    <!-- Safety error when the downloaded APK carries a different application ID. %1$s is the package name. -->
+    <string name="update_wrong_package">Wrong package: %1$s.</string>
+    <!-- Safety warning shown when signing certificates could not be read from the APK or installed app. -->
+    <string name="update_signer_unknown">Signer unknown: refusing the update.</string>
+    <!-- Safety warning shown when the APK signing certificate differs from the installed app. -->
+    <string name="update_signer_mismatch">Signer does not match the installed app.</string>
+    <!-- Generic fallback error when an unexpected failure stops the Companion update. -->
+    <string name="update_failed">Update failed.</string>
+    <!-- Error when starting an Android Companion update without a resolved latest release tag. -->
+    <string name="update_check_failed">Couldn't check for updates. Try again later.</string>
+    <!-- Prompt on Android 8+ after opening unknown-sources permission settings for self-update. Keep: SideSpeed Companion -->
+    <string name="update_allow_install">Allow SideSpeed Companion to install apps, then try again.</string>
+    <!-- Error when fetching SHA256SUMS fails during Companion update. -->
+    <string name="update_checksums_download_failed">Could not download the checksums.</string>
+    <!-- Error when downloading the updated Companion APK fails. -->
+    <string name="update_download_failed">Download failed.</string>
+    <!-- Error when handing the verified APK to Android PackageInstaller fails without details. -->
+    <string name="update_install_failed">Install failed.</string>
+    <!-- Error when Android PackageInstaller returns a failure status with a system message. %1$s is the untranslated system message. -->
+    <string name="update_install_failed_detail">Install failed. %1$s</string>
+    <!-- Error when the Android system installer does not report back within 5 minutes. -->
+    <string name="update_install_timeout">Install didn't finish. Try again.</string>
+    <!-- Status when the user aborts the Android system install confirmation. -->
+    <string name="update_cancelled">Update cancelled.</string>
+    <!-- Licence and Android robot attribution text on the About screen. Keep: SideSpeed Companion, GPL-3.0, Android, Google, Creative Commons 3.0 Attribution License -->
+    <string name="about_licence_text">SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.</string>
+
+    <!-- Notifications and desktop tray -->
+    <!-- Notification body shown when background upkeep restarts the helper on a TV. %1$s is the TV name. Keep: SideSpeed -->
+    <string name="notif_restarted">SideSpeed restarted on %1$s</string>
+    <!-- Desktop tray menu item bringing the main window to the front. Keep: SideSpeed Companion -->
+    <string name="tray_open">Open SideSpeed Companion</string>
+    <!-- Desktop tray menu item pausing background TV checks. -->
+    <string name="tray_pause">Pause checks</string>
+    <!-- Desktop tray menu item resuming paused background TV checks. -->
+    <string name="tray_resume">Resume checks</string>
+    <!-- Desktop tray menu item exiting SideSpeed Companion. -->
+    <string name="tray_quit">Quit</string>
+</resources>

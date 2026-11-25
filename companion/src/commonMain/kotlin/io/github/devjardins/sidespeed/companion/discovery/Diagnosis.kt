@@ -1,6 +1,15 @@
 package io.github.devjardins.sidespeed.companion.discovery
 
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.diag_found
+import io.github.devjardins.sidespeed.companion.resources.diag_no_adb_on_live_hosts
+import io.github.devjardins.sidespeed.companion.resources.diag_nothing_answered
+import io.github.devjardins.sidespeed.companion.resources.diag_os_blocked
+import io.github.devjardins.sidespeed.companion.resources.diag_partial
+import io.github.devjardins.sidespeed.companion.resources.diag_tls_only
+import io.github.devjardins.sidespeed.companion.resources.diag_vpn_active
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 
 /** What a Find TVs sweep concluded. */
 enum class Diagnosis {
@@ -59,26 +68,13 @@ fun diagnose(
     return Diagnosis.NOTHING_ANSWERED
 }
 
-private const val MANUAL_ADDRESS_COPY = "or type the address shown in SideSpeed on the TV"
-
 /** What the Add screen shows for [diagnosis]; every copy ends with the manual-address fallback. */
-fun helpFor(diagnosis: Diagnosis): String = when (diagnosis) {
-    Diagnosis.FOUND ->
-        "Tap a TV above to add it, $MANUAL_ADDRESS_COPY"
-    Diagnosis.NO_ADB_ON_LIVE_HOSTS ->
-        "Devices answered on this network, but none has ADB open. Turn on ADB or Network debugging on the TV, " +
-            "accept the prompt, then scan again, $MANUAL_ADDRESS_COPY"
-    Diagnosis.TLS_ONLY ->
-        "A TV answered over an encrypted connection. Pair it from the list, $MANUAL_ADDRESS_COPY"
-    Diagnosis.NOTHING_ANSWERED ->
-        "Nothing answered on this network. Check the TV is on and on the same Wi-Fi, then scan again, " +
-            MANUAL_ADDRESS_COPY
-    Diagnosis.OS_BLOCKED ->
-        "The system blocked the scan: allow local-network access for the companion, then scan again, " +
-            MANUAL_ADDRESS_COPY
-    Diagnosis.VPN_ACTIVE ->
-        "A VPN is active, so the scan can't see your home network. Disconnect the VPN, then scan again, " +
-            MANUAL_ADDRESS_COPY
-    Diagnosis.PARTIAL ->
-        "The scan covered only part of the network. Keep scanning to cover the rest, $MANUAL_ADDRESS_COPY"
+fun helpFor(diagnosis: Diagnosis): UiText = when (diagnosis) {
+    Diagnosis.FOUND -> UiText.Res(Res.string.diag_found)
+    Diagnosis.NO_ADB_ON_LIVE_HOSTS -> UiText.Res(Res.string.diag_no_adb_on_live_hosts)
+    Diagnosis.TLS_ONLY -> UiText.Res(Res.string.diag_tls_only)
+    Diagnosis.NOTHING_ANSWERED -> UiText.Res(Res.string.diag_nothing_answered)
+    Diagnosis.OS_BLOCKED -> UiText.Res(Res.string.diag_os_blocked)
+    Diagnosis.VPN_ACTIVE -> UiText.Res(Res.string.diag_vpn_active)
+    Diagnosis.PARTIAL -> UiText.Res(Res.string.diag_partial)
 }

@@ -25,7 +25,7 @@ class ActivityPreviewTest {
         name = "Living room",
         address = "192.168.5.20",
         status = TvStatus.RUNNING,
-        statusLabel = "Helper running",
+        statusLabel = Copy.statusLabel(TvStatus.RUNNING),
         checkableHere = true,
         checkedAtEpochMs = null,
         note = null,

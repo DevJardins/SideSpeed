@@ -35,13 +35,30 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.activity_all_caught_up
+import io.github.devjardins.sidespeed.companion.resources.activity_compile_failed
+import io.github.devjardins.sidespeed.companion.resources.activity_interrupted
+import io.github.devjardins.sidespeed.companion.resources.activity_interrupted_note
+import io.github.devjardins.sidespeed.companion.resources.activity_more_waiting
+import io.github.devjardins.sidespeed.companion.resources.activity_needs_update
+import io.github.devjardins.sidespeed.companion.resources.activity_self_not_optimized
+import io.github.devjardins.sidespeed.companion.resources.activity_self_optimized
+import io.github.devjardins.sidespeed.companion.resources.activity_self_optimizing
+import io.github.devjardins.sidespeed.companion.resources.activity_self_pending_note
+import io.github.devjardins.sidespeed.companion.resources.activity_waiting_helper
+import io.github.devjardins.sidespeed.companion.resources.brand_sidespeed
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ActivityPhase
 import io.github.devjardins.sidespeed.companion.tv.SelfState
 import io.github.devjardins.sidespeed.companion.tv.TvActivity
 import io.github.devjardins.sidespeed.companion.tv.formatActivityElapsed
 import io.github.devjardins.sidespeed.companion.tv.lastCaption
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * The live compile-status block inside a TV card. Hidden unless the TV is checkable here and its
@@ -57,7 +74,7 @@ fun TvActivityBlock(tv: TvCardState, nowMs: Long) {
         if (a.phase != ActivityPhase.NEEDS_UPDATE && a.self != SelfState.DEBUG) SelfRow(a)
         when (a.phase) {
             ActivityPhase.NEEDS_UPDATE ->
-                SsText("Update SideSpeed on the TV to see live compiles.", Ss.caption)
+                SsText(stringResource(Res.string.activity_needs_update), Ss.caption)
             ActivityPhase.COMPILING -> CompilingRow(a)
             ActivityPhase.WAITING_HELPER -> WaitingRow(a)
             ActivityPhase.INTERRUPTED -> InterruptedRow(a)
@@ -91,7 +108,9 @@ private fun CompilingRow(a: TvActivity) {
     ) { finished ->
         if (finished && done != null) FinishedRow(done) else LiveCompilingRow(a)
     }
-    if (done == null && a.queue > 0) SsText("${a.queue} more waiting", Ss.caption)
+    if (done == null && a.queue > 0) {
+        SsText(pluralStringResource(Res.plurals.activity_more_waiting, a.queue, a.queue), Ss.caption)
+    }
 }
 
 @Composable
@@ -104,9 +123,15 @@ private fun LiveCompilingRow(a: TvActivity) {
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SsSpinner(18.dp, stroke = 2.dp)
-        SsText(a.label.ifEmpty { a.pkg }, Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         SsText(
-            formatActivityElapsed(tick - a.startedMs),
+            a.label.ifEmpty { UiText.Ltr(a.pkg).resolve() },
+            Ss.body,
+            Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        SsText(
+            UiText.Ltr(formatActivityElapsed(tick - a.startedMs)).resolve(),
             Ss.caption.copy(fontFamily = FontFamily.Monospace),
             maxLines = 1,
         )
@@ -119,9 +144,10 @@ internal fun FinishedRow(done: TvActivity) {
     val ok = done.lastOk == true
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (ok) CheckCircle(Ss.accent, Ss.surface) else WarnMark()
-        val label = done.lastLabel.ifEmpty { done.lastPkg }
+        val labelText = if (done.lastLabel.isNotEmpty()) done.lastLabel else UiText.Ltr(done.lastPkg).resolve()
+        val labelArg: UiText = if (done.lastLabel.isNotEmpty()) UiText.Fsi(done.lastLabel) else UiText.Ltr(done.lastPkg)
         SsText(
-            if (ok) label else "Couldn't compile $label",
+            if (ok) labelText else UiText.Res(Res.string.activity_compile_failed, listOf(labelArg)).resolve(),
             Ss.body,
             Modifier.weight(1f),
             maxLines = 1,
@@ -134,19 +160,27 @@ internal fun FinishedRow(done: TvActivity) {
 private fun WaitingRow(a: TvActivity) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SsStatusDot(StatusKind.WAITING)
-        SsText("Waiting for the helper", Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        SsText(stringResource(Res.string.activity_waiting_helper), Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    if (a.queue > 0) SsText("${a.queue} more waiting", Ss.caption)
+    if (a.queue > 0) {
+        SsText(pluralStringResource(Res.plurals.activity_more_waiting, a.queue, a.queue), Ss.caption)
+    }
 }
 
 @Composable
 private fun InterruptedRow(a: TvActivity) {
-    val label = a.label.ifEmpty { a.pkg }
+    val labelArg: UiText = if (a.label.isNotEmpty()) UiText.Fsi(a.label) else UiText.Ltr(a.pkg)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         WarnMark()
-        SsText("$label was interrupted", Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        SsText(
+            UiText.Res(Res.string.activity_interrupted, listOf(labelArg)).resolve(),
+            Ss.body,
+            Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
-    SsText("SideSpeed retries it when the helper is back.", Ss.caption)
+    SsText(stringResource(Res.string.activity_interrupted_note), Ss.caption)
 }
 
 @Composable
@@ -155,9 +189,10 @@ private fun IdleRow(a: TvActivity, nowMs: Long) {
         Box(Modifier.size(18.dp).alpha(0.6f), contentAlignment = Alignment.Center) {
             CheckPath(Ss.textSecondary, 18.dp)
         }
-        SsText("All caught up", Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        SsText(stringResource(Res.string.activity_all_caught_up), Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    lastCaption(a.lastLabel.ifEmpty { a.lastPkg }, a.lastMs, nowMs)?.let { SsText(it, Ss.caption) }
+    lastCaption(a.lastLabel.ifEmpty { a.lastPkg }, a.lastMs, nowMs, labelIsLtr = a.lastLabel.isEmpty())
+        ?.let { SsText(it.resolve(), Ss.caption) }
 }
 
 @Composable
@@ -165,18 +200,18 @@ private fun SelfRow(a: TvActivity) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SsLogoMark(16.dp)
-            SsText("SideSpeed", Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            SsText(stringResource(Res.string.brand_sidespeed), Ss.body, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (a.selfCompiling) {
                 SsSpinner(14.dp)
-                SsText("Optimizing…", Ss.body, maxLines = 1)
+                SsText(stringResource(Res.string.activity_self_optimizing), Ss.body, maxLines = 1)
             } else if (a.self == SelfState.OPTIMIZED) {
-                Pill("Optimized", Ss.okBg, Ss.okText)
+                Pill(stringResource(Res.string.activity_self_optimized), Ss.okBg, Ss.okText)
             } else {
-                Pill("Not optimized yet", Ss.button, Ss.textSecondary)
+                Pill(stringResource(Res.string.activity_self_not_optimized), Ss.button, Ss.textSecondary)
             }
         }
         if (!a.selfCompiling && a.self == SelfState.PENDING) {
-            SsText("It optimizes itself when you leave it on the TV.", Ss.caption)
+            SsText(stringResource(Res.string.activity_self_pending_note), Ss.caption)
         }
     }
 }

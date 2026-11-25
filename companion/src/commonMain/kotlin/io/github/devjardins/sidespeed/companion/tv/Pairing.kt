@@ -4,6 +4,14 @@ import com.flyfishxu.kadb.Kadb
 import com.flyfishxu.kadb.exception.AdbPairAuthException
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Ipv4
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.pair_bad_code
+import io.github.devjardins.sidespeed.companion.resources.pair_bad_host
+import io.github.devjardins.sidespeed.companion.resources.pair_bad_port
+import io.github.devjardins.sidespeed.companion.resources.pair_failed
+import io.github.devjardins.sidespeed.companion.resources.pair_unreachable
+import io.github.devjardins.sidespeed.companion.resources.pair_wrong_code
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,21 +24,21 @@ import java.net.UnknownHostException
 
 /** Sentences shown when pairing fails. The screen uses these rather than a second set of words. */
 object PairCopy {
-    const val WRONG_CODE = "That pairing code was not accepted. Check the code on the TV and try again."
-    const val UNREACHABLE = "The TV could not be reached on that port."
-    const val BAD_CODE = "Enter the 6-digit pairing code from the TV."
-    const val BAD_PORT = "Enter the port shown next to the pairing code."
-    const val BAD_HOST = "That address is not on a private network."
-    const val FAILED = "Pairing did not finish. Check the code and the port, then try again."
+    val WRONG_CODE: UiText = UiText.Res(Res.string.pair_wrong_code)
+    val UNREACHABLE: UiText = UiText.Res(Res.string.pair_unreachable)
+    val BAD_CODE: UiText = UiText.Res(Res.string.pair_bad_code)
+    val BAD_PORT: UiText = UiText.Res(Res.string.pair_bad_port)
+    val BAD_HOST: UiText = UiText.Res(Res.string.pair_bad_host)
+    val FAILED: UiText = UiText.Res(Res.string.pair_failed)
 }
 
 sealed class PairResult {
     data object Paired : PairResult()
-    data class WrongCode(val message: String = PairCopy.WRONG_CODE) : PairResult()
-    data class Unreachable(val message: String = PairCopy.UNREACHABLE) : PairResult()
-    data class Failed(val message: String) : PairResult()
+    data class WrongCode(val message: UiText = PairCopy.WRONG_CODE) : PairResult()
+    data class Unreachable(val message: UiText = PairCopy.UNREACHABLE) : PairResult()
+    data class Failed(val message: UiText) : PairResult()
 
-    fun message(): String? = when (this) {
+    fun message(): UiText? = when (this) {
         Paired -> null
         is WrongCode -> message
         is Unreachable -> message

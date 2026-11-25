@@ -1,6 +1,11 @@
 package io.github.devjardins.sidespeed.companion.android.update
 
 import android.content.pm.PackageInstaller
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.update_cancelled
+import io.github.devjardins.sidespeed.companion.resources.update_install_failed
+import io.github.devjardins.sidespeed.companion.resources.update_install_failed_detail
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -20,40 +25,44 @@ class CompanionInstallStatusTest {
 
     @Test fun abortedMeansCancelled() {
         assertEquals(
-            CompanionUpdateState.Failed("Update cancelled."),
+            CompanionUpdateState.Failed(UiText.Res(Res.string.update_cancelled)),
             installStatusToState(PackageInstaller.STATUS_FAILURE_ABORTED, null),
         )
         assertEquals(
-            CompanionUpdateState.Failed("Update cancelled."),
+            CompanionUpdateState.Failed(UiText.Res(Res.string.update_cancelled)),
             installStatusToState(PackageInstaller.STATUS_FAILURE_ABORTED, "aborted"),
         )
     }
 
     @Test fun failureWithoutMessageHasNoSuffix() {
         assertEquals(
-            CompanionUpdateState.Failed("Install failed."),
+            CompanionUpdateState.Failed(UiText.Res(Res.string.update_install_failed)),
             installStatusToState(PackageInstaller.STATUS_FAILURE, null),
         )
         assertEquals(
-            CompanionUpdateState.Failed("Install failed."),
+            CompanionUpdateState.Failed(UiText.Res(Res.string.update_install_failed)),
             installStatusToState(PackageInstaller.STATUS_FAILURE, "  "),
         )
     }
 
     @Test fun failureCarriesSystemMessage() {
         assertEquals(
-            CompanionUpdateState.Failed("Install failed. INSTALL_FAILED_VERSION_DOWNGRADE"),
+            CompanionUpdateState.Failed(
+                UiText.Res(Res.string.update_install_failed_detail, listOf(UiText.Raw("INSTALL_FAILED_VERSION_DOWNGRADE"))),
+            ),
             installStatusToState(PackageInstaller.STATUS_FAILURE_INVALID, "INSTALL_FAILED_VERSION_DOWNGRADE"),
         )
         assertEquals(
-            CompanionUpdateState.Failed("Install failed. no space"),
+            CompanionUpdateState.Failed(
+                UiText.Res(Res.string.update_install_failed_detail, listOf(UiText.Raw("no space"))),
+            ),
             installStatusToState(PackageInstaller.STATUS_FAILURE_STORAGE, "no space"),
         )
     }
 
     @Test fun unknownStatusFails() {
         assertEquals(
-            CompanionUpdateState.Failed("Install failed."),
+            CompanionUpdateState.Failed(UiText.Res(Res.string.update_install_failed)),
             installStatusToState(999, null),
         )
     }
