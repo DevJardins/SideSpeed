@@ -65,6 +65,17 @@ the code may have a bug.
   with a translator note where the meaning isn't obvious.
   Never hard-code user-visible text in Kotlin (`NoHardCodedTextTest` fails).
 - When the meaning of an English string changes, rename its key so every translation starts again; typo or punctuation fixes keep the key. `EnglishSnapshotTest` enforces this with `l10n/english-snapshot.tsv` in each module.
+- A language ships only when at least 70% of its strings are translated
+  (`LANGUAGE_BAR` in `app/build.gradle.kts`, the same bar in `companion/build.gradle.kts`,
+  checked by `build-logic/.../LanguageGate.kt`). The build generates `ShippedLanguages`
+  and `locales_config.xml` from that check; never edit either by hand.
+- The language picker copy is fixed: "Language", "Same as device",
+  "Not complete in this version. Showing English for now."
+  (TV `about_language*` in `app/src/main/res/values/strings.xml`,
+  Companion `settings_language*` in the Compose resources).
+- Numbers inside sentences use `UiText.Decimal` / `UiText.Integer` (TV) or plain
+  `Int`/`Long` and `UiText.Decimal` (Companion) so they follow the chosen language;
+  addresses, ports, versions, hosts and package names stay `UiText.Ltr`.
 
 ## 3. TV focus and D-pad
 
