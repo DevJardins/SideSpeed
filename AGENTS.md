@@ -65,6 +65,8 @@ the code may have a bug.
 - Every control is focusable with a visible focus ring.
 - Every control is reachable by D-pad or keyboard.
 - The ring is `SsDimens.FocusRing` (2dp, sage), applied in `ui/theme/Components.kt`.
+- `SsButton` and `SsRow` use `ui/theme/ReplayingInteractionSource.kt`, so a control
+  that gets focus while it is still attaching still draws its ring.
 - Never regress remote navigation: no pointer-only gestures, no click-only rows.
 - Returning from a screen restores focus where you were.
 - `ui/apps/AppsScreen.kt` scrolls to the opened row and focuses it

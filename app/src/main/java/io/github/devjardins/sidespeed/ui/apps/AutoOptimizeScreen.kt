@@ -52,10 +52,19 @@ fun AutoOptimizeScreen(
 ) {
     var showHistory by remember { mutableStateOf(false) }
     val current by mode.collectAsState(initial = null)
-    // Give the D-pad a starting point: the current mode takes focus when the screen opens.
+    // Give the D-pad a starting point: the current mode takes focus when the screen opens,
+    // and the History button takes it back when you return from History.
     val modeFocus = remember { FocusRequester() }
+    val historyFocus = remember { FocusRequester() }
+    var returnToHistory by remember { mutableStateOf(false) }
     LaunchedEffect(current, showHistory) {
-        if (!showHistory && current != null) runCatching { modeFocus.requestFocus() }
+        if (showHistory || current == null) return@LaunchedEffect
+        if (returnToHistory) {
+            returnToHistory = false
+            runCatching { historyFocus.requestFocus() }
+        } else {
+            runCatching { modeFocus.requestFocus() }
+        }
     }
     val historyBackFocus = remember { FocusRequester() }
     LaunchedEffect(showHistory) {
@@ -101,7 +110,11 @@ fun AutoOptimizeScreen(
                     color = SsColors.TextSecondary,
                 )
             }
-            SsButton("History", onClick = { showHistory = true })
+            SsButton(
+                "History",
+                onClick = { returnToHistory = true; showHistory = true },
+                modifier = Modifier.focusRequester(historyFocus),
+            )
         }
     }
 }

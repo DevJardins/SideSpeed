@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -116,6 +117,7 @@ fun SsButton(
         ),
         glow = ButtonDefaults.glow(),
         contentPadding = contentPadding,
+        interactionSource = remember { ReplayingInteractionSource() },
         content = content,
     )
 }
@@ -148,6 +150,7 @@ fun SsRow(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composab
             focusedBorder = Border(BorderStroke(SsDimens.FocusRing, SsColors.Accent), shape = CardShape),
             pressedBorder = Border(BorderStroke(SsDimens.FocusRing, SsColors.Accent), shape = CardShape),
         ),
+        interactionSource = remember { ReplayingInteractionSource() },
         content = content,
     )
 }
