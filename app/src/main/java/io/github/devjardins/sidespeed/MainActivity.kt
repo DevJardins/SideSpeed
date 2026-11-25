@@ -177,6 +177,10 @@ class MainActivity : ComponentActivity() {
                 var lastAppsPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showAutoOptimize by rememberSaveable { mutableStateOf(false) }
                 var showExtras by rememberSaveable { mutableStateOf(false) }
+                // Set when Extras opens from Tools: Tools leaves composition while Extras
+                // shows, so this decides that its Open button takes focus on return.
+                var toolsReturnToExtras by rememberSaveable { mutableStateOf(false) }
+                val extrasOpenFocus = remember { androidx.compose.ui.focus.FocusRequester() }
                 val forcedExtrasListId = remember {
                     if (BuildConfig.DEBUG) intent.getStringExtra("extras_list_id") else null
                 }
@@ -278,13 +282,17 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         extras = {
-                            ExtrasCard(onOpen = { showExtras = true })
+                            ExtrasCard(
+                                onOpen = { toolsReturnToExtras = true; showExtras = true },
+                                openFocus = extrasOpenFocus,
+                            )
                         },
                         home = {
                             val c = (application as SideSpeedApp).container
                             HomeCard(c.homeSwitcher, icons)
                         },
-                        onBack = { showTools = false },
+                        onBack = { showTools = false; toolsReturnToExtras = false },
+                        initialFocus = if (toolsReturnToExtras) extrasOpenFocus else null,
                     )
                     showLanguage && app == null -> {
                         val shipped = remember { AppLanguage.shipped }
@@ -380,6 +388,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenTools = {
                             lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.TOOLS.name
+                            toolsReturnToExtras = false
                             showTools = true
                         },
                         onOpenAbout = {

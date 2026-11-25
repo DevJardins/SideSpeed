@@ -32,6 +32,9 @@ import io.github.devjardins.sidespeed.ui.theme.SsType
 /**
  * The Tools screen shell: a scrollable column with a title and four card slots in fixed order —
  * [health] (Box health), [space] (Free up space), [animations] (Animations), [extras] (Turn off extras), [home] (Home screen).
+ *
+ * [initialFocus] is the control to focus when the screen opens, such as the button that opened
+ * a screen you are coming back from; with none, the Back button takes focus.
  */
 @Composable
 fun ToolsScreen(
@@ -41,11 +44,12 @@ fun ToolsScreen(
     extras: @Composable () -> Unit,
     home: @Composable () -> Unit,
     onBack: () -> Unit,
+    initialFocus: FocusRequester? = null,
 ) {
     BackHandler(onBack = onBack)
-    // Give the D-pad a starting point: the Back button takes focus when the screen opens.
+    // Give the D-pad a starting point: the Back button, or [initialFocus] when coming back.
     val backFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+    LaunchedEffect(Unit) { runCatching { (initialFocus ?: backFocus).requestFocus() } }
     SsScreen {
         // The scroll clips to the column bounds, which would cut the first and last
         // focusables' 2dp focus ring and focus scale: bleed the column out
