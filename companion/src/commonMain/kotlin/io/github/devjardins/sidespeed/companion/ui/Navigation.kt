@@ -102,7 +102,8 @@ fun CompanionApp(
         page == Page.HOME -> Screen.HOME
         page == Page.ADD -> Screen.ADD
         page == Page.SETTINGS -> Screen.SETTINGS
-        page == Page.LANGUAGE -> Screen.LANGUAGE
+        page == Page.LANGUAGE && language != null -> Screen.LANGUAGE
+        page == Page.LANGUAGE -> Screen.SETTINGS
         else -> Screen.ABOUT
     }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl

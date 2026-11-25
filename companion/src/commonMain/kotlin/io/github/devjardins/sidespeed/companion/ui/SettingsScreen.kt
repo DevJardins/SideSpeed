@@ -69,7 +69,7 @@ fun SettingsScreen(
     val langFocus = remember { FocusRequester() }
     LaunchedEffect(focusLanguage) {
         if (focusLanguage) {
-            langFocus.requestFocus()
+            runCatching { langFocus.requestFocus() }
             onConsumeLanguageFocus()
         }
     }
