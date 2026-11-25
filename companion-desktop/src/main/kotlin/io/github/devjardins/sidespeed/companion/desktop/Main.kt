@@ -57,6 +57,7 @@ import io.github.devjardins.sidespeed.companion.resources.tray_pause
 import io.github.devjardins.sidespeed.companion.resources.tray_quit
 import io.github.devjardins.sidespeed.companion.resources.tray_resume
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
+import io.github.devjardins.sidespeed.companion.ui.rememberCompanionNav
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
@@ -175,6 +176,8 @@ fun main() {
         val state by vm.state.collectAsState()
         // Every language choice bumps this, rebuilding the tray and window content below.
         val epoch by languageController.epoch.collectAsState()
+        // Held outside key(epoch) so a language switch keeps the page the user is on.
+        val nav = rememberCompanionNav()
 
         suspend fun runAndNotify(trigger: Trigger) {
             val report = upkeep.runOnce(trigger)
@@ -273,6 +276,7 @@ fun main() {
                     CompanionApp(
                         vm,
                         desktop = true,
+                        nav = nav,
                         aboutVersion = CompanionVersion.APP_VERSION,
                         updateState = updateState,
                         onCheckUpdates = desktopUpdater::checkNow,

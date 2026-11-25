@@ -21,6 +21,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
@@ -39,6 +42,26 @@ import org.jetbrains.compose.resources.stringResource
 
 enum class Page { HOME, ADD, SETTINGS, ABOUT }
 
+/**
+ * Where the user is in the app. Held outside [CompanionApp] so a language switch, which rebuilds
+ * the app's content, keeps the page; saveable so an Android activity recreate keeps it too.
+ */
+class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false) {
+    var page by mutableStateOf(page)
+    var dismissedFirstRun by mutableStateOf(dismissedFirstRun)
+
+    companion object {
+        val Saver: Saver<CompanionNav, Any> = listSaver(
+            save = { listOf(it.page.name, it.dismissedFirstRun) },
+            restore = { CompanionNav(Page.valueOf(it[0] as String), it[1] as Boolean) },
+        )
+    }
+}
+
+/** A [CompanionNav] that survives configuration changes and activity recreation. */
+@Composable
+fun rememberCompanionNav(): CompanionNav = rememberSaveable(saver = CompanionNav.Saver) { CompanionNav() }
+
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
 private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
 
@@ -53,10 +76,11 @@ fun CompanionApp(
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
     language: LanguageController? = null,
+    nav: CompanionNav = rememberCompanionNav(),
 ) {
     val state by vm.state.collectAsState()
-    var page by remember { mutableStateOf(Page.HOME) }
-    var dismissedFirstRun by remember { mutableStateOf(false) }
+    var page by nav::page
+    var dismissedFirstRun by nav::dismissedFirstRun
     // A TV was added from the Add screen: go Home, where its card is the confirmation.
     LaunchedEffect(state.addedAddress) {
         if (state.addedAddress != null) {
