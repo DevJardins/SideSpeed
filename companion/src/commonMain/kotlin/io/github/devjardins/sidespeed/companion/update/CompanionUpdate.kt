@@ -1,5 +1,15 @@
 package io.github.devjardins.sidespeed.companion.update
 
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.about_check_failed
+import io.github.devjardins.sidespeed.companion.resources.update_apk_unreadable
+import io.github.devjardins.sidespeed.companion.resources.update_checksum_mismatch
+import io.github.devjardins.sidespeed.companion.resources.update_no_checksum
+import io.github.devjardins.sidespeed.companion.resources.update_signer_mismatch
+import io.github.devjardins.sidespeed.companion.resources.update_signer_unknown
+import io.github.devjardins.sidespeed.companion.resources.update_wrong_package
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+
 /**
  * Shared update logic for both Companion apps: parsing the GitHub `releases/latest` payload,
  * deciding whether a tag is newer than the installed version, verifying a downloaded APK, and
@@ -29,7 +39,7 @@ const val COMPANION_SUMS_NAME = "SHA256SUMS.txt"
 const val COMPANION_PACKAGE = "io.github.devjardins.sidespeed.companion"
 
 /** Shown when the check fails for any reason, matching the TV About screen's wording. */
-const val UPDATE_OFFLINE_MESSAGE = "Couldn't reach GitHub. Try again later."
+val UPDATE_OFFLINE_MESSAGE: UiText = UiText.Res(Res.string.about_check_failed)
 
 private val TAG_NAME = Regex("\"tag_name\"\\s*:\\s*\"([^\"]*)\"")
 
@@ -102,7 +112,7 @@ data class ApkFacts(val packageName: String, val signerSha256: Set<String>)
 /** Either verified or rejected with a one-line plain reason. */
 sealed interface CompanionVerifyResult {
     data object Ok : CompanionVerifyResult
-    data class Rejected(val reason: String) : CompanionVerifyResult
+    data class Rejected(val reason: UiText) : CompanionVerifyResult
 }
 
 /** All checks, in order: checksum, parse, package, signer set equality. */
@@ -112,17 +122,25 @@ fun verifyCompanionApk(
     apk: ApkFacts?,
     installedSignerSha256: Set<String>,
 ): CompanionVerifyResult {
-    if (expectedSha256 == null) return CompanionVerifyResult.Rejected("No checksum found for $COMPANION_APK_NAME.")
-    if (!fileSha256.equals(expectedSha256, ignoreCase = true)) {
-        return CompanionVerifyResult.Rejected("Checksum mismatch.")
+    if (expectedSha256 == null) {
+        return CompanionVerifyResult.Rejected(
+            UiText.Res(Res.string.update_no_checksum, listOf(UiText.Ltr(COMPANION_APK_NAME))),
+        )
     }
-    if (apk == null) return CompanionVerifyResult.Rejected("Could not read the downloaded APK.")
-    if (apk.packageName != COMPANION_PACKAGE) return CompanionVerifyResult.Rejected("Wrong package: ${apk.packageName}.")
+    if (!fileSha256.equals(expectedSha256, ignoreCase = true)) {
+        return CompanionVerifyResult.Rejected(UiText.Res(Res.string.update_checksum_mismatch))
+    }
+    if (apk == null) return CompanionVerifyResult.Rejected(UiText.Res(Res.string.update_apk_unreadable))
+    if (apk.packageName != COMPANION_PACKAGE) {
+        return CompanionVerifyResult.Rejected(
+            UiText.Res(Res.string.update_wrong_package, listOf(UiText.Ltr(apk.packageName))),
+        )
+    }
     if (apk.signerSha256.isEmpty() || installedSignerSha256.isEmpty()) {
-        return CompanionVerifyResult.Rejected("Signer unknown: refusing the update.")
+        return CompanionVerifyResult.Rejected(UiText.Res(Res.string.update_signer_unknown))
     }
     if (apk.signerSha256 != installedSignerSha256) {
-        return CompanionVerifyResult.Rejected("Signer does not match the installed app.")
+        return CompanionVerifyResult.Rejected(UiText.Res(Res.string.update_signer_mismatch))
     }
     return CompanionVerifyResult.Ok
 }
@@ -171,7 +189,7 @@ sealed interface CompanionUpdateState {
     data class Available(val tag: String) : CompanionUpdateState
     data class Downloading(val percent: Int) : CompanionUpdateState
     data object Installing : CompanionUpdateState
-    data class Failed(val reason: String) : CompanionUpdateState
+    data class Failed(val reason: UiText) : CompanionUpdateState
 }
 
 /**

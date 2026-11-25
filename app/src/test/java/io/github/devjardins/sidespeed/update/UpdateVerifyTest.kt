@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.update
 
+import io.github.devjardins.sidespeed.testing.EnglishStrings
+import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.resolve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -72,8 +75,20 @@ class UpdateVerifyTest {
         )
         for ((name, result) in cases) {
             assertTrue(name, result is VerifyResult.Rejected)
-            assertTrue(name, (result as VerifyResult.Rejected).reason.isNotEmpty())
+            assertTrue(name, (result as VerifyResult.Rejected).reason.english().isNotEmpty())
         }
+        assertEquals("Checksum mismatch.", (cases[0].second as VerifyResult.Rejected).reason.english())
+        assertEquals("No checksum found for this update.", (cases[1].second as VerifyResult.Rejected).reason.english())
+        assertEquals("Could not read the downloaded APK.", (cases[2].second as VerifyResult.Rejected).reason.english())
+        assertEquals("Wrong package: com.evil.app.", (cases[3].second as VerifyResult.Rejected).reason.english())
+        assertEquals(
+            "Wrong package: \u2066com.evil.app\u2069.",
+            (cases[3].second as VerifyResult.Rejected).reason.resolve(EnglishStrings, rtl = true),
+        )
+        assertEquals("Not newer than the installed version.", (cases[4].second as VerifyResult.Rejected).reason.english())
+        assertEquals("Not newer than the installed version.", (cases[5].second as VerifyResult.Rejected).reason.english())
+        assertEquals("Signer does not match the installed app.", (cases[6].second as VerifyResult.Rejected).reason.english())
+        assertEquals("Signer does not match the installed app.", (cases[7].second as VerifyResult.Rejected).reason.english())
     }
 
     @Test fun verify_rejects_empty_signer_sets() {
@@ -87,7 +102,7 @@ class UpdateVerifyTest {
         )
         for ((name, result) in cases) {
             assertTrue(name, result is VerifyResult.Rejected)
-            assertTrue(name, (result as VerifyResult.Rejected).reason.isNotEmpty())
+            assertEquals("Signer unknown: refusing the update.", (result as VerifyResult.Rejected).reason.english())
         }
     }
 
@@ -116,8 +131,9 @@ class UpdateVerifyTest {
         )
         for ((name, result) in cases) {
             assertTrue(name, result is VerifyResult.Rejected)
-            assertTrue(name, (result as VerifyResult.Rejected).reason.isNotEmpty())
+            assertTrue(name, (result as VerifyResult.Rejected).reason.english().isNotEmpty())
         }
+        assertEquals("Version does not match the update.", (cases[3].second as VerifyResult.Rejected).reason.english())
     }
 
     @Test fun self_update_ignores_expected_version() {

@@ -29,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.tools.Extras
 import io.github.devjardins.sidespeed.tools.ExtrasIndex
 import io.github.devjardins.sidespeed.tools.ExtrasListMeta
@@ -43,6 +45,9 @@ import io.github.devjardins.sidespeed.tools.formatRestoreOutcome
 import io.github.devjardins.sidespeed.tools.formatRunOutcome
 import io.github.devjardins.sidespeed.tools.formatTurnOnOutcome
 import io.github.devjardins.sidespeed.tools.upstreamCommitShort
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsPill
@@ -64,7 +69,7 @@ fun ExtrasScreen(
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf<UiText?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
     var variantIndex by remember { mutableIntStateOf(0) }
     var rows by remember { mutableStateOf<List<ExtrasRow>>(emptyList()) }
@@ -73,9 +78,9 @@ fun ExtrasScreen(
     var confirmHome by remember { mutableStateOf<ExtrasRow?>(null) }
     var confirmHomeOn by remember { mutableStateOf<ExtrasRow?>(null) }
     var restoreEnabled by remember { mutableStateOf(false) }
-    var homeLabelForConfirm by remember { mutableStateOf<String?>(null) }
-    var rowFailures by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var helperBlock by remember { mutableStateOf<String?>(null) }
+    var homeLabelForConfirm by remember { mutableStateOf<UiText?>(null) }
+    var rowFailures by remember { mutableStateOf<Map<String, UiText>>(emptyMap()) }
+    var helperBlock by remember { mutableStateOf<UiText?>(null) }
     var protectionFailed by remember { mutableStateOf(false) }
 
     val actionsBringIntoView = remember { BringIntoViewRequester() }
@@ -143,9 +148,12 @@ fun ExtrasScreen(
     LaunchedEffect(confirmHome) {
         if (confirmHome != null) {
             val pkg = homeSwitcher.currentWithFallback()?.pkg
-            homeLabelForConfirm = homeSwitcher.launchers().firstOrNull { it.component.pkg == pkg }?.label
-                ?: pkg
-                ?: "your current home screen"
+            val label = homeSwitcher.launchers().firstOrNull { it.component.pkg == pkg }?.label
+            homeLabelForConfirm = when {
+                label != null -> UiText.Raw(label)
+                pkg != null -> UiText.Ltr(pkg)
+                else -> UiText.Res(R.string.extras_current_home_fallback)
+            }
         }
     }
 
@@ -162,29 +170,29 @@ fun ExtrasScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SsButton("‹ Back", onClick = onBack, modifier = Modifier.focusRequester(backFocus))
+                SsButton(stringResource(R.string.common_back), onClick = onBack, modifier = Modifier.focusRequester(backFocus))
                 Spacer(Modifier.width(16.dp))
-                Text("Turn off extras", style = SsType.Headline, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.extras_title), style = SsType.Headline, color = SsColors.TextPrimary)
                 if (busy) androidx.compose.foundation.layout.Box(Modifier.padding(start = 12.dp)) { SsSpinner() }
             }
             when (val m = effectiveMatch) {
                 ExtrasMatchResult.NoList -> {
-                    Text("No list for this TV yet.", style = SsType.Body, color = SsColors.TextBody)
-                    Text("Lists come from the CleanYourTV project.", style = SsType.Caption, color = SsColors.TextSecondary)
+                    Text(stringResource(R.string.extras_no_list), style = SsType.Body, color = SsColors.TextBody)
+                    Text(stringResource(R.string.extras_source_note), style = SsType.Caption, color = SsColors.TextSecondary)
                 }
                 ExtrasMatchResult.Ambiguous -> {
-                    Text("More than one list matches this TV.", style = SsType.Body, color = SsColors.DangerCardText)
+                    Text(stringResource(R.string.extras_ambiguous), style = SsType.Body, color = SsColors.DangerCardText)
                 }
                 is ExtrasMatchResult.Suggested -> if (suggestionsLoaded) {
                     LaunchedEffect(Unit) { runCatching { useListFocus.requestFocus() } }
                     Text(
-                        "This list looks like your TV: ${m.tvHeader}. Check the model before turning anything off.",
+                        stringResource(R.string.extras_suggested_prompt, m.tvHeader),
                         style = SsType.Body,
                         color = SsColors.TextBody,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsButton(
-                            "Use this list",
+                            stringResource(R.string.extras_use_this_list),
                             modifier = Modifier.focusRequester(useListFocus),
                             onClick = {
                                 scope.launch {
@@ -194,7 +202,7 @@ fun ExtrasScreen(
                             },
                         )
                         SsButton(
-                            "Not my TV",
+                            stringResource(R.string.extras_not_my_tv),
                             onClick = {
                                 scope.launch {
                                     extras.dismissSuggestion(m.folderId)
@@ -208,7 +216,7 @@ fun ExtrasScreen(
                     val meta = m.variants.getOrNull(variantIndex) ?: m.variants.first()
                     Text(shortHeader(meta), style = SsType.Title, color = SsColors.TextPrimary)
                     Text(
-                        "List from CleanYourTV, ${upstreamCommitShort(index.upstreamCommit)}.",
+                        uiText(R.string.extras_list_credit, UiText.Ltr(upstreamCommitShort(index.upstreamCommit))).resolve(),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
@@ -224,10 +232,10 @@ fun ExtrasScreen(
                         }
                     }
                     helperBlock?.let { msg ->
-                        Text(msg, style = SsType.Body, color = SsColors.DangerCardText)
+                        Text(msg.resolve(), style = SsType.Body, color = SsColors.DangerCardText)
                     }
                     if (protectionFailed) {
-                        Text(Extras.PROTECTION_CHECK_FAILED_MSG, style = SsType.Body, color = SsColors.DangerCardText)
+                        Text(Extras.PROTECTION_CHECK_FAILED_MSG.resolve(), style = SsType.Body, color = SsColors.DangerCardText)
                     }
                     rows.forEach { row ->
                         ExtrasRowUi(
@@ -246,13 +254,13 @@ fun ExtrasScreen(
                         Modifier.bringIntoViewRequester(actionsBringIntoView),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        status?.let { Text(it, style = SsType.Body, color = SsColors.TextBody) }
+                        status?.let { Text(it.resolve(), style = SsType.Body, color = SsColors.TextBody) }
                         val rowsByPkg = rows.associateBy { it.entry.pkg }
                         val tickedOn = checked.filterValues { it }.keys.filter { rowsByPkg[it]?.kind == ExtrasRowKind.On }.toSet()
                         val tickedOff = checked.filterValues { it }.keys.filter { rowsByPkg[it]?.kind == ExtrasRowKind.Off }.toSet()
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             SsButton(
-                                "Turn off selected",
+                                stringResource(R.string.extras_turn_off_selected),
                                 enabled = !actionsBlocked && tickedOn.isNotEmpty(),
                                 onClick = {
                                     busy = true
@@ -292,7 +300,7 @@ fun ExtrasScreen(
                                 },
                             )
                             SsButton(
-                                "Turn on selected",
+                                stringResource(R.string.extras_turn_on_selected),
                                 enabled = !actionsBlocked && tickedOff.isNotEmpty(),
                                 onClick = {
                                     busy = true
@@ -330,7 +338,7 @@ fun ExtrasScreen(
                                 },
                             )
                             SsButton(
-                                "Restore everything",
+                                stringResource(R.string.extras_restore_everything),
                                 enabled = !actionsBlocked && restoreEnabled,
                                 onClick = {
                                     busy = true
@@ -354,40 +362,41 @@ fun ExtrasScreen(
                 }
             }
             confirmHome?.let { confirmRow ->
-                val label = homeLabelForConfirm ?: "your current home screen"
-                Text("Turn off a home screen app?", style = SsType.Title, color = SsColors.TextPrimary)
+                val label = homeLabelForConfirm ?: UiText.Res(R.string.extras_current_home_fallback)
+                Text(stringResource(R.string.extras_confirm_home_off_title), style = SsType.Title, color = SsColors.TextPrimary)
                 Text(
-                    "Your TV will keep using $label. You can turn it back on with Restore everything.",
+                    uiText(R.string.extras_confirm_home_off_body, label).resolve(),
                     style = SsType.Body,
                     color = SsColors.TextBody,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SsButton(
-                        "Turn off",
+                        stringResource(R.string.extras_turn_off),
                         onClick = {
                             checked[confirmRow.entry.pkg] = true
                             confirmHome = null
                         },
                     )
-                    SsButton("Cancel", onClick = { confirmHome = null })
+                    SsButton(stringResource(R.string.tools_cancel), onClick = { confirmHome = null })
                 }
             }
             confirmHomeOn?.let { confirmRow ->
-                Text("Turn on a home screen app?", style = SsType.Title, color = SsColors.TextPrimary)
+                val appArg = if (confirmRow.label == confirmRow.entry.pkg) UiText.Ltr(confirmRow.label) else confirmRow.label
+                Text(stringResource(R.string.extras_confirm_home_on_title), style = SsType.Title, color = SsColors.TextPrimary)
                 Text(
-                    "Your TV may go back to ${confirmRow.label} as its home screen. You can pick your home screen in Tools → Home screen.",
+                    uiText(R.string.extras_confirm_home_on_body, appArg).resolve(),
                     style = SsType.Body,
                     color = SsColors.TextBody,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SsButton(
-                        "Turn on",
+                        stringResource(R.string.extras_turn_on),
                         onClick = {
                             checked[confirmRow.entry.pkg] = true
                             confirmHomeOn = null
                         },
                     )
-                    SsButton("Cancel", onClick = { confirmHomeOn = null })
+                    SsButton(stringResource(R.string.tools_cancel), onClick = { confirmHomeOn = null })
                 }
             }
         }
@@ -403,7 +412,7 @@ private fun shortHeader(meta: ExtrasListMeta): String {
 private fun ExtrasRowUi(row: ExtrasRow, checked: Boolean, onToggle: () -> Unit) {
     val greyed = row.kind == ExtrasRowKind.NotInstalled
     val textColor = if (greyed) SsColors.TextSecondary else SsColors.TextBody
-    val (pillLabel, pillBg, pillFg) = pillFor(row)
+    val (pillLabelRes, pillBg, pillFg) = pillFor(row)
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             Modifier.fillMaxWidth(),
@@ -419,19 +428,19 @@ private fun ExtrasRowUi(row: ExtrasRow, checked: Boolean, onToggle: () -> Unit) 
                 Text(row.label, style = SsType.Body, color = textColor)
                 Text(row.entry.pkg, style = SsType.Caption, color = SsColors.TextSecondary)
             }
-            SsPill(pillLabel, pillBg, pillFg)
+            SsPill(stringResource(pillLabelRes), pillBg, pillFg)
         }
         if (row.entry.note.isNotBlank()) {
             Text(row.entry.note, style = SsType.Caption, color = SsColors.TextSecondary)
         }
-        row.caption?.let { Text(it, style = SsType.Caption, color = SsColors.TextSecondary) }
-        row.failedLine?.let { Text("Failed: $it", style = SsType.Caption, color = SsColors.DangerCardText) }
+        row.caption?.let { Text(it.resolve(), style = SsType.Caption, color = SsColors.TextSecondary) }
+        row.failedLine?.let { Text(uiText(R.string.extras_row_failed, it).resolve(), style = SsType.Caption, color = SsColors.DangerCardText) }
     }
 }
 
-private fun pillFor(row: ExtrasRow): Triple<String, Color, Color> = when (row.kind) {
-    ExtrasRowKind.On -> Triple("On", SsColors.OkPillBg, SsColors.OkPillText)
-    ExtrasRowKind.Off -> Triple("Off", SsColors.Surface, SsColors.TextSecondary)
-    ExtrasRowKind.NotInstalled -> Triple("Not installed", SsColors.Surface, SsColors.TextSecondary)
-    ExtrasRowKind.Protected -> Triple("Protected", SsColors.WarnPillBg, SsColors.WarnPillText)
+private fun pillFor(row: ExtrasRow): Triple<Int, Color, Color> = when (row.kind) {
+    ExtrasRowKind.On -> Triple(R.string.extras_pill_on, SsColors.OkPillBg, SsColors.OkPillText)
+    ExtrasRowKind.Off -> Triple(R.string.extras_pill_off, SsColors.Surface, SsColors.TextSecondary)
+    ExtrasRowKind.NotInstalled -> Triple(R.string.extras_pill_not_installed, SsColors.Surface, SsColors.TextSecondary)
+    ExtrasRowKind.Protected -> Triple(R.string.extras_pill_protected, SsColors.WarnPillBg, SsColors.WarnPillText)
 }

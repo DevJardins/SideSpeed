@@ -69,7 +69,7 @@ class SelfCompilerTest {
 
     private fun success(): Flow<CompileEvent> = flow {
         emit(CompileEvent.Attempt("pm compile -m speed -f $own"))
-        emit(CompileEvent.Finished(true, false, "Success"))
+        emit(CompileEvent.Finished(true, false, io.github.devjardins.sidespeed.compile.CompileOutcome.Success))
     }
 
     @Test fun compilesOncePerInstallAndRecords() = runTest {
@@ -133,7 +133,7 @@ class SelfCompilerTest {
         val prefs = FakeSelfCompilePrefs()
         val calls = mutableListOf<Pair<String, CompileMode>>()
         compiler(prefs, calls = calls, script = {
-            flow { emit(CompileEvent.Finished(false, true, "Failure")) }
+            flow { emit(CompileEvent.Finished(false, true, io.github.devjardins.sidespeed.compile.CompileOutcome.Failure)) }
         }).maybeCompile()
         assertEquals(1, calls.size)
         assertNull(prefs.selfCompileFlow.value)
@@ -166,7 +166,7 @@ class SelfCompilerTest {
         val status = CompileStatus(store, "0.2.1", false, { false }, { 1000L }, backgroundScope)
         runCurrent()
         compiler(prefs, status = status, script = {
-            flow { emit(CompileEvent.Finished(false, true, "Failure")) }
+            flow { emit(CompileEvent.Finished(false, true, io.github.devjardins.sidespeed.compile.CompileOutcome.Failure)) }
         }).maybeCompile()
         runCurrent()
         assertNull(prefs.selfCompileFlow.value)
@@ -184,7 +184,7 @@ class SelfCompilerTest {
             runCompile = { _, _ ->
                 flow {
                     up = false
-                    emit(CompileEvent.Finished(false, true, "Failure"))
+                    emit(CompileEvent.Finished(false, true, io.github.devjardins.sidespeed.compile.CompileOutcome.Failure))
                 }
             },
             helperUp = { up },
@@ -225,7 +225,7 @@ class SelfCompilerTest {
             flow {
                 entered.complete(Unit)
                 release.await()
-                emit(CompileEvent.Finished(true, false, "Success"))
+                emit(CompileEvent.Finished(true, false, io.github.devjardins.sidespeed.compile.CompileOutcome.Success))
             }
         })
         val job = backgroundScope.launch { c.maybeCompile() }

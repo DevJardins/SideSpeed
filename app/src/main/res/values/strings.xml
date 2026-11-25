@@ -1,3 +1,652 @@
 <resources>
-    <string name="app_name">SideSpeed</string>
+    <string name="app_name" translatable="false">SideSpeed</string>
+
+    <!-- Shared -->
+    <!-- Back button label shown at the top of sub-screens. Keep ‹ as it is, because right-to-left languages mirror it automatically. -->
+    <string name="common_back">‹ Back</string>
+
+    <!-- Maintenance -->
+    <!-- Android notification channel name for the background optimization service. -->
+    <string name="maint_channel_name">Keeping apps optimized</string>
+    <!-- Foreground service notification text when work is queued and the helper is not running. -->
+    <string name="maint_notif_waiting_helper">Waiting for the helper</string>
+    <!-- Foreground service notification text while background optimization is running. %1$d is the number of apps left in the queue. -->
+    <plurals name="maint_notif_optimizing">
+        <item quantity="one">Optimizing apps (%1$d left)</item>
+        <item quantity="other">Optimizing apps (%1$d left)</item>
+    </plurals>
+    <!-- Foreground service notification text when auto-optimize is on and nothing needs compiling. -->
+    <string name="maint_notif_watching">Watching for apps to optimize</string>
+    <!-- Foreground service notification text when auto-optimize is idle and keeping %1$d apps up to date. -->
+    <plurals name="maint_notif_keeping">
+        <item quantity="one">Keeping %1$d app optimized</item>
+        <item quantity="other">Keeping %1$d apps optimized</item>
+    </plurals>
+    <!-- Foreground service notification text when only automatic space cleanup is enabled. %1$s is a size threshold like 1 GB. -->
+    <string name="maint_notif_free_space">Keeping free space above %1$s</string>
+    <!-- Headline for the Auto-optimize screen. -->
+    <string name="maint_auto_optimize_title">Auto-optimize</string>
+    <!-- Headline for the Auto-optimize history screen. -->
+    <string name="maint_history_title">Auto-optimize history</string>
+    <!-- Button label for the currently selected auto-optimize mode. %1$s is the mode title. -->
+    <string name="maint_mode_selected">✓ %1$s</string>
+    <!-- Button on Auto-optimize opening the optimization history list. -->
+    <string name="maint_history_button">History</string>
+    <!-- Empty state on the Auto-optimize history screen. -->
+    <string name="maint_history_empty">Nothing has been optimized automatically yet.</string>
+    <!-- Status pill on a successful Auto-optimize history row. -->
+    <string name="maint_history_optimized">Optimized</string>
+    <!-- Status pill on a failed Auto-optimize history row. %1$s is the failure reason. -->
+    <string name="maint_history_failed">Failed: %1$s</string>
+    <!-- Auto-optimize history outcome when a compile succeeds. -->
+    <string name="maint_job_success">Success</string>
+    <!-- Auto-optimize history outcome when a compile fails with no specific error. -->
+    <string name="maint_job_failure">Failure</string>
+    <!-- Auto-optimize history outcome when the helper connection drops mid-compile. -->
+    <string name="maint_job_connection_lost">Connection lost</string>
+    <!-- Auto-optimize history fallback outcome when a compile throws an exception with no message. -->
+    <string name="maint_job_error">Error</string>
+
+    <!-- Home -->
+    <!-- Status pill in the Home header when the background helper is connected. Keep the leading bullet. -->
+    <string name="home_helper_running">● Helper running</string>
+    <!-- Home screen tile title for the installed apps list. -->
+    <string name="home_tile_my_apps">My Apps</string>
+    <!-- Home screen tile title for automatic background optimization. -->
+    <string name="home_tile_auto_optimize">Auto-optimize</string>
+    <!-- Home screen tile title for device utilities. -->
+    <string name="home_tile_tools">Tools</string>
+    <!-- Home screen tile title for version, updates, and companion info. -->
+    <string name="home_tile_about">About</string>
+
+    <!-- My Apps -->
+    <!-- Status pill for an app compiled with the "speed" ART filter. Keep "speed". -->
+    <string name="apps_pill_speed_ok">speed ✓</string>
+    <!-- Status pill for an app compiled with the "speed-profile" ART filter. Keep "speed-profile". -->
+    <string name="apps_pill_speed_profile">speed-profile</string>
+    <!-- Status pill for an app whose ART filter is worse than speed-profile. -->
+    <string name="apps_pill_not_compiled">Not compiled</string>
+    <!-- Status pill shown while compiler status is being read. -->
+    <string name="apps_pill_checking">Checking…</string>
+
+    <!-- Compile and launch -->
+    <!-- Label before the compile mode toggle buttons (speed / speed-profile). -->
+    <string name="compile_mode_label">Mode</string>
+    <!-- Label for a selected option or mode button. %1$s is the option name. -->
+    <string name="compile_selected">✓ %1$s</string>
+    <!-- Status heading while an app compile is running. %1$s is elapsed mm:ss time. -->
+    <string name="compile_compiling_elapsed">Compiling… %1$s</string>
+    <string name="compile_running_note">A compile is running — please wait until it finishes.</string>
+    <!-- Keep: Fire TV -->
+    <string name="compile_note">This can take several minutes for large apps (about 3 min on a Fire TV Cube)</string>
+    <string name="compile_start">Start compile</string>
+    <!-- Result card headline after a successful compile. %1$s is the compile mode (speed or speed-profile). -->
+    <string name="compile_success_title">Compiled to %1$s</string>
+    <!-- Result card headline with checkmark. %1$s is the success title. -->
+    <string name="compile_success_title_checked">✓ %1$s</string>
+    <!-- Short duration in seconds under one minute, e.g. "51 s". %1$d is seconds. -->
+    <plurals name="compile_duration_seconds">
+        <item quantity="one">%1$d s</item>
+        <item quantity="other">%1$d s</item>
+    </plurals>
+    <!-- Duration in minutes and seconds, e.g. "2 min 58 s". %1$d is minutes, %2$s is the formatted seconds part. -->
+    <plurals name="compile_duration_minutes">
+        <item quantity="one">%1$d min %2$s</item>
+        <item quantity="other">%1$d min %2$s</item>
+    </plurals>
+    <!-- Result card detail when no post-compile status badge is available. %1$s is the duration. -->
+    <string name="compile_success_took">Took %1$s</string>
+    <!-- Result card detail when post-compile status matches the requested mode. %1$s is the duration, %2$s is the status pill label. -->
+    <string name="compile_success_took_confirmed">Took %1$s · status confirmed %2$s</string>
+    <!-- Result card detail when post-compile status differs from the requested mode. %1$s is the duration, %2$s is the status pill label. -->
+    <string name="compile_success_took_shows">Took %1$s · status shows %2$s</string>
+    <!-- Banner title when a compile succeeds. -->
+    <string name="compile_result_success">Success</string>
+    <!-- Banner title when a compile fails with no extra detail. -->
+    <string name="compile_result_failure">Failure</string>
+    <!-- Banner title when a compile fails with a specific reason. %1$s is the failure reason. -->
+    <string name="compile_result_failure_detail">Failure: %1$s</string>
+    <string name="compile_failure_see_log">See the log below for details.</string>
+    <string name="compile_back_to_apps">Back to apps</string>
+    <string name="compile_again">Compile again</string>
+    <string name="compile_keep_optimized">Keep this app optimized</string>
+    <string name="compile_kept_optimized">✓ Kept optimized (tap to stop)</string>
+    <string name="compile_show_log">Show log</string>
+    <string name="compile_hide_log">Hide log</string>
+    <!-- Button shown after a "Connection lost" compile failure to open the helper setup check. -->
+    <string name="compile_check_helper">Check helper</string>
+    <string name="compile_update_available">Update available</string>
+    <!-- Fallback installed version text in the update card when versionName is missing. -->
+    <string name="compile_update_version_unknown">unknown</string>
+    <string name="compile_update_elsewhere_running">Another app is updating. Wait for it to finish.</string>
+    <!-- Accessibility description for the update link QR code. %1$s is the URL. -->
+    <string name="compile_update_qr_cd">QR code for %1$s</string>
+    <string name="compile_update_scan_or_type">Scan with your phone, or type the link into a browser on this TV.</string>
+    <!-- %1$s is the APK size (e.g. "12 MB"), %2$s is the host domain. Keep: SideSpeed -->
+    <string name="compile_update_summary">Downloads %1$s from %2$s. SideSpeed checks it is a real update of the app you have, then installs it. Your data in the app stays.</string>
+    <string name="compile_update_now">Update now</string>
+    <!-- Update download progress. %1$d is percent (0-100). -->
+    <string name="compile_update_downloading">Downloading… %1$d%%</string>
+    <string name="compile_update_checking">Checking the download…</string>
+    <string name="compile_update_installing">Installing…</string>
+    <string name="compile_update_confirm">Your TV will ask you to confirm the install.</string>
+    <!-- Confirmation after an in-app update finishes. %1$s is the version name. -->
+    <string name="compile_update_done">Updated to %1$s.</string>
+    <string name="compile_update_try_again">Try again</string>
+    <!-- Card title for measuring app launch time before and after compilation. -->
+    <string name="compile_launch_title">Launch time</string>
+    <!-- Measured launch duration in seconds with one decimal place, e.g. "1.9 s". -->
+    <string name="compile_launch_seconds">%1$s s</string>
+    <!-- Launch time summary when only an after-compile measurement exists. %1$s is formatted seconds. -->
+    <string name="compile_launch_result_single">Launch: %1$s</string>
+    <!-- Launch time comparison before and after compilation. %1$s is before, %2$s is after, %3$s is the verdict. Arrow points from before to after; in right-to-left languages use ←. -->
+    <string name="compile_launch_result_pair">Launch: %1$s → %2$s (%3$s)</string>
+    <!-- Appended to the launch time summary when the app was updated since measurement. %1$s is the formatted launch result. -->
+    <string name="compile_launch_result_stale">%1$s · from an older version</string>
+    <!-- Launch time comparison verdict when difference is under 5%. -->
+    <string name="compile_launch_verdict_same">about the same</string>
+    <!-- Launch time comparison verdict when after is at least 5% faster. %1$d is the percentage. -->
+    <string name="compile_launch_verdict_faster">%1$d%% faster</string>
+    <!-- Launch time comparison verdict when after is at least 5% slower. English deliberately says "no faster", not "slower"; translate the meaning "not faster". -->
+    <string name="compile_launch_verdict_slower">no faster</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_not_launchable">This app can\'t be opened from SideSpeed</string>
+    <string name="compile_launch_time_before_after">Time the launch before and after</string>
+    <string name="compile_launch_time_before_after_hint">Opens the app on screen while timing.</string>
+    <string name="compile_launch_measure_now">Measure now</string>
+    <string name="compile_launch_measure_hint">Opens the app on screen twice. Takes a few minutes for large apps.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_busy_waiting_self">Waiting for SideSpeed to finish optimizing itself…</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_busy_waiting_app">Waiting for SideSpeed to finish optimizing this app…</string>
+    <string name="compile_launch_busy_timing_before">Timing launch before…</string>
+    <string name="compile_launch_busy_timing_after">Timing launch after…</string>
+    <string name="compile_launch_busy_timing">Timing launch…</string>
+    <string name="compile_launch_busy_timing_again">Timing launch again…</string>
+    <string name="compile_launch_busy_resetting">Resetting…</string>
+    <string name="compile_launch_busy_compiling">Compiling…</string>
+    <!-- Keep: SideSpeed -->
+    <string name="compile_launch_restore_error">The app was left reset; SideSpeed will recompile it.</string>
+    <!-- Combines a launch measurement failure (%1$s) with the restore-pending notice (%2$s). -->
+    <string name="compile_launch_error_with_restore">%1$s %2$s</string>
+    <string name="compile_launch_error_version">Couldn\'t read this app\'s version</string>
+    <string name="compile_launch_error_start">Couldn\'t start the measurement</string>
+    <string name="compile_launch_error_save">Couldn\'t save the result</string>
+    <string name="compile_launch_error_measure">Couldn\'t measure this app</string>
+    <string name="compile_launch_error_time">Couldn\'t time this app</string>
+    <string name="compile_launch_error_helper_down">Helper not running</string>
+    <string name="compile_launch_error_helper_outdated">Restart the helper to use this</string>
+    <string name="compile_launch_error_helper_refused">Helper refused the command</string>
+
+    <!-- My Apps and updates -->
+    <!-- Screen title on the My Apps screen. -->
+    <string name="apps_title">My Apps</string>
+    <!-- Filter chip showing all installed apps. -->
+    <string name="apps_filter_all">All</string>
+    <!-- Filter chip showing only sideloaded apps. -->
+    <string name="apps_filter_sideloaded">Sideloaded</string>
+    <!-- Shown on Home and My Apps while the installed app list is loading. -->
+    <string name="apps_loading">Loading apps…</string>
+    <!-- Empty state on My Apps when the active filter matches no apps. -->
+    <string name="apps_empty">No apps found.</string>
+    <!-- Secondary line under an app row when it has been compiled. %1$s is a formatted date. -->
+    <string name="apps_row_compiled">compiled %1$s</string>
+    <!-- Status pill on an app row while Auto-optimize is compiling it. -->
+    <string name="apps_pill_optimizing">Optimizing…</string>
+    <!-- Status pill on an app row while it waits in the Auto-optimize queue. -->
+    <string name="apps_pill_waiting">Waiting</string>
+    <!-- Status pill on an app row when Auto-optimize failed and will retry. -->
+    <string name="apps_pill_retry">Retry</string>
+    <!-- Status pill on an app row when Auto-optimize has it up to date. -->
+    <string name="apps_pill_optimized">Optimized</string>
+    <!-- Status pill on an app row when a newer version is available. %1$s is the version name. -->
+    <string name="apps_pill_update">Update: %1$s</string>
+    <!-- Status pill in the Home header when SideSpeed itself is compiled for the current build. Keep: SideSpeed -->
+    <string name="home_self_optimized">SideSpeed optimized</string>
+    <!-- Status pill in the Home header when SideSpeed has not yet compiled itself. Keep: SideSpeed -->
+    <string name="home_self_optimizes_on_leave">SideSpeed optimizes itself when you leave</string>
+    <!-- Home header status line when queued work is paused because the helper is not running. -->
+    <string name="apps_maintenance_waiting_helper">Waiting for the helper</string>
+    <!-- Home header status line when Auto-optimize has apps queued. %1$d is the queue length. -->
+    <plurals name="apps_maintenance_waiting">
+        <item quantity="one">Maintenance: %1$d waiting</item>
+        <item quantity="other">Maintenance: %1$d waiting</item>
+    </plurals>
+    <!-- Home header status line when Auto-optimize is enabled and no apps are queued. -->
+    <string name="apps_maintenance_up_to_date">Maintenance: up to date</string>
+    <!-- Combines the TV address line (%1$s) and the maintenance line (%2$s) in the Home header. -->
+    <string name="home_header_caption">%1$s · %2$s</string>
+    <!-- Auto-optimize mode title covering all user-installed apps. -->
+    <string name="apps_mode_all_title">All apps</string>
+    <!-- Auto-optimize mode description for All apps. -->
+    <string name="apps_mode_all_desc">Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.</string>
+    <!-- Auto-optimize mode title covering only sideloaded apps. -->
+    <string name="apps_mode_sideloaded_title">Sideloaded only</string>
+    <!-- Auto-optimize mode description for Sideloaded only. -->
+    <string name="apps_mode_sideloaded_desc">Only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.</string>
+    <!-- Auto-optimize mode title covering only manually selected apps. -->
+    <string name="apps_mode_selected_title">Selected apps</string>
+    <!-- Auto-optimize mode description for Selected apps. Must match the compile_keep_optimized button label. -->
+    <string name="apps_mode_selected_desc">Only the apps you pick. Open an app and choose “Keep this app optimized” to add it.</string>
+    <!-- Button label showing the active Auto-optimize mode. %1$s is the mode title. -->
+    <string name="apps_auto_optimize_button">Auto-optimize: %1$s</string>
+    <!-- Brief note shown when pressing a locked keep-checkbox on My Apps. %1$s is the mode title. -->
+    <string name="apps_locked_message">Kept optimized by Auto-optimize (%1$s). Change it on the Auto-optimize screen.</string>
+    <!-- Total app count in the Home My Apps tile. %1$d is the number of apps. -->
+    <plurals name="home_apps_count">
+        <item quantity="one">%1$d apps</item>
+        <item quantity="other">%1$d apps</item>
+    </plurals>
+    <!-- Update count in the Home My Apps tile when updates are available. %1$d is the number of updates. -->
+    <plurals name="home_updates_count">
+        <item quantity="one">%1$d update</item>
+        <item quantity="other">%1$d updates</item>
+    </plurals>
+    <!-- Sideloaded app count in the Home My Apps tile when no updates are available. %1$d is the number of sideloaded apps. -->
+    <plurals name="home_sideloaded_count">
+        <item quantity="one">%1$d sideloaded</item>
+        <item quantity="other">%1$d sideloaded</item>
+    </plurals>
+    <!-- Status line on the Home My Apps tile. %1$s is the total app count, %2$s is updates or sideloaded count. -->
+    <string name="home_status_my_apps">%1$s · %2$s</string>
+    <!-- Detail part of the Home Auto-optimize tile status when queued work waits for the helper. -->
+    <string name="home_auto_waiting_helper">waiting for the helper</string>
+    <!-- Detail part of the Home Auto-optimize tile status when apps are queued. %1$d is the queue length. -->
+    <plurals name="home_auto_waiting">
+        <item quantity="one">%1$d waiting</item>
+        <item quantity="other">%1$d waiting</item>
+    </plurals>
+    <!-- Detail part of the Home Auto-optimize tile status when nothing is queued. -->
+    <string name="home_auto_up_to_date">up to date</string>
+    <!-- Status line on the Home Auto-optimize tile. %1$s is the mode title, %2$s is the queue detail. -->
+    <string name="home_status_auto_optimize">%1$s · %2$s</string>
+    <!-- Status line on the Home Tools tile. -->
+    <string name="home_status_tools">Space, animations, extras, home screen</string>
+    <!-- Status line on the Home About tile. %1$s is the SideSpeed version name. -->
+    <string name="home_status_about">Version %1$s</string>
+    <!-- SideSpeed update banner progress while downloading. %1$d is percent (0-100). -->
+    <string name="update_banner_downloading">Downloading… %1$d%%</string>
+    <!-- SideSpeed update banner status while installing. Keep: SideSpeed -->
+    <string name="update_banner_installing">Installing… SideSpeed will close and reopen.</string>
+    <!-- SideSpeed update banner headline. %1$s is the new version name. Keep: SideSpeed -->
+    <string name="update_banner_out">SideSpeed %1$s is out</string>
+    <!-- SideSpeed update banner note when another job blocks updating. -->
+    <string name="update_banner_busy">Available when the current job finishes.</string>
+    <!-- SideSpeed update banner fallback instructions. %1$s is the Downloader code and %2$s is the download URL; both are filled in by the app. Keep: Downloader -->
+    <string name="update_banner_manual">In Downloader, enter %1$s, or go to %2$s.</string>
+    <string name="update_banner_update_now">Update now</string>
+    <string name="update_banner_dismiss">Dismiss</string>
+    <string name="update_banner_cancel">Cancel</string>
+    <string name="update_banner_retry">Retry</string>
+    <!-- Compile screen update card headline. %1$s is the app name, %2$s is the available version, %3$s is the installed version. -->
+    <string name="update_card_title">%1$s %2$s is out. You have %3$s.</string>
+    <!-- Keep: GitHub -->
+    <string name="update_source_github">From GitHub.</string>
+    <!-- Keep: F-Droid -->
+    <string name="update_source_fdroid">From F-Droid.</string>
+    <!-- Keep: IzzyOnDroid -->
+    <string name="update_source_izzy">From IzzyOnDroid.</string>
+    <!-- Generic failure reason when an in-app update throws an unexpected error. -->
+    <string name="update_error_failed">Update failed.</string>
+    <!-- Failure reason when TV storage has less than twice the APK size free. -->
+    <string name="update_error_no_space">Not enough free space on the TV.</string>
+    <!-- Failure reason when downloading the update APK fails. -->
+    <string name="update_error_download_failed">Download failed.</string>
+    <!-- Failure reason when reading the installed app's version or signers fails. -->
+    <string name="update_error_read_installed">Could not read the installed app.</string>
+    <!-- Failure reason when the helper connection drops and the version does not rise within the timeout. -->
+    <string name="update_error_confirm_timeout">Couldn\'t confirm the update. Check the app\'s version, then try again.</string>
+    <!-- Failure reason when the helper finishes without raising the installed version code. -->
+    <string name="update_error_didnt_install">The update didn\'t install.</string>
+    <!-- Fallback failure reason when an install fails with no detail line. -->
+    <string name="update_error_install_failed">Install failed.</string>
+    <!-- Failure reason when the fallback installer cannot run because the helper is down. -->
+    <string name="update_error_helper_down">Helper not running.</string>
+
+    <!-- Tools and Extras -->
+    <!-- Screen headline for Tools. -->
+    <string name="tools_title">Tools</string>
+    <!-- Placeholder text for an unimplemented Tools card. %1$s is the card title. -->
+    <string name="tools_placeholder">%1$s — coming soon</string>
+    <!-- Button label for the currently active option. %1$s is the option label. -->
+    <string name="tools_selected">✓ %1$s</string>
+    <string name="tools_cancel">Cancel</string>
+    <!-- Error shown when an action requires the background helper and it is not running. -->
+    <string name="tools_helper_down">Helper not running. Start the helper, then try again.</string>
+    <!-- Error shown when the running helper binary is older than the app expects. -->
+    <string name="tools_helper_outdated">Restart the helper to use this.</string>
+    <!-- Storage or memory size in megabytes. %1$s is a whole or one-decimal number, used on Tools and for update download sizes. -->
+    <string name="tools_bytes_mb">%1$s MB</string>
+    <!-- Storage or memory size in gigabytes. %1$s is the formatted decimal number. -->
+    <string name="tools_bytes_gb">%1$s GB</string>
+    <!-- Automatic cleanup threshold button meaning automatic cleanup is disabled. -->
+    <string name="tools_threshold_off">Off</string>
+    <!-- Automatic cleanup threshold button for 500 MB. -->
+    <string name="tools_threshold_500_mb">500 MB</string>
+    <!-- Automatic cleanup threshold button for 1 GB. -->
+    <string name="tools_threshold_1_gb">1 GB</string>
+    <!-- Automatic cleanup threshold button for 2 GB. -->
+    <string name="tools_threshold_2_gb">2 GB</string>
+    <!-- Short reason recorded when cleanup could not run because the helper was down. -->
+    <string name="tools_skip_helper_down">Helper not running</string>
+    <!-- Short reason recorded when cleanup could not run because the helper needed a restart. -->
+    <string name="tools_skip_helper_outdated">Restart the helper to use this</string>
+    <!-- Short reason recorded when cleanup was refused by the helper allowlist. -->
+    <string name="tools_skip_refused">Helper refused the command</string>
+    <!-- Box health card title on Tools. -->
+    <string name="tools_health_title">Box health</string>
+    <!-- Device summary line on Box health. %1$s is the device name/model, %2$s is the Android version. Keep: Android -->
+    <string name="tools_health_device">%1$s · Android %2$s</string>
+    <!-- RAM usage line on Box health. %1$s is free RAM, %2$s is total RAM. -->
+    <string name="tools_health_ram">%1$s free of %2$s RAM</string>
+    <!-- Storage usage line on Box health. %1$s is free storage, %2$s is total storage. -->
+    <string name="tools_health_storage">%1$s free of %2$s storage</string>
+    <!-- Helper status line on Box health when the helper responds. -->
+    <string name="tools_health_helper_running">Helper: Running</string>
+    <!-- Helper status line on Box health when the helper does not respond. -->
+    <string name="tools_health_helper_not_running">Helper: Not running</string>
+    <!-- Helper status line on Box health while checking. -->
+    <string name="tools_health_helper_checking">Helper: …</string>
+    <!-- Free up space card title on Tools. -->
+    <string name="tools_space_title">Free up space</string>
+    <!-- Storage summary on Free up space. %1$s is free space, %2$s is total space. -->
+    <string name="tools_space_free_of">%1$s free of %2$s</string>
+    <!-- Placeholder while storage numbers are loading. -->
+    <string name="tools_space_loading">…</string>
+    <string name="tools_space_clean_now">Clean up now</string>
+    <!-- Button label while cache cleanup is running. -->
+    <string name="tools_space_cleaning">Cleaning…</string>
+    <!-- Brief feedback shown on the Clean up now button after freeing space. %1$s is the freed size. -->
+    <string name="tools_space_freed">Freed %1$s</string>
+    <!-- Subheading above the automatic cleanup threshold buttons. -->
+    <string name="tools_space_auto_title">Automatic cleanup</string>
+    <string name="tools_space_auto_caption">Clears app caches only when free space drops below this. Checked every few hours while the helper is running.</string>
+    <!-- Outcome part of the Last cleanup line when caches were trimmed. %1$s is the freed size. -->
+    <string name="tools_space_last_freed">freed %1$s</string>
+    <!-- Summary of the most recent cleanup run. %1$s is the day and time, %2$s is the outcome or skip reason. -->
+    <string name="tools_space_last_cleanup">Last cleanup: %1$s · %2$s</string>
+    <string name="tools_space_last_never">Last cleanup: never</string>
+    <!-- Animations card title on Tools. -->
+    <string name="tools_animations_title">Animations</string>
+    <!-- Keep the caveat that this does not make apps load faster. Do not name or suggest any app. -->
+    <string name="tools_animations_body">Makes menus and screen changes move faster. It does not make apps load faster. Off removes animations completely; a few apps may look odd.</string>
+    <string name="tools_animations_unreadable">Current values couldn\'t be read — the helper may not be running.</string>
+    <string name="tools_animations_normal">Normal (1×)</string>
+    <string name="tools_animations_faster">Faster (0.5×)</string>
+    <string name="tools_animations_off">Off</string>
+    <!-- Keep: Fire TV -->
+    <string name="tools_animations_fire_tv_note">On Fire TV, app animations stay at normal speed so the Settings menu keeps working.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="tools_animations_restore_note">Restores the values from before SideSpeed changed them.</string>
+    <string name="tools_animations_restore">Restore original</string>
+    <string name="tools_animations_refused">The helper refused this setting.</string>
+    <!-- Home screen card title on Tools. -->
+    <string name="tools_home_title">Home screen</string>
+    <!-- Shown on the Home screen card while checking installed home apps. -->
+    <string name="tools_home_checking">Checking…</string>
+    <!-- Keep: Fire TV. Do not name or suggest any app. -->
+    <string name="tools_home_fire_os">Fire TV doesn\'t allow other home screens.</string>
+    <!-- Shown when no other home screen app is installed. Do not name or suggest any app. -->
+    <string name="tools_home_no_other">Install another home screen app first, then come back here.</string>
+    <string name="tools_home_drifted">Your home screen changed back on its own. The first home screen is still saved below.</string>
+    <!-- Line showing the active home screen app. %1$s is the app name or package. -->
+    <string name="tools_home_current">Current Home: %1$s</string>
+    <string name="tools_home_current_unknown">Current Home: unknown</string>
+    <!-- Pill badge next to the currently active home screen app. -->
+    <string name="tools_home_current_pill">Current</string>
+    <string name="tools_home_make_home">Make this Home</string>
+    <!-- Confirmation prompt before switching Home. %1$s is the chosen app name. -->
+    <string name="tools_home_confirm_make">Make %1$s your home screen?</string>
+    <string name="tools_home_back_to_stock">Back to stock</string>
+    <!-- Confirmation prompt before restoring the original home screen. Keep: SideSpeed -->
+    <string name="tools_home_confirm_back">Go back to the home screen this TV had before SideSpeed changed it?</string>
+    <string name="tools_home_changed">Home screen changed. Your remote\'s Home button may still open the previous home screen on some TVs.</string>
+    <string name="tools_home_restored">Back to your first home screen.</string>
+    <!-- Keep: Google TV. Keep the exact name "Turn off extras". -->
+    <string name="tools_home_couldnt_change_google_tv">Google TV keeps its own home screen while it\'s turned on. Turn it off in Turn off extras first.</string>
+    <string name="tools_home_couldnt_change">Couldn\'t change Home</string>
+    <string name="tools_home_no_original">No earlier home screen was saved.</string>
+    <!-- Keep: SideSpeed -->
+    <string name="tools_home_stock_disabled_elsewhere">Your first home screen was turned off by something else, so SideSpeed can\'t turn it back on.</string>
+    <string name="tools_home_refused">The helper refused this change.</string>
+    <string name="tools_home_excluded">That app can\'t be the home screen.</string>
+    <string name="tools_home_not_a_home_app">That app isn\'t a home screen app.</string>
+    <string name="tools_home_invalid_saved">The saved home screen isn\'t valid any more.</string>
+    <!-- Title of the Turn off extras card and screen. -->
+    <string name="extras_title">Turn off extras</string>
+    <string name="extras_card_body">Turn off apps your TV maker added that you don\'t use. You can turn them back on any time.</string>
+    <!-- Button on the Turn off extras card opening the screen. -->
+    <string name="extras_card_open">Open</string>
+    <string name="extras_no_list">No list for this TV yet.</string>
+    <!-- Keep: CleanYourTV -->
+    <string name="extras_source_note">Lists come from the CleanYourTV project.</string>
+    <string name="extras_ambiguous">More than one list matches this TV.</string>
+    <!-- Prompt asking if a matched extras list fits the user's TV. %1$s is the list header. -->
+    <string name="extras_suggested_prompt">This list looks like your TV: %1$s. Check the model before turning anything off.</string>
+    <string name="extras_use_this_list">Use this list</string>
+    <string name="extras_not_my_tv">Not my TV</string>
+    <!-- Attribution line above the extras list. %1$s is the short commit hash. Keep: CleanYourTV -->
+    <string name="extras_list_credit">List from CleanYourTV, %1$s.</string>
+    <string name="extras_protection_check_failed">Couldn\'t check which apps are safe to turn off. Try again.</string>
+    <string name="extras_turn_off_selected">Turn off selected</string>
+    <string name="extras_turn_on_selected">Turn on selected</string>
+    <string name="extras_restore_everything">Restore everything</string>
+    <!-- Fallback label for the active home screen inside the confirm-turn-off message. -->
+    <string name="extras_current_home_fallback">your current home screen</string>
+    <string name="extras_confirm_home_off_title">Turn off a home screen app?</string>
+    <!-- Body of the confirm-turn-off prompt for a home screen app. %1$s is the active home screen name. -->
+    <string name="extras_confirm_home_off_body">Your TV will keep using %1$s. You can turn it back on with Restore everything.</string>
+    <string name="extras_turn_off">Turn off</string>
+    <string name="extras_confirm_home_on_title">Turn on a home screen app?</string>
+    <!-- Body of the confirm-turn-on prompt for a home screen app. %1$s is the app being turned back on. Arrow points from Tools to Home screen; in right-to-left languages use ←. -->
+    <string name="extras_confirm_home_on_body">Your TV may go back to %1$s as its home screen. You can pick your home screen in Tools → Home screen.</string>
+    <string name="extras_turn_on">Turn on</string>
+    <!-- Caption under a row on Turn off extras that is a home screen app. -->
+    <string name="extras_row_home_caption">This is a home screen app.</string>
+    <!-- Caption under a home screen row when it cannot be turned off yet. Arrow points from Tools to Home screen; in right-to-left languages use ←. -->
+    <string name="extras_row_home_blocked">Choose another home screen first in Tools → Home screen.</string>
+    <!-- Short reason shown after "Failed: " when the helper refuses an action on a package. -->
+    <string name="extras_row_refused">refused</string>
+    <!-- Per-row failure line on Turn off extras. %1$s is the error reason. -->
+    <string name="extras_row_failed">Failed: %1$s</string>
+    <!-- Status pill on Turn off extras for an enabled app. -->
+    <string name="extras_pill_on">On</string>
+    <!-- Status pill on Turn off extras for a disabled app. -->
+    <string name="extras_pill_off">Off</string>
+    <!-- Status pill on Turn off extras for an app not installed on this TV. -->
+    <string name="extras_pill_not_installed">Not installed</string>
+    <!-- Status pill on Turn off extras for a protected app that cannot be disabled. -->
+    <string name="extras_pill_protected">Protected</string>
+    <!-- Summary after turning off selected extras. %1$d is the number turned off. -->
+    <plurals name="extras_turned_off">
+        <item quantity="one">Turned off %1$d.</item>
+        <item quantity="other">Turned off %1$d.</item>
+    </plurals>
+    <!-- Summary after restoring disabled extras. %1$d is the number turned back on. -->
+    <plurals name="extras_turned_back_on">
+        <item quantity="one">Turned back on %1$d.</item>
+        <item quantity="other">Turned back on %1$d.</item>
+    </plurals>
+    <!-- Summary after turning on selected extras. %1$d is the number turned on. -->
+    <plurals name="extras_turned_on">
+        <item quantity="one">Turned on %1$d.</item>
+        <item quantity="other">Turned on %1$d.</item>
+    </plurals>
+    <!-- Failure count appended to an extras summary when at least one app failed. %1$d is the failure count. -->
+    <plurals name="extras_failed_count">
+        <item quantity="one">Failed %1$d.</item>
+        <item quantity="other">Failed %1$d.</item>
+    </plurals>
+    <!-- Combines an extras action count (%1$s) with its failure count (%2$s). -->
+    <string name="extras_outcome_with_failed">%1$s %2$s</string>
+
+    <!-- Setup and connection -->
+    <!-- Screen headline on Setup. Keep: SideSpeed -->
+    <string name="setup_headline">Allow SideSpeed on this TV</string>
+    <!-- Shown next to a spinner while checking whether the helper is already running. -->
+    <string name="setup_checking">Checking…</string>
+    <!-- Headline for the initial ADB safety warning screen. -->
+    <string name="setup_warning_title">Before you start</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Keep: ADB, SideSpeed -->
+    <string name="setup_lan_warning">ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed\'s helper until you start it again.</string>
+    <!-- Button acknowledging the initial ADB safety warning. -->
+    <string name="setup_warning_ack">I understand</string>
+    <!-- Subtitle on Google TV / Android TV setup screen. Keep: SideSpeed -->
+    <string name="setup_google_tv_subtitle">SideSpeed connects by itself as soon as your TV allows it.</string>
+    <!-- Shown when direct ADB connection is refused 3 times with Wireless debugging on. Must match setup_pair_with_code button label. -->
+    <string name="setup_refused_hint">Your TV doesn\'t accept direct connections. Pair with a code instead.</string>
+    <!-- Button opening the TV's developer settings screen. -->
+    <string name="setup_open_dev_settings">Open developer settings</string>
+    <!-- Button hiding the wireless debugging pairing keypad. -->
+    <string name="setup_hide_pairing">Hide pairing</string>
+    <!-- Button showing the wireless debugging pairing keypad. -->
+    <string name="setup_pair_with_code">Pair with a code instead</string>
+    <!-- Step 1 title on Google TV setup. Match Android's "Wireless debugging" setting name. -->
+    <string name="setup_step_wireless_debugging">Turn on Wireless debugging</string>
+    <!-- Status caption on step 1 when ADB debugging is turned on. -->
+    <string name="setup_step_detected">Detected</string>
+    <!-- Navigation path in Android TV Settings to find Wireless debugging. -->
+    <string name="setup_step_wireless_debugging_path">Settings &gt; System &gt; Developer options</string>
+    <!-- Step 2 title on Google TV setup. Match Android's "Always allow" and "Allow" dialog labels. -->
+    <string name="setup_step_allow_prompt">When your TV asks, tick Always allow, then Allow</string>
+    <!-- Status caption on a setup step card while waiting for user action on the TV. -->
+    <string name="setup_step_waiting">Waiting for you…</string>
+    <!-- Step 3 title on Google TV setup. Keep: SideSpeed -->
+    <string name="setup_step_starts_helper">SideSpeed starts its helper</string>
+    <!-- Card headline for wireless debugging pairing with a 6-digit code. -->
+    <string name="setup_pairing_title">Pair with a code</string>
+    <!-- Instructions inside the pairing card. Match Android's "Wireless debugging" and "Pair device with pairing code" labels. -->
+    <string name="setup_pairing_instructions">In Wireless debugging, choose Pair device with pairing code. Enter the code and the port shown there (the number after the colon).</string>
+    <!-- Label above the 6-digit pairing code keypad. -->
+    <string name="setup_pairing_code_label">Pairing code</string>
+    <!-- Label above the 5-digit pairing port keypad. -->
+    <string name="setup_pairing_port_label">Pairing port</string>
+    <!-- Short delete button label on a 72dp pairing keypad button. -->
+    <string name="setup_keypad_del">Del</string>
+    <!-- Short clear button label on a 72dp pairing keypad button. -->
+    <string name="setup_keypad_clr">Clr</string>
+    <!-- Button submitting the pairing code and port. -->
+    <string name="setup_pairing_submit">Pair</string>
+    <!-- Toggle button inside the pairing card that collapses the PC ADB steps. -->
+    <string name="setup_pairing_hide_pc">Hide PC steps</string>
+    <!-- Toggle button inside the pairing card that expands the PC ADB steps. -->
+    <string name="setup_pairing_show_pc">Start from a PC instead</string>
+    <!-- Intro above PC ADB commands for Google TV. Match Android's "Wireless debugging" label. -->
+    <string name="setup_pc_google_tv_intro">From a PC on the same network, using the addresses shown under Wireless debugging:</string>
+    <!-- Note between adb pair/connect commands and the helper launch command. -->
+    <string name="setup_pc_enter_code_note">(enter the pairing code when asked)</string>
+    <!-- Subtitle on Fire TV setup screen. Keep: SideSpeed -->
+    <string name="setup_fire_os_subtitle">SideSpeed checks automatically every few seconds.</string>
+    <!-- Step 1 title on Fire TV setup. Keep: ADB -->
+    <string name="setup_step_adb_debugging">Turn on ADB debugging</string>
+    <!-- Navigation path in Fire TV Settings to find ADB debugging. Keep: Fire TV -->
+    <string name="setup_step_adb_debugging_path">Settings &gt; My Fire TV &gt; Developer options</string>
+    <!-- Step 2 title on Fire TV setup. -->
+    <string name="setup_step_start_helper_companion">Start the helper from your phone or computer</string>
+    <!-- Warning on Fire TV setup when an older helper is running. Keep: SideSpeed, SideSpeed Companion. Match setup_other_ways_show label. -->
+    <string name="setup_fire_os_stale_helper">The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.</string>
+    <!-- Body text on step 2 of Fire TV setup. %1$s is the releases URL, filled in by the app. Keep: SideSpeed Companion -->
+    <string name="setup_fire_os_companion_hint">Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from %1$s</string>
+    <!-- Toggle button on Fire TV setup that collapses the PC ADB steps. -->
+    <string name="setup_other_ways_hide">Hide other ways</string>
+    <!-- Toggle button on Fire TV setup that expands the PC ADB steps. -->
+    <string name="setup_other_ways_show">Other ways to run it</string>
+    <!-- Intro above PC ADB commands on Fire TV setup. -->
+    <string name="setup_pc_fire_os_intro">From a PC on the same network, run:</string>
+    <!-- Step 3 title on Fire TV setup. -->
+    <string name="setup_step_helper_starts">Helper starts</string>
+    <!-- Status caption on step 3 of Fire TV setup. -->
+    <string name="setup_step_checks_automatically">Checks automatically</string>
+    <!-- Troubleshooting caption on Setup. Keep: Allow debugging -->
+    <string name="setup_status_waiting_allow">Last check: waiting for the Allow debugging prompt</string>
+    <!-- Troubleshooting caption on Setup. -->
+    <string name="setup_status_helper_outdated">Last check: the helper is out of date</string>
+    <!-- Troubleshooting caption on Setup. %1$s is a short status reason (e.g. "ADB not reachable"). -->
+    <string name="setup_status_last_check">Last check: %1$s</string>
+    <!-- Note below PC ADB commands. Keep: Windows, PowerShell, Terminal, Command Prompt -->
+    <string name="setup_windows_note">On Windows use PowerShell or Terminal, not Command Prompt.</string>
+    <!-- Caption above raw shell commands to paste inside adb shell. Keep: adb shell -->
+    <string name="setup_pc_or_shell_paste">Or type adb shell, then paste:</string>
+    <!-- Validation error when trying to pair without a 6-digit code and numeric port. -->
+    <string name="setup_pairing_invalid_input">Enter the 6-digit code and the pairing port.</string>
+    <!-- Pairing status while waiting for an in-flight ADB connection check to finish. -->
+    <string name="setup_pairing_waiting_check">Waiting for the current check…</string>
+    <!-- Pairing status while pairing is in progress. -->
+    <string name="setup_pairing_in_progress">Pairing…</string>
+    <!-- Pairing status when pairing exceeds the timeout. -->
+    <string name="setup_pairing_timed_out">Pairing timed out</string>
+    <!-- Pairing status right after pairing succeeds. -->
+    <string name="setup_pairing_paired_connecting">Paired. Connecting…</string>
+    <!-- Pairing failure when the TV rejects the pairing attempt without a specific library error. Keep: ADB -->
+    <string name="setup_pairing_failed_adb">Pairing failed: ADB pairing failed</string>
+    <!-- Pairing failure when the exception provides no error message. -->
+    <string name="setup_pairing_failed_unknown">Pairing failed: unknown error</string>
+    <!-- Pairing failure with a raw error message from the ADB library. %1$s is the exception message. -->
+    <string name="setup_pairing_failed">Pairing failed: %1$s</string>
+    <!-- Short reason shown after "Last check:" on Fire OS when the helper is not running. Keep: Fire OS, ADB -->
+    <string name="setup_reason_fire_os">Fire OS blocks on-box ADB</string>
+    <!-- Short reason shown after "Last check:" when ADB connection fails. Keep: ADB -->
+    <string name="setup_reason_adb_unreachable">ADB not reachable</string>
+    <!-- Short reason shown after "Last check:" when the helper fails to start after ADB connects. -->
+    <string name="setup_reason_helper_not_started">Helper did not start</string>
+
+    <!-- About and self-update -->
+    <!-- Home header address line showing the TV's IP addresses. %1$s is one or more addresses separated by middle dots. -->
+    <string name="home_tv_address">This TV: %1$s</string>
+    <!-- Headline on the About screen. -->
+    <string name="about_title">About</string>
+    <!-- Version line on the About screen. %1$s is the SideSpeed version name. -->
+    <string name="about_version">Version %1$s</string>
+    <!-- Button on About triggering a manual update check. -->
+    <string name="about_check_for_updates">Check for updates</string>
+    <!-- Button on About opening the language choice screen; also the screen title. -->
+    <string name="about_language">Language</string>
+    <!-- Language choice meaning the app follows the TV's own language. -->
+    <string name="about_language_same_as_device">Same as device</string>
+    <!-- Note shown under a language that is not fully translated yet. -->
+    <string name="about_language_not_complete">Not complete in this version. Showing English for now.</string>
+    <!-- Button label for the currently chosen language. %1$s is the language name. -->
+    <string name="about_language_selected">✓ %1$s</string>
+    <!-- Status line on About while checking GitHub for a newer release. -->
+    <string name="about_checking">Checking…</string>
+    <!-- Status line on About when no newer release is available. -->
+    <string name="about_up_to_date">You have the latest version.</string>
+    <!-- Status line on About when the manual update check fails. Keep: GitHub -->
+    <string name="about_check_failed">Couldn\'t reach GitHub. Try again later.</string>
+    <!-- Credit line on About. Keep: DevJardins -->
+    <string name="about_made_by">Made with ♥ by DevJardins</string>
+    <!-- Donation card title on About. Keep: SideSpeed, Ko-fi -->
+    <string name="about_support_kofi">Support SideSpeed on Ko-fi</string>
+    <!-- Accessibility description for the Ko-fi QR code on About. %1$s is the URL. -->
+    <string name="about_kofi_qr_cd">QR code for %1$s</string>
+    <!-- Caption under the Ko-fi QR code on About. -->
+    <string name="about_scan_phone">Scan with your phone.</string>
+    <!-- Update prompt title on About when a newer SideSpeed release is found. %1$s is the version name. Keep: SideSpeed -->
+    <string name="about_update_available">SideSpeed %1$s is available</string>
+    <!-- Secondary button dismissing the update prompt on About. -->
+    <string name="about_update_later">Later</string>
+    <!-- Error shown when SideSpeed lacks permission to install APKs from unknown sources. %1$s is the retry button label ("Retry" or "Try again"). Keep: SideSpeed -->
+    <string name="update_unknown_sources">Allow SideSpeed to install apps, then press %1$s.</string>
+    <!-- Self-update failure when the GitHub release tag is malformed. -->
+    <string name="update_error_invalid_version">Not a valid release version.</string>
+    <!-- Self-update failure when downloading SHA256SUMS.txt fails. -->
+    <string name="update_error_checksums_download">Could not download the checksums.</string>
+    <!-- Self-update failure when SHA256SUMS.txt has no entry for the downloaded APK. %1$s is the APK file name. -->
+    <string name="update_error_no_checksum_for_file">No checksum found for %1$s.</string>
+    <!-- Update verification failure when no expected SHA-256 checksum was provided. -->
+    <string name="update_verify_no_checksum">No checksum found for this update.</string>
+    <!-- Update verification failure when the downloaded APK hash does not match the expected checksum. -->
+    <string name="update_verify_checksum_mismatch">Checksum mismatch.</string>
+    <!-- Update verification failure when the downloaded APK archive cannot be parsed. -->
+    <string name="update_verify_unreadable_apk">Could not read the downloaded APK.</string>
+    <!-- Update verification failure when the APK package name does not match the expected app. %1$s is the APK package name. -->
+    <string name="update_verify_wrong_package">Wrong package: %1$s.</string>
+    <!-- Update verification failure when the APK version code does not match the catalog entry. -->
+    <string name="update_verify_version_mismatch">Version does not match the update.</string>
+    <!-- Update verification failure when the APK version code is not higher than the installed version. -->
+    <string name="update_verify_not_newer">Not newer than the installed version.</string>
+    <!-- Update verification failure when either the APK or installed app has no readable signing certificate. -->
+    <string name="update_verify_signer_unknown">Signer unknown: refusing the update.</string>
+    <!-- Update verification failure when the APK signing certificates do not match the installed app. -->
+    <string name="update_verify_signer_mismatch">Signer does not match the installed app.</string>
 </resources>

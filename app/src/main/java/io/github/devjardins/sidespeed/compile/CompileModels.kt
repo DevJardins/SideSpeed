@@ -40,8 +40,20 @@ value class ActivityClassName private constructor(val value: String) {
     }
 }
 
+/** Typed outcome of a compile run, so UI and maintenance classify without matching English strings. */
+sealed interface CompileOutcome {
+    data object Success : CompileOutcome
+    data object Failure : CompileOutcome
+    data object ConnectionLost : CompileOutcome
+    data class Error(val detail: String? = null) : CompileOutcome
+}
+
 sealed interface CompileEvent {
     data class Attempt(val command: String) : CompileEvent
     data class Output(val line: String) : CompileEvent
-    data class Finished(val success: Boolean, val usedFallback: Boolean, val message: String) : CompileEvent
+    data class Finished(
+        val success: Boolean,
+        val usedFallback: Boolean,
+        val outcome: CompileOutcome = if (success) CompileOutcome.Success else CompileOutcome.Failure,
+    ) : CompileEvent
 }

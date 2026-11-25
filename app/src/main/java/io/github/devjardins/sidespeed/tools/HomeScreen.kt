@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.compile.ActivityClassName
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.flow.first
 
 /** A Home activity component: package plus fully-qualified activity class. */
@@ -48,7 +50,7 @@ sealed interface HomeResult {
     data object HelperDown : HomeResult
     data object HelperOutdated : HomeResult
     data object Refused : HomeResult
-    data class Failed(val message: String) : HomeResult
+    data class Failed(val message: UiText) : HomeResult
 }
 
 sealed interface HomeCardState {
@@ -145,10 +147,10 @@ class HomeSwitcher(
     suspend fun makeHome(target: HomeComponent): HomeResult {
         if (isFireOs) return HomeResult.FireOs
         if (isExcludedHome(target.pkg, target.cls, ownPackage)) {
-            return HomeResult.Failed("That app can't be the home screen.")
+            return HomeResult.Failed(UiText.Res(R.string.tools_home_excluded))
         }
         if (launchers().none { it.component == target }) {
-            return HomeResult.Failed("That app isn't a home screen app.")
+            return HomeResult.Failed(UiText.Res(R.string.tools_home_not_a_home_app))
         }
         val before = effectiveCurrent()
         if (before == target) return HomeResult.Ok(target)
@@ -157,7 +159,7 @@ class HomeSwitcher(
             is ToolResult.HelperDown -> return HomeResult.HelperDown
             is ToolResult.HelperOutdated -> return HomeResult.HelperOutdated
             is ToolResult.Refused -> return HomeResult.Refused
-            is ToolResult.Failed -> return HomeResult.Failed(result.message)
+            is ToolResult.Failed -> return HomeResult.Failed(UiText.Raw(result.message))
         }
         if (!isConfirmedHome(target)) return HomeResult.CouldntChange
         // Record the original once, only after the change is confirmed.
@@ -172,7 +174,7 @@ class HomeSwitcher(
         val raw = store.originalHome.first() ?: return HomeResult.NoOriginal
         val original = parseHomeComponent(raw) ?: run {
             store.setOriginalHome(null)
-            return HomeResult.Failed("The saved home screen isn't valid any more.")
+            return HomeResult.Failed(UiText.Res(R.string.tools_home_invalid_saved))
         }
         if (effectiveCurrent() == original) {
             store.setOriginalHome(null)
@@ -185,7 +187,7 @@ class HomeSwitcher(
                 is ToolResult.HelperDown -> return HomeResult.HelperDown
                 is ToolResult.HelperOutdated -> return HomeResult.HelperOutdated
                 is ToolResult.Refused -> return HomeResult.Refused
-                is ToolResult.Failed -> return HomeResult.Failed(enabled.message)
+                is ToolResult.Failed -> return HomeResult.Failed(UiText.Raw(enabled.message))
             }
         }
         when (val result = commands.setHome(original.pkg, original.cls)) {
@@ -193,7 +195,7 @@ class HomeSwitcher(
             is ToolResult.HelperDown -> return HomeResult.HelperDown
             is ToolResult.HelperOutdated -> return HomeResult.HelperOutdated
             is ToolResult.Refused -> return HomeResult.Refused
-            is ToolResult.Failed -> return HomeResult.Failed(result.message)
+            is ToolResult.Failed -> return HomeResult.Failed(UiText.Raw(result.message))
         }
         if (!isConfirmedHome(original)) return HomeResult.CouldntChange
         store.setOriginalHome(null)

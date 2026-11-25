@@ -17,12 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.tools.ToolsStore
 import io.github.devjardins.sidespeed.tools.UpdateCheck
 import io.github.devjardins.sidespeed.tools.displayVersion
 import io.github.devjardins.sidespeed.tools.shouldShowBanner
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -78,6 +83,12 @@ fun UpdateBannerSlot(
     }
 }
 
+internal const val DOWNLOADER_CODE = "3503400"
+internal const val TV_DOWNLOAD_URL = "sidespeed.app/tv"
+
+internal fun updateBannerManual(): UiText =
+    uiText(R.string.update_banner_manual, UiText.Ltr(DOWNLOADER_CODE), UiText.Ltr(TV_DOWNLOAD_URL))
+
 /** "SideSpeed X is out" banner with in-app update. */
 @Composable
 fun UpdateBanner(
@@ -108,51 +119,51 @@ fun UpdateBanner(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     when (state) {
-                        is UpdateUiState.Downloading -> "Downloading… ${state.percent}%"
-                        is UpdateUiState.Installing -> "Installing… SideSpeed will close and reopen."
-                        else -> "SideSpeed $latest is out"
+                        is UpdateUiState.Downloading -> stringResource(R.string.update_banner_downloading, state.percent)
+                        is UpdateUiState.Installing -> stringResource(R.string.update_banner_installing)
+                        else -> uiText(R.string.update_banner_out, UiText.Ltr(latest)).resolve()
                     },
                     style = SsType.Body,
                     color = SsColors.TextPrimary,
                 )
                 if (state is UpdateUiState.Failed) {
                     Text(
-                        state.reason,
+                        state.reason.resolve(),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
                 }
                 if (showBusyCaption) {
                     Text(
-                        "Available when the current job finishes.",
+                        stringResource(R.string.update_banner_busy),
                         style = SsType.Caption,
                         color = SsColors.TextSecondary,
                     )
                 }
                 Text(
-                    "In Downloader, enter 3503400, or go to sidespeed.app/tv.",
+                    updateBannerManual().resolve(),
                     style = SsType.Caption,
                     color = SsColors.TextSecondary,
                 )
             }
             when (state) {
                 is UpdateUiState.Available -> {
-                    SsButton("Update now", onClick = onUpdate, enabled = updateEnabled)
-                    SsButton("Dismiss", onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
+                    SsButton(stringResource(R.string.update_banner_update_now), onClick = onUpdate, enabled = updateEnabled)
+                    SsButton(stringResource(R.string.update_banner_dismiss), onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
                 }
                 is UpdateUiState.Busy -> {
-                    SsButton("Update now", onClick = onUpdate, enabled = false)
-                    SsButton("Dismiss", onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
+                    SsButton(stringResource(R.string.update_banner_update_now), onClick = onUpdate, enabled = false)
+                    SsButton(stringResource(R.string.update_banner_dismiss), onClick = onDismiss, modifier = Modifier.focusRequester(dismissFocus))
                 }
                 is UpdateUiState.Downloading -> {
-                    SsButton("Cancel", onClick = onCancel)
+                    SsButton(stringResource(R.string.update_banner_cancel), onClick = onCancel)
                 }
                 is UpdateUiState.Installing -> {
                     // Nothing to press: the app closes and reopens on its own.
                 }
                 is UpdateUiState.Failed -> {
-                    SsButton("Retry", onClick = onRetry)
-                    SsButton("Dismiss", onClick = onDismiss)
+                    SsButton(stringResource(R.string.update_banner_retry), onClick = onRetry)
+                    SsButton(stringResource(R.string.update_banner_dismiss), onClick = onDismiss)
                 }
             }
         }

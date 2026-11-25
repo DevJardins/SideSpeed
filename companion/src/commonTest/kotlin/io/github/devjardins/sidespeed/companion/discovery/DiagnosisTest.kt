@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.companion.discovery
 
+import io.github.devjardins.sidespeed.companion.testing.english
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,7 +35,7 @@ class DiagnosisTest {
     @Test fun everyHelpEndsWithManualAddressCopy() {
         for (d in Diagnosis.entries) {
             assertTrue(
-                helpFor(d).endsWith("or type the address shown in SideSpeed on the TV"),
+                helpFor(d).english().endsWith("or type the address shown in SideSpeed on the TV"),
                 d.name,
             )
         }

@@ -1,6 +1,9 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -13,11 +16,13 @@ val GoogleTvStockLauncherPkgs = setOf(
     "com.google.android.leanbacklauncher",
 )
 
-fun homeCouldntChangeMessage(currentHomePkg: String?): String = when {
-    currentHomePkg != null && currentHomePkg in GoogleTvStockLauncherPkgs ->
-        "Google TV keeps its own home screen while it's turned on. Turn it off in Turn off extras first."
-    else -> "Couldn't change Home"
-}
+fun homeCouldntChangeMessage(currentHomePkg: String?): UiText = UiText.Res(
+    if (currentHomePkg != null && currentHomePkg in GoogleTvStockLauncherPkgs) {
+        R.string.tools_home_couldnt_change_google_tv
+    } else {
+        R.string.tools_home_couldnt_change
+    },
+)
 
 sealed interface ExtrasMatchResult {
     data object NoList : ExtrasMatchResult
@@ -53,8 +58,8 @@ data class ExtrasRow(
     val kind: ExtrasRowKind,
     val selectable: Boolean,
     val checked: Boolean,
-    val caption: String?,
-    val failedLine: String? = null,
+    val caption: UiText?,
+    val failedLine: UiText? = null,
 )
 
 data class ProtectionFacts(
@@ -65,35 +70,39 @@ data class ProtectionFacts(
 data class ExtrasRunOutcome(
     val turnedOff: Int,
     val failed: Int,
-    val failedByPkg: Map<String, String> = emptyMap(),
+    val failedByPkg: Map<String, UiText> = emptyMap(),
 )
 
 data class ExtrasRestoreOutcome(
     val restored: Int,
     val failed: Int,
-    val failedByPkg: Map<String, String> = emptyMap(),
+    val failedByPkg: Map<String, UiText> = emptyMap(),
 )
 
 data class ExtrasTurnOnOutcome(
     val turnedOn: Int,
     val failed: Int,
-    val failedByPkg: Map<String, String> = emptyMap(),
+    val failedByPkg: Map<String, UiText> = emptyMap(),
 )
 
-fun formatRunOutcome(o: ExtrasRunOutcome): String = buildString {
-    append("Turned off ${o.turnedOff}.")
-    if (o.failed > 0) append(" Failed ${o.failed}.")
+private fun formatOutcome(countRes: Int, count: Int, failed: Int): UiText {
+    val head = UiText.Plural(countRes, count, listOf(count))
+    if (failed <= 0) return head
+    return uiText(
+        R.string.extras_outcome_with_failed,
+        head,
+        UiText.Plural(R.plurals.extras_failed_count, failed, listOf(failed)),
+    )
 }
 
-fun formatRestoreOutcome(o: ExtrasRestoreOutcome): String = buildString {
-    append("Turned back on ${o.restored}.")
-    if (o.failed > 0) append(" Failed ${o.failed}.")
-}
+fun formatRunOutcome(o: ExtrasRunOutcome): UiText =
+    formatOutcome(R.plurals.extras_turned_off, o.turnedOff, o.failed)
 
-fun formatTurnOnOutcome(o: ExtrasTurnOnOutcome): String = buildString {
-    append("Turned on ${o.turnedOn}.")
-    if (o.failed > 0) append(" Failed ${o.failed}.")
-}
+fun formatRestoreOutcome(o: ExtrasRestoreOutcome): UiText =
+    formatOutcome(R.plurals.extras_turned_back_on, o.restored, o.failed)
+
+fun formatTurnOnOutcome(o: ExtrasTurnOnOutcome): UiText =
+    formatOutcome(R.plurals.extras_turned_on, o.turnedOn, o.failed)
 
 internal fun displayLabel(label: String?, pkg: String): String {
     if (label.isNullOrBlank()) return pkg
@@ -122,7 +131,7 @@ data class ExtrasRefreshResult(
     val rows: List<ExtrasRow>,
     val recordedCount: Int,
     val protectionCheckFailed: Boolean,
-    val helperMessage: String?,
+    val helperMessage: UiText?,
 )
 
 class Extras(
@@ -204,7 +213,7 @@ class Extras(
 
     suspend fun refresh(
         meta: ExtrasListMeta,
-        failedByPkg: Map<String, String> = emptyMap(),
+        failedByPkg: Map<String, UiText> = emptyMap(),
     ): ExtrasRefreshResult {
         val disabledResult = withContext(ioDispatcher) { commands.disabledPackages() }
         when (disabledResult) {
@@ -228,7 +237,7 @@ class Extras(
         meta: ExtrasListMeta,
         disabled: Set<String>,
         facts: ProtectionFacts?,
-        failedByPkg: Map<String, String> = emptyMap(),
+        failedByPkg: Map<String, UiText> = emptyMap(),
         forceNonSelectable: Boolean = false,
     ): List<ExtrasRow> {
         val home = homeCurrent()
@@ -246,7 +255,7 @@ class Extras(
         homePkg: String?,
         homePkgHomeInList: Boolean,
         facts: ProtectionFacts?,
-        failedByPkg: Map<String, String>,
+        failedByPkg: Map<String, UiText>,
         forceNonSelectable: Boolean,
     ): ExtrasRow {
         val label = displayLabel(queries.labelOf(entry.pkg), entry.pkg)
@@ -258,7 +267,7 @@ class Extras(
             return ExtrasRow(entry, label, ExtrasRowKind.NotInstalled, selectable = false, checked = false, caption = null, failedLine)
         }
         if (entry.pkg in disabled) {
-            val caption = if (entry.home) "This is a home screen app." else null
+            val caption = if (entry.home) UiText.Res(R.string.extras_row_home_caption) else null
             return ExtrasRow(
                 entry,
                 label,
@@ -287,10 +296,10 @@ class Extras(
         entry: ExtrasEntry,
         homePkg: String?,
         homePkgHomeInList: Boolean,
-    ): Pair<Boolean, String?> {
+    ): Pair<Boolean, UiText?> {
         if (!entry.home) return true to null
-        val captionHome = "This is a home screen app."
-        val captionBlocked = "Choose another home screen first in Tools → Home screen."
+        val captionHome = UiText.Res(R.string.extras_row_home_caption)
+        val captionBlocked = UiText.Res(R.string.extras_row_home_blocked)
         if (homePkg == null) return false to captionBlocked
         if (entry.pkg == homePkg) return false to captionBlocked
         if (homePkgHomeInList) return false to captionBlocked
@@ -325,7 +334,7 @@ class Extras(
         var turnedOff = 0
         var failed = 0
         val entryByPkg = entries.associateBy { it.pkg }
-        val failedByPkg = mutableMapOf<String, String>()
+        val failedByPkg = mutableMapOf<String, UiText>()
         for (pkg in selectedPkgs) {
             val entry = entryByPkg[pkg] ?: continue
             if (pkg in disabledBefore) continue
@@ -342,11 +351,11 @@ class Extras(
                 is ToolResult.HelperDown -> return ExtrasRunOutcome(turnedOff, failed, failedByPkg) to ExtrasRunStop.HelperDown
                 is ToolResult.HelperOutdated -> return ExtrasRunOutcome(turnedOff, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
                 is ToolResult.Refused -> {
-                    failedByPkg[pkg] = "refused"
+                    failedByPkg[pkg] = UiText.Res(R.string.extras_row_refused)
                     failed++
                 }
                 is ToolResult.Failed -> {
-                    failedByPkg[pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failedByPkg[pkg] = UiText.Raw(result.message.lineSequence().firstOrNull().orEmpty())
                     failed++
                 }
             }
@@ -365,7 +374,7 @@ class Extras(
         var failed = 0
         val entryByPkg = entries.associateBy { it.pkg }
         val recorded = store.extrasDisabled.first().map { it.pkg }.toSet()
-        val failedByPkg = mutableMapOf<String, String>()
+        val failedByPkg = mutableMapOf<String, UiText>()
         for (pkg in selectedPkgs) {
             val entry = entryByPkg[pkg] ?: continue
             if (pkg !in disabledBefore) continue
@@ -379,11 +388,11 @@ class Extras(
                 is ToolResult.HelperDown -> return ExtrasTurnOnOutcome(turnedOn, failed, failedByPkg) to ExtrasRunStop.HelperDown
                 is ToolResult.HelperOutdated -> return ExtrasTurnOnOutcome(turnedOn, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
                 is ToolResult.Refused -> {
-                    failedByPkg[pkg] = "refused"
+                    failedByPkg[pkg] = UiText.Res(R.string.extras_row_refused)
                     failed++
                 }
                 is ToolResult.Failed -> {
-                    failedByPkg[pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failedByPkg[pkg] = UiText.Raw(result.message.lineSequence().firstOrNull().orEmpty())
                     failed++
                 }
             }
@@ -395,7 +404,7 @@ class Extras(
         val recorded = store.extrasDisabled.first().sortedByDescending { it.atMs }
         var restored = 0
         var failed = 0
-        val failedByPkg = mutableMapOf<String, String>()
+        val failedByPkg = mutableMapOf<String, UiText>()
         for (rec in recorded) {
             if (PackageName.parse(rec.pkg) == null) continue
             when (val result = commands.enablePackage(rec.pkg)) {
@@ -406,11 +415,11 @@ class Extras(
                 is ToolResult.HelperDown -> return ExtrasRestoreOutcome(restored, failed, failedByPkg) to ExtrasRunStop.HelperDown
                 is ToolResult.HelperOutdated -> return ExtrasRestoreOutcome(restored, failed, failedByPkg) to ExtrasRunStop.HelperOutdated
                 is ToolResult.Refused -> {
-                    failedByPkg[rec.pkg] = "refused"
+                    failedByPkg[rec.pkg] = UiText.Res(R.string.extras_row_refused)
                     failed++
                 }
                 is ToolResult.Failed -> {
-                    failedByPkg[rec.pkg] = result.message.lineSequence().firstOrNull().orEmpty()
+                    failedByPkg[rec.pkg] = UiText.Raw(result.message.lineSequence().firstOrNull().orEmpty())
                     failed++
                 }
             }
@@ -421,9 +430,9 @@ class Extras(
     suspend fun recordedCount(): Int = store.extrasDisabled.first().size
 
     companion object {
-        const val HELPER_DOWN_MSG = "Helper not running. Start the helper, then try again."
-        const val HELPER_OUTDATED_MSG = "Restart the helper to use this."
-        const val PROTECTION_CHECK_FAILED_MSG = "Couldn't check which apps are safe to turn off. Try again."
+        val HELPER_DOWN_MSG: UiText = UiText.Res(R.string.tools_helper_down)
+        val HELPER_OUTDATED_MSG: UiText = UiText.Res(R.string.tools_helper_outdated)
+        val PROTECTION_CHECK_FAILED_MSG: UiText = UiText.Res(R.string.extras_protection_check_failed)
     }
 }
 

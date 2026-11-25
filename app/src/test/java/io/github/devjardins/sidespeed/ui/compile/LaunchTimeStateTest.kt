@@ -14,6 +14,7 @@ import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.CompileStatusStore
 import io.github.devjardins.sidespeed.status.PersistedCompileStatus
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.tools.AnimationOriginals
 import io.github.devjardins.sidespeed.tools.CleanupRecord
 import io.github.devjardins.sidespeed.tools.DisabledRecord
@@ -226,7 +227,7 @@ class LaunchTimeStateTest {
         v.measure(pkg, "Nuvio")!!.join(); settle()
         assertTrue("recompile must run after a failed timing", speedCmd in script.commands)
         assertTrue(store.saved.isEmpty())
-        assertEquals("Couldn't time this app", v.launch.value.error)
+        assertEquals("Couldn't time this app", v.launch.value.error?.english())
     }
 
     @Test fun measureResetFailureRestores() = runTest(timeout = 10.seconds) {
@@ -268,7 +269,7 @@ class LaunchTimeStateTest {
         assertTrue(!v.launch.value.launchable)
         v.measure(pkg, "Nuvio")!!.join(); settle()
         assertTrue(script.commands.isEmpty())
-        assertEquals("This app can't be opened from SideSpeed", v.launch.value.error)
+        assertEquals("This app can't be opened from SideSpeed", v.launch.value.error?.english())
     }
 
     @Test fun measureUsesPreviousCompileMode() = runTest(timeout = 10.seconds) {
@@ -371,7 +372,7 @@ class LaunchTimeStateTest {
         settle()
         assertTrue(speedCmd !in script.commands)
         assertTrue(store.saved.isEmpty())
-        assertEquals("Couldn't time this app", v.launch.value.error)
+        assertEquals("Couldn't time this app", v.launch.value.error?.english())
     }
 
     // Compile-status reporting through the sequences: one onStart/onFinish pair
@@ -455,37 +456,37 @@ class LaunchTimeStateTest {
     // Pure display formatting.
 
     @Test fun formatLaunchResultFaster() {
-        assertEquals("Launch: 1.9 s → 1.1 s (42% faster)", formatLaunchResult(1900, 1100, false))
+        assertEquals("Launch: 1.9 s → 1.1 s (42% faster)", formatLaunchResult(1900, 1100, false).english())
     }
 
     @Test fun formatLaunchResultNoBefore() {
-        assertEquals("Launch: 1.1 s", formatLaunchResult(null, 1100, false))
+        assertEquals("Launch: 1.1 s", formatLaunchResult(null, 1100, false).english())
     }
 
     @Test fun formatLaunchResultStale() {
         assertEquals(
             "Launch: 1.9 s → 1.1 s (42% faster) · from an older version",
-            formatLaunchResult(1900, 1100, true),
+            formatLaunchResult(1900, 1100, true).english(),
         )
     }
 
     @Test fun formatLaunchResultNoFaster() {
-        assertEquals("Launch: 1.0 s → 1.2 s (no faster)", formatLaunchResult(1000, 1200, false))
+        assertEquals("Launch: 1.0 s → 1.2 s (no faster)", formatLaunchResult(1000, 1200, false).english())
     }
 
     @Test fun formatLaunchResultAboutTheSame() {
-        assertEquals("Launch: 0.5 s → 0.5 s (about the same)", formatLaunchResult(505, 500, false))
-        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 1000, false))
-        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 951, false))
-        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 950, false))
+        assertEquals("Launch: 0.5 s → 0.5 s (about the same)", formatLaunchResult(505, 500, false).english())
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 1000, false).english())
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 951, false).english())
+        assertEquals("Launch: 1.0 s → 1.0 s (about the same)", formatLaunchResult(1000, 950, false).english())
     }
 
     @Test fun formatLaunchResultBoundaryStillFaster() {
-        assertEquals("Launch: 2.0 s → 1.9 s (5% faster)", formatLaunchResult(2000, 1900, false))
+        assertEquals("Launch: 2.0 s → 1.9 s (5% faster)", formatLaunchResult(2000, 1900, false).english())
     }
 
     @Test fun formatLaunchMsOneDecimal() {
-        assertEquals("1.9 s", formatLaunchMs(1900))
-        assertEquals("1.1 s", formatLaunchMs(1100))
+        assertEquals("1.9 s", formatLaunchMs(1900).english())
+        assertEquals("1.1 s", formatLaunchMs(1100).english())
     }
 }

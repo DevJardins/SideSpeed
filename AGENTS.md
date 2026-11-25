@@ -36,10 +36,10 @@ the code may have a bug.
   UI copy, README, site or notes. Downloader (code 3503400),
   the app used to get SideSpeed onto the TV, is not a launcher and may be named.
 - When no other home screen app is installed, the whole message is
-  `ui/tools/HomeCard.kt`'s line:
+  `ui/tools/HomeCard.kt`'s line (string `tools_home_no_other`):
   "Install another home screen app first, then come back here."
 - On Fire OS the Home card shows only its own line
-  (`ui/tools/HomeCard.kt`):
+  (`ui/tools/HomeCard.kt`, string `tools_home_fire_os`):
   "Fire TV doesn't allow other home screens."
   No switching is offered there.
 - Never tell people what to install.
@@ -50,15 +50,32 @@ the code may have a bug.
 - The feature is "Trusted Network", never "home network".
   In UI labels and titles it is "Trusted Network";
   in running prose "trusted network" is fine.
-  See `companion/.../ui/FirstRunScreen.kt`, `SettingsScreen.kt`, `HomeScreen.kt`.
+  See `first_run_title`, `home_trust_banner`, `settings_trusted_networks` in `companion/src/commonMain/composeResources/values/strings.xml`.
 - State caveats plainly, next to the choice they qualify.
 - Setup warns that ADB debugging must stay on and that anyone
-  on the network could ask the TV for access (`ui/setup/SetupScreen.kt`).
+  on the network could ask the TV for access
+  (`ui/setup/SetupScreen.kt`, string `setup_lan_warning`).
 - The animation speed card says "It does not make apps load faster"
-  (`ui/tools/AnimationsCard.kt`).
-- Companion UI copy lives in the `Copy` object
-  (`companion/.../ui/CompanionViewModel.kt`); keep strings there, not scattered.
-- TV copy sits with its screen; keep each string next to the control it explains.
+  (`ui/tools/AnimationsCard.kt`, string `tools_animations_body`).
+- Companion UI copy lives in `companion/src/commonMain/composeResources/values/strings.xml`
+  (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references).
+  `companion-android/src/main/res/values/strings.xml` holds only `app_name` and `channel_restarts`.
+  Never hard-code user-visible text in Companion Kotlin (`NoHardCodedTextTest` fails the build).
+- TV copy lives in `app/src/main/res/values/strings.xml`, grouped by screen,
+  with a translator note where the meaning isn't obvious.
+  Never hard-code user-visible text in Kotlin (`NoHardCodedTextTest` fails).
+- When the meaning of an English string changes, rename its key so every translation starts again; typo or punctuation fixes keep the key. `EnglishSnapshotTest` enforces this with `l10n/english-snapshot.tsv` in each module.
+- A language ships only when at least 70% of its strings are translated
+  (`LANGUAGE_BAR` in `app/build.gradle.kts`, the same bar in `companion/build.gradle.kts`,
+  checked by `build-logic/.../LanguageGate.kt`). The build generates `ShippedLanguages`
+  and `locales_config.xml` from that check; never edit either by hand.
+- The language picker copy is fixed: "Language", "Same as device",
+  "Not complete in this version. Showing English for now."
+  (TV `about_language*` in `app/src/main/res/values/strings.xml`,
+  Companion `settings_language*` in the Compose resources).
+- Numbers inside sentences use `UiText.Decimal` / `UiText.Integer` (TV) or plain
+  `Int`/`Long` and `UiText.Decimal` (Companion) so they follow the chosen language;
+  addresses, ports, versions, hosts and package names stay `UiText.Ltr`.
 
 ## 3. TV focus and D-pad
 
@@ -178,7 +195,7 @@ Keep it true when you change anything below.
   `export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   (it may be unset in a fresh shell).
 - Test tasks (also what CI runs):
-  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test`
+  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test && ./gradlew -p build-logic test`
 - Release builds per module (see "Building" in `README.md`):
   `./gradlew :app:assembleRelease`
   `./gradlew :companion-android:assembleRelease`

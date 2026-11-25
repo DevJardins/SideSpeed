@@ -11,6 +11,18 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.update_allow_install
+import io.github.devjardins.sidespeed.companion.resources.update_cancelled
+import io.github.devjardins.sidespeed.companion.resources.update_check_failed
+import io.github.devjardins.sidespeed.companion.resources.update_checksums_download_failed
+import io.github.devjardins.sidespeed.companion.resources.update_download_failed
+import io.github.devjardins.sidespeed.companion.resources.update_failed
+import io.github.devjardins.sidespeed.companion.resources.update_install_failed
+import io.github.devjardins.sidespeed.companion.resources.update_install_failed_detail
+import io.github.devjardins.sidespeed.companion.resources.update_install_timeout
+import io.github.devjardins.sidespeed.companion.resources.update_no_checksum
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.ApkFacts
 import io.github.devjardins.sidespeed.companion.update.COMPANION_APK_NAME
 import io.github.devjardins.sidespeed.companion.update.COMPANION_SUMS_NAME
@@ -106,7 +118,7 @@ class CompanionUpdater(
                 throw e
             } catch (e: Exception) {
                 deleteUpdateFiles()
-                _state.value = CompanionUpdateState.Failed("Update failed.")
+                _state.value = CompanionUpdateState.Failed(UiText.Res(Res.string.update_failed))
             }
         }
     }
@@ -142,7 +154,7 @@ class CompanionUpdater(
 
     private suspend fun execute() {
         lastTag ?: run {
-            _state.value = CompanionUpdateState.Failed("Couldn't check for updates. Try again later.")
+            _state.value = CompanionUpdateState.Failed(UiText.Res(Res.string.update_check_failed))
             return
         }
         if (Build.VERSION.SDK_INT >= 26) {
@@ -153,22 +165,20 @@ class CompanionUpdater(
             }
             if (!canRequest) {
                 openUnknownSourcesSettings()
-                _state.value = CompanionUpdateState.Failed(
-                    "Allow SideSpeed Companion to install apps, then try again.",
-                )
+                _state.value = CompanionUpdateState.Failed(UiText.Res(Res.string.update_allow_install))
                 return
             }
         }
         _state.value = CompanionUpdateState.Downloading(0)
         val sums = download.fetchText("$LATEST_DOWNLOAD_BASE_URL/$COMPANION_SUMS_NAME")
-            .getOrElse { return fail("Could not download the checksums.") }
+            .getOrElse { return fail(UiText.Res(Res.string.update_checksums_download_failed)) }
         val expected = parseSha256Sums(sums, COMPANION_APK_NAME)
-            ?: return fail("No checksum found for $COMPANION_APK_NAME.")
+            ?: return fail(UiText.Res(Res.string.update_no_checksum, listOf(UiText.Ltr(COMPANION_APK_NAME))))
         val dir = File(appContext.cacheDir, UPDATE_DIR).apply { mkdirs() }
         val apk = File(dir, COMPANION_APK_NAME)
         download.downloadTo("$LATEST_DOWNLOAD_BASE_URL/$COMPANION_APK_NAME", apk, onProgress = {
             _state.value = CompanionUpdateState.Downloading(it)
-        }).getOrElse { return fail("Download failed.") }
+        }).getOrElse { return fail(UiText.Res(Res.string.update_download_failed)) }
         when (
             val verdict = verifyCompanionApk(sha256Hex(apk), expected, readApkFacts(apk), installedSigners())
         ) {
@@ -185,11 +195,13 @@ class CompanionUpdater(
                 deleteUpdateFiles()
                 watchInstallTimeout()
             }
-            is InstallResult.Failed -> return fail(outcome.reason ?: "Install failed.")
+            is InstallResult.Failed -> return fail(
+                outcome.reason?.let { UiText.Raw(it) } ?: UiText.Res(Res.string.update_install_failed),
+            )
         }
     }
 
-    private suspend fun fail(reason: String) {
+    private suspend fun fail(reason: UiText) {
         deleteUpdateFiles()
         _state.value = CompanionUpdateState.Failed(reason)
     }
@@ -205,7 +217,7 @@ class CompanionUpdater(
             delay(INSTALL_TIMEOUT_MS)
             if (_state.value is CompanionUpdateState.Installing) {
                 deleteUpdateFiles()
-                _state.value = CompanionUpdateState.Failed("Install didn't finish. Try again.")
+                _state.value = CompanionUpdateState.Failed(UiText.Res(Res.string.update_install_timeout))
             }
         }
     }
@@ -279,11 +291,13 @@ internal fun installStatusToState(status: Int, message: String?): CompanionUpdat
     PackageInstaller.STATUS_PENDING_USER_ACTION,
     PackageInstaller.STATUS_SUCCESS,
     -> null
-    PackageInstaller.STATUS_FAILURE_ABORTED -> CompanionUpdateState.Failed("Update cancelled.")
+    PackageInstaller.STATUS_FAILURE_ABORTED -> CompanionUpdateState.Failed(UiText.Res(Res.string.update_cancelled))
     else -> if (message.isNullOrBlank()) {
-        CompanionUpdateState.Failed("Install failed.")
+        CompanionUpdateState.Failed(UiText.Res(Res.string.update_install_failed))
     } else {
-        CompanionUpdateState.Failed("Install failed. $message")
+        CompanionUpdateState.Failed(
+            UiText.Res(Res.string.update_install_failed_detail, listOf(UiText.Raw(message))),
+        )
     }
 }
 
