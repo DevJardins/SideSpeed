@@ -1,0 +1,12 @@
+<resources>
+    <!-- Greeting shown on first launch. Keep: SideSpeed -->
+    <string name="hello">Hello from SideSpeed</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. -->
+    <string name="careful">Be careful with %1$s</string>
+    <!-- Number of items found. %1$d is the count. -->
+    <plurals name="items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="debug_only" translatable="false">Debug</string>
+</resources>

@@ -76,6 +76,11 @@ the code may have a bug.
 - Numbers inside sentences use `UiText.Decimal` / `UiText.Integer` (TV) or plain
   `Int`/`Long` and `UiText.Decimal` (Companion) so they follow the chosen language;
   addresses, ports, versions, hosts and package names stay `UiText.Ltr`.
+- Translated copy follows the same rules.
+  The glossary in `docs/TRANSLATING.md` is the source for product terms.
+- Never edit translated `strings.xml` files directly; fix them in Weblate
+  (`docs/TRANSLATING.md`). `checkTranslations` guards them in CI
+  (`build-logic/.../TranslationCheck.kt`, `.github/workflows/build.yml`).
 
 ## 3. TV focus and D-pad
 
@@ -184,6 +189,9 @@ Keep it true when you change anything below.
   (`SideSpeed.apk`, `SideSpeed-Companion.apk`, `.dmg`, `.msi`, `.deb`, `.rpm`)
   for the Downloader code and sidespeed.app links.
 - Publishing the draft is manual and needs the owner's go-ahead.
+- Before tagging, merge the open Weblate translation PRs whose checks pass.
+- The release notes list the included languages and any with English mixed in,
+  taken from the gate's output (`build-logic/.../LanguageGate.kt`).
 - Every release also updates sidespeed.app (separate repo:
   `/tv`, `/companion.apk`, `/mac`, `/windows`, `/linux` links and changelog).
 - Every release also updates the `README.md` feature and release sections.
@@ -197,7 +205,9 @@ Keep it true when you change anything below.
   `export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   (it may be unset in a fresh shell).
 - Test tasks (also what CI runs):
-  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test && ./gradlew -p build-logic test`
+  `./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test && ./gradlew -p build-logic test && ./gradlew checkTranslations`
+- CI runs `checkTranslations` with `-Pl10nBase` on pull requests
+  (`.github/workflows/build.yml`); pass the same flag locally to compare with a base.
 - Release builds per module (see "Building" in `README.md`):
   `./gradlew :app:assembleRelease`
   `./gradlew :companion-android:assembleRelease`
