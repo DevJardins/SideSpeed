@@ -240,11 +240,13 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
             "promptedHosts" to s.prompted.map { p ->
                 mapOf("trustedNetworkId" to p.trustedNetworkId, "address" to p.address, "atEpochMs" to p.atEpochMs)
             },
-            "settings" to mapOf(
-                "notifications" to s.settings.notifications,
-                "intervalMinutes" to s.settings.intervalMinutes,
-                "startAtLogin" to s.settings.startAtLogin,
-            ),
+            "settings" to buildMap<String, Any?> {
+                put("notifications", s.settings.notifications)
+                put("intervalMinutes", s.settings.intervalMinutes)
+                put("startAtLogin", s.settings.startAtLogin)
+                // Additive and optional: files written before the Language picker have no key.
+                if (s.settings.language != null) put("language", s.settings.language)
+            },
         ),
     )
 
@@ -259,6 +261,7 @@ class JsonFileCompanionStore(private val dir: File) : CompanionStore {
                 notifications = m["notifications"] as? Boolean ?: defaults.notifications,
                 intervalMinutes = m.int("intervalMinutes")?.takeIf { it > 0 } ?: defaults.intervalMinutes,
                 startAtLogin = m["startAtLogin"] as? Boolean ?: defaults.startAtLogin,
+                language = m["language"] as? String,
             )
         } ?: defaults
         val prompted = (root["promptedHosts"] as? List<*>).orEmpty().mapNotNull { v ->

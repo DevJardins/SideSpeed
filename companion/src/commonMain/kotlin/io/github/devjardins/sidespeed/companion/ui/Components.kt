@@ -4,10 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -46,11 +46,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.brand_sidespeed
+import org.jetbrains.compose.resources.stringResource
 
 private const val CLICK_DEBOUNCE_MS = 300L
 
@@ -172,7 +180,9 @@ fun SsIconButton(onClick: () -> Unit, contentDescription: String, content: @Comp
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .background(fill, CircleShape).border(2.dp, ring, CircleShape)
             .hoverable(source)
-            .clickable(interactionSource = source, indication = null, onClickLabel = contentDescription) {
+            // The glyph has no text, so the button carries its name for screen readers.
+            .semantics { this.contentDescription = contentDescription }
+            .clickable(interactionSource = source, indication = null, role = Role.Button) {
                 val now = System.currentTimeMillis()
                 if (now - lastClick >= CLICK_DEBOUNCE_MS) { lastClick = now; onClick() }
             }
@@ -297,7 +307,7 @@ fun SsSpinner(size: Dp = 16.dp, stroke: Dp? = null) {
 fun SsLogoMark(size: Dp) {
     Image(
         painter = rememberSsLogoPainter(),
-        contentDescription = "SideSpeed",
+        contentDescription = stringResource(Res.string.brand_sidespeed),
         modifier = Modifier.size(size).clip(RoundedCornerShape(percent = 28)),
         contentScale = ContentScale.Crop,
     )
@@ -307,7 +317,8 @@ fun SsLogoMark(size: Dp) {
 @Composable
 fun SsGlyph(kind: Glyph) {
     val colour = Ss.textPrimary
-    Canvas(Modifier.size(20.dp)) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Canvas(Modifier.size(20.dp).graphicsLayer { if (kind == Glyph.BACK && rtl) scaleX = -1f }) {
         val s = this.size.minDimension
         val st = Stroke(s * 0.1f, cap = StrokeCap.Round)
         when (kind) {

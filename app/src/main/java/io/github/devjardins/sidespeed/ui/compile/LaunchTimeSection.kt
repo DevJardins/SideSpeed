@@ -38,9 +38,9 @@ import kotlin.math.roundToInt
 
 private fun formatLaunchSecondsNumber(ms: Long): String = "%.1f".format(Locale.US, ms / 1000.0)
 
-/** "1.9 s": one decimal, locale-independent so TVs never render "1,9 s". */
+/** "1.9 s": one decimal in the current locale's digits. */
 fun formatLaunchMs(ms: Long): UiText =
-    uiText(R.string.compile_launch_seconds, UiText.Ltr(formatLaunchSecondsNumber(ms)))
+    uiText(R.string.compile_launch_seconds, UiText.Decimal(ms / 1000.0, 1))
 
 /**
  * "Launch: 1.9 s → 1.1 s (42% faster)", "Launch: 1.1 s" when there is no

@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.ui
 
 import io.github.devjardins.sidespeed.companion.store.Reach
 import io.github.devjardins.sidespeed.companion.store.TvStatus
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 
 /**
  * Which colour a TV card glows: green on the Trusted Network, blue over Tailscale,
@@ -76,7 +77,7 @@ fun cardCheckedLine(
     checkedAtEpochMs: Long?,
     nowMs: Long,
     parked: Boolean = false,
-): String? {
+): UiText? {
     if (checkableHere && !parked && waitsForTrust(attention)) return Copy.WAITING_FOR_YOU
     val at = checkedAtEpochMs ?: return null
     return Copy.checkedAgo(nowMs - at)

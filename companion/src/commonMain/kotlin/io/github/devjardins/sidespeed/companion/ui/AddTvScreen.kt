@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.discovery.Diagnosis
 import io.github.devjardins.sidespeed.companion.discovery.helpFor
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.add_find_tvs
+import io.github.devjardins.sidespeed.companion.resources.add_host_adding
+import io.github.devjardins.sidespeed.companion.resources.add_keep_scanning
+import io.github.devjardins.sidespeed.companion.resources.add_range_label
+import io.github.devjardins.sidespeed.companion.resources.add_stop
+import io.github.devjardins.sidespeed.companion.resources.common_add
+import io.github.devjardins.sidespeed.companion.resources.common_cancel
+import io.github.devjardins.sidespeed.companion.resources.home_add_tv
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AddTvScreen(
@@ -33,66 +47,69 @@ fun AddTvScreen(
 ) {
     var address by remember { mutableStateOf("") }
     var range by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Header("Add a TV", onBack = onBack)
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Header(stringResource(Res.string.home_add_tv), onBack = onBack)
         state.pairing?.let { form ->
             PairingBlock(form, onSubmitPair, onSubmitConnectPort, onCancelPair)
             return@Column
         }
-        SsText(Copy.ALLOW_STEP, Ss.caption)
-        SsTextField(address, { address = it }, "192.168.1.50")
-        if (state.addErrors.isEmpty()) state.error?.let { SsText(it, Ss.body.copy(color = Ss.dangerText)) }
+        SsText(Copy.ALLOW_STEP.resolve(), Ss.caption)
+        SsTextField(address, { address = it }, "192.168.1.50", ltr = true)
+        if (state.addErrors.isEmpty()) state.error?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.dangerText)) }
         val typedAck = state.classicAck?.takeIf { it.address == address.trim() }
         if (typedAck != null) ClassicAckBlock(typedAck, onClassicCheck)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SsButton(
-                "Add",
+                stringResource(Res.string.common_add),
                 { onAddAddress(address, typedAck?.checked == true) },
                 primary = true,
                 enabled = typedAck?.checked != false,
             )
             SsButton(
-                "Find TVs",
+                stringResource(Res.string.add_find_tvs),
                 { if (!state.scanning) onFind(range) },
                 enabled = !state.scanning,
                 modifier = Modifier.defaultMinSize(minWidth = 110.dp),
                 content = if (state.scanning) ({ SsSpinner() }) else null,
             )
         }
-        SsText("Range to scan (optional)", Ss.caption)
-        SsTextField(range, { range = it }, state.currentNetwork?.subnet ?: "192.168.1.0/24")
-        state.scanProgress?.let { SsText(it, Ss.caption) }
+        SsText(stringResource(Res.string.add_range_label), Ss.caption)
+        SsTextField(range, { range = it }, state.currentNetwork?.subnet ?: "192.168.1.0/24", ltr = true)
+        state.scanProgress?.let { SsText(it.resolve(), Ss.caption) }
         if (state.scanning) {
-            SsButton("Stop", onStop)
+            SsButton(stringResource(Res.string.add_stop), onStop)
         } else if (state.scanStopped || state.scanTruncated || state.diagnosis == Diagnosis.PARTIAL) {
-            SsButton("Keep scanning", onKeepScanning)
+            SsButton(stringResource(Res.string.add_keep_scanning), onKeepScanning)
         }
         state.found.forEach { host ->
             val adding = host in state.adding
             val ack = state.classicAck?.takeIf { it.address == host }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 SsButton(
-                    if (adding) "$host  Adding…" else host,
+                    if (adding) UiText.Res(Res.string.add_host_adding, listOf(UiText.Ltr(host))).resolve() else UiText.Ltr(host).resolve(),
                     { if (!adding) onAddAddress(host, ack?.checked == true) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !adding && ack?.checked != false,
                 )
                 if (ack != null) ClassicAckBlock(ack, onClassicCheck)
-                state.addErrors[host]?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
+                state.addErrors[host]?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.dangerText)) }
             }
         }
         state.tlsHosts.forEach { host ->
-            SsButton(host, { onStartPair(host) }, modifier = Modifier.fillMaxWidth())
+            SsButton(UiText.Ltr(host).resolve(), { onStartPair(host) }, modifier = Modifier.fillMaxWidth())
         }
-        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND, Ss.caption)
-        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it), Ss.caption) }
+        if (state.noneFound && !state.scanning) SsText(Copy.NO_TVS_FOUND.resolve(), Ss.caption)
+        if (!state.scanning) state.diagnosis?.let { SsText(helpFor(it).resolve(), Ss.caption) }
     }
 }
 
 @Composable
 private fun ClassicAckBlock(ack: ClassicAck, onCheck: (Boolean) -> Unit) {
-    SsText(Copy.CLASSIC_ACK, Ss.caption)
-    SsCheckRow(Copy.CLASSIC_ACK_CHECK, ack.checked, onCheck)
+    SsText(Copy.CLASSIC_ACK.resolve(), Ss.caption)
+    SsCheckRow(Copy.CLASSIC_ACK_CHECK.resolve(), ack.checked, onCheck)
 }
 
 @Composable
@@ -105,24 +122,24 @@ fun PairingBlock(
     var code by remember(form.address) { mutableStateOf("") }
     var port by remember(form.address) { mutableStateOf("") }
     var connect by remember(form.address) { mutableStateOf("") }
-    SsText(Copy.PAIR_STEPS, Ss.caption)
-    form.error?.let { SsText(it, Ss.caption.copy(color = Ss.dangerText)) }
+    SsText(Copy.PAIR_STEPS.resolve(), Ss.caption)
+    form.error?.let { SsText(it.resolve(), Ss.caption.copy(color = Ss.dangerText)) }
     if (!form.askConnectPort) {
-        SsText(Copy.PAIR_CODE, Ss.caption)
-        SsTextField(code, { code = it }, "123456")
-        SsText(Copy.PAIR_PORT, Ss.caption)
-        SsTextField(port, { port = it }, "37123")
+        SsText(Copy.PAIR_CODE.resolve(), Ss.caption)
+        SsTextField(code, { code = it }, "123456", ltr = true)
+        SsText(Copy.PAIR_PORT.resolve(), Ss.caption)
+        SsTextField(port, { port = it }, "37123", ltr = true)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SsButton(Copy.PAIR, { onSubmit(code, port) }, primary = true)
-            SsButton("Cancel", onCancel)
+            SsButton(Copy.PAIR.resolve(), { onSubmit(code, port) }, primary = true)
+            SsButton(stringResource(Res.string.common_cancel), onCancel)
         }
     } else {
-        SsText(Copy.CONNECT_PORT_HINT, Ss.caption)
-        SsText(Copy.PAIR_PORT, Ss.caption)
-        SsTextField(connect, { connect = it }, "37123")
+        SsText(Copy.CONNECT_PORT_HINT.resolve(), Ss.caption)
+        SsText(Copy.PAIR_PORT.resolve(), Ss.caption)
+        SsTextField(connect, { connect = it }, "37123", ltr = true)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            SsButton("Add", { onConnectPort(connect) }, primary = true)
-            SsButton("Cancel", onCancel)
+            SsButton(stringResource(Res.string.common_add), { onConnectPort(connect) }, primary = true)
+            SsButton(stringResource(Res.string.common_cancel), onCancel)
         }
     }
 }

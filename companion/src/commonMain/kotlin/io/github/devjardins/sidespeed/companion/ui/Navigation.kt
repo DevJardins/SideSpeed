@@ -21,33 +21,74 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.about_licence_text
+import io.github.devjardins.sidespeed.companion.resources.common_back
+import io.github.devjardins.sidespeed.companion.l10n.LanguageController
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
+import org.jetbrains.compose.resources.stringResource
 
-enum class Page { HOME, ADD, SETTINGS, ABOUT }
+enum class Page { HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
+
+/**
+ * Where the user is in the app. Held outside [CompanionApp] so a language switch, which rebuilds
+ * the app's content, keeps the page; saveable so an Android activity recreate keeps it too.
+ */
+class CompanionNav(page: Page = Page.HOME, dismissedFirstRun: Boolean = false, focusLanguage: Boolean = false) {
+    var page by mutableStateOf(page)
+    var dismissedFirstRun by mutableStateOf(dismissedFirstRun)
+    var focusLanguage by mutableStateOf(focusLanguage)
+
+    companion object {
+        val Saver: Saver<CompanionNav, Any> = listSaver(
+            save = { listOf(it.page.name, it.dismissedFirstRun, it.focusLanguage) },
+            restore = {
+                CompanionNav(
+                    Page.valueOf(it[0] as String),
+                    it[1] as Boolean,
+                    it.getOrNull(2) as? Boolean ?: false,
+                )
+            },
+        )
+    }
+}
+
+/** A [CompanionNav] that survives configuration changes and activity recreation. */
+@Composable
+fun rememberCompanionNav(): CompanionNav = rememberSaveable(saver = CompanionNav.Saver) { CompanionNav() }
 
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
-private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT }
+private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
 
 /** Root of the companion UI, shared by the Android and desktop apps. */
 @Composable
 fun CompanionApp(
     vm: CompanionViewModel,
     desktop: Boolean,
-    aboutText: String = "SideSpeed Companion · GPL-3.0\n\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.",
+    aboutText: UiText = UiText.Res(Res.string.about_licence_text),
     aboutVersion: String = "",
     updateState: CompanionUpdateState = CompanionUpdateState.Idle,
     onCheckUpdates: () -> Unit = {},
     updateAction: @Composable () -> Unit = {},
+    language: LanguageController? = null,
+    nav: CompanionNav = rememberCompanionNav(),
 ) {
     val state by vm.state.collectAsState()
-    var page by remember { mutableStateOf(Page.HOME) }
-    var dismissedFirstRun by remember { mutableStateOf(false) }
+    var page by nav::page
+    var dismissedFirstRun by nav::dismissedFirstRun
+    var focusLanguage by nav::focusLanguage
     // A TV was added from the Add screen: go Home, where its card is the confirmation.
     LaunchedEffect(state.addedAddress) {
         if (state.addedAddress != null) {
@@ -61,15 +102,19 @@ fun CompanionApp(
         page == Page.HOME -> Screen.HOME
         page == Page.ADD -> Screen.ADD
         page == Page.SETTINGS -> Screen.SETTINGS
+        page == Page.LANGUAGE && language != null -> Screen.LANGUAGE
+        page == Page.LANGUAGE -> Screen.SETTINGS
         else -> Screen.ABOUT
     }
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
             targetState = screen,
             modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing),
             transitionSpec = {
                 val forward = targetState.ordinal > initialState.ordinal
-                val dir = if (forward) 1 else -1
+                val sign = if (rtl) -1 else 1
+                val dir = (if (forward) 1 else -1) * sign
                 (fadeIn(tween(200)) + slideInHorizontally(tween(220)) { dir * it / 14 }) togetherWith
                     (fadeOut(tween(120)) + slideOutHorizontally(tween(220)) { -dir * it / 14 })
             },
@@ -80,7 +125,7 @@ fun CompanionApp(
                 Screen.FIRST_RUN ->
                     FirstRunScreen(
                         state.currentNetwork, state.tailnet,
-                        { vm.trustCurrentNetwork("Trusted Network 1") }, { vm.trustCurrentOverlay("Tailnet 1") },
+                        { vm.trustCurrentNetwork("") }, { vm.trustCurrentOverlay("") },
                         { dismissedFirstRun = true },
                     )
                 Screen.HOME -> HomeScreen(
@@ -108,10 +153,24 @@ fun CompanionApp(
                 }
                 Screen.SETTINGS -> SettingsScreen(
                     state, desktop, vm::updateSettings,
-                    { vm.trustCurrentNetwork("Trusted Network ${state.trustedNetworks.size + 1}") },
+                    { vm.trustCurrentNetwork("") },
                     vm::renameTrustedNetwork, vm::removeTrustedNetwork, vm::removeTrustedOverlay,
                     { page = Page.ABOUT }, { page = Page.HOME },
+                    language = language,
+                    onLanguage = { page = Page.LANGUAGE },
+                    focusLanguage = focusLanguage,
+                    onConsumeLanguageFocus = { focusLanguage = false },
                 )
+                Screen.LANGUAGE -> {
+                    val controller = language
+                    // Unreachable: Settings shows the Language button only when a controller is set.
+                    if (controller != null) {
+                        LanguageScreen(
+                            controller = controller,
+                            onBack = { focusLanguage = true; page = Page.SETTINGS },
+                        )
+                    }
+                }
                 Screen.ABOUT -> AboutScreen(
                     aboutText = aboutText,
                     versionName = aboutVersion,
@@ -129,7 +188,7 @@ fun CompanionApp(
 @Composable
 fun Header(title: String, onBack: (() -> Unit)? = null, trailing: @Composable () -> Unit = {}) {
     Row(Modifier.padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (onBack != null) SsIconButton(onBack, "Back") { SsGlyph(Glyph.BACK) }
+        if (onBack != null) SsIconButton(onBack, stringResource(Res.string.common_back)) { SsGlyph(Glyph.BACK) }
         SsText(title, Ss.title, Modifier.weight(1f))
         trailing()
     }

@@ -1,8 +1,12 @@
 package io.github.devjardins.sidespeed.companion.update
 
+import io.github.devjardins.sidespeed.companion.testing.EnglishStrings
+import io.github.devjardins.sidespeed.companion.testing.english
+import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.assertNull
 
@@ -97,30 +101,47 @@ class CompanionUpdateTest {
     }
 
     @Test fun verifyMismatchRejected() {
-        assertTrue(verifyCompanionApk("ab", "cd", apk, signers) is CompanionVerifyResult.Rejected)
+        val result = assertIs<CompanionVerifyResult.Rejected>(verifyCompanionApk("ab", "cd", apk, signers))
+        assertEquals("Checksum mismatch.", result.reason.english())
     }
 
     @Test fun verifyMissingChecksumRejected() {
-        assertTrue(verifyCompanionApk("ab", null, apk, signers) is CompanionVerifyResult.Rejected)
+        val result = assertIs<CompanionVerifyResult.Rejected>(verifyCompanionApk("ab", null, apk, signers))
+        assertEquals("No checksum found for SideSpeed-Companion.apk.", result.reason.english())
+        assertEquals(
+            "No checksum found for \u2066SideSpeed-Companion.apk\u2069.",
+            result.reason.resolve(EnglishStrings, rtl = true),
+        )
     }
 
     @Test fun verifyUnreadableApkRejected() {
-        assertTrue(verifyCompanionApk("ab", "ab", null, signers) is CompanionVerifyResult.Rejected)
+        val result = assertIs<CompanionVerifyResult.Rejected>(verifyCompanionApk("ab", "ab", null, signers))
+        assertEquals("Could not read the downloaded APK.", result.reason.english())
     }
 
     @Test fun verifyWrongPackageRejected() {
-        val result = verifyCompanionApk("ab", "ab", ApkFacts("com.example.other", signers), signers)
-        assertTrue(result is CompanionVerifyResult.Rejected)
+        val result = assertIs<CompanionVerifyResult.Rejected>(
+            verifyCompanionApk("ab", "ab", ApkFacts("com.example.other", signers), signers),
+        )
+        assertEquals("Wrong package: com.example.other.", result.reason.english())
+        assertEquals(
+            "Wrong package: \u2066com.example.other\u2069.",
+            result.reason.resolve(EnglishStrings, rtl = true),
+        )
     }
 
     @Test fun verifySignerMismatchRejected() {
-        assertTrue(verifyCompanionApk("ab", "ab", apk, setOf("bb")) is CompanionVerifyResult.Rejected)
+        val result = assertIs<CompanionVerifyResult.Rejected>(verifyCompanionApk("ab", "ab", apk, setOf("bb")))
+        assertEquals("Signer does not match the installed app.", result.reason.english())
     }
 
     @Test fun verifyUnknownSignerRefused() {
-        assertTrue(verifyCompanionApk("ab", "ab", apk, emptySet()) is CompanionVerifyResult.Rejected)
-        val result = verifyCompanionApk("ab", "ab", ApkFacts(COMPANION_PACKAGE, emptySet()), signers)
-        assertTrue(result is CompanionVerifyResult.Rejected)
+        val missingInstalled = assertIs<CompanionVerifyResult.Rejected>(verifyCompanionApk("ab", "ab", apk, emptySet()))
+        assertEquals("Signer unknown: refusing the update.", missingInstalled.reason.english())
+        val missingArchive = assertIs<CompanionVerifyResult.Rejected>(
+            verifyCompanionApk("ab", "ab", ApkFacts(COMPANION_PACKAGE, emptySet()), signers),
+        )
+        assertEquals("Signer unknown: refusing the update.", missingArchive.reason.english())
     }
 
     // Desktop asset picking.

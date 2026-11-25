@@ -1,0 +1,128 @@
+# Path relative to repo root and literal, separated by |
+# Format: path|"literal"
+# Every entry must have a reason comment above it (brand-only, debug-only, or never user-visible).
+
+# never user-visible: JSON file store validation and directory creation errors
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/JsonFileCompanionStore.kt|"Not a store object"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/JsonFileCompanionStore.kt|"Cannot create $dir"
+
+# never user-visible: internal MiniJson parser exception messages
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"$what at $pos"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Trailing characters at ${p.pos}"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Unsupported JSON value: ${value::class}"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Too deeply nested"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Unexpected end"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Unexpected '$c'"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Expected $word"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Expected a key"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Expected ':'"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Expected ',' or '}'"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Expected ',' or ']'"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Unterminated string"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Unterminated escape"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Short \\u escape"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Bad \\u escape"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Bad escape '\\$e'"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Control character in string"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/store/MiniJson.kt|"Bad number '$t'"
+
+# never user-visible: internal ADB transport/key/helper exceptions (never shown to users)
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/AdbLink.kt|"ADB link was closed during the handshake"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/AdbLink.kt|"ADB link is closed"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Companion key is not ready"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"No directory for $file"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Cannot create $dir"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Cannot create $tmp"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Cannot write $file"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Cannot restrict $f to its owner"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/HelperKeeper.kt|"Helper did not appear within ${pollTimeoutMs}ms"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/KadbTvSession.kt|"ADB connection is closed"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/KadbTvSession.kt|"Command timed out after ${commandTimeoutMs}ms"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/KadbTvSession.kt|"ADB call aborted"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvIdentity.kt|"This TV didn't prove it's the one you added"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvIdentity.kt|"A different device answered at that address"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvIdentity.kt|"Confirm this TV before SideSpeed uses it"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvIdentity.kt|"SideSpeed couldn't save its check on this TV"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSession.kt|"Waiting for the TV to allow debugging"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"This TV has not been allowed to use the older connection"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"This TV can use an encrypted connection"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"The encrypted port is not known"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvSessions.kt|"This connection did not use TLS"
+
+# never user-visible: Kadb pairing error substring checks mapped to PairResult
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Exchanging message wasn't successful"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Could not exchange peer info"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/Pairing.kt|"Connection closed with errors"
+
+# never user-visible: Android content-query error substring checks mapped to ActivityPhase.NEEDS_UPDATE
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvActivity.kt|"Could not find provider"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/TvActivity.kt|"Error while accessing provider"
+
+# never user-visible: on-disk OS app-data folder name
+companion/src/desktopMain/kotlin/io/github/devjardins/sidespeed/companion/tv/DesktopDirs.kt|"Library/Application Support/SideSpeed Companion"
+companion/src/desktopMain/kotlin/io/github/devjardins/sidespeed/companion/tv/DesktopDirs.kt|"SideSpeed Companion"
+
+# never user-visible: internal Conscrypt/BouncyCastle TLS exporter exceptions and provider label
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"ADB TLS crypto"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"Unsupported MAC ${saved.macAlgorithm}"
+companion/src/desktopMain/kotlin/org/conscrypt/Conscrypt.kt|"Not a Bouncy Castle TLS socket: ${socket.javaClass.name}"
+companion/src/desktopMain/kotlin/org/conscrypt/Conscrypt.kt|"ADB keying material is not available for this handshake"
+
+# never user-visible: internal download exception messages (never shown directly to users)
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Non-https final URL: ${opened.finalUrl}"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Content length ${opened.contentLength} exceeds cap $maxBytes"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Download exceeds cap $maxBytes"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Short body: got $total of ${opened.contentLength}"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Could not move download into place"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Text length ${opened.contentLength} exceeds cap $maxBytes"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Text exceeds cap $maxBytes"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Non-https URL: $current"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Redirect without Location from $current"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"HTTP $code from $current"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Too many redirects from $url"
+
+# never user-visible: internal desktop release metadata fetch exception messages
+companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"HTTP $code from $RELEASES_API_URL"
+companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"Release body exceeds cap"
+
+# never user-visible: Tailscale JSON field names
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Peer"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Online"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Name"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Self"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/discovery/TailscaleStatus.kt|"Running"
+
+# never user-visible: OS detection and ADB timeout substring
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/CompanionKeys.kt|"Windows"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/tv/KadbTvSession.kt|"connect timed out"
+
+# never user-visible: Compose animation property keys
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/ActivityBlock.kt|"activity-done"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"dot"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"alpha"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"spin"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/Components.kt|"angle"
+
+# never user-visible: persisted id prefixes and Fire TV manufacturer check
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"net-"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"overlay-"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/ui/CompanionViewModel.kt|"Amazon"
+
+# never user-visible: internal upkeep log lines
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"no longer on the trusted network"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched but the proof failed"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched but the TV still needs confirmation"
+companion/src/commonMain/kotlin/io/github/devjardins/sidespeed/companion/upkeep/Upkeep.kt|"serial matched; sweep no longer needed"
+
+# never user-visible: TLS exporter algorithm labels
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"Mac"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-256"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-384"
+companion/src/desktopMain/kotlin/org/conscrypt/AdbExporter.kt|"SHA-512"
+
+# never user-visible: HTTP header name and notification channel tag ids
+companion-desktop/src/main/kotlin/io/github/devjardins/sidespeed/companion/desktop/DesktopUpdate.kt|"Accept"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/Notifier.kt|"restarts"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Location"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"update"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"SideSpeed"

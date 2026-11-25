@@ -1,14 +1,21 @@
 package io.github.devjardins.sidespeed.ui.theme
 
+import android.text.TextUtils
+import android.view.View
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import androidx.tv.material3.darkColorScheme
+import io.github.devjardins.sidespeed.l10n.AppLanguage
 import io.github.devjardins.sidespeed.theme.SsTokens
 
 /** Dark-room palette (design Revision 4), values from [SsTokens]. No bright fills, no lime, never pure white. */
@@ -83,5 +90,18 @@ private val typography = Typography(
 
 @Composable
 fun SideSpeedTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
+    // The MainActivity root: layout follows the language actually shown, so a chosen
+    // language that never shipped (or a device language with no translation) keeps
+    // English text left to right. Debug ar-XB still maps to itself, so it stays RTL.
+    val direction =
+        if (TextUtils.getLayoutDirectionFromLocale(AppLanguage.effectiveLocale(LocalContext.current)) ==
+            View.LAYOUT_DIRECTION_RTL
+        ) {
+            LayoutDirection.Rtl
+        } else {
+            LayoutDirection.Ltr
+        }
+    CompositionLocalProvider(LocalLayoutDirection provides direction) {
+        MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
+    }
 }

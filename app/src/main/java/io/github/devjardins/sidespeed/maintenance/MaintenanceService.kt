@@ -14,6 +14,7 @@ import android.os.IBinder
 import androidx.core.content.ContextCompat
 import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.SideSpeedApp
+import io.github.devjardins.sidespeed.l10n.AppLanguage
 import io.github.devjardins.sidespeed.tools.CleanupThreshold
 import io.github.devjardins.sidespeed.tools.shortLabel
 import io.github.devjardins.sidespeed.ui.text.UiText
@@ -61,6 +62,8 @@ class MaintenanceService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
     private var started = false
     private var receiver: BroadcastReceiver? = null
+
+    override fun attachBaseContext(base: Context) = super.attachBaseContext(AppLanguage.wrap(base))
 
     override fun onBind(intent: Intent?): IBinder? = null
 

@@ -8,12 +8,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import io.github.devjardins.sidespeed.l10n.AppLanguage
+import io.github.devjardins.sidespeed.l10n.formatDecimal
+import io.github.devjardins.sidespeed.l10n.formatInteger
+import java.util.Locale
 
 sealed interface UiText {
     data class Res(@StringRes val id: Int, val args: List<Any> = emptyList()) : UiText
     data class Plural(@PluralsRes val id: Int, val count: Int, val args: List<Any> = emptyList()) : UiText
     data class Raw(val text: String) : UiText
     data class Ltr(val value: String) : UiText
+    /** A number with [digits] decimals, written in the current locale's digits. */
+    data class Decimal(val value: Double, val digits: Int) : UiText
+    /** A whole number, written in the current locale's digits with no grouping. */
+    data class Integer(val value: Long) : UiText
 }
 
 fun uiText(@StringRes id: Int, vararg args: Any): UiText = UiText.Res(id, args.toList())
@@ -23,9 +31,12 @@ fun stringLookup(context: Context): StringLookup = ContextStringLookup(context)
 interface StringLookup {
     fun string(@StringRes id: Int, args: Array<Any>): String
     fun plural(@PluralsRes id: Int, count: Int, args: Array<Any>): String
+    val locale: Locale get() = Locale.US
 }
 
 private class ContextStringLookup(private val context: Context) : StringLookup {
+    override val locale: Locale get() = AppLanguage.effectiveLocale(context)
+
     override fun string(@StringRes id: Int, args: Array<Any>): String =
         if (args.isEmpty()) context.getString(id) else context.getString(id, *args)
 
@@ -51,6 +62,8 @@ fun UiText.resolve(lookup: StringLookup, rtl: Boolean): String = when (this) {
     is UiText.Plural -> lookup.plural(id, count, resolveArgs(args, lookup, rtl))
     is UiText.Raw -> text
     is UiText.Ltr -> if (rtl) "\u2066$value\u2069" else value
+    is UiText.Decimal -> formatDecimal(value, digits, lookup.locale)
+    is UiText.Integer -> formatInteger(value, lookup.locale)
 }
 
 fun UiText.resolve(context: Context): String {

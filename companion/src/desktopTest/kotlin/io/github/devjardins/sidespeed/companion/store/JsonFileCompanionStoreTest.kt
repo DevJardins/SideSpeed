@@ -324,6 +324,19 @@ class JsonFileCompanionStoreTest {
         Unit
     }
 
+    @Test fun language_round_trips() = runBlocking {
+        val s = JsonFileCompanionStore(dir)
+        s.saveSettings(CompanionSettings(language = "ar"))
+        assertEquals("ar", JsonFileCompanionStore(dir).settings().language)
+    }
+
+    @Test fun missing_language_reads_null() = runBlocking {
+        file.writeText("""{"version":4,"settings":{"notifications":true,"intervalMinutes":60,"startAtLogin":true}}""")
+        val loaded = JsonFileCompanionStore(dir).settings()
+        assertEquals(null, loaded.language)
+        assertEquals(CompanionSettings(notifications = true, intervalMinutes = 60, startAtLogin = true), loaded)
+    }
+
     @Test fun fileAndDirectoryAreOwnerOnly() = runBlocking {
         val sub = File(dir, "data")
         JsonFileCompanionStore(sub).saveSettings(CompanionSettings())

@@ -1,12 +1,15 @@
 package io.github.devjardins.sidespeed.companion.desktop
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.DpSize
@@ -44,18 +47,35 @@ import io.github.devjardins.sidespeed.companion.upkeep.ProbeScanner
 import io.github.devjardins.sidespeed.companion.upkeep.JoinPoll
 import io.github.devjardins.sidespeed.companion.upkeep.Trigger
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
+import io.github.devjardins.sidespeed.companion.resources.Res
+import io.github.devjardins.sidespeed.companion.resources.about_download
+import io.github.devjardins.sidespeed.companion.resources.app_name
+import io.github.devjardins.sidespeed.companion.resources.home_restart_now
+import io.github.devjardins.sidespeed.companion.resources.notif_restarted
+import io.github.devjardins.sidespeed.companion.resources.tray_open
+import io.github.devjardins.sidespeed.companion.resources.tray_pause
+import io.github.devjardins.sidespeed.companion.resources.tray_quit
+import io.github.devjardins.sidespeed.companion.resources.tray_resume
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
+import io.github.devjardins.sidespeed.companion.ui.rememberCompanionNav
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
+import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.companion.l10n.effectiveLanguageTag
+import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForTag
+import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import java.io.File
 import java.io.RandomAccessFile
+import java.util.Locale
 import kotlin.system.exitProcess
 
 /** Holds a lock file for the life of the process so two copies never share the store. Null if already running. */
@@ -69,6 +89,8 @@ private fun singleInstanceLock(dir: File): RandomAccessFile? {
 }
 
 fun main() {
+    // The device language, captured before anything else so choosing null can put it back.
+    val systemLocale = Locale.getDefault()
     val appData = DesktopDirs.appData()
     val lock = singleInstanceLock(appData)
     if (lock == null) {
@@ -79,6 +101,11 @@ fun main() {
 
     // The store keeps its own subdirectory; the app-data folder itself is never re-permissioned.
     val store = JsonFileCompanionStore(File(appData, "store"))
+    // The saved language applies before any window or tray text is built.
+    val savedLanguage: String? = runBlocking { store.settings().language }
+    if (savedLanguage != null) {
+        Locale.setDefault(Locale.forLanguageTag(savedLanguage))
+    }
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
     val identity = TvIdentity.forKeys(DesktopDirs.keyDir())
@@ -137,6 +164,9 @@ fun main() {
         identity = identity,
     )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
+    val languageController = DesktopLanguageController(systemLocale, savedLanguage) { tag ->
+        vm.updateSettings(vm.state.value.settings.copy(language = tag))
+    }
 
     application {
         val tray = rememberTrayState()
@@ -145,11 +175,19 @@ fun main() {
         var windowVisible by remember { mutableStateOf(true) }
         var paused by remember { mutableStateOf(false) }
         val state by vm.state.collectAsState()
+        // Every language choice bumps this, rebuilding the tray and window content below.
+        val epoch by languageController.epoch.collectAsState()
+        // Held outside key(epoch) so a language switch keeps the page the user is on.
+        val nav = rememberCompanionNav()
 
         suspend fun runAndNotify(trigger: Trigger) {
             val report = upkeep.runOnce(trigger)
-            if (store.settings().notifications) {
-                report.restartedNames.forEach { tray.sendNotification(Notification("SideSpeed Companion", "SideSpeed restarted on $it")) }
+            if (store.settings().notifications && report.restartedNames.isNotEmpty()) {
+                val title = UiText.Res(Res.string.app_name).resolveSuspend()
+                report.restartedNames.forEach {
+                    val body = UiText.Res(Res.string.notif_restarted, listOf(UiText.Fsi(it))).resolveSuspend()
+                    tray.sendNotification(Notification(title, body))
+                }
             }
             vm.refreshNow()
         }
@@ -204,41 +242,56 @@ fun main() {
             if (!ok && want) vm.updateSettings(state.settings.copy(startAtLogin = false))
         }
 
-        Tray(
-            icon = icon,
-            tooltip = "SideSpeed Companion",
-            state = tray,
-            onAction = { windowVisible = true },
-            menu = {
-                Item("Restart now", onClick = { vm.restartNow() })
-                Item("Open SideSpeed Companion", onClick = { windowVisible = true })
-                Item(if (paused) "Resume checks" else "Pause checks", onClick = { paused = !paused })
-                Separator()
-                Item("Quit", onClick = { lock.close(); exitApplication() })
-            },
-        )
+        key(epoch) {
+            Tray(
+                icon = icon,
+                tooltip = stringResource(Res.string.app_name),
+                state = tray,
+                onAction = { windowVisible = true },
+                menu = {
+                    Item(stringResource(Res.string.home_restart_now), onClick = { vm.restartNow() })
+                    Item(stringResource(Res.string.tray_open), onClick = { windowVisible = true })
+                    Item(
+                        stringResource(if (paused) Res.string.tray_resume else Res.string.tray_pause),
+                        onClick = { paused = !paused },
+                    )
+                    Separator()
+                    Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
+                },
+            )
+        }
         // Closing the window keeps the app in the tray.
         Window(
             onCloseRequest = { windowVisible = false },
             visible = windowVisible,
-            title = "SideSpeed Companion",
+            title = stringResource(Res.string.app_name),
             icon = windowIcon,
             state = rememberWindowState(size = DpSize(420.dp, 640.dp)),
             resizable = true,
         ) {
             val updateState by desktopUpdater.state.collectAsState()
-            CompanionApp(
-                vm,
-                desktop = true,
-                aboutVersion = CompanionVersion.APP_VERSION,
-                updateState = updateState,
-                onCheckUpdates = desktopUpdater::checkNow,
-                updateAction = {
-                    if (updateState is CompanionUpdateState.Available) {
-                        SsButton("Download", onClick = desktopUpdater::openDownload)
-                    }
-                },
-            )
+            key(epoch) {
+                CompositionLocalProvider(
+                    // Layout follows the language actually shown, so English text stays
+                    // left to right when the requested language never shipped.
+                    LocalLayoutDirection provides layoutDirectionForTag(effectiveLanguageTag()),
+                ) {
+                    CompanionApp(
+                        vm,
+                        desktop = true,
+                        nav = nav,
+                        aboutVersion = CompanionVersion.APP_VERSION,
+                        updateState = updateState,
+                        onCheckUpdates = desktopUpdater::checkNow,
+                        updateAction = {
+                            if (updateState is CompanionUpdateState.Available) {
+                                SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
+                            }
+                        },
+                        language = languageController,
+                    )
+                }
+            }
         }
     }
 }
