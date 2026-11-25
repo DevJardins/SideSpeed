@@ -170,6 +170,16 @@ class LanguageGateTest {
     }
 
     @Test
+    fun tag_to_filter_round_trips_folder_names() {
+        assertEquals("fr", LanguageGate.tagToFilter("fr"))
+        assertEquals("pt-rBR", LanguageGate.tagToFilter("pt-BR"))
+        assertEquals("zh-rTW", LanguageGate.tagToFilter("zh-TW"))
+        assertEquals("b+sr+Latn", LanguageGate.tagToFilter("sr-Latn"))
+        assertEquals("b+sr+Latn+RS", LanguageGate.tagToFilter("sr-Latn-RS"))
+        assertEquals("es-r419", LanguageGate.tagToFilter("es-419"))
+    }
+
+    @Test
     fun qualifier_to_tag() {
         assertEquals("fr", LanguageGate.qualifierToTag("values-fr"))
         assertEquals("pt-BR", LanguageGate.qualifierToTag("values-pt-rBR"))

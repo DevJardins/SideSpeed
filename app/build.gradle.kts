@@ -181,7 +181,7 @@ android {
     // only in debug, so they are harmless in release. The filters go straight to aapt2 -c,
     // which wants qualifier syntax (en-rXA), not BCP-47 (en-XA).
     androidResources {
-        localeFilters += listOf("en") + gateResult.included.map { it.tag } + listOf("en-rXA", "ar-rXB")
+        localeFilters += listOf("en") + gateResult.included.map { LanguageGate.tagToFilter(it.tag) } + listOf("en-rXA", "ar-rXB")
     }
 
     compileOptions {

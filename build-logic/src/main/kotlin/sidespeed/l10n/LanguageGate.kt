@@ -21,6 +21,17 @@ object LanguageGate {
 
     /** The project ships every language at or above this share of English; also printed by [summary]. */
 
+    /** aapt2 `-c` / localeFilters form of a BCP-47 tag: `pt-BR` -> `pt-rBR`, `sr-Latn` -> `b+sr+Latn`. */
+    fun tagToFilter(tag: String): String {
+        val parts = tag.split('-')
+        return when {
+            parts.size == 1 -> tag
+            parts.any { it.length == 4 } -> "b+" + parts.joinToString("+")
+            parts.size == 2 -> "${parts[0]}-r${parts[1]}"
+            else -> "b+" + parts.joinToString("+")
+        }
+    }
+
     fun qualifierToTag(folderName: String): String? {
         if (!folderName.startsWith("values-")) return null
         val qualifier = folderName.removePrefix("values-")
