@@ -1,6 +1,10 @@
 package io.github.devjardins.sidespeed.adb
 
 import kotlinx.coroutines.flow.Flow
+import java.io.IOException
+
+/** Thrown when ADB wireless pairing returns false without a more specific library exception. */
+class AdbPairingFailedException : IOException()
 
 sealed interface AdbTarget {
     data class Classic(val host: String = "127.0.0.1", val port: Int = 5555) : AdbTarget

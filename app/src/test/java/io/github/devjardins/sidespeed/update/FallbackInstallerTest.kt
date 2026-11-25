@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.update
 
+import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,11 +26,11 @@ class FallbackInstallerTest {
     @Test fun settings_message_names_the_flows_retry_button() {
         assertEquals(
             "Allow SideSpeed to install apps, then press Retry.",
-            unknownSourcesMessage("Retry"),
+            unknownSourcesMessage(UiText.Res(R.string.update_banner_retry)).english(),
         )
         assertEquals(
             "Allow SideSpeed to install apps, then press Try again.",
-            unknownSourcesMessage("Try again"),
+            unknownSourcesMessage(UiText.Res(R.string.compile_update_try_again)).english(),
         )
     }
 }

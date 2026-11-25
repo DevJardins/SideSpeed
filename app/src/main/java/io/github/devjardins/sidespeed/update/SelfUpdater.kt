@@ -4,7 +4,10 @@ import android.content.pm.PackageManager
 import android.content.pm.Signature
 import android.os.Build
 import android.util.Log
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.helper.InstallOutcome
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +29,7 @@ sealed interface UpdateUiState {
     data object Busy : UpdateUiState
     data class Downloading(val percent: Int) : UpdateUiState
     data object Installing : UpdateUiState
-    data class Failed(val reason: String) : UpdateUiState
+    data class Failed(val reason: UiText) : UpdateUiState
 }
 
 private const val UPDATE_DIR = "update"
@@ -98,7 +101,7 @@ class SelfUpdater(
                 throw e
             } catch (e: Exception) {
                 deleteUpdateFiles()
-                _state.value = UpdateUiState.Failed("Update failed.")
+                _state.value = UpdateUiState.Failed(UiText.Res(R.string.update_error_failed))
             }
         }
     }
@@ -115,18 +118,20 @@ class SelfUpdater(
 
     private suspend fun execute(tag: String) {
         val apkUrl = releaseAssetUrl(tag, APK_NAME)
-            ?: return fail("Not a valid release version.")
+            ?: return fail(UiText.Res(R.string.update_error_invalid_version))
         val sumsUrl = releaseAssetUrl(tag, SUMS_NAME)
-            ?: return fail("Not a valid release version.")
+            ?: return fail(UiText.Res(R.string.update_error_invalid_version))
         _state.value = UpdateUiState.Downloading(0)
-        val sumsText = download.fetchText(sumsUrl).getOrElse { return fail("Could not download the checksums.") }
+        val sumsText = download.fetchText(sumsUrl).getOrElse {
+            return fail(UiText.Res(R.string.update_error_checksums_download))
+        }
         val expected = parseSha256Sums(sumsText, APK_NAME)
-            ?: return fail("No checksum found for $APK_NAME.")
+            ?: return fail(uiText(R.string.update_error_no_checksum_for_file, UiText.Ltr(APK_NAME)))
         val dir = File(cacheDir, UPDATE_DIR).apply { mkdirs() }
         val apk = File(dir, APK_NAME)
         download.downloadTo(apkUrl, apk, onProgress = {
             _state.value = UpdateUiState.Downloading(it)
-        }).getOrElse { return fail("Download failed.") }
+        }).getOrElse { return fail(UiText.Res(R.string.update_error_download_failed)) }
         val (installedVersion, installedSigners) = installed()
         when (val verdict = verifyUpdate(sha256Hex(apk), expected, readApkFacts(apk), installedVersion, installedSigners, SELF_UPDATE_PACKAGE)) {
             is VerifyResult.Ok -> Unit
@@ -155,10 +160,12 @@ class SelfUpdater(
                 if (awaitVersionRise(installedVersion)) {
                     deleteUpdateFiles() // the app is replaced from here on
                 } else {
-                    return fail("The update didn't install.")
+                    return fail(UiText.Res(R.string.update_error_didnt_install))
                 }
             }
-            is InstallOutcome.Failed -> return fail(outcome.lastLine ?: "Install failed.")
+            is InstallOutcome.Failed -> return fail(
+                outcome.lastLine?.let(UiText::Raw) ?: UiText.Res(R.string.update_error_install_failed),
+            )
         }
     }
 
@@ -170,9 +177,11 @@ class SelfUpdater(
     private suspend fun finishFallback(apk: File) {
         when (val fb = fallbackInstall(apk)) {
             is InstallOutcome.Started -> deleteUpdateFiles() // session committed; system takes over
-            is InstallOutcome.Disconnected -> return fail("Helper not running.")
-            is InstallOutcome.Failed -> return fail(fb.lastLine ?: "Install failed.")
-            is InstallOutcome.HelperDown -> return fail("Helper not running.")
+            is InstallOutcome.Disconnected -> return fail(UiText.Res(R.string.update_error_helper_down))
+            is InstallOutcome.Failed -> return fail(
+                fb.lastLine?.let(UiText::Raw) ?: UiText.Res(R.string.update_error_install_failed),
+            )
+            is InstallOutcome.HelperDown -> return fail(UiText.Res(R.string.update_error_helper_down))
         }
     }
 
@@ -195,7 +204,7 @@ class SelfUpdater(
         }
     }
 
-    private suspend fun fail(reason: String) {
+    private suspend fun fail(reason: UiText) {
         deleteUpdateFiles()
         _state.value = UpdateUiState.Failed(reason)
     }

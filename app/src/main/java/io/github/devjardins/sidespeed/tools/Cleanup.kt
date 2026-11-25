@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,16 +34,7 @@ class Cleanup(
     /** Clears all caches the helper can and records freed = free-after − free-before (clamped ≥ 0). */
     suspend fun cleanNow(): CleanupRecord = tracked {
         val before = deviceInfo.storage().freeBytes
-        val record = when (val result = commands.trimCaches(CLEAN_NOW_TARGET_BYTES)) {
-            is ToolResult.Ok -> {
-                val after = deviceInfo.storage().freeBytes
-                CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
-            }
-            is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
-            is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
-            is ToolResult.Refused -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper refused the command")
-            is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
-        }
+        val record = recordFor(before, commands.trimCaches(CLEAN_NOW_TARGET_BYTES))
         store.setLastCleanup(record)
         record
     }
@@ -55,19 +48,21 @@ class Cleanup(
         val before = deviceInfo.storage().freeBytes
         if (before >= thresholdBytes) return null
         return tracked {
-            val record = when (val result = commands.trimCaches(thresholdBytes)) {
-                is ToolResult.Ok -> {
-                    val after = deviceInfo.storage().freeBytes
-                    CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
-                }
-                is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper not running")
-                is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Restart the helper to use this")
-            is ToolResult.Refused -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = "Helper refused the command")
-                is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
-            }
+            val record = recordFor(before, commands.trimCaches(thresholdBytes))
             store.setLastCleanup(record)
             record
         }
+    }
+
+    private fun recordFor(before: Long, result: ToolResult<Unit>): CleanupRecord = when (result) {
+        is ToolResult.Ok -> {
+            val after = deviceInfo.storage().freeBytes
+            CleanupRecord(atMs = clock(), freedBytes = (after - before).coerceAtLeast(0), skipped = null)
+        }
+        is ToolResult.HelperDown -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = SkipReason.HELPER_DOWN.name)
+        is ToolResult.HelperOutdated -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = SkipReason.HELPER_OUTDATED.name)
+        is ToolResult.Refused -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = SkipReason.REFUSED.name)
+        is ToolResult.Failed -> CleanupRecord(atMs = clock(), freedBytes = null, skipped = result.message)
     }
 
     companion object {
@@ -77,9 +72,11 @@ class Cleanup(
 }
 
 /** Short choice label, e.g. "1 GB": shared by the SpaceCard row and the service notification. */
-internal fun CleanupThreshold.shortLabel(): String = when (this) {
-    CleanupThreshold.OFF -> "Off"
-    CleanupThreshold.MB_500 -> "500 MB"
-    CleanupThreshold.GB_1 -> "1 GB"
-    CleanupThreshold.GB_2 -> "2 GB"
-}
+internal fun CleanupThreshold.shortLabel(): UiText = UiText.Res(
+    when (this) {
+        CleanupThreshold.OFF -> R.string.tools_threshold_off
+        CleanupThreshold.MB_500 -> R.string.tools_threshold_500_mb
+        CleanupThreshold.GB_1 -> R.string.tools_threshold_1_gb
+        CleanupThreshold.GB_2 -> R.string.tools_threshold_2_gb
+    },
+)

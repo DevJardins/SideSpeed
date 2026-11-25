@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -101,7 +102,8 @@ class CleanupTest {
     @Test fun cleanNowHelperDownRecordsSkip() = runTest {
         val (fake, device, store, cleanup) = fixture(helperUp = false)
         val record = cleanup.cleanNow()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper not running"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = SkipReason.HELPER_DOWN.name), record)
+        assertEquals("Helper not running", record.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
         assertTrue(fake.commands.isEmpty())
         assertEquals(1, device.storageCalls)
@@ -111,7 +113,8 @@ class CleanupTest {
         val (fake, _, store, cleanup) = fixture()
         fake.dropAfterLines("pm trim-caches 999999999999999", 0)
         val record = cleanup.cleanNow()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper not running"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = SkipReason.HELPER_DOWN.name), record)
+        assertEquals("Helper not running", record.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
     }
 
@@ -119,7 +122,8 @@ class CleanupTest {
         val (fake, _, store, cleanup) = fixture()
         fake.on("pm trim-caches 999999999999999") { listOf("error: request not allowed") to 126 }
         val record = cleanup.cleanNow()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper refused the command"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = SkipReason.REFUSED.name), record)
+        assertEquals("Helper refused the command", record.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
     }
 
@@ -128,6 +132,7 @@ class CleanupTest {
         fake.on("pm trim-caches 999999999999999") { listOf("Failure") to 1 }
         val record = cleanup.cleanNow()
         assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Failure"), record)
+        assertEquals("Failure", record.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
     }
 
@@ -170,7 +175,8 @@ class CleanupTest {
             beforeFree = 400_000_000L,
         )
         val record = cleanup.maybeAuto()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper not running"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = SkipReason.HELPER_DOWN.name), record)
+        assertEquals("Helper not running", record?.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
         assertTrue(fake.commands.isEmpty())
     }
@@ -182,8 +188,16 @@ class CleanupTest {
         )
         fake.on("pm trim-caches 500000000") { listOf("error: request not allowed") to 126 }
         val record = cleanup.maybeAuto()
-        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = "Helper refused the command"), record)
+        assertEquals(CleanupRecord(atMs = atMs, freedBytes = null, skipped = SkipReason.REFUSED.name), record)
+        assertEquals("Helper refused the command", record?.skipText()?.english())
         assertEquals(record, store.lastFlow.value)
+    }
+
+    @Test fun thresholdShortLabels() {
+        assertEquals("Off", CleanupThreshold.OFF.shortLabel().english())
+        assertEquals("500 MB", CleanupThreshold.MB_500.shortLabel().english())
+        assertEquals("1 GB", CleanupThreshold.GB_1.shortLabel().english())
+        assertEquals("2 GB", CleanupThreshold.GB_2.shortLabel().english())
     }
 
     @Test fun running_true_during_clean_and_false_after() {

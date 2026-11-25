@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -138,7 +139,9 @@ class HomeScreenTest {
         val commands = FakeHomeCommands(queries).apply { setHomeResult = ToolResult.Failed("boom") }
         val store = FakeHomeStore()
         val s = switcher(queries, commands, store)
-        assertTrue(s.makeHome(OTHER) is HomeResult.Failed)
+        val result = s.makeHome(OTHER)
+        assertTrue(result is HomeResult.Failed)
+        assertEquals("boom", (result as HomeResult.Failed).message.english())
         assertNull(store.originalHome.first())
     }
 
@@ -168,7 +171,9 @@ class HomeScreenTest {
         val commands = FakeHomeCommands(queries)
         val store = FakeHomeStore()
         val s = switcher(queries, commands, store)
-        assertTrue(s.makeHome(OTHER) is HomeResult.Failed)
+        val result = s.makeHome(OTHER)
+        assertTrue(result is HomeResult.Failed)
+        assertEquals("That app isn't a home screen app.", (result as HomeResult.Failed).message.english())
         assertTrue(commands.calls.isEmpty())
     }
 

@@ -4,6 +4,7 @@ import io.github.devjardins.sidespeed.apps.AppEntry
 import io.github.devjardins.sidespeed.apps.AppSource
 import io.github.devjardins.sidespeed.compile.CompileEvent
 import io.github.devjardins.sidespeed.compile.CompileMode
+import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
@@ -13,6 +14,8 @@ import io.github.devjardins.sidespeed.status.CompilePhase
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.FakeCompileStatusStore
 import io.github.devjardins.sidespeed.status.StatusBadge
+import io.github.devjardins.sidespeed.testing.EnglishStrings
+import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -73,9 +76,10 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false, sta
 
     fun success(): Flow<CompileEvent> = flow {
         emit(CompileEvent.Attempt("pm compile"))
-        emit(CompileEvent.Finished(true, false, "Success"))
+        emit(CompileEvent.Finished(true, false, CompileOutcome.Success))
     }
-    fun failure(message: String = "Failure"): Flow<CompileEvent> = flow { emit(CompileEvent.Finished(false, true, message)) }
+    fun failure(outcome: CompileOutcome = CompileOutcome.Failure): Flow<CompileEvent> =
+        flow { emit(CompileEvent.Finished(false, true, outcome)) }
 
     var measuring: String? = null
     var helperUpCalls = 0
@@ -92,6 +96,7 @@ private class Harness(testScope: TestScope, failingHistory: Boolean = false, sta
         badges = { pkgs -> if (badgesFail) error("dumpsys failed") else badges.filterKeys { it in pkgs } },
         scope = testScope.backgroundScope,
         ownPackage = "own.pkg",
+        strings = EnglishStrings,
         status = status,
         clock = { now },
         measuring = { measuring },
@@ -206,7 +211,7 @@ class MaintenanceEngineTest {
     @Test fun jobsRunOneAtATime() = runTest {
         val h = Harness(this)
         val gate = CompletableDeferred<Unit>()
-        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
+        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, CompileOutcome.Success)) } }
         h.source.put("a.a"); h.source.put("b.b")
         h.store.setMaintained("a.a", true); h.store.setMaintained("b.b", true)
         runCurrent()
@@ -236,7 +241,7 @@ class MaintenanceEngineTest {
         h.script = {
             flow {
                 if (run++ == 0) { h.source.update("a.a", 1500); h.now = 2000 }
-                emit(CompileEvent.Finished(true, false, "Success"))
+                emit(CompileEvent.Finished(true, false, CompileOutcome.Success))
             }
         }
         runCurrent()
@@ -316,7 +321,7 @@ class MaintenanceEngineTest {
         h.source.put("a.a")
         h.store.setMaintained("a.a", true)
         var run = 0
-        h.script = { if (run++ == 0) flow { h.up = false; emit(CompileEvent.Finished(false, true, "Connection lost")) } else h.success() }
+        h.script = { if (run++ == 0) flow { h.up = false; emit(CompileEvent.Finished(false, true, CompileOutcome.ConnectionLost)) } else h.success() }
         runCurrent()
         assertEquals(1, h.calls.size)
         assertEquals(JobPhase.WAITING, h.phases["a.a"])
@@ -388,7 +393,7 @@ class MaintenanceEngineTest {
     @Test fun appUninstalledWhileQueuedIsSkipped() = runTest {
         val h = Harness(this)
         val gate = CompletableDeferred<Unit>()
-        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
+        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, CompileOutcome.Success)) } }
         h.source.put("a.a"); h.source.put("b.b")
         h.store.setMaintained("a.a", true); h.store.setMaintained("b.b", true)
         runCurrent()
@@ -402,7 +407,7 @@ class MaintenanceEngineTest {
     @Test fun switchOffDropsWaitingSideloadedButNotTheRunningOne() = runTest {
         val h = Harness(this)
         val gate = CompletableDeferred<Unit>()
-        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
+        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, CompileOutcome.Success)) } }
         h.source.put("a.a"); h.source.put("b.b")
         h.store.setMode(AutoOptimizeMode.ALL)
         runCurrent()
@@ -477,7 +482,7 @@ class MaintenanceEngineTest {
     @Test fun narrowingModeDropsWaitingAppsThatNoLongerQualify() = runTest {
         val h = Harness(this)
         val gate = CompletableDeferred<Unit>()
-        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, "Success")) } }
+        h.script = { flow { gate.await(); emit(CompileEvent.Finished(true, false, CompileOutcome.Success)) } }
         h.source.put("b.b", installer = null)
         h.source.put("a.a", installer = "com.android.vending")
         h.source.put("c.c", installer = null)
@@ -533,7 +538,7 @@ class MaintenanceEngineTest {
     @Test fun helperLossDuringCompileIsReportedAsInterrupted() = runTest {
         val statusStore = FakeCompileStatusStore()
         val h = Harness(this, statusStore = statusStore)
-        h.script = { h.up = false; h.failure("boom") }
+        h.script = { h.up = false; h.failure(CompileOutcome.Error("boom")) }
         h.source.put("a.a", updated = 500)
         h.prefs.saved["a.a"] = LastCompile(100, CompileMode.SPEED)
         h.store.setMaintained("a.a", true)
@@ -557,5 +562,59 @@ class MaintenanceEngineTest {
         val row = h.status!!.snapshot()
         assertEquals(CompilePhase.WAITING_HELPER, row.phase)
         assertEquals(1, row.queueWaiting)
+    }
+
+    @Test fun historyRecordsSetMessageKeyAndDetail() = runTest {
+        val h = Harness(this)
+        h.source.put("ok.app")
+        h.source.put("fail.app")
+        h.source.put("conn.lost.app")
+        h.source.put("ex.msg.app")
+        h.source.put("ex.null.app")
+        h.source.put("empty.app")
+        h.script = { pkg ->
+            when (pkg) {
+                "ok.app" -> h.success()
+                "fail.app" -> h.failure(CompileOutcome.Failure)
+                "conn.lost.app" -> h.failure(CompileOutcome.ConnectionLost)
+                "ex.msg.app" -> flow { throw IllegalStateException("boom") }
+                "ex.null.app" -> flow { throw IllegalStateException() }
+                else -> flow { }
+            }
+        }
+        listOf("ok.app", "fail.app", "conn.lost.app", "ex.msg.app", "ex.null.app", "empty.app").forEach {
+            h.store.setMaintained(it, true)
+        }
+        runCurrent()
+        val byPkg = h.store.historyFlow.value.associateBy { it.pkg }
+        assertEquals(JobMessage.SUCCESS.name, byPkg.getValue("ok.app").messageKey)
+        assertNull(byPkg.getValue("ok.app").detail)
+        assertEquals("Success", byPkg.getValue("ok.app").message)
+        assertEquals("Success", byPkg.getValue("ok.app").display.english())
+
+        assertEquals(JobMessage.FAILURE.name, byPkg.getValue("fail.app").messageKey)
+        assertNull(byPkg.getValue("fail.app").detail)
+        assertEquals("Failure", byPkg.getValue("fail.app").message)
+        assertEquals("Failure", byPkg.getValue("fail.app").display.english())
+
+        assertEquals(JobMessage.CONNECTION_LOST.name, byPkg.getValue("conn.lost.app").messageKey)
+        assertNull(byPkg.getValue("conn.lost.app").detail)
+        assertEquals("Connection lost", byPkg.getValue("conn.lost.app").message)
+        assertEquals("Connection lost", byPkg.getValue("conn.lost.app").display.english())
+
+        assertEquals(JobMessage.ERROR.name, byPkg.getValue("ex.msg.app").messageKey)
+        assertEquals("boom", byPkg.getValue("ex.msg.app").detail)
+        assertEquals("boom", byPkg.getValue("ex.msg.app").message)
+        assertEquals("boom", byPkg.getValue("ex.msg.app").display.english())
+
+        assertEquals(JobMessage.ERROR.name, byPkg.getValue("ex.null.app").messageKey)
+        assertNull(byPkg.getValue("ex.null.app").detail)
+        assertEquals("Error", byPkg.getValue("ex.null.app").message)
+        assertEquals("Error", byPkg.getValue("ex.null.app").display.english())
+
+        assertEquals(JobMessage.FAILURE.name, byPkg.getValue("empty.app").messageKey)
+        assertNull(byPkg.getValue("empty.app").detail)
+        assertEquals("Failure", byPkg.getValue("empty.app").message)
+        assertEquals("Failure", byPkg.getValue("empty.app").display.english())
     }
 }

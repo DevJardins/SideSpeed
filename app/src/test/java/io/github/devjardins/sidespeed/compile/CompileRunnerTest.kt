@@ -20,7 +20,7 @@ class CompileRunnerTest {
         fake.on(primary) { listOf("Success") to 0 }
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
         assertEquals(
-            listOf(CompileEvent.Attempt(primary), CompileEvent.Output("Success"), CompileEvent.Finished(true, false, "Success")),
+            listOf(CompileEvent.Attempt(primary), CompileEvent.Output("Success"), CompileEvent.Finished(true, false, CompileOutcome.Success)),
             events,
         )
         assertEquals(listOf(primary), fake.commands)
@@ -37,7 +37,7 @@ class CompileRunnerTest {
                 CompileEvent.Output("Error: unknown command"),
                 CompileEvent.Attempt(fallback),
                 CompileEvent.Output("Success"),
-                CompileEvent.Finished(true, true, "Success"),
+                CompileEvent.Finished(true, true, CompileOutcome.Success),
             ),
             events,
         )
@@ -49,7 +49,7 @@ class CompileRunnerTest {
         fake.on(primary) { listOf(msg) to 1 }
         fake.on(fallback) { listOf(msg) to 1 }
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
-        assertEquals(CompileEvent.Finished(false, true, "Failure"), events.last())
+        assertEquals(CompileEvent.Finished(false, true, CompileOutcome.Failure), events.last())
         assertEquals(2, events.count { it == CompileEvent.Output(msg) })
     }
 
@@ -59,7 +59,7 @@ class CompileRunnerTest {
         fake.on(fallback) { listOf("Success") to 0 }
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
         assertEquals(listOf(primary, fallback), fake.commands)
-        assertEquals(CompileEvent.Finished(true, true, "Success"), events.last())
+        assertEquals(CompileEvent.Finished(true, true, CompileOutcome.Success), events.last())
     }
 
     @Test fun successLineWithNonZeroExitFallsBack() = runTest {
@@ -67,7 +67,7 @@ class CompileRunnerTest {
         fake.on(primary) { listOf("Success") to 1 }
         fake.on(fallback) { emptyList<String>() to 1 }
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
-        assertEquals(CompileEvent.Finished(false, true, "Failure"), events.last())
+        assertEquals(CompileEvent.Finished(false, true, CompileOutcome.Failure), events.last())
     }
 
     @Test fun connectionLostOnPrimary() = runTest {
@@ -75,7 +75,7 @@ class CompileRunnerTest {
         fake.on(primary) { listOf("Compiling", "more") to 0 }
         fake.dropAfterLines(primary, 1)
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
-        assertEquals(CompileEvent.Finished(false, false, "Connection lost"), events.last())
+        assertEquals(CompileEvent.Finished(false, false, CompileOutcome.ConnectionLost), events.last())
         assertEquals(listOf(primary), fake.commands)
     }
 
@@ -85,13 +85,13 @@ class CompileRunnerTest {
         fake.on(fallback) { listOf("Compiling") to 0 }
         fake.dropAfterLines(fallback, 1)
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
-        assertEquals(CompileEvent.Finished(false, true, "Connection lost"), events.last())
+        assertEquals(CompileEvent.Finished(false, true, CompileOutcome.ConnectionLost), events.last())
     }
 
     @Test fun flowEndingWithoutExitIsFailure() = runTest {
         val fake = FakeAdbBackend() // unscripted emits Exit(127); both fail
         val events = CompileRunner(fake).run(pkg, CompileMode.SPEED).toList()
-        assertEquals(CompileEvent.Finished(false, true, "Failure"), events.last())
+        assertEquals(CompileEvent.Finished(false, true, CompileOutcome.Failure), events.last())
     }
 
     @Test fun speedProfileMode() = runTest {
@@ -110,7 +110,7 @@ class CompileRunnerTest {
                 .also { seen += command }
         }
         val last = CompileRunner(runner).run(pkg, CompileMode.SPEED).toList().last()
-        assertEquals(CompileEvent.Finished(true, false, "Success"), last)
+        assertEquals(CompileEvent.Finished(true, false, CompileOutcome.Success), last)
         assertEquals(listOf(primary), seen)
     }
 }

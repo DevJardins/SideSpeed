@@ -26,14 +26,14 @@ class CompileRunner(private val runner: CommandRunner) {
                     }
                 }
             } catch (e: AdbConnectionLost) {
-                emit(CompileEvent.Finished(false, usedFallback = index > 0, message = "Connection lost"))
+                emit(CompileEvent.Finished(false, usedFallback = index > 0, outcome = CompileOutcome.ConnectionLost))
                 return@flow
             }
             if (exit == 0 && sawSuccess) {
-                emit(CompileEvent.Finished(true, usedFallback = index > 0, message = "Success"))
+                emit(CompileEvent.Finished(true, usedFallback = index > 0, outcome = CompileOutcome.Success))
                 return@flow
             }
         }
-        emit(CompileEvent.Finished(false, usedFallback = true, message = "Failure"))
+        emit(CompileEvent.Finished(false, usedFallback = true, outcome = CompileOutcome.Failure))
     }
 }

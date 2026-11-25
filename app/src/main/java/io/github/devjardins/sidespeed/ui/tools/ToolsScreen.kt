@@ -19,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
@@ -59,9 +61,9 @@ fun ToolsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                SsButton("‹ Back", onClick = onBack, modifier = Modifier.focusRequester(backFocus))
+                SsButton(stringResource(R.string.common_back), onClick = onBack, modifier = Modifier.focusRequester(backFocus))
                 Spacer(Modifier.width(16.dp))
-                Text("Tools", style = SsType.Headline, color = SsColors.TextPrimary)
+                Text(stringResource(R.string.tools_title), style = SsType.Headline, color = SsColors.TextPrimary)
             }
             health()
             space()
@@ -77,7 +79,7 @@ fun ToolsScreen(
 fun ToolsPlaceholder(title: String) {
     SsCard(Modifier.fillMaxWidth()) {
         Text(
-            "$title — coming soon",
+            stringResource(R.string.tools_placeholder, title),
             style = SsType.Body,
             color = SsColors.TextSecondary,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),

@@ -13,12 +13,17 @@ import androidx.compose.ui.unit.dp
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.tools.DeviceInfo
 import io.github.devjardins.sidespeed.tools.DeviceSummary
 import io.github.devjardins.sidespeed.tools.MemoryInfo
 import io.github.devjardins.sidespeed.tools.StorageInfo
 import io.github.devjardins.sidespeed.tools.formatBytes
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.resolve
+import io.github.devjardins.sidespeed.ui.text.uiText
 import io.github.devjardins.sidespeed.ui.theme.SsCard
 import io.github.devjardins.sidespeed.ui.theme.SsColors
 import io.github.devjardins.sidespeed.ui.theme.SsType
@@ -78,27 +83,31 @@ fun HealthCard(
             Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text("Box health", style = SsType.Title, color = SsColors.TextPrimary)
+            Text(stringResource(R.string.tools_health_title), style = SsType.Title, color = SsColors.TextPrimary)
             Text(
-                "${deviceLabel(deviceName, Build.MANUFACTURER, summary.model)} · Android ${summary.androidVersion}",
+                uiText(
+                    R.string.tools_health_device,
+                    deviceLabel(deviceName, Build.MANUFACTURER, summary.model),
+                    UiText.Ltr(summary.androidVersion),
+                ).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
             Text(
-                "${formatBytes(memory.availBytes)} free of ${formatBytes(memory.totalBytes)} RAM",
+                uiText(R.string.tools_health_ram, formatBytes(memory.availBytes), formatBytes(memory.totalBytes)).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
             Text(
-                "${formatBytes(storage.freeBytes)} free of ${formatBytes(storage.totalBytes)} storage",
+                uiText(R.string.tools_health_storage, formatBytes(storage.freeBytes), formatBytes(storage.totalBytes)).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
             Text(
                 when (helperRunning) {
-                    true -> "Helper: Running"
-                    false -> "Helper: Not running"
-                    null -> "Helper: …"
+                    true -> stringResource(R.string.tools_health_helper_running)
+                    false -> stringResource(R.string.tools_health_helper_not_running)
+                    null -> stringResource(R.string.tools_health_helper_checking)
                 },
                 style = SsType.Body,
                 color = SsColors.TextBody,
