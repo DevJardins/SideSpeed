@@ -3,6 +3,10 @@ about_check_failed	Couldn\\'t reach GitHub. Try again later.
 about_check_for_updates	Check for updates
 about_checking	Checking…
 about_kofi_qr_cd	QR code for %1$s
+about_language	Language
+about_language_not_complete	Not complete in this version. Showing English for now.
+about_language_same_as_device	Same as device
+about_language_selected	✓ %1$s
 about_made_by	Made with ♥ by DevJardins
 about_scan_phone	Scan with your phone.
 about_support_kofi	Support SideSpeed on Ko-fi

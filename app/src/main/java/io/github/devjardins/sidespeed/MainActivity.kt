@@ -18,6 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
@@ -40,6 +42,10 @@ import io.github.devjardins.sidespeed.updates.updateFor
 import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
+import io.github.devjardins.sidespeed.ui.about.LanguageScreen
+import io.github.devjardins.sidespeed.l10n.ShippedLanguages
+import io.github.devjardins.sidespeed.l10n.languageOptions
+import io.github.devjardins.sidespeed.l10n.nativeLanguageName
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
 import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.AutoOptimizeScreen
@@ -154,6 +160,10 @@ class MainActivity : ComponentActivity() {
                 var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showTools by rememberSaveable { mutableStateOf(false) }
                 var showAbout by rememberSaveable { mutableStateOf(false) }
+                var showLanguage by rememberSaveable { mutableStateOf(false) }
+                // Set when the Language screen closes, so About focuses its Language row on return.
+                var focusLanguageRow by rememberSaveable { mutableStateOf(false) }
+                val languageRowFocus = remember { FocusRequester() }
                 var showMyApps by rememberSaveable { mutableStateOf(false) }
                 // Last Home tile opened: Home leaves composition on these screens,
                 // so this survives and decides which tile takes focus on return.
@@ -277,12 +287,42 @@ class MainActivity : ComponentActivity() {
                         },
                         onBack = { showTools = false },
                     )
+                    showLanguage && app == null -> {
+                        // Debug builds list the pseudolocales too; release builds never do.
+                        val shipped = remember {
+                            if (BuildConfig.DEBUG) ShippedLanguages.TAGS + listOf("en-XA", "ar-XB")
+                            else ShippedLanguages.TAGS
+                        }
+                        val chosen = remember { AppLanguage.chosen(this@MainActivity) }
+                        val deviceLabel = stringResource(R.string.about_language_same_as_device)
+                        val options = remember(shipped, chosen) {
+                            languageOptions(shipped, chosen, ::nativeLanguageName)
+                        }
+                        LanguageScreen(
+                            deviceLabel = deviceLabel,
+                            options = options,
+                            onChoose = { tag ->
+                                // Close the list before choosing: the activity may recreate,
+                                // and the list must not reopen after it.
+                                showLanguage = false
+                                focusLanguageRow = true
+                                AppLanguage.choose(this@MainActivity, tag)
+                            },
+                            onBack = {
+                                showLanguage = false
+                                focusLanguageRow = true
+                            },
+                        )
+                    }
                     showAbout && app == null -> AboutScreen(
                         versionName = currentVersion,
                         viewModel = aboutVm,
                         selfUpdater = (application as SideSpeedApp).container.selfUpdater,
                         busy = (application as SideSpeedApp).container.updateBusy,
                         onBack = { showAbout = false },
+                        onOpenLanguage = { showLanguage = true },
+                        languageRowFocus = languageRowFocus,
+                        focusLanguageRow = focusLanguageRow,
                     )
                     showAutoOptimize && app == null -> AutoOptimizeScreen(
                         mode = (application as SideSpeedApp).container.maintenanceStore.mode,
@@ -350,6 +390,7 @@ class MainActivity : ComponentActivity() {
                         onOpenAbout = {
                             lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.ABOUT.name
                             showAbout = true
+                            focusLanguageRow = false
                         },
                         banner = {
                             val container = (application as SideSpeedApp).container

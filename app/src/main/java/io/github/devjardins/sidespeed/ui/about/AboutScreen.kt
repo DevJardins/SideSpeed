@@ -59,15 +59,20 @@ fun AboutScreen(
     selfUpdater: SelfUpdater,
     busy: Flow<Boolean>,
     onBack: () -> Unit,
+    onOpenLanguage: () -> Unit,
+    languageRowFocus: FocusRequester,
+    focusLanguageRow: Boolean,
 ) {
     val ui by viewModel.state.collectAsState()
     val promptTag = ui.promptTag
     // Back closes the prompt first; only with no prompt does it leave the screen.
     BackHandler(enabled = promptTag == null, onBack = onBack)
     BackHandler(enabled = promptTag != null) { viewModel.dismissPrompt() }
-    // Give the D-pad a starting point: the Back button takes focus when the screen opens.
+    // Give the D-pad a starting point: the Back button takes focus when the screen opens,
+    // unless returning from the Language screen, which focuses the Language row instead.
     val backFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+    LaunchedEffect(Unit) { if (!focusLanguageRow) runCatching { backFocus.requestFocus() } }
+    LaunchedEffect(focusLanguageRow) { if (focusLanguageRow) runCatching { languageRowFocus.requestFocus() } }
     // Focus state via the interaction source (the same channel tv-material buttons
     // use), driving the QR frame's ring below.
     val qrInteraction = remember { MutableInteractionSource() }
@@ -106,6 +111,11 @@ fun AboutScreen(
                         stringResource(R.string.about_check_for_updates),
                         onClick = { viewModel.checkNow() },
                         enabled = !ui.checking,
+                    )
+                    SsButton(
+                        stringResource(R.string.about_language),
+                        onClick = onOpenLanguage,
+                        modifier = Modifier.focusRequester(languageRowFocus),
                     )
                     // A newer release opens the prompt below instead of a line here;
                     // UpToDate/Failed keep their inline text.
