@@ -2,31 +2,62 @@
 
 <img src="docs/brand/sidespeed-logo-2026.png" alt="SideSpeed logo" width="320">
 
-Sideloaded apps on Android TV and Fire TV skip the compiling that store installs get, so they start and run slower. SideSpeed compiles them to native code ahead of time and keeps them compiled after updates.
+<!-- discord-guide:start -->
+SideSpeed makes sideloaded apps on Android TV and Fire TV start and run faster. Store installs get compiled to native code; sideloaded apps don't. SideSpeed compiles them and keeps them compiled after updates. It is free.
 
 Website and downloads: **[sidespeed.app](https://sidespeed.app)**
 
 ## Install on the TV
 
-The quickest way: install **Downloader** on the TV (from the Amazon Appstore or Google Play), open it and enter the code **3503400**. It downloads the latest SideSpeed APK; choose **Install** (if the TV asks, allow Downloader to install unknown apps). SideSpeed appears on the home screen.
+1. On the TV, open **Downloader** and enter the code **3503400**. Or open **sidespeed.app/tv** in the TV's browser.
+2. Choose **Install**. If the TV asks, allow Downloader to install unknown apps.
+3. SideSpeed appears on the home screen.
 
-Or open **sidespeed.app/tv** in the TV's browser, which downloads the same APK. You can also download `SideSpeed.apk` from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
+Fire TV Sticks that run Vega OS can't run Android apps, so SideSpeed can't run on them.
+
+## Set it up
+
+SideSpeed needs a small helper to do its work. How you start it depends on your TV.
+
+### Google TV and Android TV
+
+1. Turn on **Wireless debugging**: Settings > System > Developer options. ADB debugging must stay on, and anyone on your network could ask the TV for access. Only do this on a network you trust.
+2. Open SideSpeed and press **I understand**.
+3. When the TV asks, tick **Always allow**, then press **Allow**.
+4. SideSpeed starts its helper and shows your apps. You're done.
+
+If SideSpeed can't connect, choose **Pair with a code instead** and enter the code and port from **Pair device with pairing code**.
+
+### Fire TV
+
+1. Turn on **ADB debugging**: Settings > My Fire TV > Developer options. ADB debugging must stay on, and anyone on your network could ask the TV for access. Only do this on a network you trust.
+2. Open SideSpeed and press **I understand**.
+3. Fire TV can't start the helper by itself, so SideSpeed Companion starts it from your phone or computer. Get it at **[sidespeed.app/phone](https://sidespeed.app/phone)** or **[sidespeed.app](https://sidespeed.app)**.
+4. In the Companion, press **Trust this network**, then **Add a TV** and pick your Fire TV. Fire TV can't use an encrypted connection, so the Companion asks first: anyone on your network could see or change the commands it sends. Tick **I understand. Connect the older way.** and pick your Fire TV again. When the TV asks, tick **Always allow**, then press **Allow**.
+5. The Companion starts the helper. Open SideSpeed again and it shows your apps.
+<!-- discord-guide:end -->
+
+## Using it
+
+- **My Apps:** tick an app to keep it compiled after every update.
+- **Auto-optimize:** keep all your apps, or only sideloaded ones, compiled without ticking each one.
+- **Updates:** when a new version of SideSpeed is out, press **Update now** on the Home screen.
+- **If the helper stops** (after a restart, or after updating SideSpeed): on Google TV, open SideSpeed; on Fire TV, open the Companion. The onn turns Wireless debugging off after a reboot, so turn it back on first.
+
+The rest of this page is the detail: every feature, how it works, and the full caveats.
+
+## More about installing and updating
+
+Downloader is in the Amazon Appstore and on Google Play. The code **3503400** and **sidespeed.app/tv** both download the latest `SideSpeed.apk`. You can also download it from the [Releases page](https://github.com/DevJardins/SideSpeed/releases) and sideload it with a file-transfer app (for example LocalSend) or with `adb install`. Release APKs are signed with the project key.
 
 To update, press **Update now** on the update notice on the Home screen (SideSpeed 0.5.0 or later). SideSpeed downloads the new APK from this repository's releases, checks its checksum, package name, signing key and version, and installs it. With the helper running it installs silently and SideSpeed reopens; without it, Android asks you to confirm (the first time, allow SideSpeed to install unknown apps). SideSpeed checks for updates every 6 hours (or right away from **About** → **Check for updates**, 0.5.2 or later; from 0.5.4 it offers **Update now** straight away) and never installs anything until you press the button. You can also install the new APK over the old one yourself, for example with Downloader. Your settings are kept either way. On Fire TV and other Android 9 boxes, Update now works from 0.5.4; on 0.5.2 or 0.5.3, update once with Downloader. Updating stops the helper: on Google TV, just open SideSpeed; on Fire TV, the Companion starts it again.
 
-Fire TV Sticks that run Vega OS (instead of Fire OS) are not supported: they cannot run Android apps.
+## More about setup
 
-## Setup
+The helper runs as the shell user, which is what lets SideSpeed ask Android to compile other apps. It starts from the SideSpeed APK itself; nothing else is installed on the TV.
 
-SideSpeed needs a helper running as the shell user. It starts from the APK itself and the app guides you through it. First it shows a warning you must accept with **I understand**.
-
-- **Fire TV / Fire OS:** turn on ADB debugging (Settings > My Fire TV > Developer options). Then start the helper from SideSpeed Companion on your phone or computer (see below), or from a PC with **Other ways to run it**.
-- **Google TV / Android TV (e.g. onn 4K Pro):**
-  1. Turn on Wireless debugging (Settings > System > Developer options).
-  2. Open SideSpeed. When the TV asks, tick **Always allow**, then **Allow**.
-  3. SideSpeed starts its helper by itself and shows your apps. No PC and no pairing code are needed.
-
-  If your TV does not accept direct connections, choose **Pair with a code instead** and enter the code and port from "Pair device with pairing code". Starting the helper from a PC also works.
+- **Google TV / Android TV** (tested on the onn 4K Pro): SideSpeed connects to the TV's own Wireless debugging, so no PC and no pairing code are needed. Pairing with a code is there for TVs that don't accept direct connections.
+- **Fire TV:** Fire OS doesn't let an app start the helper by itself, so SideSpeed Companion does it over the network. You can also start it from a PC: in SideSpeed, choose **Other ways to run it**.
 
 ## Keeping apps optimized
 
