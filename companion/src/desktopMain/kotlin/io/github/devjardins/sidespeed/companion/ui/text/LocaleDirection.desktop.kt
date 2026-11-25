@@ -14,3 +14,6 @@ fun layoutDirectionForLocale(locale: Locale): LayoutDirection {
 }
 
 actual fun isDefaultLocaleRtl(): Boolean = layoutDirectionForLocale(Locale.getDefault()) == LayoutDirection.Rtl
+
+actual fun layoutDirectionForTag(tag: String): LayoutDirection =
+    layoutDirectionForLocale(Locale.forLanguageTag(tag))

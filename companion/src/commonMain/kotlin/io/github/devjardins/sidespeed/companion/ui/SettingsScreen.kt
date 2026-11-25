@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.devjardins.sidespeed.companion.l10n.LanguageController
 import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.about_title
 import io.github.devjardins.sidespeed.companion.resources.common_cancel
@@ -29,6 +30,7 @@ import io.github.devjardins.sidespeed.companion.resources.settings_add_trusted_n
 import io.github.devjardins.sidespeed.companion.resources.settings_check_every
 import io.github.devjardins.sidespeed.companion.resources.settings_interval_hours
 import io.github.devjardins.sidespeed.companion.resources.settings_interval_minutes
+import io.github.devjardins.sidespeed.companion.resources.settings_language
 import io.github.devjardins.sidespeed.companion.resources.settings_notifications
 import io.github.devjardins.sidespeed.companion.resources.settings_notify_attention
 import io.github.devjardins.sidespeed.companion.resources.settings_rename
@@ -56,8 +58,21 @@ fun SettingsScreen(
     onRemoveTailnet: (String) -> Unit,
     onAbout: () -> Unit,
     onBack: () -> Unit,
+    language: LanguageController? = null,
+    onLanguage: () -> Unit = {},
+    focusLanguage: Boolean = false,
+    onConsumeLanguageFocus: () -> Unit = {},
 ) {
     val s = state.settings
+    // Coming back from the Language screen puts focus on its button, so keyboard
+    // and D-pad input continue where the user left off.
+    val langFocus = remember { FocusRequester() }
+    LaunchedEffect(focusLanguage) {
+        if (focusLanguage) {
+            runCatching { langFocus.requestFocus() }
+            onConsumeLanguageFocus()
+        }
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -138,6 +153,13 @@ fun SettingsScreen(
                     onSettings(s.copy(startAtLogin = it))
                 }
             }
+        }
+        if (language != null) {
+            SsButton(
+                stringResource(Res.string.settings_language),
+                onLanguage,
+                modifier = Modifier.focusRequester(langFocus),
+            )
         }
         SsButton(stringResource(Res.string.about_title), onAbout, modifier = Modifier.padding(bottom = 8.dp))
     }

@@ -2,7 +2,11 @@ package io.github.devjardins.sidespeed.companion.ui.text
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.LayoutDirection
+import io.github.devjardins.sidespeed.companion.l10n.effectiveLanguageTag
+import io.github.devjardins.sidespeed.companion.l10n.formatDecimal
+import io.github.devjardins.sidespeed.companion.l10n.formatInteger
 import org.jetbrains.compose.resources.PluralStringResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getPluralString
@@ -18,6 +22,17 @@ sealed interface UiText {
     data class Ltr(val value: String) : UiText
     /** First-strong isolate for labels people type (TV names, network names). */
     data class Fsi(val value: String) : UiText
+    /** A number with [digits] decimals, written in the current locale's digits. */
+    data class Decimal(val value: Double, val digits: Int) : UiText
+}
+
+/** Numbers in sentence order, before substitution: whole numbers group-free, one-decimal fallback for raw doubles. */
+private fun formatNumberArg(arg: Any, localeTag: String): Any = when (arg) {
+    is Int -> formatInteger(arg.toLong(), localeTag)
+    is Long -> formatInteger(arg, localeTag)
+    is Double -> formatDecimal(arg, 1, localeTag)
+    is UiText.Decimal -> formatDecimal(arg.value, arg.digits, localeTag)
+    else -> arg
 }
 
 fun uiText(id: StringResource, vararg args: Any): UiText = UiText.Res(id, args.toList())
@@ -47,53 +62,65 @@ fun UiText.resolve(lookup: StringLookup, rtl: Boolean): String = when (this) {
     is UiText.Raw -> text
     is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
     is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
+    is UiText.Decimal -> formatDecimal(value, digits, "en-US")
 }
 
 @Composable
-private fun resolveComposableArgs(args: List<Any>, rtl: Boolean): Array<Any> =
+private fun resolveComposableArgs(args: List<Any>, rtl: Boolean, localeTag: String): Array<Any> =
     Array(args.size) { index ->
         when (val arg = args[index]) {
-            is UiText -> arg.resolve(rtl)
-            else -> arg
+            is UiText -> arg.resolve(rtl, localeTag)
+            else -> formatNumberArg(arg, localeTag)
         }
     }
 
 @Composable
-private fun UiText.resolve(rtl: Boolean): String = when (this) {
+private fun UiText.resolve(rtl: Boolean, localeTag: String): String = when (this) {
     is UiText.Res -> {
-        val resolved = resolveComposableArgs(args, rtl)
+        val resolved = resolveComposableArgs(args, rtl, localeTag)
         if (resolved.isEmpty()) stringResource(id) else stringResource(id, *resolved)
     }
     is UiText.Plural -> {
-        val resolved = resolveComposableArgs(args, rtl)
+        val resolved = resolveComposableArgs(args, rtl, localeTag)
         if (resolved.isEmpty()) pluralStringResource(id, count) else pluralStringResource(id, count, *resolved)
     }
     is UiText.Raw -> text
     is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
     is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
+    is UiText.Decimal -> formatDecimal(value, digits, localeTag)
 }
 
 @Composable
-fun UiText.resolve(): String = resolve(LocalLayoutDirection.current == LayoutDirection.Rtl)
+fun UiText.resolve(): String {
+    // The root provides the effective direction; numbers follow the effective tag,
+    // so a requested language that never shipped still formats in ASCII English.
+    val requested = Locale.current.toLanguageTag()
+    return resolve(LocalLayoutDirection.current == LayoutDirection.Rtl, effectiveLanguageTag(requested))
+}
 
-private suspend fun resolveSuspendArgs(args: List<Any>, rtl: Boolean): Array<Any> =
+private suspend fun resolveSuspendArgs(args: List<Any>, rtl: Boolean, localeTag: String): Array<Any> =
     Array(args.size) { index ->
         when (val arg = args[index]) {
-            is UiText -> arg.resolveSuspend(rtl)
-            else -> arg
+            is UiText -> arg.resolveSuspend(rtl, localeTag)
+            else -> formatNumberArg(arg, localeTag)
         }
     }
 
-suspend fun UiText.resolveSuspend(rtl: Boolean = isDefaultLocaleRtl()): String = when (this) {
+private suspend fun UiText.resolveSuspend(rtl: Boolean, localeTag: String): String = when (this) {
     is UiText.Res -> {
-        val resolved = resolveSuspendArgs(args, rtl)
+        val resolved = resolveSuspendArgs(args, rtl, localeTag)
         if (resolved.isEmpty()) getString(id) else getString(id, *resolved)
     }
     is UiText.Plural -> {
-        val resolved = resolveSuspendArgs(args, rtl)
+        val resolved = resolveSuspendArgs(args, rtl, localeTag)
         if (resolved.isEmpty()) getPluralString(id, count) else getPluralString(id, count, *resolved)
     }
     is UiText.Raw -> text
     is UiText.Ltr -> isolated(rtl, "\u2066", "\u2069", value)
     is UiText.Fsi -> isolated(rtl, "\u2068", "\u2069", value)
+    is UiText.Decimal -> formatDecimal(value, digits, localeTag)
 }
+
+suspend fun UiText.resolveSuspend(
+    rtl: Boolean = layoutDirectionForTag(effectiveLanguageTag()) == LayoutDirection.Rtl,
+): String = resolveSuspend(rtl, effectiveLanguageTag())

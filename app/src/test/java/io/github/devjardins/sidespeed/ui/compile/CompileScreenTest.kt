@@ -43,7 +43,7 @@ class CompileScreenTest {
             updateSummaryText(12 * 1_048_576L, url).english(),
         )
         assertEquals(
-            "Downloads \u206612\u2069 MB from \u2066f-droid.org\u2069. SideSpeed checks it is a real update of the app you have, then installs it. Your data in the app stays.",
+            "Downloads 12 MB from \u2066f-droid.org\u2069. SideSpeed checks it is a real update of the app you have, then installs it. Your data in the app stays.",
             updateSummaryText(12 * 1_048_576L, url).resolve(EnglishStrings, rtl = true),
         )
     }

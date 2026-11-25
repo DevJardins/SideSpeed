@@ -101,12 +101,15 @@ compose.desktop {
             licenseFile.set(rootProject.file("LICENSE"))
             // Kadb and Bouncy Castle JSSE need these JDK modules in the trimmed runtime.
             // jdeps on bctls-jdk18on 1.85 requires java.logging. bcprov also needs java.naming and java.sql.
+            // jdk.localedata holds every locale but English: without it, language names in the picker
+            // and numbers in sentences fall back to English in the packaged app.
             modules(
                 "java.instrument",
                 "java.logging",
                 "java.naming",
                 "java.sql",
                 "jdk.crypto.ec",
+                "jdk.localedata",
                 "jdk.unsupported",
             )
             macOS {

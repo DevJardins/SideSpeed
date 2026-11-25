@@ -599,6 +599,14 @@
     <string name="about_version">Version %1$s</string>
     <!-- Button on About triggering a manual update check. -->
     <string name="about_check_for_updates">Check for updates</string>
+    <!-- Button on About opening the language choice screen; also the screen title. -->
+    <string name="about_language">Language</string>
+    <!-- Language choice meaning the app follows the TV's own language. -->
+    <string name="about_language_same_as_device">Same as device</string>
+    <!-- Note shown under a language that is not fully translated yet. -->
+    <string name="about_language_not_complete">Not complete in this version. Showing English for now.</string>
+    <!-- Button label for the currently chosen language. %1$s is the language name. -->
+    <string name="about_language_selected">✓ %1$s</string>
     <!-- Status line on About while checking GitHub for a newer release. -->
     <string name="about_checking">Checking…</string>
     <!-- Status line on About when no newer release is available. -->

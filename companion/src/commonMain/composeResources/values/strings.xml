@@ -276,6 +276,14 @@
     </plurals>
     <!-- Desktop Settings switch row label launching SideSpeed Companion automatically at login. -->
     <string name="settings_start_at_login">Start when I log in</string>
+    <!-- Button in Settings opening the Language screen. -->
+    <string name="settings_language">Language</string>
+    <!-- First row on the Language screen: follow the device language. -->
+    <string name="settings_language_same_as_device">Same as device</string>
+    <!-- Note under a chosen language that is not finished yet: English shows instead. -->
+    <string name="settings_language_not_complete">Not complete in this version. Showing English for now.</string>
+    <!-- Selected row on the Language screen. %1$s is the language's own name, like Français. -->
+    <string name="settings_language_selected">✓ %1$s</string>
     <!-- Error when trying to trust a network while disconnected. -->
     <string name="settings_no_network_to_trust">No network to trust</string>
     <!-- Error when trying to trust Tailscale while Tailscale is off or disconnected. Keep: Tailscale -->

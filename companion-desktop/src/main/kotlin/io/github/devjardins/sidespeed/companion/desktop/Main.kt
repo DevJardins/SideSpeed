@@ -4,6 +4,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,10 +57,12 @@ import io.github.devjardins.sidespeed.companion.resources.tray_pause
 import io.github.devjardins.sidespeed.companion.resources.tray_quit
 import io.github.devjardins.sidespeed.companion.resources.tray_resume
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
+import io.github.devjardins.sidespeed.companion.ui.rememberCompanionNav
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
-import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForLocale
+import io.github.devjardins.sidespeed.companion.l10n.effectiveLanguageTag
+import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForTag
 import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +70,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import java.io.File
@@ -85,6 +89,8 @@ private fun singleInstanceLock(dir: File): RandomAccessFile? {
 }
 
 fun main() {
+    // The device language, captured before anything else so choosing null can put it back.
+    val systemLocale = Locale.getDefault()
     val appData = DesktopDirs.appData()
     val lock = singleInstanceLock(appData)
     if (lock == null) {
@@ -95,6 +101,11 @@ fun main() {
 
     // The store keeps its own subdirectory; the app-data folder itself is never re-permissioned.
     val store = JsonFileCompanionStore(File(appData, "store"))
+    // The saved language applies before any window or tray text is built.
+    val savedLanguage: String? = runBlocking { store.settings().language }
+    if (savedLanguage != null) {
+        Locale.setDefault(Locale.forLanguageTag(savedLanguage))
+    }
     val fingerprints = DesktopFingerprintSource()
     val connector = KadbTvConnector(DesktopDirs.keyDir())
     val identity = TvIdentity.forKeys(DesktopDirs.keyDir())
@@ -153,6 +164,9 @@ fun main() {
         identity = identity,
     )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
+    val languageController = DesktopLanguageController(systemLocale, savedLanguage) { tag ->
+        vm.updateSettings(vm.state.value.settings.copy(language = tag))
+    }
 
     application {
         val tray = rememberTrayState()
@@ -161,6 +175,10 @@ fun main() {
         var windowVisible by remember { mutableStateOf(true) }
         var paused by remember { mutableStateOf(false) }
         val state by vm.state.collectAsState()
+        // Every language choice bumps this, rebuilding the tray and window content below.
+        val epoch by languageController.epoch.collectAsState()
+        // Held outside key(epoch) so a language switch keeps the page the user is on.
+        val nav = rememberCompanionNav()
 
         suspend fun runAndNotify(trigger: Trigger) {
             val report = upkeep.runOnce(trigger)
@@ -224,22 +242,24 @@ fun main() {
             if (!ok && want) vm.updateSettings(state.settings.copy(startAtLogin = false))
         }
 
-        Tray(
-            icon = icon,
-            tooltip = stringResource(Res.string.app_name),
-            state = tray,
-            onAction = { windowVisible = true },
-            menu = {
-                Item(stringResource(Res.string.home_restart_now), onClick = { vm.restartNow() })
-                Item(stringResource(Res.string.tray_open), onClick = { windowVisible = true })
-                Item(
-                    stringResource(if (paused) Res.string.tray_resume else Res.string.tray_pause),
-                    onClick = { paused = !paused },
-                )
-                Separator()
-                Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
-            },
-        )
+        key(epoch) {
+            Tray(
+                icon = icon,
+                tooltip = stringResource(Res.string.app_name),
+                state = tray,
+                onAction = { windowVisible = true },
+                menu = {
+                    Item(stringResource(Res.string.home_restart_now), onClick = { vm.restartNow() })
+                    Item(stringResource(Res.string.tray_open), onClick = { windowVisible = true })
+                    Item(
+                        stringResource(if (paused) Res.string.tray_resume else Res.string.tray_pause),
+                        onClick = { paused = !paused },
+                    )
+                    Separator()
+                    Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
+                },
+            )
+        }
         // Closing the window keeps the app in the tray.
         Window(
             onCloseRequest = { windowVisible = false },
@@ -250,21 +270,27 @@ fun main() {
             resizable = true,
         ) {
             val updateState by desktopUpdater.state.collectAsState()
-            CompositionLocalProvider(
-                LocalLayoutDirection provides layoutDirectionForLocale(Locale.getDefault()),
-            ) {
-                CompanionApp(
-                    vm,
-                    desktop = true,
-                    aboutVersion = CompanionVersion.APP_VERSION,
-                    updateState = updateState,
-                    onCheckUpdates = desktopUpdater::checkNow,
-                    updateAction = {
-                        if (updateState is CompanionUpdateState.Available) {
-                            SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
-                        }
-                    },
-                )
+            key(epoch) {
+                CompositionLocalProvider(
+                    // Layout follows the language actually shown, so English text stays
+                    // left to right when the requested language never shipped.
+                    LocalLayoutDirection provides layoutDirectionForTag(effectiveLanguageTag()),
+                ) {
+                    CompanionApp(
+                        vm,
+                        desktop = true,
+                        nav = nav,
+                        aboutVersion = CompanionVersion.APP_VERSION,
+                        updateState = updateState,
+                        onCheckUpdates = desktopUpdater::checkNow,
+                        updateAction = {
+                            if (updateState is CompanionUpdateState.Available) {
+                                SsButton(stringResource(Res.string.about_download), onClick = desktopUpdater::openDownload)
+                            }
+                        },
+                        language = languageController,
+                    )
+                }
             }
         }
     }

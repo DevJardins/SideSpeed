@@ -1,0 +1,168 @@
+# English snapshot: key<TAB>text; plurals as key#one, key#other. Values use strings.xml raw text (not runtime-unescaped). Backslashes, TAB, and newline in values are written as \\, \t, and \n.
+about_available	SideSpeed Companion %1$s is available.
+about_check_failed	Couldn't reach GitHub. Try again later.
+about_check_updates	Check for updates
+about_checking	Checking…
+about_download	Download
+about_downloading	Downloading… %1$d%
+about_installing	Installing…
+about_licence_text	SideSpeed Companion · GPL-3.0\\n\\nThe Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the Creative Commons 3.0 Attribution License.
+about_title	About and licences
+about_up_to_date	You have the latest version.
+about_update_now	Update now
+about_version	Version %1$s
+activity_all_caught_up	All caught up
+activity_compile_failed	Couldn't compile %1$s
+activity_interrupted	%1$s was interrupted
+activity_interrupted_note	SideSpeed retries it when the helper is back.
+activity_last_day_ago#one	Last: %1$s · %2$d d ago
+activity_last_day_ago#other	Last: %1$s · %2$d d ago
+activity_last_hour_ago#one	Last: %1$s · %2$d h ago
+activity_last_hour_ago#other	Last: %1$s · %2$d h ago
+activity_last_just_now	Last: %1$s · just now
+activity_last_min_ago#one	Last: %1$s · %2$d min ago
+activity_last_min_ago#other	Last: %1$s · %2$d min ago
+activity_more_waiting#one	%1$d more waiting
+activity_more_waiting#other	%1$d more waiting
+activity_needs_update	Update SideSpeed on the TV to see live compiles.
+activity_self_not_optimized	Not optimized yet
+activity_self_optimized	Optimized
+activity_self_optimizing	Optimizing…
+activity_self_pending_note	It optimizes itself when you leave it on the TV.
+activity_waiting_helper	Waiting for the helper
+add_allow_step	Tick Always allow on your TV
+add_bad_address	Enter the TV's address, like %1$s
+add_bad_range	Enter a range on this network, like %1$s
+add_cant_scan	This network can't be scanned, so type the TV's address instead
+add_default_tv_name	TV at %1$s
+add_find_tvs	Find TVs
+add_host_adding	%1$s  Adding…
+add_keep_scanning	Keep scanning
+add_no_serial	That device didn't identify itself, so it can't be added
+add_no_tvs_found	No TVs found
+add_not_trusted_add	Join a Trusted Network to add a TV
+add_not_trusted_error	Join a Trusted Network to find TVs
+add_outside_network	That isn't a private or Tailscale address
+add_range_label	Range to scan (optional)
+add_scan_progress#one	Scanned %1$d of %2$d
+add_scan_progress#other	Scanned %1$d of %2$d
+add_shared_peer	That device is shared in from another tailnet, so it can't be added
+add_stop	Stop
+add_tv_check_not_saved	SideSpeed couldn't save its check on this TV, so it wasn't added.
+add_unreachable	Couldn't reach that address on this network
+common_add	Add
+common_back	Back
+common_cancel	Cancel
+common_continue	Continue
+common_remove	Remove
+common_save	Save
+common_try_again	Try again
+diag_found	Tap a TV above to add it, or type the address shown in SideSpeed on the TV
+diag_no_adb_on_live_hosts	Devices answered on this network, but none has ADB open. Turn on ADB or Network debugging on the TV, accept the prompt, then scan again, or type the address shown in SideSpeed on the TV
+diag_nothing_answered	Nothing answered on this network. Check the TV is on and on the same Wi-Fi, then scan again, or type the address shown in SideSpeed on the TV
+diag_os_blocked	The system blocked the scan: allow local-network access for the companion, then scan again, or type the address shown in SideSpeed on the TV
+diag_partial	The scan covered only part of the network. Keep scanning to cover the rest, or type the address shown in SideSpeed on the TV
+diag_tls_only	A TV answered over an encrypted connection. Pair it from the list, or type the address shown in SideSpeed on the TV
+diag_vpn_active	A VPN is active, so the scan can't see your home network. Disconnect the VPN, then scan again, or type the address shown in SideSpeed on the TV
+first_run_body	SideSpeed Companion only works on networks you choose. It never connects or scans anywhere else.
+first_run_not_now	Not now
+first_run_router	Router %1$s · %2$s
+first_run_tailnet	Tailscale network %1$s. Anyone who administers it could reach a TV added through it.
+first_run_title	Choose your Trusted Network
+first_run_trust	Trust this network
+first_run_use_tailscale	Use Tailscale
+home_add_tv	Add a TV
+home_checked_min_ago#one	Checked %1$d min ago
+home_checked_min_ago#other	Checked %1$d min ago
+home_confirm_button	Confirm
+home_confirm_tv	Confirm this is your TV before SideSpeed uses it.
+home_different_device	A different device answered at that address.
+home_empty_body	Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.
+home_empty_title	No TVs yet
+home_kept_alive_while_on	Kept alive while on %1$s
+home_last_seen	Last seen: %1$s
+home_not_checked_here	Not checked: not on its network
+home_not_contacted	SideSpeed isn't checking this TV until you choose.
+home_not_fire_tv_note	Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. On Google TV the helper is optional; Home shows what's compiling.
+home_not_trusted	Not on a Trusted Network
+home_older_copy	This copy of SideSpeed Companion is older than the one that saved your TVs. Changes won't be saved; open the newest copy instead.
+home_pair_offer	This TV can use an encrypted connection. Pair it to keep checking it.
+home_remove_confirm	Remove %1$s?
+home_remove_tv	Remove TV
+home_restart_now	Restart now
+home_restarted	Restarted ✓
+home_restarting	Restarting…
+home_status_check_failed	Stopped: check failed
+home_status_needs_attention	Not checking
+home_status_not_installed	SideSpeed isn't installed
+home_status_not_running	Not running
+home_status_offline	Offline
+home_status_running	Helper running
+home_status_start_failed	Couldn't start the helper
+home_status_unknown	Not checked yet
+home_status_waiting_for_allow	Waiting for you to allow
+home_status_wrong_device	Different device at this address
+home_trust_banner	Trusted Network: %1$s ✓
+home_trust_tailnet_banner	Trusted tailnet: %1$s ✓
+home_tv_unproven	This TV didn't prove it's the one you added, so SideSpeed stopped talking to it. If the TV was reset, remove it and add it again.
+home_type_the_port	Type the port
+home_waiting_for_you	Waiting for you
+home_wireless_off	Turn wireless debugging back on to keep this TV up to date.
+network_default_name	Trusted Network %1$d
+notif_restarted	SideSpeed restarted on %1$s
+pair_bad_code	Enter the 6-digit pairing code from the TV.
+pair_bad_connect_port	Enter the port shown on the TV's Wireless debugging screen.
+pair_bad_host	That address is not on a private network.
+pair_bad_port	Enter the port shown next to the pairing code.
+pair_button	Pair
+pair_classic_ack	This TV can't use an encrypted connection. SideSpeed can still connect the older way. Anyone on your network could see or change the commands it sends.
+pair_classic_ack_check	I understand. Connect the older way.
+pair_code_label	Pairing code
+pair_connect_port_hint	Type the port shown on the TV's Wireless debugging screen (after the colon in the IP address).
+pair_failed	Pairing did not finish. Check the code and the port, then try again.
+pair_port_label	Port
+pair_steps	On the TV, open Settings → Developer options → Wireless debugging → Pair device with pairing code.
+pair_unreachable	The TV could not be reached on that port.
+pair_wrong_code	That pairing code was not accepted. Check the code on the TV and try again.
+settings_add_trusted_network	Add as Trusted Network
+settings_check_every	Check every
+settings_interval_hours#one	%1$d hour
+settings_interval_hours#other	%1$d hours
+settings_interval_minutes#one	%1$d minute
+settings_interval_minutes#other	%1$d minutes
+settings_language	Language
+settings_language_not_complete	Not complete in this version. Showing English for now.
+settings_language_same_as_device	Same as device
+settings_language_selected	✓ %1$s
+settings_no_network_to_trust	No network to trust
+settings_no_overlay	Tailscale isn't running with a network connection, so there is no tailnet to trust
+settings_notifications	Notifications
+settings_notify_attention	Notify me when a TV needs attention
+settings_rename	Rename
+settings_start_at_login	Start when I log in
+settings_tailnet_row	%1$s · %2$s
+settings_tailnets	Tailnets
+settings_tailnets_note	TVs you add through Tailscale are kept alive wherever Tailscale is connected. Anyone who administers the tailnet can reach them.
+settings_tailscale_disconnected	Tailscale is not connected.
+settings_title	Settings
+settings_trusted_networks	Trusted Networks
+tailnet_default_name	Tailnet %1$d
+tray_open	Open SideSpeed Companion
+tray_pause	Pause checks
+tray_quit	Quit
+tray_resume	Resume checks
+update_allow_install	Allow SideSpeed Companion to install apps, then try again.
+update_apk_unreadable	Could not read the downloaded APK.
+update_cancelled	Update cancelled.
+update_check_failed	Couldn't check for updates. Try again later.
+update_checksum_mismatch	Checksum mismatch.
+update_checksums_download_failed	Could not download the checksums.
+update_download_failed	Download failed.
+update_failed	Update failed.
+update_install_failed	Install failed.
+update_install_failed_detail	Install failed. %1$s
+update_install_timeout	Install didn't finish. Try again.
+update_no_checksum	No checksum found for %1$s.
+update_signer_mismatch	Signer does not match the installed app.
+update_signer_unknown	Signer unknown: refusing the update.
+update_wrong_package	Wrong package: %1$s.
