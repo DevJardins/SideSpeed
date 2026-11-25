@@ -236,6 +236,7 @@ dependencies {
 tasks.withType<Test>().configureEach {
     // ShippedLanguagesTest reads the tags the generator task writes.
     dependsOn(generateShippedLanguages)
+    System.getProperty("sidespeed.updateSnapshot")?.let { systemProperty("sidespeed.updateSnapshot", it) }
     testLogging {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         events("standard_error")

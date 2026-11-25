@@ -202,6 +202,7 @@ configurations.matching { it.isCanBeResolved }.configureEach {
 // ShippedLanguagesTest reads the tags the generator task writes.
 tasks.withType<Test>().configureEach {
     dependsOn(generateShippedLanguages)
+    System.getProperty("sidespeed.updateSnapshot")?.let { systemProperty("sidespeed.updateSnapshot", it) }
 }
 
 // Manual device check (see ManualFireTvCheck): -Psidespeed.tv=<ip>[:port] [-Psidespeed.keyDir=<dir>]

@@ -1,0 +1,343 @@
+# English snapshot: key<TAB>text; plurals as key#one, key#other. Values use strings.xml raw text (not runtime-unescaped). Backslashes, TAB, and newline in values are written as \\, \t, and \n.
+about_check_failed	Couldn\\'t reach GitHub. Try again later.
+about_check_for_updates	Check for updates
+about_checking	Checking…
+about_kofi_qr_cd	QR code for %1$s
+about_made_by	Made with ♥ by DevJardins
+about_scan_phone	Scan with your phone.
+about_support_kofi	Support SideSpeed on Ko-fi
+about_title	About
+about_up_to_date	You have the latest version.
+about_update_available	SideSpeed %1$s is available
+about_update_later	Later
+about_version	Version %1$s
+apps_auto_optimize_button	Auto-optimize: %1$s
+apps_empty	No apps found.
+apps_filter_all	All
+apps_filter_sideloaded	Sideloaded
+apps_loading	Loading apps…
+apps_locked_message	Kept optimized by Auto-optimize (%1$s). Change it on the Auto-optimize screen.
+apps_maintenance_up_to_date	Maintenance: up to date
+apps_maintenance_waiting#one	Maintenance: %1$d waiting
+apps_maintenance_waiting#other	Maintenance: %1$d waiting
+apps_maintenance_waiting_helper	Waiting for the helper
+apps_mode_all_desc	Every app you installed, from a store or not, is compiled to speed and kept there after updates. Preinstalled apps are left alone unless you pick them.
+apps_mode_all_title	All apps
+apps_mode_selected_desc	Only the apps you pick. Open an app and choose “Keep this app optimized” to add it.
+apps_mode_selected_title	Selected apps
+apps_mode_sideloaded_desc	Only apps that did not come from a store are kept optimized. Apps you pick yourself are included too.
+apps_mode_sideloaded_title	Sideloaded only
+apps_pill_checking	Checking…
+apps_pill_not_compiled	Not compiled
+apps_pill_optimized	Optimized
+apps_pill_optimizing	Optimizing…
+apps_pill_retry	Retry
+apps_pill_speed_ok	speed ✓
+apps_pill_speed_profile	speed-profile
+apps_pill_update	Update: %1$s
+apps_pill_waiting	Waiting
+apps_row_compiled	compiled %1$s
+apps_title	My Apps
+common_back	‹ Back
+compile_again	Compile again
+compile_back_to_apps	Back to apps
+compile_check_helper	Check helper
+compile_compiling_elapsed	Compiling… %1$s
+compile_duration_minutes#one	%1$d min %2$s
+compile_duration_minutes#other	%1$d min %2$s
+compile_duration_seconds#one	%1$d s
+compile_duration_seconds#other	%1$d s
+compile_failure_see_log	See the log below for details.
+compile_hide_log	Hide log
+compile_keep_optimized	Keep this app optimized
+compile_kept_optimized	✓ Kept optimized (tap to stop)
+compile_launch_busy_compiling	Compiling…
+compile_launch_busy_resetting	Resetting…
+compile_launch_busy_timing	Timing launch…
+compile_launch_busy_timing_after	Timing launch after…
+compile_launch_busy_timing_again	Timing launch again…
+compile_launch_busy_timing_before	Timing launch before…
+compile_launch_busy_waiting_app	Waiting for SideSpeed to finish optimizing this app…
+compile_launch_busy_waiting_self	Waiting for SideSpeed to finish optimizing itself…
+compile_launch_error_helper_down	Helper not running
+compile_launch_error_helper_outdated	Restart the helper to use this
+compile_launch_error_helper_refused	Helper refused the command
+compile_launch_error_measure	Couldn\\'t measure this app
+compile_launch_error_save	Couldn\\'t save the result
+compile_launch_error_start	Couldn\\'t start the measurement
+compile_launch_error_time	Couldn\\'t time this app
+compile_launch_error_version	Couldn\\'t read this app\\'s version
+compile_launch_error_with_restore	%1$s %2$s
+compile_launch_measure_hint	Opens the app on screen twice. Takes a few minutes for large apps.
+compile_launch_measure_now	Measure now
+compile_launch_not_launchable	This app can\\'t be opened from SideSpeed
+compile_launch_restore_error	The app was left reset; SideSpeed will recompile it.
+compile_launch_result_pair	Launch: %1$s → %2$s (%3$s)
+compile_launch_result_single	Launch: %1$s
+compile_launch_result_stale	%1$s · from an older version
+compile_launch_seconds	%1$s s
+compile_launch_time_before_after	Time the launch before and after
+compile_launch_time_before_after_hint	Opens the app on screen while timing.
+compile_launch_title	Launch time
+compile_launch_verdict_faster	%1$d%% faster
+compile_launch_verdict_same	about the same
+compile_launch_verdict_slower	no faster
+compile_mode_label	Mode
+compile_note	This can take several minutes for large apps (about 3 min on a Fire TV Cube)
+compile_result_failure	Failure
+compile_result_failure_detail	Failure: %1$s
+compile_result_success	Success
+compile_running_note	A compile is running — please wait until it finishes.
+compile_selected	✓ %1$s
+compile_show_log	Show log
+compile_start	Start compile
+compile_success_title	Compiled to %1$s
+compile_success_title_checked	✓ %1$s
+compile_success_took	Took %1$s
+compile_success_took_confirmed	Took %1$s · status confirmed %2$s
+compile_success_took_shows	Took %1$s · status shows %2$s
+compile_update_available	Update available
+compile_update_checking	Checking the download…
+compile_update_confirm	Your TV will ask you to confirm the install.
+compile_update_done	Updated to %1$s.
+compile_update_downloading	Downloading… %1$d%%
+compile_update_elsewhere_running	Another app is updating. Wait for it to finish.
+compile_update_installing	Installing…
+compile_update_now	Update now
+compile_update_qr_cd	QR code for %1$s
+compile_update_scan_or_type	Scan with your phone, or type the link into a browser on this TV.
+compile_update_summary	Downloads %1$s from %2$s. SideSpeed checks it is a real update of the app you have, then installs it. Your data in the app stays.
+compile_update_try_again	Try again
+compile_update_version_unknown	unknown
+extras_ambiguous	More than one list matches this TV.
+extras_card_body	Turn off apps your TV maker added that you don\\'t use. You can turn them back on any time.
+extras_card_open	Open
+extras_confirm_home_off_body	Your TV will keep using %1$s. You can turn it back on with Restore everything.
+extras_confirm_home_off_title	Turn off a home screen app?
+extras_confirm_home_on_body	Your TV may go back to %1$s as its home screen. You can pick your home screen in Tools → Home screen.
+extras_confirm_home_on_title	Turn on a home screen app?
+extras_current_home_fallback	your current home screen
+extras_failed_count#one	Failed %1$d.
+extras_failed_count#other	Failed %1$d.
+extras_list_credit	List from CleanYourTV, %1$s.
+extras_no_list	No list for this TV yet.
+extras_not_my_tv	Not my TV
+extras_outcome_with_failed	%1$s %2$s
+extras_pill_not_installed	Not installed
+extras_pill_off	Off
+extras_pill_on	On
+extras_pill_protected	Protected
+extras_protection_check_failed	Couldn\\'t check which apps are safe to turn off. Try again.
+extras_restore_everything	Restore everything
+extras_row_failed	Failed: %1$s
+extras_row_home_blocked	Choose another home screen first in Tools → Home screen.
+extras_row_home_caption	This is a home screen app.
+extras_row_refused	refused
+extras_source_note	Lists come from the CleanYourTV project.
+extras_suggested_prompt	This list looks like your TV: %1$s. Check the model before turning anything off.
+extras_title	Turn off extras
+extras_turn_off	Turn off
+extras_turn_off_selected	Turn off selected
+extras_turn_on	Turn on
+extras_turn_on_selected	Turn on selected
+extras_turned_back_on#one	Turned back on %1$d.
+extras_turned_back_on#other	Turned back on %1$d.
+extras_turned_off#one	Turned off %1$d.
+extras_turned_off#other	Turned off %1$d.
+extras_turned_on#one	Turned on %1$d.
+extras_turned_on#other	Turned on %1$d.
+extras_use_this_list	Use this list
+home_apps_count#one	%1$d apps
+home_apps_count#other	%1$d apps
+home_auto_up_to_date	up to date
+home_auto_waiting#one	%1$d waiting
+home_auto_waiting#other	%1$d waiting
+home_auto_waiting_helper	waiting for the helper
+home_header_caption	%1$s · %2$s
+home_helper_running	● Helper running
+home_self_optimized	SideSpeed optimized
+home_self_optimizes_on_leave	SideSpeed optimizes itself when you leave
+home_sideloaded_count#one	%1$d sideloaded
+home_sideloaded_count#other	%1$d sideloaded
+home_status_about	Version %1$s
+home_status_auto_optimize	%1$s · %2$s
+home_status_my_apps	%1$s · %2$s
+home_status_tools	Space, animations, extras, home screen
+home_tile_about	About
+home_tile_auto_optimize	Auto-optimize
+home_tile_my_apps	My Apps
+home_tile_tools	Tools
+home_tv_address	This TV: %1$s
+home_updates_count#one	%1$d update
+home_updates_count#other	%1$d updates
+maint_auto_optimize_title	Auto-optimize
+maint_channel_name	Keeping apps optimized
+maint_history_button	History
+maint_history_empty	Nothing has been optimized automatically yet.
+maint_history_failed	Failed: %1$s
+maint_history_optimized	Optimized
+maint_history_title	Auto-optimize history
+maint_job_connection_lost	Connection lost
+maint_job_error	Error
+maint_job_failure	Failure
+maint_job_success	Success
+maint_mode_selected	✓ %1$s
+maint_notif_free_space	Keeping free space above %1$s
+maint_notif_keeping#one	Keeping %1$d app optimized
+maint_notif_keeping#other	Keeping %1$d apps optimized
+maint_notif_optimizing#one	Optimizing apps (%1$d left)
+maint_notif_optimizing#other	Optimizing apps (%1$d left)
+maint_notif_waiting_helper	Waiting for the helper
+maint_notif_watching	Watching for apps to optimize
+setup_checking	Checking…
+setup_fire_os_companion_hint	Open SideSpeed Companion on your phone or computer. It starts the helper for you. Get it from %1$s
+setup_fire_os_stale_helper	The helper is running but out of date (SideSpeed was updated). Restart it from SideSpeed Companion, or use Other ways to run it.
+setup_fire_os_subtitle	SideSpeed checks automatically every few seconds.
+setup_google_tv_subtitle	SideSpeed connects by itself as soon as your TV allows it.
+setup_headline	Allow SideSpeed on this TV
+setup_hide_pairing	Hide pairing
+setup_keypad_clr	Clr
+setup_keypad_del	Del
+setup_lan_warning	ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed\\'s helper until you start it again.
+setup_open_dev_settings	Open developer settings
+setup_other_ways_hide	Hide other ways
+setup_other_ways_show	Other ways to run it
+setup_pair_with_code	Pair with a code instead
+setup_pairing_code_label	Pairing code
+setup_pairing_failed	Pairing failed: %1$s
+setup_pairing_failed_adb	Pairing failed: ADB pairing failed
+setup_pairing_failed_unknown	Pairing failed: unknown error
+setup_pairing_hide_pc	Hide PC steps
+setup_pairing_in_progress	Pairing…
+setup_pairing_instructions	In Wireless debugging, choose Pair device with pairing code. Enter the code and the port shown there (the number after the colon).
+setup_pairing_invalid_input	Enter the 6-digit code and the pairing port.
+setup_pairing_paired_connecting	Paired. Connecting…
+setup_pairing_port_label	Pairing port
+setup_pairing_show_pc	Start from a PC instead
+setup_pairing_submit	Pair
+setup_pairing_timed_out	Pairing timed out
+setup_pairing_title	Pair with a code
+setup_pairing_waiting_check	Waiting for the current check…
+setup_pc_enter_code_note	(enter the pairing code when asked)
+setup_pc_fire_os_intro	From a PC on the same network, run:
+setup_pc_google_tv_intro	From a PC on the same network, using the addresses shown under Wireless debugging:
+setup_pc_or_shell_paste	Or type adb shell, then paste:
+setup_reason_adb_unreachable	ADB not reachable
+setup_reason_fire_os	Fire OS blocks on-box ADB
+setup_reason_helper_not_started	Helper did not start
+setup_refused_hint	Your TV doesn\\'t accept direct connections. Pair with a code instead.
+setup_status_helper_outdated	Last check: the helper is out of date
+setup_status_last_check	Last check: %1$s
+setup_status_waiting_allow	Last check: waiting for the Allow debugging prompt
+setup_step_adb_debugging	Turn on ADB debugging
+setup_step_adb_debugging_path	Settings > My Fire TV > Developer options
+setup_step_allow_prompt	When your TV asks, tick Always allow, then Allow
+setup_step_checks_automatically	Checks automatically
+setup_step_detected	Detected
+setup_step_helper_starts	Helper starts
+setup_step_start_helper_companion	Start the helper from your phone or computer
+setup_step_starts_helper	SideSpeed starts its helper
+setup_step_waiting	Waiting for you…
+setup_step_wireless_debugging	Turn on Wireless debugging
+setup_step_wireless_debugging_path	Settings > System > Developer options
+setup_warning_ack	I understand
+setup_warning_title	Before you start
+setup_windows_note	On Windows use PowerShell or Terminal, not Command Prompt.
+tools_animations_body	Makes menus and screen changes move faster. It does not make apps load faster. Off removes animations completely; a few apps may look odd.
+tools_animations_faster	Faster (0.5×)
+tools_animations_fire_tv_note	On Fire TV, app animations stay at normal speed so the Settings menu keeps working.
+tools_animations_normal	Normal (1×)
+tools_animations_off	Off
+tools_animations_refused	The helper refused this setting.
+tools_animations_restore	Restore original
+tools_animations_restore_note	Restores the values from before SideSpeed changed them.
+tools_animations_title	Animations
+tools_animations_unreadable	Current values couldn\\'t be read — the helper may not be running.
+tools_bytes_gb	%1$s GB
+tools_bytes_mb	%1$s MB
+tools_cancel	Cancel
+tools_health_device	%1$s · Android %2$s
+tools_health_helper_checking	Helper: …
+tools_health_helper_not_running	Helper: Not running
+tools_health_helper_running	Helper: Running
+tools_health_ram	%1$s free of %2$s RAM
+tools_health_storage	%1$s free of %2$s storage
+tools_health_title	Box health
+tools_helper_down	Helper not running. Start the helper, then try again.
+tools_helper_outdated	Restart the helper to use this.
+tools_home_back_to_stock	Back to stock
+tools_home_changed	Home screen changed. Your remote\\'s Home button may still open the previous home screen on some TVs.
+tools_home_checking	Checking…
+tools_home_confirm_back	Go back to the home screen this TV had before SideSpeed changed it?
+tools_home_confirm_make	Make %1$s your home screen?
+tools_home_couldnt_change	Couldn\\'t change Home
+tools_home_couldnt_change_google_tv	Google TV keeps its own home screen while it\\'s turned on. Turn it off in Turn off extras first.
+tools_home_current	Current Home: %1$s
+tools_home_current_pill	Current
+tools_home_current_unknown	Current Home: unknown
+tools_home_drifted	Your home screen changed back on its own. The first home screen is still saved below.
+tools_home_excluded	That app can\\'t be the home screen.
+tools_home_fire_os	Fire TV doesn\\'t allow other home screens.
+tools_home_invalid_saved	The saved home screen isn\\'t valid any more.
+tools_home_make_home	Make this Home
+tools_home_no_original	No earlier home screen was saved.
+tools_home_no_other	Install another home screen app first, then come back here.
+tools_home_not_a_home_app	That app isn\\'t a home screen app.
+tools_home_refused	The helper refused this change.
+tools_home_restored	Back to your first home screen.
+tools_home_stock_disabled_elsewhere	Your first home screen was turned off by something else, so SideSpeed can\\'t turn it back on.
+tools_home_title	Home screen
+tools_placeholder	%1$s — coming soon
+tools_selected	✓ %1$s
+tools_skip_helper_down	Helper not running
+tools_skip_helper_outdated	Restart the helper to use this
+tools_skip_refused	Helper refused the command
+tools_space_auto_caption	Clears app caches only when free space drops below this. Checked every few hours while the helper is running.
+tools_space_auto_title	Automatic cleanup
+tools_space_clean_now	Clean up now
+tools_space_cleaning	Cleaning…
+tools_space_free_of	%1$s free of %2$s
+tools_space_freed	Freed %1$s
+tools_space_last_cleanup	Last cleanup: %1$s · %2$s
+tools_space_last_freed	freed %1$s
+tools_space_last_never	Last cleanup: never
+tools_space_loading	…
+tools_space_title	Free up space
+tools_threshold_1_gb	1 GB
+tools_threshold_2_gb	2 GB
+tools_threshold_500_mb	500 MB
+tools_threshold_off	Off
+tools_title	Tools
+update_banner_busy	Available when the current job finishes.
+update_banner_cancel	Cancel
+update_banner_dismiss	Dismiss
+update_banner_downloading	Downloading… %1$d%%
+update_banner_installing	Installing… SideSpeed will close and reopen.
+update_banner_manual	In Downloader, enter %1$s, or go to %2$s.
+update_banner_out	SideSpeed %1$s is out
+update_banner_retry	Retry
+update_banner_update_now	Update now
+update_card_title	%1$s %2$s is out. You have %3$s.
+update_error_checksums_download	Could not download the checksums.
+update_error_confirm_timeout	Couldn\\'t confirm the update. Check the app\\'s version, then try again.
+update_error_didnt_install	The update didn\\'t install.
+update_error_download_failed	Download failed.
+update_error_failed	Update failed.
+update_error_helper_down	Helper not running.
+update_error_install_failed	Install failed.
+update_error_invalid_version	Not a valid release version.
+update_error_no_checksum_for_file	No checksum found for %1$s.
+update_error_no_space	Not enough free space on the TV.
+update_error_read_installed	Could not read the installed app.
+update_source_fdroid	From F-Droid.
+update_source_github	From GitHub.
+update_source_izzy	From IzzyOnDroid.
+update_unknown_sources	Allow SideSpeed to install apps, then press %1$s.
+update_verify_checksum_mismatch	Checksum mismatch.
+update_verify_no_checksum	No checksum found for this update.
+update_verify_not_newer	Not newer than the installed version.
+update_verify_signer_mismatch	Signer does not match the installed app.
+update_verify_signer_unknown	Signer unknown: refusing the update.
+update_verify_unreadable_apk	Could not read the downloaded APK.
+update_verify_version_mismatch	Version does not match the update.
+update_verify_wrong_package	Wrong package: %1$s.

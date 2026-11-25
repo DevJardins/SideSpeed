@@ -64,6 +64,7 @@ the code may have a bug.
 - TV copy lives in `app/src/main/res/values/strings.xml`, grouped by screen,
   with a translator note where the meaning isn't obvious.
   Never hard-code user-visible text in Kotlin (`NoHardCodedTextTest` fails).
+- When the meaning of an English string changes, rename its key so every translation starts again; typo or punctuation fixes keep the key. `EnglishSnapshotTest` enforces this with `l10n/english-snapshot.tsv` in each module.
 
 ## 3. TV focus and D-pad
 
