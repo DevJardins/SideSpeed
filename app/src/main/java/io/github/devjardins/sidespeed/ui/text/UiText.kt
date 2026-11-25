@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import io.github.devjardins.sidespeed.l10n.AppLanguage
 import io.github.devjardins.sidespeed.l10n.formatDecimal
 import io.github.devjardins.sidespeed.l10n.formatInteger
 import java.util.Locale
@@ -34,7 +35,7 @@ interface StringLookup {
 }
 
 private class ContextStringLookup(private val context: Context) : StringLookup {
-    override val locale: Locale get() = context.resources.configuration.locales[0]
+    override val locale: Locale get() = AppLanguage.effectiveLocale(context)
 
     override fun string(@StringRes id: Int, args: Array<Any>): String =
         if (args.isEmpty()) context.getString(id) else context.getString(id, *args)

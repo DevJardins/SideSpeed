@@ -47,6 +47,7 @@ import io.github.devjardins.sidespeed.apps.IconSource
 import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.text.uiText
+import io.github.devjardins.sidespeed.l10n.AppLanguage
 import io.github.devjardins.sidespeed.ui.theme.CardShape
 import io.github.devjardins.sidespeed.ui.theme.SsButton
 import io.github.devjardins.sidespeed.ui.theme.SsCard
@@ -208,7 +209,7 @@ fun CompileScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SsSpinner(24.dp)
                         Text(
-                            stringResource(R.string.compile_compiling_elapsed, formatElapsed(elapsed, LocalContext.current.resources.configuration.locales[0])),
+                            stringResource(R.string.compile_compiling_elapsed, formatElapsed(elapsed, AppLanguage.effectiveLocale(LocalContext.current))),
                             style = SsType.Title,
                             color = SsColors.TextPrimary,
                         )

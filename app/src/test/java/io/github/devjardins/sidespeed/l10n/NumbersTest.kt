@@ -22,4 +22,10 @@ class NumbersTest {
     @Test fun arabic_digits() {
         assertEquals("٣٥", formatInteger(35, Locale.forLanguageTag("ar-u-nu-arab")))
     }
+
+    @Test fun dropped_language_formats_in_ascii_english() {
+        val locale = AppLanguage.effectiveLocale("ar", emptyList())
+        assertEquals("35", formatInteger(35, locale))
+        assertEquals("1.9", formatDecimal(1.9, 1, locale))
+    }
 }

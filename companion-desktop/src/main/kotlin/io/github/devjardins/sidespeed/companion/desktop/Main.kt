@@ -61,7 +61,8 @@ import io.github.devjardins.sidespeed.companion.ui.rememberCompanionNav
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
-import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForLocale
+import io.github.devjardins.sidespeed.companion.l10n.effectiveLanguageTag
+import io.github.devjardins.sidespeed.companion.ui.text.layoutDirectionForTag
 import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import kotlinx.coroutines.CoroutineScope
@@ -271,7 +272,9 @@ fun main() {
             val updateState by desktopUpdater.state.collectAsState()
             key(epoch) {
                 CompositionLocalProvider(
-                    LocalLayoutDirection provides layoutDirectionForLocale(Locale.getDefault()),
+                    // Layout follows the language actually shown, so English text stays
+                    // left to right when the requested language never shipped.
+                    LocalLayoutDirection provides layoutDirectionForTag(effectiveLanguageTag()),
                 ) {
                     CompanionApp(
                         vm,

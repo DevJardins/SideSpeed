@@ -43,7 +43,6 @@ import io.github.devjardins.sidespeed.update.installedSignerSha256
 import io.github.devjardins.sidespeed.ui.about.AboutScreen
 import io.github.devjardins.sidespeed.ui.about.AboutViewModel
 import io.github.devjardins.sidespeed.ui.about.LanguageScreen
-import io.github.devjardins.sidespeed.l10n.ShippedLanguages
 import io.github.devjardins.sidespeed.l10n.languageOptions
 import io.github.devjardins.sidespeed.l10n.nativeLanguageName
 import io.github.devjardins.sidespeed.ui.apps.AppsScreen
@@ -288,11 +287,7 @@ class MainActivity : ComponentActivity() {
                         onBack = { showTools = false },
                     )
                     showLanguage && app == null -> {
-                        // Debug builds list the pseudolocales too; release builds never do.
-                        val shipped = remember {
-                            if (BuildConfig.DEBUG) ShippedLanguages.TAGS + listOf("en-XA", "ar-XB")
-                            else ShippedLanguages.TAGS
-                        }
+                        val shipped = remember { AppLanguage.shipped }
                         val chosen = remember { AppLanguage.chosen(this@MainActivity) }
                         val deviceLabel = stringResource(R.string.about_language_same_as_device)
                         val options = remember(shipped, chosen) {

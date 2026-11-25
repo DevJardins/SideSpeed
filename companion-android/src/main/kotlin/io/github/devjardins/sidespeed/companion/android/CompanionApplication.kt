@@ -17,6 +17,7 @@ import io.github.devjardins.sidespeed.companion.discovery.StlsOffer
 import io.github.devjardins.sidespeed.companion.discovery.SocketDatagramQuery
 import io.github.devjardins.sidespeed.companion.discovery.SsdpSource
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
+import io.github.devjardins.sidespeed.companion.l10n.debugLanguageTags
 import io.github.devjardins.sidespeed.companion.net.TrustMatcher
 import io.github.devjardins.sidespeed.companion.android.l10n.AndroidLanguage
 import io.github.devjardins.sidespeed.companion.store.JsonFileCompanionStore
@@ -103,6 +104,9 @@ class CompanionApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Debug builds list the pseudolocales too; release builds never do.
+        // The picker and the shown language both build on this, so they agree.
+        debugLanguageTags = if (BuildConfig.DEBUG) listOf("en-XA", "ar-XB") else emptyList()
         clearStaleUpdateFiles(this)
         graph = Graph(this, appScope)
         appScope.launch { UpkeepWorker.schedule(this@CompanionApplication, graph.store.settings().intervalMinutes, replace = false) }

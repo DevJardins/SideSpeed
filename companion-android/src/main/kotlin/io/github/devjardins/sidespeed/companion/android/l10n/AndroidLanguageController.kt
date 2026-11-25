@@ -7,9 +7,8 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
-import io.github.devjardins.sidespeed.companion.android.BuildConfig
 import io.github.devjardins.sidespeed.companion.l10n.LanguageController
-import io.github.devjardins.sidespeed.companion.l10n.ShippedLanguages
+import io.github.devjardins.sidespeed.companion.l10n.shippedLanguages
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,8 +24,8 @@ class AndroidLanguageController(private val activity: Activity) : LanguageContro
     private val _chosen = MutableStateFlow(AndroidLanguage.chosen(activity))
     override val chosen: StateFlow<String?> = _chosen.asStateFlow()
 
-    override val shipped: List<String> =
-        ShippedLanguages.TAGS + if (BuildConfig.DEBUG) listOf("en-XA", "ar-XB") else emptyList()
+    /** The same list the shown language builds on, so the picker never disagrees with it. */
+    override val shipped: List<String> get() = shippedLanguages()
 
     override val needsRestart: Boolean = false
 

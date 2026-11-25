@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.l10n
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.Locale
 
 class AppLanguageTest {
     @Test
@@ -11,6 +12,19 @@ class AppLanguageTest {
         assertEquals("pt", region.language)
         assertEquals("BR", region.country)
         assertEquals("Latn", AppLanguage.localeFor("sr-Latn").script)
+    }
+
+    @Test
+    fun effective_locale_falls_back_to_us_english() {
+        assertEquals(Locale.US, AppLanguage.effectiveLocale("ar", emptyList()))
+    }
+
+    @Test
+    fun effective_locale_keeps_shipped_pseudo_tag() {
+        assertEquals(
+            Locale.forLanguageTag("ar-XB"),
+            AppLanguage.effectiveLocale("ar-XB", listOf("ar-XB")),
+        )
     }
 
     @Test

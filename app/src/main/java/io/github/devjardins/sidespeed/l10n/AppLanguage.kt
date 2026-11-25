@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
+import io.github.devjardins.sidespeed.BuildConfig
 import java.util.Locale
 
 interface LanguageStore {
@@ -61,4 +62,19 @@ object AppLanguage {
     }
 
     fun localeFor(tag: String): Locale = Locale.forLanguageTag(tag)
+
+    /** The tags the picker offers: shipped translations, plus the debug pseudolocales. */
+    val shipped: List<String>
+        get() = if (BuildConfig.DEBUG) ShippedLanguages.TAGS + listOf("en-XA", "ar-XB") else ShippedLanguages.TAGS
+
+    /**
+     * The locale the app actually shows for [requestedTag]: the matched shipped language,
+     * else US English. Numbers and layout direction follow this, never the raw request.
+     */
+    fun effectiveLocale(requestedTag: String, shipped: List<String>): Locale =
+        matchShipped(requestedTag, shipped)?.let(::localeFor) ?: Locale.US
+
+    /** The locale the app actually shows now, from the configuration's requested tag. */
+    fun effectiveLocale(context: Context): Locale =
+        effectiveLocale(context.resources.configuration.locales[0].toLanguageTag(), shipped)
 }

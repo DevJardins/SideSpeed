@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.LayoutDirection
-import io.github.devjardins.sidespeed.companion.l10n.currentLocaleTag
+import io.github.devjardins.sidespeed.companion.l10n.effectiveLanguageTag
 import io.github.devjardins.sidespeed.companion.l10n.formatDecimal
 import io.github.devjardins.sidespeed.companion.l10n.formatInteger
 import org.jetbrains.compose.resources.PluralStringResource
@@ -91,8 +91,12 @@ private fun UiText.resolve(rtl: Boolean, localeTag: String): String = when (this
 }
 
 @Composable
-fun UiText.resolve(): String =
-    resolve(LocalLayoutDirection.current == LayoutDirection.Rtl, Locale.current.toLanguageTag())
+fun UiText.resolve(): String {
+    // The root provides the effective direction; numbers follow the effective tag,
+    // so a requested language that never shipped still formats in ASCII English.
+    val requested = Locale.current.toLanguageTag()
+    return resolve(LocalLayoutDirection.current == LayoutDirection.Rtl, effectiveLanguageTag(requested))
+}
 
 private suspend fun resolveSuspendArgs(args: List<Any>, rtl: Boolean, localeTag: String): Array<Any> =
     Array(args.size) { index ->
@@ -117,5 +121,6 @@ private suspend fun UiText.resolveSuspend(rtl: Boolean, localeTag: String): Stri
     is UiText.Decimal -> formatDecimal(value, digits, localeTag)
 }
 
-suspend fun UiText.resolveSuspend(rtl: Boolean = isDefaultLocaleRtl()): String =
-    resolveSuspend(rtl, currentLocaleTag())
+suspend fun UiText.resolveSuspend(
+    rtl: Boolean = layoutDirectionForTag(effectiveLanguageTag()) == LayoutDirection.Rtl,
+): String = resolveSuspend(rtl, effectiveLanguageTag())
