@@ -198,10 +198,23 @@ Keep it true when you change anything below.
 
 ## 7. Workflow
 
+- Agents may use every installed plugin, skill and tool in full, without asking first:
+  Superpowers (brainstorming, specs, builder checks, plans,
+  subagent-driven development, parallel agents, code review, worktrees),
+  claude-mem, T3 delegation to other agents, and the emulator and device tools.
+  Agents may write code themselves or delegate it, whichever fits the task.
+  The rules in this file (copy, focus, visuals, security, releases) still apply
+  to whatever those tools produce.
+- Superpowers specs and plans go in `docs/superpowers/` (`specs/`, `plans/`).
+  In every checkout that path is a link to the private notes repo's
+  `app/superpowers`. Superpowers says to commit specs; here "commit" means they
+  are saved in the notes repo, never in this repo.
+  In a new worktree, make the link before writing to it.
 - Read the linked spec or plan file first; plans name their spec at the top.
 - Then test-driven development: write the failing test, watch it fail,
   implement, watch it pass.
-- Run one Gradle build at a time, with the SDK exported first:
+- Run one Gradle build at a time per checkout (parallel agents use separate
+  worktrees), with the SDK exported first:
   `export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   (it may be unset in a fresh shell).
 - Test tasks (also what CI runs):
