@@ -397,7 +397,7 @@
     <string name="about_check_for_updates">التحقق من التحديثات</string>
     <string name="about_checking">جارٍ التحقق…</string>
     <string name="about_up_to_date">لديك أحدث إصدار.</string>
-    <string name="about_check_failed">تعذّر الوصول إلى GitHub. حاول لاحقًا.</string>
+    <string name="about_check_failed">تعذر الوصول إلى GitHub. حاول مرة أخرى لاحقًا</string>
     <string name="about_made_by">طُوّر بكل ♥ على يد DevJardins</string>
     <string name="about_support_kofi">ادعم SideSpeed على Ko-fi</string>
     <string name="about_kofi_qr_cd">رمز QR لـ %1$s</string>
