@@ -239,7 +239,7 @@
     <string name="tools_space_cleaning">جارٍ التنظيف…</string>
     <string name="tools_space_freed">تم تحرير %1$s</string>
     <string name="tools_space_auto_title">التنظيف التلقائي</string>
-    <string name="tools_space_auto_caption">يمسح ذاكرة التطبيقات المؤقتة فقط عندما تنخفض المساحة الفارغة عن هذا الحد. يُفحص كل بضع ساعات.</string>
+    <string name="tools_space_auto_caption">يمسح ذاكرة التطبيقات المؤقتة فقط عندما تنخفض المساحة الفارغة عن هذا الحد. ويُتحقَّق من ذلك كل بضع ساعات أثناء تشغيل المساعد.</string>
     <string name="tools_space_last_freed">تم تحرير %1$s</string>
     <string name="tools_space_last_cleanup">آخر تنظيف: %1$s · %2$s</string>
     <string name="tools_space_last_never">آخر تنظيف: لم يتم بعد</string>
@@ -417,7 +417,7 @@
     <string name="update_verify_signer_unknown">جهة التوقيع غير معروفة؛ تم رفض التحديث.</string>
     <string name="update_verify_signer_mismatch">جهة التوقيع لا تطابق التطبيق المثبّت.</string>
     <string name="about_language">اللغة</string>
-    <string name="about_language_same_as_device">نفس لغة الجهاز</string>
+    <string name="about_language_same_as_device">مثل لغة الجهاز</string>
     <string name="about_language_not_complete">غير مكتملة في هذا الإصدار. تظهر الإنجليزية حاليًا.</string>
     <string name="about_language_selected">✓ %1$s</string>
     <string name="tools_health_device_line">%1$s · %2$s</string>
