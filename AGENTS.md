@@ -13,6 +13,9 @@ the code may have a bug.
 - **Keep Markdown Static:** Do not write session progress, changelogs, or task checklists into `CLAUDE.md`; rely on `claude-mem` session summaries for continuity.
 - **Protect Secrets:** Never print raw API keys, `.env` values, or tokens into stdout/Bash output, and wrap sensitive prompt snippets in `<private>...</private>`.
 
+## Delegation Rules
+Before building, weigh difficulty of task, and try to assign to other services as a sub agent (or multiples) with instructions where it makes sense. Muse, Antigravity, and Cursor are tools at your disposal, and can be used to expedite building features without burning through our tokens. 
+
 ## 1. Project map
 
 - `app/` is the Android TV app.
