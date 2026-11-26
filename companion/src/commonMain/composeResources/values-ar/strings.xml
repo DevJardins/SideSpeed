@@ -179,42 +179,4 @@
     <string name="pair_bad_port">أدخل المنفذ الموضح بجوار رمز الاقتران.</string>
     <string name="add_shared_peer">هذا الجهاز مشترك من شبكة Tailscale أخرى، لذلك لا يمكن إضافته</string>
     <string name="pair_bad_code">أدخل رمز الاقتران المكوّن من 6 أرقام الظاهر على التلفزيون.</string>
-    <string name="update_no_checksum"></string>
-    <string name="about_downloading"></string>
-    <string name="about_check_failed"></string>
-    <string name="update_install_failed"></string>
-    <string name="tray_resume"></string>
-    <string name="about_up_to_date"></string>
-    <string name="update_allow_install"></string>
-    <string name="update_signer_unknown"></string>
-    <string name="tray_pause"></string>
-    <string name="update_check_failed"></string>
-    <string name="update_signer_mismatch"></string>
-    <string name="tailnet_default_name"></string>
-    <string name="update_wrong_package"></string>
-    <string name="update_install_timeout"></string>
-    <string name="update_apk_unreadable"></string>
-    <string name="brand_sidespeed" translatable="false"></string>
-    <string name="about_licence_text"></string>
-    <string name="notif_restarted"></string>
-    <string name="about_installing"></string>
-    <string name="update_cancelled"></string>
-    <string name="about_check_updates"></string>
-    <string name="about_version"></string>
-    <string name="network_default_name"></string>
-    <string name="settings_no_network_to_trust"></string>
-    <string name="update_failed"></string>
-    <string name="update_checksum_mismatch"></string>
-    <string name="update_download_failed"></string>
-    <string name="about_download"></string>
-    <string name="about_update_now"></string>
-    <string name="about_available"></string>
-    <string name="app_name" translatable="false"></string>
-    <string name="update_install_failed_detail"></string>
-    <string name="update_checksums_download_failed"></string>
-    <string name="tray_open"></string>
-    <string name="tray_quit"></string>
-    <string name="about_title"></string>
-    <string name="about_checking"></string>
-    <string name="settings_no_overlay"></string>
 </resources>
