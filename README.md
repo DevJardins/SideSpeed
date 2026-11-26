@@ -160,6 +160,8 @@ The desktop installers are unsigned:
 
 ## Languages
 
+- **TV app:** English and Arabic.
+- **Companion:** English.
 - Pick one in **About** on the TV, or **Settings** in the Companion.
 - A language ships once at least 70% of it is translated.
 - If your language isn't complete in a version, the app says so and shows English.
