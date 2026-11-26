@@ -5,6 +5,17 @@ each cites the file or class that proves it. If a rule and the code disagree,
 stop and tell the owner which one is wrong before changing either;
 the code may have a bug.
 
+## Memory & Superpowers Integration (claude-mem)
+- **3-Layer Recall First:** Before modifying core architecture, database schemas, or non-obvious workarounds, query `claude-mem` (`search` -> `timeline` -> `get_observations`) to verify why the current implementation exists. Only fetch full details for the specific observation IDs needed.
+- **Brainstorming & Planning (`brainstorming`, `writing-plans`):** Before proposing a new design or writing an implementation plan in `docs/superpowers/plans/`, search `claude-mem` for past architectural decisions and rejected approaches in the affected modules.
+- **Subagent Context Handoff (`subagent-driven-development`):** When dispatching a subagent to implement a task, include relevant observation IDs or historical constraints from `claude-mem` in the subagent's prompt so it does not repeat previously failed approaches.
+- **Systematic Debugging (`systematic-debugging`):** Before forming a root-cause hypothesis, search `claude-mem` for the error message, stack trace, or failing file path to check if a similar issue was already resolved.
+- **Keep Markdown Static:** Do not write session progress, changelogs, or task checklists into `CLAUDE.md`; rely on `claude-mem` session summaries for continuity.
+- **Protect Secrets:** Never print raw API keys, `.env` values, or tokens into stdout/Bash output, and wrap sensitive prompt snippets in `<private>...</private>`.
+
+## Delegation Rules
+Before building, weigh difficulty of task, and try to assign to other services as a sub agent (or multiples) with instructions where it makes sense. Muse, Antigravity, and Cursor are tools at your disposal, and can be used to expedite building features without burning through our tokens. 
+
 ## 1. Project map
 
 - `app/` is the Android TV app.
@@ -78,8 +89,10 @@ the code may have a bug.
   addresses, ports, versions, hosts and package names stay `UiText.Ltr`.
 - Translated copy follows the same rules.
   The glossary in `docs/TRANSLATING.md` is the source for product terms.
-- Never edit translated `strings.xml` files directly; fix them in Weblate
-  (`docs/TRANSLATING.md`). `checkTranslations` guards them in CI
+- Translations come from contributors in Weblate (`docs/TRANSLATING.md`);
+  never supply a language's bulk translation. Small direct edits are fine:
+  finishing the last few strings of a language that is mostly done, and removing
+  keys English no longer has. `checkTranslations` guards them in CI
   (`build-logic/.../TranslationCheck.kt`, `.github/workflows/build.yml`).
 
 ## 3. TV focus and D-pad
@@ -201,11 +214,7 @@ Keep it true when you change anything below.
 
 ## 7. Workflow
 
-- Agents may use every installed plugin, skill and tool in full, without asking first:
-  Superpowers (brainstorming, specs, builder checks, plans,
-  subagent-driven development, parallel agents, code review, worktrees),
-  claude-mem, T3 delegation to other agents, and the emulator and device tools.
-  Agents may write code themselves or delegate it, whichever fits the task.
+- Agents may use every installed plugin, skill and tool in full
   The rules in this file (copy, focus, visuals, security, releases) still apply
   to whatever those tools produce.
 - Superpowers specs and plans go in `docs/superpowers/` (`specs/`, `plans/`).
@@ -240,5 +249,9 @@ Keep it true when you change anything below.
 - Never commit key material (`*.jks`, `*.keystore`, `keystore.properties`,
   passwords); keystores are gitignored and only the owner handles signing.
 - One PR per task, against `main`.
-- Never merge, tag, or publish unless the owner asked for it in this session.
-  Opening the PR is where worker tasks stop.
+- Agents may merge a PR when the full test set passes, CI is green,
+  and they know of no bugs in it. If a check fails or a known bug remains,
+  ask the owner before merging. Weblate PRs still use a merge commit.
+- Never tag or publish unless the owner asked for it in this session.
+- Delegated workers (Muse, Antigravity, Cursor) stop at opening the PR;
+  the agent that delegated reviews it and decides whether to merge.

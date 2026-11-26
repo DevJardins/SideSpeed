@@ -223,14 +223,10 @@
     <string name="tools_bytes_mb">%1$s ميجابايت</string>
     <string name="tools_bytes_gb">%1$s جيجابايت</string>
     <string name="tools_threshold_off">إيقاف</string>
-    <string name="tools_threshold_500_mb">500 ميجابايت</string>
-    <string name="tools_threshold_1_gb">1 جيجابايت</string>
-    <string name="tools_threshold_2_gb">2 جيجابايت</string>
     <string name="tools_skip_helper_down">المساعد لا يعمل</string>
     <string name="tools_skip_helper_outdated">أعد تشغيل المساعد لاستخدام هذه الميزة</string>
     <string name="tools_skip_refused">رفض المساعد الأمر</string>
     <string name="tools_health_title">حالة الجهاز</string>
-    <string name="tools_health_device">%1$s · Android %2$s</string>
     <string name="tools_health_ram">الذاكرة: %1$s فارغة من %2$s</string>
     <string name="tools_health_storage">التخزين: %1$s فارغ من %2$s</string>
     <string name="tools_health_helper_running">المساعد: يعمل</string>
@@ -420,4 +416,9 @@
     <string name="update_verify_not_newer">ليس أحدث من الإصدار المثبّت.</string>
     <string name="update_verify_signer_unknown">جهة التوقيع غير معروفة؛ تم رفض التحديث.</string>
     <string name="update_verify_signer_mismatch">جهة التوقيع لا تطابق التطبيق المثبّت.</string>
+    <string name="about_language">اللغة</string>
+    <string name="about_language_same_as_device">نفس لغة الجهاز</string>
+    <string name="about_language_not_complete">غير مكتملة في هذا الإصدار. تظهر الإنجليزية حاليًا.</string>
+    <string name="about_language_selected">✓ %1$s</string>
+    <string name="tools_health_device_line">%1$s · %2$s</string>
 </resources>

@@ -260,7 +260,7 @@ tools_animations_unreadable	Current values couldn\\'t be read — the helper may
 tools_bytes_gb	%1$s GB
 tools_bytes_mb	%1$s MB
 tools_cancel	Cancel
-tools_health_device	%1$s · Android %2$s
+tools_health_device_line	%1$s · %2$s
 tools_health_helper_checking	Helper: …
 tools_health_helper_not_running	Helper: Not running
 tools_health_helper_running	Helper: Running
@@ -307,9 +307,6 @@ tools_space_last_freed	freed %1$s
 tools_space_last_never	Last cleanup: never
 tools_space_loading	…
 tools_space_title	Free up space
-tools_threshold_1_gb	1 GB
-tools_threshold_2_gb	2 GB
-tools_threshold_500_mb	500 MB
 tools_threshold_off	Off
 tools_title	Tools
 update_banner_busy	Available when the current job finishes.

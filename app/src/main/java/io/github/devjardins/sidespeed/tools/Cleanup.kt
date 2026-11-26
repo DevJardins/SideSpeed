@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.tools
 
 import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,11 +73,9 @@ class Cleanup(
 }
 
 /** Short choice label, e.g. "1 GB": shared by the SpaceCard row and the service notification. */
-internal fun CleanupThreshold.shortLabel(): UiText = UiText.Res(
-    when (this) {
-        CleanupThreshold.OFF -> R.string.tools_threshold_off
-        CleanupThreshold.MB_500 -> R.string.tools_threshold_500_mb
-        CleanupThreshold.GB_1 -> R.string.tools_threshold_1_gb
-        CleanupThreshold.GB_2 -> R.string.tools_threshold_2_gb
-    },
-)
+internal fun CleanupThreshold.shortLabel(): UiText = when (this) {
+    CleanupThreshold.OFF -> UiText.Res(R.string.tools_threshold_off)
+    CleanupThreshold.MB_500 -> uiText(R.string.tools_bytes_mb, UiText.Integer(500))
+    CleanupThreshold.GB_1 -> uiText(R.string.tools_bytes_gb, UiText.Integer(1))
+    CleanupThreshold.GB_2 -> uiText(R.string.tools_bytes_gb, UiText.Integer(2))
+}
