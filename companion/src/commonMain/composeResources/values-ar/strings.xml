@@ -179,4 +179,20 @@
     <string name="pair_bad_port">أدخل المنفذ الموضح بجوار رمز الاقتران.</string>
     <string name="add_shared_peer">هذا الجهاز مشترك من شبكة Tailscale أخرى، لذلك لا يمكن إضافته</string>
     <string name="pair_bad_code">أدخل رمز الاقتران المكوّن من 6 أرقام الظاهر على التلفزيون.</string>
+    <string name="settings_no_network_to_trust">لا توجد شبكة للوثوق بها</string>
+    <string name="settings_no_overlay">لا يعمل Tailscale مع اتصال شبكة، لذلك لا توجد شبكة tailnet للوثوق بها</string>
+    <string name="network_default_name">الشبكة الموثوقة %1$d</string>
+    <string name="tailnet_default_name">Tailnet %1$d</string>
+    <string name="about_title">حول والتراخيص</string>
+    <string name="about_version">الإصدار %1$s</string>
+    <string name="about_check_updates">التحقق من وجود تحديثات</string>
+    <string name="about_checking">جارٍ التحقق…</string>
+    <string name="about_up_to_date">لديك أحدث إصدار.</string>
+    <string name="about_available">يتوفر SideSpeed Companion %1$s.</string>
+    <string name="about_check_failed">تعذر الوصول إلى GitHub. حاول مرة أخرى لاحقًا</string>
+    <string name="about_downloading">جارٍ التنزيل... %1$d%</string>
+    <string name="about_installing">جارٍ التثبيت…</string>
+    <string name="about_update_now">التحديث الآن</string>
+    <string name="about_download">تنزيل</string>
+    <string name="update_no_checksum">لم يتم العثور على قيمة تحقق (Checksum) للملف %1$s.</string>
 </resources>
