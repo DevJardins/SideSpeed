@@ -165,7 +165,7 @@ The desktop installers are unsigned:
 - Pick one in **About** on the TV, or **Settings** in the Companion.
 - A language ships once at least 70% of it is translated.
 - If your language isn't complete in a version, the app says so and shows English.
-- To help translate, see [docs/TRANSLATING.md](docs/TRANSLATING.md).
+- To help translate, see [sidespeed.app/translate](https://sidespeed.app/translate/). The details are in [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Requirements and caveats
 
