@@ -195,4 +195,24 @@
     <string name="about_update_now">التحديث الآن</string>
     <string name="about_download">تنزيل</string>
     <string name="update_no_checksum">لم يتم العثور على قيمة تحقق (Checksum) للملف %1$s.</string>
+    <string name="tray_pause">إيقاف الفحوصات مؤقتًا</string>
+    <string name="tray_resume">استئناف الفحوصات</string>
+    <string name="tray_quit">إنهاء</string>
+    <string name="update_checksum_mismatch">عدم تطابق المجموع الاختباري.</string>
+    <string name="update_apk_unreadable">تعذر قراءة الملف الذي تم تنزيله APK.</string>
+    <string name="update_wrong_package">حزمة خاطئة: %1$s.</string>
+    <string name="update_signer_unknown">المُوقِّع غير معروف: رفض التحديث.</string>
+    <string name="update_signer_mismatch">المُوقِّع لا يطابق التطبيق المُثبَّت.</string>
+    <string name="update_failed">فشل التحديث.</string>
+    <string name="update_check_failed">تعذر التحقق من وجود تحديثات. حاول مرة أخرى لاحقًا</string>
+    <string name="update_allow_install">اسمح لتطبيق SideSpeed Companion بتثبيت التطبيقات، ثم حاول مرة أخرى.</string>
+    <string name="update_checksums_download_failed">تعذّر تنزيل المجموع الاختباري.</string>
+    <string name="update_download_failed">فشل التنزيل.</string>
+    <string name="update_install_failed">فشل التثبيت</string>
+    <string name="update_install_failed_detail">فشل التثبيت. %1$s</string>
+    <string name="update_install_timeout">لم يكتمل التثبيت. حاول مرة أخرى</string>
+    <string name="update_cancelled">تم إلغاء التحديث</string>
+    <string name="about_licence_text">SideSpeed Companion · GPL-3.0 تم استنساخ أو تعديل روبوت أندرويد (Android robot) استناداً إلى عمل أنشأته وشاركتْه شركة جوجل، ويُستخدم وفقاً للشروط الموضحة في رخصة "المشاع الإبداعي: النسبة - 3.0" (Creative Commons 3.0 Attribution License).</string>
+    <string name="notif_restarted">تمت إعادة تشغيل SideSpeed على %1$s</string>
+    <string name="tray_open">افتح SideSpeed Companion</string>
 </resources>
