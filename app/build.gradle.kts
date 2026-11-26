@@ -232,8 +232,6 @@ dependencies {
     // Real org.json for local unit tests: android.jar only carries stubs, so the
     // catalog parser tests run against the reference implementation instead.
     testImplementation(libs.org.json)
-    // Shadows for android.content.Intent: the Home exit intent test runs on the JVM.
-    testImplementation(libs.robolectric)
 }
 
 // Print the full stack trace (with causes) when a unit test fails, so CI logs show the real error.

@@ -4,22 +4,13 @@ import android.content.Intent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.ConscryptMode
-import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
-// No TLS in this test: skip the Conscrypt provider setup (the app's
-// conscrypt-android carries Android-only natives, no JVM lib).
-@ConscryptMode(ConscryptMode.Mode.OFF)
 class HomeExitTest {
-    @Test fun homeExitIntent_isMainHomeNewTask() {
-        val intent = homeExitIntent()
-        assertEquals(Intent.ACTION_MAIN, intent.action)
-        assertTrue(intent.hasCategory(Intent.CATEGORY_HOME))
-        assertTrue((intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK) != 0)
+    @Test fun homeExitIntentSpec_isMainHomeNewTask() {
+        val spec = homeExitIntentSpec()
+        assertEquals(Intent.ACTION_MAIN, spec.action)
+        assertEquals(Intent.CATEGORY_HOME, spec.category)
+        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, spec.flags)
     }
 
     @Test fun exitToSystemHome_startsThenFinishes() {
