@@ -115,9 +115,10 @@ Delegate with T3's `delegate_task`.
   No switching is offered there.
 - Never tell people what to install.
   No recommendations, no browse lists of apps they do not have.
-- SideSpeed installs only updates of apps already installed, signed with the same key,
-  one press at a time; it never installs new apps
-  (see "Updates for sideloaded apps" in `README.md`).
+- SideSpeed installs the apps the person picks. An update must be signed
+  with the same key as the installed app. Until Companion installs ship,
+  the code installs only updates (`install-update`), and `README.md` and
+  `SECURITY.md` say so.
 - The feature is "Trusted Network", never "home network".
   In UI labels and titles it is "Trusted Network";
   in running prose "trusted network" is fine.
@@ -230,10 +231,13 @@ Keep it true when you change anything below.
   there is no uninstall form in `CommandAllowlist.kt`.
 - Back to stock only ever touches the recorded original Home
   (`app/.../tools/HomeScreen.kt`).
-- Never widen helper powers (new commands, looser validation,
-  weaker install checks) without the owner's explicit decision.
-- New forms are exact-token allowlist entries with tests,
-  as in `CommandAllowlist.kt`.
+- Helper powers may grow when a feature needs them. Each new form is an
+  exact-token `CommandAllowlist.kt` entry with a fixed argv, tests for
+  allowed and refused cases, and a `SECURITY.md` line, all in the same PR.
+- Loosening an existing form's validation needs the owner's decision.
+- The TV app's own ADB session and the Companion's ADB session run only
+  commands built by fixed builders (`HelperLaunch`, `ConnectionStrategy`,
+  `TvCommands`), never text from outside input.
 - Every Companion session proves the TV before any other command
   (`TvIdentity.prepare` in `TvSessions.open`). A TV saved before this check
   existed gets a secret only after its serial still matches, and only from
@@ -254,6 +258,8 @@ Keep it true when you change anything below.
   `major*10000 + minor*100 + patch`) derive from it in the root `build.gradle.kts`.
 - The desktop package version (`(major+1).minor.patch`) derives from it
   in `companion-desktop/build.gradle.kts`.
+- User-facing text (release notes, site, README) always shows the app
+  version, never the desktop package number.
 - The app itself reports the plain version via generated `CompanionVersion`.
 - Write release notes in `.github/release-notes/vX.Y.Z.md`.
 - Pushing a `v*` tag makes CI (`.github/workflows/build.yml`) build everything
