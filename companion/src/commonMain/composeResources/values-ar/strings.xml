@@ -39,10 +39,10 @@
     <plurals name="activity_last_hour_ago">
         <item quantity="zero">الأخير: %1$s · منذ أقل من ساعة</item>
         <item quantity="one">الأخير: %1$s · منذ ساعة واحدة</item>
-        <item quantity="two">الأخير: %1s · منذ \\%2d ساعات</item>
-        <item quantity="few">الأخير: %1s · منذ \\%2d ساعات</item>
-        <item quantity="many">الأخير: %1s · منذ \\%2d ساعات</item>
-        <item quantity="other">الأخير: %1s · منذ \\%2d ساعات</item>
+        <item quantity="two">الأخير: %1$s · منذ %2$d ساعات</item>
+        <item quantity="few">الأخير: %1$s · منذ %2$d ساعات</item>
+        <item quantity="many">الأخير: %1$s · منذ %2$d ساعات</item>
+        <item quantity="other">الأخير: %1$s · منذ %2$d ساعات</item>
     </plurals>
     <string name="add_range_label">النطاق المراد مسحه ضوئيًا (اختياري)</string>
     <string name="settings_tailscale_disconnected">Tailscale غير متصل.</string>
@@ -66,7 +66,7 @@
         <item quantity="many">%1$d دقيقة</item>
         <item quantity="other">%1$d دقيقة</item>
     </plurals>
-    <string name="home_not_fire_tv_note">ليس جهاز Fire TV: يتولى SideSpeed على هذا التلفاز الإعداد بنفسه، ولا يمكن للتطبيق المرافق الوصول إليه بعد إعادة التشغيل. على Google TV الأداة المساعدة اختيارية؛ وتعرض الشاشة الرئيسية ما يتم تجميعه حالياً.</string>
+    <string name="home_not_fire_tv_note">ليس جهاز Fire TV: يتولى SideSpeed على هذا التلفاز الإعداد بنفسه، ولا يمكن للتطبيق المرافق الوصول إليه بعد إعادة التشغيل. على Google TV الأداة المساعدة اختيارية؛ وتعرض Home ما يتم تجميعه حالياً.</string>
     <string name="home_status_check_failed">متوقف: فشل التحقق</string>
     <string name="home_last_seen">آخر ظهور: %1$s</string>
     <string name="activity_interrupted">تمت مقاطعة %1$s</string>
@@ -111,10 +111,10 @@
     <plurals name="activity_last_min_ago">
         <item quantity="zero">الأخير: %1$s · منذ أقل من دقيقة</item>
         <item quantity="one">الأخير: %1$s · منذ دقيقة واحدة</item>
-        <item quantity="two">الأخير: %1s · منذ \\%2d دقائق</item>
-        <item quantity="few">الأخير: %1s · منذ \\%2d دقائق</item>
-        <item quantity="many">الأخير: %1s · منذ \\%2d دقائق</item>
-        <item quantity="other">الأخير: %1s · منذ \\%2d دقائق</item>
+        <item quantity="two">الأخير: %1$s · منذ %2$d دقائق</item>
+        <item quantity="few">الأخير: %1$s · منذ %2$d دقائق</item>
+        <item quantity="many">الأخير: %1$s · منذ %2$d دقائق</item>
+        <item quantity="other">الأخير: %1$s · منذ %2$d دقائق</item>
     </plurals>
     <string name="add_not_trusted_add">انضم إلى شبكة موثوقة لإضافة تلفزيون</string>
     <string name="home_trust_banner">الشبكة الموثوقة: %1$s ✓</string>
@@ -131,10 +131,10 @@
     <plurals name="activity_last_day_ago">
         <item quantity="zero">الأخير: %1$s · منذ أقل من يوم</item>
         <item quantity="one">الأخير: %1$s · منذ يوم واحد</item>
-        <item quantity="two">الأخير: %1s · منذ \\%2d أيام</item>
-        <item quantity="few">الأخير: %1s · منذ \\%2d أيام</item>
-        <item quantity="many">الأخير: %1s · منذ \\%2d أيام</item>
-        <item quantity="other">الأخير: %1s · منذ \\%2d أيام</item>
+        <item quantity="two">الأخير: %1$s · منذ %2$d أيام</item>
+        <item quantity="few">الأخير: %1$s · منذ %2$d أيام</item>
+        <item quantity="many">الأخير: %1$s · منذ %2$d أيام</item>
+        <item quantity="other">الأخير: %1$s · منذ %2$d أيام</item>
     </plurals>
     <string name="add_host_adding">إضافة %1$s…</string>
     <string name="activity_interrupted_note">يعيد SideSpeed المحاولة عند عودة المساعد</string>
