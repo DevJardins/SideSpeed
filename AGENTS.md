@@ -249,5 +249,9 @@ Keep it true when you change anything below.
 - Never commit key material (`*.jks`, `*.keystore`, `keystore.properties`,
   passwords); keystores are gitignored and only the owner handles signing.
 - One PR per task, against `main`.
-- Never merge, tag, or publish unless the owner asked for it in this session.
-  Opening the PR is where worker tasks stop.
+- Agents may merge a PR when the full test set passes, CI is green,
+  and they know of no bugs in it. If a check fails or a known bug remains,
+  ask the owner before merging. Weblate PRs still use a merge commit.
+- Never tag or publish unless the owner asked for it in this session.
+- Delegated workers (Muse, Antigravity, Cursor) stop at opening the PR;
+  the agent that delegated reviews it and decides whether to merge.
