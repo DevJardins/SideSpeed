@@ -417,4 +417,6 @@
     <string name="about_language">اللغة</string>
     <string name="about_language_same_as_device">مثل لغة الجهاز</string>
     <string name="tools_health_device_line">%1$s · %2$s</string>
+    <string name="about_language_not_complete">غير مكتملة في هذا الإصدار. سيتم عرض النص باللغة الإنجليزية مؤقتًا.</string>
+    <string name="about_language_selected">✓ %1$s</string>
 </resources>
