@@ -31,10 +31,12 @@ import io.github.devjardins.sidespeed.companion.tv.TvConnector
 import io.github.devjardins.sidespeed.companion.upkeep.TcpScanner
 import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.TestScope
@@ -135,9 +137,11 @@ class CompanionViewModelTest {
     fun emptyTrustedNetworkLabelUsesNumberedDefault() = runTest(UnconfinedTestDispatcher()) {
         val r = rig(trusted = false)
         r.vm.trustCurrentNetwork("")
+        awaitReal { r.store.trustedNetworks().size == 1 }
         assertEquals("Trusted Network 1", r.store.trustedNetworks().single().name)
         r.fp = NetworkFingerprint("10.0.0.1", "10.0.0.0/24", setOf("10.0.0.1"))
         r.vm.trustCurrentNetwork("")
+        awaitReal { r.store.trustedNetworks().size == 2 }
         assertEquals("Trusted Network 2", r.store.trustedNetworks()[1].name)
     }
 
@@ -155,7 +159,7 @@ class CompanionViewModelTest {
         )
         val r = rig(trusted = true, fake = fake)
         r.vm.addSaved("192.168.5.20")
-        runCurrent()
+        awaitReal { r.store.tvs().isNotEmpty() }
         assertEquals("TV at 192.168.5.20", r.store.tvs().single().name)
     }
 
@@ -167,6 +171,7 @@ class CompanionViewModelTest {
             Locale.setDefault(Locale.forLanguageTag("ar"))
             val r = rig(trusted = false)
             r.vm.trustCurrentNetwork("")
+            awaitReal { r.store.trustedNetworks().isNotEmpty() }
             assertFalse(isolate.containsMatchIn(r.store.trustedNetworks().single().name))
             val fake = FakeTvSession(
                 mapOf(
@@ -180,7 +185,7 @@ class CompanionViewModelTest {
             )
             val r2 = rig(trusted = true, fake = fake)
             r2.vm.addSaved("192.168.5.21")
-            runCurrent()
+            awaitReal { r2.store.tvs().isNotEmpty() }
             assertFalse(isolate.containsMatchIn(r2.store.tvs().single().name))
         } finally {
             Locale.setDefault(savedLocale)
@@ -1499,5 +1504,16 @@ class CompanionViewModelTest {
 
     private fun hangingPorts() = object : ConnectPortFinder {
         override suspend fun find(host: String): Int? = suspendCancellableCoroutine { }
+    }
+
+    // Translated string files are read from disk on a real thread, so virtual time alone
+    // does not finish the work. Let the test scheduler run, then wait briefly in real time.
+    private suspend fun TestScope.awaitReal(done: suspend () -> Boolean) {
+        repeat(500) {
+            runCurrent()
+            if (done()) return
+            withContext(Dispatchers.Default) { delay(10) }
+        }
+        runCurrent()
     }
 }
