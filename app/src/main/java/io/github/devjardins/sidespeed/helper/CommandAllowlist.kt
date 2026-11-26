@@ -149,9 +149,15 @@ object CommandAllowlist {
                 listOf("/system/bin/cmd", "role", "get-role-holders", "android.app.role.HOME")
             t.size == 1 && t[0] == "bring-back" ->
                 listOf(
-                    "/system/bin/am", "start", "-n",
-                    "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
+                    "/system/bin/am", "start",
+                    "--activity-clear-top", "--activity-single-top",
+                    "-n", "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
                 )
+            t.size == 2 && t[0] == "force-stop" -> {
+                val p = pkg(t[1]) ?: return null
+                if (p == INSTALL_SELF_PACKAGE) return null
+                listOf("/system/bin/am", "force-stop", "--user", "0", p)
+            }
             else -> null
         }
     }
