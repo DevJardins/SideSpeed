@@ -418,8 +418,5 @@
     <string name="update_verify_signer_mismatch">جهة التوقيع لا تطابق التطبيق المثبّت.</string>
     <string name="about_language">اللغة</string>
     <string name="about_language_same_as_device">مثل لغة الجهاز</string>
-    <string name="about_language_not_complete"></string>
-    <string name="about_language_selected"></string>
     <string name="tools_health_device_line">%1$s · %2$s</string>
-    <string name="app_name" translatable="false"></string>
 </resources>
