@@ -13,8 +13,68 @@ the code may have a bug.
 - **Keep Markdown Static:** Do not write session progress, changelogs, or task checklists into `CLAUDE.md`; rely on `claude-mem` session summaries for continuity.
 - **Protect Secrets:** Never print raw API keys, `.env` values, or tokens into stdout/Bash output, and wrap sensitive prompt snippets in `<private>...</private>`.
 
-## Delegation Rules
-Before building, weigh difficulty of task, and try to assign to other services as a sub agent (or multiples) with instructions where it makes sense. Muse, Antigravity, and Cursor are tools at your disposal, and can be used to expedite building features without burning through our tokens. 
+## Delegation and routing
+
+The orchestrator is the Claude session the owner is talking to.
+It scores, routes, reviews and merges. Workers build.
+
+### Routing line
+
+Before starting a task, write one line so the owner can redirect it:
+`Routing: 4/10 · Sensitive: no · Muse · <one short reason>`
+
+### Who does what
+
+| Score | Work | Who |
+| --- | --- | --- |
+| 1–2 | Trivial: a typo, a few lines, a config value, a single check. | The orchestrator. A brief and a review cost more than the fix. |
+| 3–6 | Scoped: one feature or area, tests, a refactor that isn't sensitive. | Muse for the app, Cursor for sidespeed-site. Split independent parts across several workers. |
+| 7–8 | Hard: crosses modules, holds state, or a tricky TV focus flow. | Antigravity. |
+| 9–10 | Expert: new architecture, races, a root cause nobody has found. | The orchestrator plans and decides; it may hand the build to Antigravity. |
+| Review | Every worker PR. | The orchestrator. Cursor or Copilot may add a read-only second review. |
+
+### Sensitive work
+
+Sensitive means anything touching:
+
+- The helper and its security (§5): `HelperServer`, `HelperMain`, `CommandAllowlist`, anything the helper runs.
+- Installs and updates: `install-self`, `install-update`, `UpdateVerify`, `SelfUpdater`, `AppUpdater`, the update feed.
+- Companion trust: `TvIdentity`, `TvSessions`, `TrustedNetworks`, pairing, ADB keys.
+- Secrets and signing: keystores, tokens, CI secrets.
+- Releases: version bumps, tags, publishing, CI workflows, site redirects.
+
+Rules for sensitive work:
+
+- Never hand it to Muse or Cursor to build.
+- Score 1–2: the orchestrator does it.
+- Score 3–8: Antigravity builds it; the orchestrator does a security review before merging.
+- Score 9–10: the orchestrator.
+- A release the owner approved in this session is run by the orchestrator:
+  tag, check the draft, publish, update the site. No delegation.
+
+### Workers
+
+Delegate with T3's `delegate_task`.
+
+| Worker | Provider and model | Use for | Notes |
+| --- | --- | --- | --- |
+| Muse | `muse`, `muse-spark-1.3`, `reasoningEffort` high | App builds | Not Wonder: it drains the quota. Give it the emulator path (§7). |
+| Antigravity | `antigravity`, `gemini-4-neon`, `thought_level` high | Hard and sensitive builds | The orchestrator may pick another model for the task. |
+| Cursor | `cursor`, `composer-2.5`, `fastMode` false; `grok-4.7` xhigh for hard work | sidespeed-site builds, second reviews | The plan has no Claude models. It adds a `Co-authored-by` line: say not to, and check before merging. |
+| Copilot | `acpRegistry_github_copilot` | Fallback when Muse is out of quota | Set `allow_all` to on for unattended work. |
+
+### How a delegated task runs
+
+1. Score 4+: search claude-mem first. Put the constraints and observation IDs that matter in the brief.
+2. Score 5+: plan first with Superpowers `brainstorming` and `writing-plans`,
+   unless the owner says otherwise. Give each worker one file-scoped part.
+3. Each worker gets its own worktree (`isolation: "worktree"`). For site work,
+   tell the worker to make a worktree of `/Users/mdez/Developer/sidespeed-site`.
+4. Every brief includes the AGENTS.md rules that apply, the test command,
+   "no `Co-authored-by` line", and "stop at opening the PR".
+5. The orchestrator reviews the diff and runs the tests
+   (`verification-before-completion`), then merges as §7 allows.
+6. Save only verified decisions to claude-mem, never a worker's unreviewed draft.
 
 ## 1. Project map
 
