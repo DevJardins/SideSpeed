@@ -33,6 +33,7 @@ class ToolsCommandsTest {
         assertEquals(ToolResult.HelperDown, commands.putAnimationScale(AnimationKey.WINDOW, "0.5"))
         assertEquals(ToolResult.HelperDown, commands.resetCompiled("com.x.y"))
         assertEquals(ToolResult.HelperDown, commands.launchTimeMs("com.x.y", "com.x.y.Main"))
+        assertEquals(ToolResult.HelperDown, commands.forceStop("com.x.y"))
         assertEquals(ToolResult.HelperDown, commands.bringBack())
         assertTrue(fake.commands.isEmpty())
     }
@@ -189,5 +190,26 @@ class ToolsCommandsTest {
         fake.on("bring-back") { listOf("Starting: Intent {}") to 0 }
         assertEquals(ToolResult.Ok(Unit), commands.bringBack())
         assertEquals(listOf("bring-back"), fake.commands)
+    }
+
+    @Test fun forceStopOk() = runTest {
+        val (fake, commands) = commands()
+        fake.on("force-stop com.x.y") { emptyList<String>() to 0 }
+        assertEquals(ToolResult.Ok(Unit), commands.forceStop("com.x.y"))
+        assertEquals(listOf("force-stop com.x.y"), fake.commands)
+    }
+
+    @Test fun forceStopRefusedMapsToRefused() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("force-stop io.github.devjardins.sidespeed") { listOf("error: request not allowed") to 126 }
+        }
+        assertEquals(ToolResult.Refused, commands.forceStop("io.github.devjardins.sidespeed"))
+    }
+
+    @Test fun forceStopFailedMapsToFailed() = runTest {
+        val (_, commands) = commands().also { (fake, _) ->
+            fake.on("force-stop com.x.y") { listOf("Failure") to 1 }
+        }
+        assertTrue(commands.forceStop("com.x.y") is ToolResult.Failed)
     }
 }
