@@ -50,6 +50,8 @@ import io.github.devjardins.sidespeed.ui.apps.AppsViewModel
 import io.github.devjardins.sidespeed.ui.apps.AutoOptimizeScreen
 import io.github.devjardins.sidespeed.ui.apps.UpdateBannerSlot
 import io.github.devjardins.sidespeed.ui.home.HomeScreen
+import io.github.devjardins.sidespeed.ui.home.exitToSystemHome
+import io.github.devjardins.sidespeed.ui.home.homeExitIntent
 import io.github.devjardins.sidespeed.ui.tools.AnimationsCard
 import io.github.devjardins.sidespeed.ui.tools.HealthCardSlot
 import io.github.devjardins.sidespeed.BuildConfig
@@ -420,6 +422,7 @@ class MainActivity : ComponentActivity() {
                         selfDebuggable = (application as SideSpeedApp).container.selfBuild.debuggable,
                         versionName = currentVersion,
                         focusedTile = io.github.devjardins.sidespeed.ui.home.homeTileFromSaved(lastHomeTile),
+                        onBack = { exitToSystemHome({ startActivity(homeExitIntent()) }, ::finishAffinity) },
                         )
                     }
                     else -> {

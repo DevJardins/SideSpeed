@@ -248,6 +248,7 @@ class CommandAllowlistTest {
             "settings get global window_animation_scale\$",
             "install-self 5\$",
             "bring-back \$",
+            "force-stop com.foo\$Bar",
         ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
         assertNull(CommandAllowlist.installSelfSize("install-self 5\$"))
         assertEquals(false, CommandAllowlist.isPing("ping abcdefghijklmnop\$23"))
@@ -439,11 +440,44 @@ class CommandAllowlistTest {
     @Test fun bringBackForm() {
         assertEquals(
             listOf(
-                "/system/bin/am", "start", "-n",
-                "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
+                "/system/bin/am", "start",
+                "--activity-clear-top", "--activity-single-top",
+                "-n", "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
             ),
             CommandAllowlist.toArgv("bring-back"),
         )
         assertNull(CommandAllowlist.toArgv("bring-back extra"))
+    }
+
+    @Test fun forceStopForm() {
+        assertEquals(
+            listOf("/system/bin/am", "force-stop", "--user", "0", "com.x.y"),
+            CommandAllowlist.toArgv("force-stop com.x.y"),
+        )
+    }
+
+    @Test fun force_stop_refuses_self_package() {
+        assertNull(CommandAllowlist.toArgv("force-stop io.github.devjardins.sidespeed"))
+    }
+
+    @Test fun forceStopRejections() {
+        listOf(
+            "force-stop",
+            "force-stop com.x.y extra",
+            "force-stop --user 0 com.x.y",
+            "force-stop --all",
+            "force-stop -a",
+            "am force-stop com.x.y",
+            "/system/bin/am force-stop com.x.y",
+            "/system/bin/am force-stop --user 0 com.x.y",
+            "force-stop nodots",
+            "force-stop com.foo\$Bar",
+            "force-stop com.x.y;id",
+            "force-stop com.x.y ",
+            " force-stop com.x.y",
+            "force-stop  com.x.y",
+            "FORCE-STOP com.x.y",
+            "force_stop com.x.y",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it)) }
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,7 +61,7 @@ fun homeTileFromSaved(name: String?): HomeTile =
  * The Home screen: the SideSpeed header and four big buttons (My Apps,
  * Auto-optimize, Tools, About), each with a one-line status. [focusedTile]
  * takes focus: My Apps on first launch, otherwise the tile just come from.
- * Back leaves the app as before.
+ * Back starts the system Home screen and finishes SideSpeed.
  */
 @Composable
 fun HomeScreen(
@@ -71,6 +72,7 @@ fun HomeScreen(
     onOpenAutoOptimize: () -> Unit,
     onOpenTools: () -> Unit,
     onOpenAbout: () -> Unit,
+    onBack: () -> Unit,
     banner: @Composable () -> Unit = {},
     tvAddress: UiText? = null,
     selfCompile: Flow<SelfCompile?>,
@@ -88,6 +90,7 @@ fun HomeScreen(
     val selfRecord by selfCompile.collectAsState(initial = null)
     val catalog by appUpdates.collectAsState(initial = emptyMap())
     val updateCount = remember(state.apps, catalog) { myAppsUpdatesCount(state.apps, catalog) }
+    BackHandler(onBack = onBack)
     // The My Apps tile counts the apps, so keep the list filled while Home shows.
     LaunchedEffect(Unit) {
         vm.load()

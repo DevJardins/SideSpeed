@@ -63,6 +63,8 @@ class ToolsCommands(
             is ToolResult.Failed -> result
         }
 
+    suspend fun forceStop(pkg: String): ToolResult<Unit> = run("force-stop $pkg").map { }
+
     suspend fun bringBack(): ToolResult<Unit> = run("bring-back").map { }
 
     override suspend fun setHome(pkg: String, cls: String): ToolResult<Unit> =

@@ -1,9 +1,13 @@
 package io.github.devjardins.sidespeed.tools
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+
 /**
  * Times cold launches (`am start -W -S`) and reports the median. Every run —
- * success or failure — ends with [ToolsCommands.bringBack] so SideSpeed
- * returns to the front; a mid-command connection loss surfaces as
+ * success, failure, or cancellation — runs best-effort [ToolsCommands.forceStop]
+ * when `launch-time` may have started the app and ends with [ToolsCommands.bringBack]
+ * so SideSpeed returns to the front; a mid-command connection loss surfaces as
  * [ToolResult.HelperDown] via [ToolsCommands].
  */
 class LaunchTimer(
@@ -14,26 +18,27 @@ class LaunchTimer(
     suspend fun medianMs(pkg: String, cls: String): ToolResult<Long> {
         val samples = mutableListOf<Long>()
         repeat(runs) {
-            when (val result = commands.launchTimeMs(pkg, cls)) {
-                is ToolResult.Ok -> samples += result.value
-                is ToolResult.HelperDown -> {
-                    commands.bringBack()
-                    return ToolResult.HelperDown
-                }
-                is ToolResult.HelperOutdated -> {
-                    commands.bringBack()
-                    return ToolResult.HelperOutdated
-                }
-                is ToolResult.Refused -> {
-                    commands.bringBack()
-                    return ToolResult.Refused
-                }
-                is ToolResult.Failed -> {
-                    commands.bringBack()
-                    return result
+            var result: ToolResult<Long>? = null
+            val r = try {
+                commands.launchTimeMs(pkg, cls).also { result = it }
+            } finally {
+                withContext(NonCancellable) {
+                    try {
+                        if (result !is ToolResult.Refused && result !is ToolResult.HelperOutdated) {
+                            commands.forceStop(pkg)
+                        }
+                    } finally {
+                        commands.bringBack()
+                    }
                 }
             }
-            commands.bringBack()
+            when (r) {
+                is ToolResult.Ok -> samples += r.value
+                is ToolResult.HelperDown -> return ToolResult.HelperDown
+                is ToolResult.HelperOutdated -> return ToolResult.HelperOutdated
+                is ToolResult.Refused -> return ToolResult.Refused
+                is ToolResult.Failed -> return r
+            }
         }
         samples.sort()
         return ToolResult.Ok(samples[samples.size / 2])
