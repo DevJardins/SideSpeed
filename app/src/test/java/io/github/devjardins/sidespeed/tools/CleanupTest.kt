@@ -1,7 +1,10 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.adb.FakeAdbBackend
 import io.github.devjardins.sidespeed.testing.english
+import io.github.devjardins.sidespeed.ui.text.UiText
+import io.github.devjardins.sidespeed.ui.text.uiText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -198,6 +201,12 @@ class CleanupTest {
         assertEquals("500 MB", CleanupThreshold.MB_500.shortLabel().english())
         assertEquals("1 GB", CleanupThreshold.GB_1.shortLabel().english())
         assertEquals("2 GB", CleanupThreshold.GB_2.shortLabel().english())
+    }
+
+    @Test fun thresholdSizesAreNumbersSoTheyFollowTheLanguage() {
+        assertEquals(uiText(R.string.tools_bytes_mb, UiText.Integer(500)), CleanupThreshold.MB_500.shortLabel())
+        assertEquals(uiText(R.string.tools_bytes_gb, UiText.Integer(1)), CleanupThreshold.GB_1.shortLabel())
+        assertEquals(uiText(R.string.tools_bytes_gb, UiText.Integer(2)), CleanupThreshold.GB_2.shortLabel())
     }
 
     @Test fun running_true_during_clean_and_false_after() {

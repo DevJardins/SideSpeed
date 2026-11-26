@@ -321,12 +321,6 @@
     <string name="tools_bytes_gb">%1$s GB</string>
     <!-- Automatic cleanup threshold button meaning automatic cleanup is disabled. -->
     <string name="tools_threshold_off">Off</string>
-    <!-- Automatic cleanup threshold button for 500 MB. -->
-    <string name="tools_threshold_500_mb">500 MB</string>
-    <!-- Automatic cleanup threshold button for 1 GB. -->
-    <string name="tools_threshold_1_gb">1 GB</string>
-    <!-- Automatic cleanup threshold button for 2 GB. -->
-    <string name="tools_threshold_2_gb">2 GB</string>
     <!-- Short reason recorded when cleanup could not run because the helper was down. -->
     <string name="tools_skip_helper_down">Helper not running</string>
     <!-- Short reason recorded when cleanup could not run because the helper needed a restart. -->
@@ -335,8 +329,8 @@
     <string name="tools_skip_refused">Helper refused the command</string>
     <!-- Box health card title on Tools. -->
     <string name="tools_health_title">Box health</string>
-    <!-- Device summary line on Box health. %1$s is the device name/model, %2$s is the Android version. Keep: Android -->
-    <string name="tools_health_device">%1$s · Android %2$s</string>
+    <!-- Box health device line. %1$s is the device name, %2$s is the Android version, like "Android 14". Keep both; only change the separator or order if your language needs it. -->
+    <string name="tools_health_device_line">%1$s · %2$s</string>
     <!-- RAM usage line on Box health. %1$s is free RAM, %2$s is total RAM. -->
     <string name="tools_health_ram">%1$s free of %2$s RAM</string>
     <!-- Storage usage line on Box health. %1$s is free storage, %2$s is total storage. -->

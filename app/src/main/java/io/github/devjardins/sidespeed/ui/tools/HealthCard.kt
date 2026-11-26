@@ -69,6 +69,14 @@ fun deviceLabel(deviceName: String?, manufacturer: String, model: String): Strin
     return "$maker $mdl"
 }
 
+/** "Living Room TV · Android 14". Each part is isolated so it stays whole in right-to-left languages. */
+fun deviceLine(deviceName: String?, manufacturer: String, model: String, androidVersion: String): UiText =
+    uiText(
+        R.string.tools_health_device_line,
+        UiText.Ltr(deviceLabel(deviceName, manufacturer, model)),
+        UiText.Ltr("Android $androidVersion"),
+    )
+
 /** Box health at a glance: model, RAM, storage and helper status. No helper needed. */
 @Composable
 fun HealthCard(
@@ -85,11 +93,7 @@ fun HealthCard(
         ) {
             Text(stringResource(R.string.tools_health_title), style = SsType.Title, color = SsColors.TextPrimary)
             Text(
-                uiText(
-                    R.string.tools_health_device,
-                    deviceLabel(deviceName, Build.MANUFACTURER, summary.model),
-                    UiText.Ltr(summary.androidVersion),
-                ).resolve(),
+                deviceLine(deviceName, Build.MANUFACTURER, summary.model, summary.androidVersion).resolve(),
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
