@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentHashMap
 
 /** Awaits engine drain until the queue is empty or the helper is down, bounded by [timeoutMs]. */
 internal suspend fun awaitRemoteCompileDrain(
@@ -29,6 +30,22 @@ internal suspend fun awaitRemoteCompileDrain(
 }
 
 /**
+ * Drops a late [android.app.job.JobService.jobFinished] after
+ * [android.app.job.JobService.onStopJob]: once the system stops a job it owns the completion
+ * report, and reporting a finish afterwards fails. Keyed by params so a restarted job still reports.
+ */
+internal class JobFinishGate {
+    private val stopped = ConcurrentHashMap.newKeySet<Any>()
+
+    fun markStopped(key: Any) {
+        stopped.add(key)
+    }
+
+    /** True when [key] may still report its finish; consumes a recorded stop. */
+    fun claimFinish(key: Any): Boolean = !stopped.remove(key)
+}
+
+/**
  * Holds a short JobScheduler execution window when a remote request wakes a cold process
  * and Android 12+ background restrictions refuse [MaintenanceService].
  */
@@ -38,6 +55,7 @@ class RemoteCompileJob : JobService() {
     )
     private val jobLock = Any()
     private var activeJob: Job? = null
+    private val finishGate = JobFinishGate()
 
     override fun onStartJob(params: JobParameters): Boolean {
         val container = (application as? SideSpeedApp)?.container
@@ -55,7 +73,8 @@ class RemoteCompileJob : JobService() {
                     synchronized(jobLock) {
                         if (activeJob === self) activeJob = null
                     }
-                    jobFinished(params, false)
+                    // The system owns the report once onStopJob ran: a late finish call fails.
+                    if (finishGate.claimFinish(params)) jobFinished(params, false)
                 }
             }
         }
@@ -63,6 +82,7 @@ class RemoteCompileJob : JobService() {
     }
 
     override fun onStopJob(params: JobParameters): Boolean {
+        finishGate.markStopped(params)
         synchronized(jobLock) {
             activeJob?.cancel()
             activeJob = null

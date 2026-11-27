@@ -26,6 +26,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
 /** Result of a shell-only [CompileStatusProvider.call] dispatch. */
@@ -69,6 +71,9 @@ class CompileStatusProvider : ContentProvider() {
 
     /** Latest snapshot; an idle row until the background collector's first pass. Never blocks. */
     @Volatile private var cached: List<Pair<String, String>> = idleRows()
+
+    /** Serializes [refreshOnce] writers; the req_seq stamp decides which snapshot wins. */
+    private val refreshMutex = Mutex()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -205,8 +210,16 @@ class CompileStatusProvider : ContentProvider() {
         } catch (_: Exception) {
             null
         }
-        if (rows != null) cached = rows
+        if (rows != null) {
+            refreshMutex.withLock {
+                // A tick that read before a call's req_seq bump must not overwrite the newer row.
+                if (reqSeqOf(rows) >= reqSeqOf(cached)) cached = rows
+            }
+        }
     }
+
+    private fun reqSeqOf(rows: List<Pair<String, String>>): Long =
+        rows.firstOrNull { it.first == KEY_REQ_SEQ }?.second?.toLongOrNull()?.takeIf { it >= 0L } ?: 0L
 
     /** Starts the background collector once, from [onCreate] or lazily from [query]. */
     @Synchronized private fun ensureCollector() {

@@ -143,6 +143,41 @@ class CompileStatusProviderTest {
         assertEquals("com.example.app", rows["pkg"])
     }
 
+    @Test fun refreshOnce_never_overwrites_a_newer_req_seq_snapshot() = runTest {
+        val provider = CompileStatusProvider()
+        var rows = StatusRow(
+            phase = CompilePhase.IDLE,
+            activePkg = "",
+            activeLabel = "",
+            activeMode = "",
+            activeStartedMs = 0L,
+            queueWaiting = 0,
+            last = null,
+            self = SelfState.PENDING,
+            version = "0.5.1",
+            reqSeq = 2L,
+        ).toWireMap()
+        provider.refreshSource = { rows }
+        provider.refreshOnce()
+        assertEquals("2", provider.currentRows().toMap()["req_seq"])
+
+        // A collector tick that read before the call's req_seq bump must not win.
+        rows = StatusRow(
+            phase = CompilePhase.IDLE,
+            activePkg = "",
+            activeLabel = "",
+            activeMode = "",
+            activeStartedMs = 0L,
+            queueWaiting = 0,
+            last = null,
+            self = SelfState.PENDING,
+            version = "0.5.1",
+            reqSeq = 1L,
+        ).toWireMap()
+        provider.refreshOnce()
+        assertEquals("2", provider.currentRows().toMap()["req_seq"])
+    }
+
     @Test fun serving_never_waits_for_the_source() = runTest {
         val provider = CompileStatusProvider()
         provider.refreshSource = { awaitCancellation() }
