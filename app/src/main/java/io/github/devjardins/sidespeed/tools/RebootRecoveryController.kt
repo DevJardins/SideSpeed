@@ -14,7 +14,10 @@ import io.github.devjardins.sidespeed.maintenance.RebootRecoveryStore
 import io.github.devjardins.sidespeed.maintenance.SecureSettingsWriter
 import io.github.devjardins.sidespeed.maintenance.sha256HexLower
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 interface RebootRecoveryCommands {
     suspend fun grantRebootRecovery(): ToolResult<Unit>
@@ -112,16 +115,22 @@ class RebootRecoveryController(
     val isFireOs: Boolean,
     private val sdkInt: Int = Build.VERSION.SDK_INT,
     private val isWifiConnected: () -> Boolean,
+    private val probeWirelessTls: suspend () -> Boolean = { false },
 ) {
     fun canEnable(): Boolean = !isFireOs && sdkInt >= 30 && isWifiConnected()
 
     fun hasPendingSecureSettingsRevoke(): Boolean = permissions.hasSecureSettings()
 
-    suspend fun needsPairing(): Boolean = !prefs.pairedTls.first()
-
     suspend fun enable(): EnableResult {
         if (!canEnable()) return EnableResult.NoWifiOrOldAndroid
-        if (!prefs.pairedTls.first()) return EnableResult.NeedsPairing
+
+        var paired = prefs.pairedTls.first()
+        var wroteAdbWifi = false
+        if (!paired && settings.getInt(SettingsReader.ADB_WIFI_ENABLED) == 1) {
+            if (!probeWirelessTls()) return EnableResult.NeedsPairing
+            prefs.setPairedTls(true)
+            paired = true
+        }
 
         when (commands.grantRebootRecovery()) {
             is ToolResult.HelperDown -> return EnableResult.HelperDown
@@ -136,13 +145,35 @@ class RebootRecoveryController(
             return EnableResult.GrantFailed
         }
 
+        if (!paired) {
+            // Permissions are granted while enabled is still false: record pendingRevokes before
+            // suspending on the TLS probe so the invariant holds across cancellation or process death.
+            store.setPendingRevokes(true)
+            val probed = try {
+                if (secureWriter.enableAdbWifi()) {
+                    wroteAdbWifi = true
+                    probeWirelessTls()
+                } else {
+                    false
+                }
+            } catch (e: CancellationException) {
+                withContext(NonCancellable) { rollbackFailedGrant() }
+                throw e
+            }
+            if (!probed) {
+                rollbackFailedGrant()
+                return EnableResult.NeedsPairing
+            }
+            prefs.setPairedTls(true)
+        }
+
         // Persist enabled immediately after grants succeed so the invariant holds even if Step 5 is abandoned.
         store.setEnabled(true)
         store.setPendingRevokes(false)
         store.setDailyRefreshFailed(false)
         jobs.scheduleDaily()
 
-        return evaluateAndSyncNetwork(mayTriggerPrompt = true)
+        return evaluateAndSyncNetwork(mayTriggerPrompt = !wroteAdbWifi)
     }
 
     suspend fun disable(): DisableResult {
