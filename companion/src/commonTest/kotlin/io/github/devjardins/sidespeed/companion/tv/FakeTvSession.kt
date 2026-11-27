@@ -15,6 +15,8 @@ class FakeTvSession(
     var failOnOpen: Boolean = false,
     var authPending: Boolean = false,
     var loseConnectionOn: String? = null,
+    var packageCmdHandler: ((Array<out String>) -> InstallStream)? = null,
+    var onClose: (() -> Unit)? = null,
 ) : TvSession {
     val outputs: MutableMap<String, String> = outputs.toMutableMap()
 
@@ -61,7 +63,14 @@ class FakeTvSession(
         return outputs[command]?.trim() ?: throw AssertionError("Unscripted command sent to TV: $command")
     }
 
+    override suspend fun openPackageCmd(vararg args: String): InstallStream {
+        if (closed) throw AdbConnectionLost("session closed")
+        val handler = packageCmdHandler ?: throw UnsupportedInstallStreamException()
+        return handler(args)
+    }
+
     override fun close() {
         closed = true
+        onClose?.invoke()
     }
 }

@@ -80,6 +80,8 @@ class Graph(app: Application, scope: CoroutineScope) {
         store, fingerprints, upkeep, connector, discovery, scope,
         pairer = pairer, ports = ports, linkOffer = linkOffer,
         identity = identity,
+        installConnector = KadbTvConnector.forInstalls(AndroidDirs.keyDir(app)),
+        transferHost = AndroidInstallTransferHost(app),
     )
 
     /** Self-update: check state and installer for the About screen. */
@@ -108,6 +110,7 @@ class CompanionApplication : Application() {
         // The picker and the shown language both build on this, so they agree.
         debugLanguageTags = if (BuildConfig.DEBUG) listOf("en-XA", "ar-XB") else emptyList()
         clearStaleUpdateFiles(this)
+        clearStaleInstallStaging(cacheDir)
         graph = Graph(this, appScope)
         appScope.launch { UpkeepWorker.schedule(this@CompanionApplication, graph.store.settings().intervalMinutes, replace = false) }
         watchNetwork()

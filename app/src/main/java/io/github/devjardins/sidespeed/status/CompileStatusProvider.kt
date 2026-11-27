@@ -8,27 +8,51 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
 import android.os.Build
+import android.os.Bundle
+import io.github.devjardins.sidespeed.AppContainer
 import io.github.devjardins.sidespeed.SideSpeedApp
+import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.DataStorePrefs
+import io.github.devjardins.sidespeed.maintenance.MaintenanceService
+import io.github.devjardins.sidespeed.maintenance.RemoteCompileJob
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
+
+/** Result of a shell-only [CompileStatusProvider.call] dispatch. */
+data class RemoteCallResult(
+    val ok: Boolean,
+    val queued: Int = 0,
+    val reqSeq: Long = 0L,
+    val error: String? = null,
+)
 
 /**
- * Shell-only live compile status, for the Companion's TV card.
+ * Shell-only live compile status and remote compile trigger endpoint, for the Companion's TV card.
  *
- * One row, all strings, empty when absent: `v state pkg label mode started_ms queue
- * last_pkg last_label last_result last_ms self version`. Labels are percent-encoded
- * ([encodeStatusLabel]); see [StatusRow.toWireMap].
+ * One row of 16 columns, all strings, empty when absent: `v state pkg label mode started_ms queue
+ * last_pkg last_label last_result last_ms self version req_seq remote retrying`. Labels are
+ * percent-encoded ([encodeStatusLabel]); see [StatusRow.toWireMap].
  *
- * The provider is exported but gated by `android.permission.DUMP`: the shell holds DUMP,
- * normal third-party apps cannot get it, so only `adb shell content query` (and code
- * running as shell) can read it. There is no write permission on purpose: every write
- * method throws, so the row can never be forged through this surface.
+ * The provider is exported so ADB shell can reach it:
+ * - [query] is gated by `android.permission.DUMP` (the shell holds DUMP, normal third-party apps
+ *   cannot get it), so only `adb shell content query` and privileged readers can query the row.
+ * - [call] accepts `compile_package` and `optimize_now` requests and enforces
+ *   `Binder.getCallingUid() == SHELL_UID` (`2000`) as its first check before reading arguments or
+ *   touching state, rejecting non-shell callers (including apps and root) with [SecurityException].
+ * - [insert], [delete], and [update] always throw [UnsupportedOperationException] so the status
+ *   row can never be forged through ContentValues writes.
  *
  * The row normally comes from the in-process [CompileStatus] (which restored the
  * persisted in-progress compile as interrupted at startup). Before the app container
@@ -36,8 +60,20 @@ import kotlinx.coroutines.launch
  * then reads as `interrupted`, never `compiling`.
  */
 class CompileStatusProvider : ContentProvider() {
+    internal interface CallTarget {
+        val ownPackage: String
+        fun isInstalled(pkg: String): Boolean
+        fun currentReqSeq(): Long
+        suspend fun requestCompile(pkg: String, keepOptimized: Boolean): Boolean
+        suspend fun requestOptimizeNow(): Int
+        fun startWorker()
+    }
+
     /** Latest snapshot; an idle row until the background collector's first pass. Never blocks. */
     @Volatile private var cached: List<Pair<String, String>> = idleRows()
+
+    /** Serializes [refreshOnce] writers; the req_seq stamp decides which snapshot wins. */
+    private val refreshMutex = Mutex()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -45,6 +81,18 @@ class CompileStatusProvider : ContentProvider() {
 
     /** Test seam: replaces the live/persisted row source read by [refreshOnce]. */
     internal var refreshSource: (suspend () -> List<Pair<String, String>>?)? = null
+
+    /** Test seam: replaces [Binder.getCallingUid] for JVM unit tests. */
+    internal var callingUid: () -> Int = { Binder.getCallingUid() }
+
+    /** Test seam: replaces the whole call handler inside [dispatchCall]. */
+    internal var callHandler: (suspend (String, String?, Boolean) -> RemoteCallResult)? = null
+
+    /** Test seam: replaces the production [SideSpeedApp.container] target used by [defaultCall]. */
+    internal var callTarget: (() -> CallTarget?)? = null
+
+    /** Test seam: overrides the 5 s [dispatchCall] timeout. */
+    internal var callTimeoutMs: Long = CALL_TIMEOUT_MS
 
     override fun onCreate(): Boolean {
         ensureCollector()
@@ -67,6 +115,89 @@ class CompileStatusProvider : ContentProvider() {
         }
     }
 
+    override fun call(method: String, arg: String?, extras: Bundle?): Bundle {
+        if (callingUid() != SHELL_UID) throw SecurityException("Shell only")
+        val keep = extras?.getBoolean(EXTRA_KEEP, false) ?: false
+        return dispatchCall(method, arg, keep).toBundle()
+    }
+
+    internal fun dispatchCall(method: String, arg: String?, keep: Boolean): RemoteCallResult {
+        if (callingUid() != SHELL_UID) throw SecurityException("Shell only")
+        return try {
+            runBlocking(Dispatchers.Default) {
+                withTimeout(callTimeoutMs) {
+                    val handler = callHandler ?: { m, a, k -> defaultCall(m, a, k) }
+                    val result = handler(method, arg, keep)
+                    if (result.ok) refreshOnce()
+                    result
+                }
+            }
+        } catch (_: TimeoutCancellationException) {
+            RemoteCallResult(ok = false, error = "timeout")
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            RemoteCallResult(ok = false, error = "interrupted")
+        } catch (_: Exception) {
+            RemoteCallResult(ok = false, error = "internal_error")
+        }
+    }
+
+    private suspend fun defaultCall(method: String, arg: String?, keep: Boolean): RemoteCallResult = when (method) {
+        METHOD_COMPILE_PACKAGE -> {
+            val pkg = PackageName.parse(arg ?: "")?.value
+                ?: return RemoteCallResult(ok = false, error = "invalid_package")
+            val target = callTarget?.invoke() ?: appTarget()
+                ?: return RemoteCallResult(ok = false, error = "not_ready")
+            if (pkg == target.ownPackage) {
+                RemoteCallResult(ok = true, queued = 0, reqSeq = target.currentReqSeq())
+            } else if (!target.isInstalled(pkg)) {
+                RemoteCallResult(ok = false, error = "not_installed")
+            } else {
+                val queued = if (target.requestCompile(pkg, keep)) {
+                    target.startWorker()
+                    1
+                } else {
+                    0
+                }
+                RemoteCallResult(ok = true, queued = queued, reqSeq = target.currentReqSeq())
+            }
+        }
+        METHOD_OPTIMIZE_NOW -> {
+            val target = callTarget?.invoke() ?: appTarget()
+                ?: return RemoteCallResult(ok = false, error = "not_ready")
+            val queued = target.requestOptimizeNow()
+            if (queued > 0) target.startWorker()
+            RemoteCallResult(ok = true, queued = queued, reqSeq = target.currentReqSeq())
+        }
+        else -> RemoteCallResult(ok = false, error = "unknown_method")
+    }
+
+    private suspend fun appTarget(): CallTarget? {
+        val app = context?.applicationContext as? SideSpeedApp ?: return null
+        val container = awaitContainer(app) ?: return null
+        return object : CallTarget {
+            override val ownPackage: String get() = app.packageName
+            override fun isInstalled(pkg: String): Boolean = container.installedApps.find(pkg) != null
+            override fun currentReqSeq(): Long = container.compileStatus.requestSeq()
+            override suspend fun requestCompile(pkg: String, keepOptimized: Boolean): Boolean =
+                container.maintenance.requestCompile(pkg, keepOptimized)
+            override suspend fun requestOptimizeNow(): Int = container.maintenance.requestOptimizeNow()
+            override fun startWorker() {
+                MaintenanceService.start(app)
+                runCatching { RemoteCompileJob.schedule(app) }
+            }
+        }
+    }
+
+    /** Cold `content call` binder IPC can arrive before `Application.onCreate()` sets `container`. */
+    private suspend fun awaitContainer(app: SideSpeedApp): AppContainer? {
+        repeat(CONTAINER_WAIT_ATTEMPTS) {
+            runCatching { app.container }.getOrNull()?.let { return it }
+            delay(CONTAINER_WAIT_STEP_MS)
+        }
+        return runCatching { app.container }.getOrNull()
+    }
+
     /** The snapshot [query] serves: the latest collector pass, or the idle row before the first. */
     internal fun currentRows(): List<Pair<String, String>> = cached
 
@@ -74,11 +205,21 @@ class CompileStatusProvider : ContentProvider() {
     internal suspend fun refreshOnce() {
         val rows = try {
             refreshSource?.invoke() ?: liveRow() ?: context?.persistedRow()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             null
         }
-        if (rows != null) cached = rows
+        if (rows != null) {
+            refreshMutex.withLock {
+                // A tick that read before a call's req_seq bump must not overwrite the newer row.
+                if (reqSeqOf(rows) >= reqSeqOf(cached)) cached = rows
+            }
+        }
     }
+
+    private fun reqSeqOf(rows: List<Pair<String, String>>): Long =
+        rows.firstOrNull { it.first == KEY_REQ_SEQ }?.second?.toLongOrNull()?.takeIf { it >= 0L } ?: 0L
 
     /** Starts the background collector once, from [onCreate] or lazily from [query]. */
     @Synchronized private fun ensureCollector() {
@@ -152,9 +293,29 @@ class CompileStatusProvider : ContentProvider() {
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int =
         throw UnsupportedOperationException("read-only")
 
+    private fun RemoteCallResult.toBundle(): Bundle = Bundle().apply {
+        putBoolean(KEY_OK, ok)
+        putInt(KEY_QUEUED, queued)
+        putLong(KEY_REQ_SEQ, reqSeq)
+        if (error != null) putString(KEY_ERROR, error)
+    }
+
     companion object {
         /** Collector cadence: fresh enough for companion polls, cheap enough to run always. */
         const val STATUS_SNAPSHOT_REFRESH_MS = 2_000L
+
+        const val SHELL_UID = 2000
+        const val METHOD_COMPILE_PACKAGE = "compile_package"
+        const val METHOD_OPTIMIZE_NOW = "optimize_now"
+        const val EXTRA_KEEP = "keep"
+
+        private const val KEY_OK = "ok"
+        private const val KEY_QUEUED = "queued"
+        private const val KEY_REQ_SEQ = "req_seq"
+        private const val KEY_ERROR = "error"
+        private const val CALL_TIMEOUT_MS = 5_000L
+        private const val CONTAINER_WAIT_STEP_MS = 10L
+        private const val CONTAINER_WAIT_ATTEMPTS = 200
 
         @Volatile private var debuggableCache: Boolean? = null
 

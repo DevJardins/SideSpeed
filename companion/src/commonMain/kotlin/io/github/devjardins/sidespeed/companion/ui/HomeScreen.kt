@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,10 @@ import io.github.devjardins.sidespeed.companion.resources.common_remove
 import io.github.devjardins.sidespeed.companion.resources.home_add_tv
 import io.github.devjardins.sidespeed.companion.resources.home_empty_body
 import io.github.devjardins.sidespeed.companion.resources.home_empty_title
+import io.github.devjardins.sidespeed.companion.resources.home_drop_on_card
+import io.github.devjardins.sidespeed.companion.resources.home_install_app
 import io.github.devjardins.sidespeed.companion.resources.home_not_trusted
+import io.github.devjardins.sidespeed.companion.resources.home_optimize_now
 import io.github.devjardins.sidespeed.companion.resources.home_remove_confirm
 import io.github.devjardins.sidespeed.companion.resources.home_remove_tv
 import io.github.devjardins.sidespeed.companion.resources.home_restart_now
@@ -51,6 +55,33 @@ import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
+
+/**
+ * Lets a platform make Home accept dropped app files. Both calls are composable so the platform can remember
+ * its own drop handlers. Only cards that can take an install right now are given [card], and [home] gets the
+ * ids of those cards (empty while an install is running).
+ */
+interface InstallDropHook {
+    /** The drop target for one card that can take an install now. */
+    @Composable fun card(tvId: String): Modifier
+
+    /** The drop target for the rest of Home: a file dropped outside every card lands here. */
+    @Composable fun home(installableTvIds: Set<String>): Modifier
+}
+
+/** How long an install or optimize notice stays on a card. */
+private const val NOTICE_MS = 8_000L
+
+/**
+ * Failure notices a TV card can show: [Copy.OPTIMIZE_FAILED] from a failed optimize run, and
+ * [Copy.NOT_TRUSTED_ERROR] when either an install or an optimize run finds the TV is not on a
+ * Trusted Network. Every other notice the card shows ([Copy.installed], [Copy.OPTIMIZE_STARTED],
+ * [Copy.OPTIMIZE_CAUGHT_UP]) reports success.
+ */
+private val ERROR_NOTICES: Set<UiText> = setOf(Copy.OPTIMIZE_FAILED, Copy.NOT_TRUSTED_ERROR)
+
+/** True when [notice] is a failure, shown in the error colour; success notices stay green. */
+fun noticeIsError(notice: UiText): Boolean = notice in ERROR_NOTICES
 
 /** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
 fun trustBanner(state: CompanionUiState): UiText? =
@@ -73,6 +104,12 @@ fun HomeScreen(
     onSubmitConnectPort: (String) -> Unit = {},
     onCancelPair: () -> Unit = {},
     onConfirm: (String) -> Unit = {},
+    onInstall: (String) -> Unit = {},
+    onOptimize: (String) -> Unit = {},
+    onDismissInstallNotice: (String) -> Unit = {},
+    dropHighlightTvId: String? = null,
+    dropHintVisible: Boolean = false,
+    installDrop: InstallDropHook? = null,
 ) {
     DisposableEffect(Unit) {
         onVisibleChange(true)
@@ -101,7 +138,11 @@ fun HomeScreen(
         onAcknowledgeRestart()
     }
 
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // Cards that can take a dropped file right now: none while an install is already running.
+    val installableIds = if (state.install != null) emptySet()
+    else state.tvs.filter { TvCardAction.INSTALL in cardActions(it) }.mapTo(mutableSetOf()) { it.id }
+    val homeDrop = installDrop?.home(installableIds) ?: Modifier
+    Column(Modifier.fillMaxSize().then(homeDrop).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.savedByNewerVersion) {
             SsText(
                 Copy.OLDER_COPY.resolve(),
@@ -147,7 +188,16 @@ fun HomeScreen(
                 items(state.tvs, key = { it.id }) { tv ->
                     val restarting = restartingId == tv.id
                     val parked = tv.status == TvStatus.CHECK_FAILED
-                    SsReachCard(cardGlow(tv.reach, tv.checkableHere, tv.attention, parked)) {
+                    val cardDrop = if (installDrop != null && tv.id in installableIds) installDrop.card(tv.id) else Modifier
+                    val highlight = dropHighlightTvId == tv.id
+                    state.installNotice[tv.id]?.let { notice ->
+                        LaunchedEffect(notice) { delay(NOTICE_MS); onDismissInstallNotice(tv.id) }
+                    }
+                    SsReachCard(
+                        cardGlow(tv.reach, tv.checkableHere, tv.attention, parked),
+                        cardDrop
+                            .then(if (highlight) Modifier.border(2.dp, Ss.accent, RoundedCornerShape(16.dp)) else Modifier),
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SsStatusDot(cardDot(tv.status, tv.checkableHere, tv.attention, parked), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -186,6 +236,24 @@ fun HomeScreen(
                                 }
                             }
                         }
+                        val actions = cardActions(tv)
+                        val optimizing = tv.id in state.optimizingTvIds
+                        if (TvCardAction.INSTALL in actions || TvCardAction.OPTIMIZE in actions) {
+                            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (TvCardAction.INSTALL in actions) {
+                                    SsButton(stringResource(Res.string.home_install_app), { onInstall(tv.id) }, enabled = state.install == null)
+                                }
+                                if (TvCardAction.OPTIMIZE in actions) {
+                                    SsButton(stringResource(Res.string.home_optimize_now), { onOptimize(tv.id) }, enabled = !optimizing)
+                                    if (optimizing) SsSpinner()
+                                }
+                            }
+                        }
+                        if (highlight || dropHintVisible && tv.id in installableIds) {
+                            SsText(stringResource(Res.string.home_drop_on_card), Ss.caption.copy(color = if (highlight) Ss.accent else Ss.textSecondary))
+                        }
+                        state.installNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = if (noticeIsError(it)) Ss.dangerText else Ss.okText)) }
+                        state.optimizeNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = if (noticeIsError(it)) Ss.dangerText else Ss.okText)) }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
                                 SsText(

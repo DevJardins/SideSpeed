@@ -1,6 +1,8 @@
 package io.github.devjardins.sidespeed.apps
 
-val STORE_INSTALLERS = setOf("com.android.vending", "com.amazon.venezia")
+import io.github.devjardins.sidespeed.helper.PackageNames
+
+val STORE_INSTALLERS = PackageNames.STORE_INSTALLERS
 
 data class AppEntry(
     val packageName: String,

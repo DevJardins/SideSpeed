@@ -52,8 +52,9 @@
             </intent-filter>
         </activity>
 
-        <!-- Live compile status for `adb shell content query` (the Companion's TV card). Exported but
-            gated by DUMP, which the shell holds and normal apps cannot get; all writes throw. -->
+        <!-- Live compile status for `adb shell content query` and remote compile triggers via
+            `adb shell content call` (the Companion's TV card). Exported so ADB shell can reach it:
+            queries require DUMP, insert/delete/update throw, and call() enforces callingUid == 2000 (shell). -->
         <provider
             android:name=".status.CompileStatusProvider"
             android:authorities="${applicationId}.status"
@@ -71,6 +72,11 @@
 
         <service
             android:name=".maintenance.RebootRecoveryJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <service
+            android:name=".maintenance.RemoteCompileJob"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 

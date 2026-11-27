@@ -40,7 +40,7 @@ import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.update.CompanionUpdateState
 import org.jetbrains.compose.resources.stringResource
 
-enum class Page { HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
+enum class Page { HOME, ADD, SETTINGS, ABOUT, LANGUAGE, INSTALL }
 
 /**
  * Where the user is in the app. Held outside [CompanionApp] so a language switch, which rebuilds
@@ -72,7 +72,7 @@ fun rememberCompanionNav(): CompanionNav = rememberSaveable(saver = CompanionNav
 /** The page one level up, where Back goes; Home has none, so Back there leaves the app. */
 fun Page.up(): Page? = when (this) {
     Page.HOME -> null
-    Page.ADD, Page.SETTINGS -> Page.HOME
+    Page.ADD, Page.SETTINGS, Page.INSTALL -> Page.HOME
     Page.ABOUT, Page.LANGUAGE -> Page.SETTINGS
 }
 
@@ -87,7 +87,7 @@ fun CompanionNav.goUp() {
 }
 
 /** The screens in navigation order; a higher ordinal is "deeper", so it slides in from the right. */
-private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT, LANGUAGE }
+private enum class Screen { LOADING, FIRST_RUN, HOME, ADD, SETTINGS, ABOUT, LANGUAGE, INSTALL }
 
 /**
  * Root of the companion UI, shared by the Android and desktop apps.
@@ -107,6 +107,10 @@ fun CompanionApp(
     systemBack: @Composable (enabled: Boolean, onBack: () -> Unit) -> Unit = { _, _ -> },
     language: LanguageController? = null,
     nav: CompanionNav = rememberCompanionNav(),
+    onPickInstallFile: (tvId: String) -> Unit = {},
+    dropHighlightTvId: String? = null,
+    dropHintVisible: Boolean = false,
+    installDrop: InstallDropHook? = null,
 ) {
     val state by vm.state.collectAsState()
     var page by nav::page
@@ -119,8 +123,15 @@ fun CompanionApp(
             vm.acknowledgeAdded()
         }
     }
+    // An install owns the screen while it runs; Home returns when it ends.
+    val installing = state.install != null
+    LaunchedEffect(installing) {
+        if (installing) page = Page.INSTALL else if (page == Page.INSTALL) page = Page.HOME
+    }
     val screen = when {
         !state.loaded -> Screen.LOADING
+        installing -> Screen.INSTALL
+        page == Page.INSTALL -> Screen.HOME
         state.firstRun && !dismissedFirstRun -> Screen.FIRST_RUN
         page == Page.HOME -> Screen.HOME
         page == Page.ADD -> Screen.ADD
@@ -130,7 +141,11 @@ fun CompanionApp(
         else -> Screen.ABOUT
     }
     val up = page.up().takeIf { screen != Screen.LOADING && screen != Screen.FIRST_RUN }
-    systemBack(up != null) { nav.goUp() }
+    // On the install screen Back cancels while that is still allowed, and is swallowed once the TV is committing.
+    val installPhase = state.install?.phase
+    systemBack(up != null || installing) {
+        if (installing) { if (installPhase?.canCancel == true) vm.cancelInstall() } else nav.goUp()
+    }
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(Modifier.fillMaxSize().background(Ss.background)) {
         AnimatedContent(
@@ -163,7 +178,16 @@ fun CompanionApp(
                     onSubmitConnectPort = vm::submitConnectPort,
                     onCancelPair = vm::cancelPairing,
                     onConfirm = vm::confirmTv,
+                    onInstall = onPickInstallFile,
+                    onOptimize = vm::optimizeNow,
+                    onDismissInstallNotice = vm::dismissInstallNotice,
+                    dropHighlightTvId = dropHighlightTvId,
+                    dropHintVisible = dropHintVisible,
+                    installDrop = installDrop,
                 )
+                Screen.INSTALL -> state.install?.let {
+                    InstallScreen(it, vm::setInstallKeepOptimized, vm::confirmInstall, vm::cancelInstall, vm::retryInstall)
+                }
                 Screen.ADD -> {
                     DisposableEffect(Unit) { onDispose { vm.onDispose() } }
                     AddTvScreen(

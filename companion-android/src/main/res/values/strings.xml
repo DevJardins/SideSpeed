@@ -3,4 +3,6 @@
     <string name="app_name" translatable="false">SideSpeed Companion</string>
     <!-- Notification channel name in Android system settings for helper restart alerts. -->
     <string name="channel_restarts">Helper restarts</string>
+    <!-- Notification channel name in Android system settings for the ongoing notice while an app is sent to a TV. -->
+    <string name="channel_installs">App installs</string>
 </resources>

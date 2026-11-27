@@ -12,6 +12,16 @@ import io.github.devjardins.sidespeed.companion.discovery.RangeChoice
 import io.github.devjardins.sidespeed.companion.discovery.diagnose
 import io.github.devjardins.sidespeed.companion.discovery.scanRangeFor
 import io.github.devjardins.sidespeed.companion.discovery.sweepScope
+import io.github.devjardins.sidespeed.companion.install.AdbPackageInstaller
+import io.github.devjardins.sidespeed.companion.install.ApkInspector
+import io.github.devjardins.sidespeed.companion.install.InspectedPackage
+import io.github.devjardins.sidespeed.companion.install.InstallError
+import io.github.devjardins.sidespeed.companion.install.InstallFailureCode
+import io.github.devjardins.sidespeed.companion.install.InstallOutcome
+import io.github.devjardins.sidespeed.companion.install.InstallSource
+import io.github.devjardins.sidespeed.companion.install.InstallTransferPhase
+import io.github.devjardins.sidespeed.companion.install.PreflightResult
+import io.github.devjardins.sidespeed.companion.install.installErrorOrNull
 import io.github.devjardins.sidespeed.companion.net.AddressPolicy
 import io.github.devjardins.sidespeed.companion.net.Cidr
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
@@ -39,6 +49,22 @@ import io.github.devjardins.sidespeed.companion.resources.add_tv_check_not_saved
 import io.github.devjardins.sidespeed.companion.resources.add_unreachable
 import io.github.devjardins.sidespeed.companion.resources.common_try_again
 import io.github.devjardins.sidespeed.companion.resources.home_checked_min_ago
+import io.github.devjardins.sidespeed.companion.resources.home_installed_app
+import io.github.devjardins.sidespeed.companion.resources.home_installed_plain
+import io.github.devjardins.sidespeed.companion.resources.home_installed_update_tv
+import io.github.devjardins.sidespeed.companion.resources.home_optimize_caught_up
+import io.github.devjardins.sidespeed.companion.resources.home_optimize_failed
+import io.github.devjardins.sidespeed.companion.resources.home_optimize_started
+import io.github.devjardins.sidespeed.companion.resources.install_err_downgrade
+import io.github.devjardins.sidespeed.companion.resources.install_err_failed
+import io.github.devjardins.sidespeed.companion.resources.install_err_failed_code
+import io.github.devjardins.sidespeed.companion.resources.install_err_incompatible_abi
+import io.github.devjardins.sidespeed.companion.resources.install_err_no_space
+import io.github.devjardins.sidespeed.companion.resources.install_err_not_apk
+import io.github.devjardins.sidespeed.companion.resources.install_err_obb
+import io.github.devjardins.sidespeed.companion.resources.install_err_older_android
+import io.github.devjardins.sidespeed.companion.resources.install_err_too_large
+import io.github.devjardins.sidespeed.companion.resources.install_err_wrong_key
 import io.github.devjardins.sidespeed.companion.resources.home_confirm_button
 import io.github.devjardins.sidespeed.companion.resources.home_confirm_tv
 import io.github.devjardins.sidespeed.companion.resources.home_different_device
@@ -82,6 +108,8 @@ import io.github.devjardins.sidespeed.companion.store.SavedTv
 import io.github.devjardins.sidespeed.companion.store.TvLink
 import io.github.devjardins.sidespeed.companion.store.TvStatus
 import io.github.devjardins.sidespeed.companion.tv.ClassicNotAcknowledged
+import io.github.devjardins.sidespeed.companion.tv.ContentCallResult
+import io.github.devjardins.sidespeed.companion.tv.ActivityPhase
 import io.github.devjardins.sidespeed.companion.tv.NeedsConfirmation
 import io.github.devjardins.sidespeed.companion.tv.EncryptedAvailable
 import io.github.devjardins.sidespeed.companion.tv.EncryptedPortUnknown
@@ -106,6 +134,7 @@ import io.github.devjardins.sidespeed.companion.tv.parseActivityRow
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
 import io.github.devjardins.sidespeed.companion.ui.text.resolveSuspend
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayAccess
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.companion.upkeep.encryptedMoveAllowed
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayGate
 import io.github.devjardins.sidespeed.companion.upkeep.OverlayVerdict
@@ -114,7 +143,13 @@ import io.github.devjardins.sidespeed.companion.upkeep.Upkeep
 import io.github.devjardins.sidespeed.companion.upkeep.hardened
 import io.github.devjardins.sidespeed.companion.upkeep.UpkeepReport
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
@@ -132,6 +167,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import java.util.concurrent.atomic.AtomicBoolean
 
 object Copy {
     /** Shown under a TV; the screen re-evaluates it on a timer so it never freezes. */
@@ -176,6 +212,43 @@ object Copy {
     val BAD_CONNECT_PORT: UiText = UiText.Res(Res.string.pair_bad_connect_port)
     val NO_NETWORK_TO_TRUST: UiText = UiText.Res(Res.string.settings_no_network_to_trust)
 
+    val OPTIMIZE_STARTED: UiText = UiText.Res(Res.string.home_optimize_started)
+    val OPTIMIZE_CAUGHT_UP: UiText = UiText.Res(Res.string.home_optimize_caught_up)
+    val OPTIMIZE_FAILED: UiText = UiText.Res(Res.string.home_optimize_failed)
+    val INSTALL_FAILED: UiText = UiText.Res(Res.string.install_err_failed)
+
+    /** What the card says after an install finished, from what the TV did next. [appName] is the app's label. */
+    fun installed(outcome: InstallOutcome): UiText {
+        val name = UiText.Fsi(outcome.displayLabel)
+        return when {
+            outcome.compileRequested -> UiText.Res(Res.string.home_installed_app, listOf(name))
+            outcome.tvNeedsUpdate -> UiText.Res(Res.string.home_installed_update_tv, listOf(name))
+            else -> UiText.Res(Res.string.home_installed_plain, listOf(name))
+        }
+    }
+
+    /** The plain-English reason an install stopped. Package-manager codes never reach the screen except the unknown one. */
+    fun installError(error: InstallError): UiText = when (error) {
+        InstallError.NotAnApk, InstallError.CorruptArchive, InstallError.TooManyEntries,
+        InstallError.MixedBundle, InstallError.MissingBaseApk -> UiText.Res(Res.string.install_err_not_apk)
+        InstallError.ObbNotSupported -> UiText.Res(Res.string.install_err_obb)
+        InstallError.TooLarge -> UiText.Res(Res.string.install_err_too_large)
+        InstallError.IncompatibleAbi -> UiText.Res(Res.string.install_err_incompatible_abi)
+        is InstallError.DowngradeNotAllowed -> UiText.Res(Res.string.install_err_downgrade)
+        InstallError.UntrustedNetwork -> NOT_TRUSTED_ERROR
+        InstallError.UnsupportedStreamTransport, InstallError.TvUnavailable, InstallError.Cancelled -> INSTALL_FAILED
+        is InstallError.InstallFailed -> when (error.code) {
+            InstallFailureCode.UPDATE_INCOMPATIBLE -> UiText.Res(Res.string.install_err_wrong_key)
+            InstallFailureCode.VERSION_DOWNGRADE -> UiText.Res(Res.string.install_err_downgrade)
+            InstallFailureCode.INSUFFICIENT_STORAGE -> UiText.Res(Res.string.install_err_no_space)
+            InstallFailureCode.NO_MATCHING_ABIS -> UiText.Res(Res.string.install_err_incompatible_abi)
+            InstallFailureCode.OLDER_SDK -> UiText.Res(Res.string.install_err_older_android)
+            InstallFailureCode.INVALID_APK -> UiText.Res(Res.string.install_err_not_apk)
+            InstallFailureCode.UNKNOWN ->
+                error.rawCode?.let { UiText.Res(Res.string.install_err_failed_code, listOf(UiText.Ltr(it))) } ?: INSTALL_FAILED
+        }
+    }
+
     fun scanProgress(scanned: Int, total: Int): UiText =
         UiText.Plural(Res.plurals.add_scan_progress, total, listOf(scanned, total))
 
@@ -215,12 +288,79 @@ data class RestartResult(val tvId: String, val outcome: RestartOutcome)
 enum class TvAttention { NONE, LEGACY_ACK, LEGACY_PAIR, WIRELESS_OFF, CONFIRM }
 
 /** What a Home card offers. A parked TV offers only [REMOVE]. */
-enum class TvCardAction { RESTART, REMOVE }
+enum class TvCardAction { RESTART, INSTALL, OPTIMIZE, REMOVE }
 
-/** A parked TV can only be removed. Every other card still offers restart. */
-fun cardActions(card: TvCardState): List<TvCardAction> =
-    if (card.status == TvStatus.CHECK_FAILED) listOf(TvCardAction.REMOVE)
-    else listOf(TvCardAction.RESTART, TvCardAction.REMOVE)
+/** Statuses where the TV answered the last check, so an install has something to talk to. */
+private val INSTALLABLE_STATUSES = setOf(TvStatus.RUNNING, TvStatus.NOT_RUNNING, TvStatus.NOT_INSTALLED, TvStatus.START_FAILED)
+
+/**
+ * A parked TV can only be removed. Every other card offers restart. Install needs a reachable TV on a Trusted
+ * Network with nothing waiting on the user. Optimize now also needs a running helper that supports remote
+ * requests and no compile in progress.
+ */
+fun cardActions(card: TvCardState): List<TvCardAction> {
+    if (card.status == TvStatus.CHECK_FAILED) return listOf(TvCardAction.REMOVE)
+    val ready = card.checkableHere && card.attention == TvAttention.NONE
+    val actions = mutableListOf(TvCardAction.RESTART)
+    if (ready && card.status in INSTALLABLE_STATUSES) actions += TvCardAction.INSTALL
+    val activity = card.activity
+    if (ready && card.status == TvStatus.RUNNING && activity != null &&
+        activity.remoteSupported && activity.phase != ActivityPhase.COMPILING
+    ) {
+        actions += TvCardAction.OPTIMIZE
+    }
+    actions += TvCardAction.REMOVE
+    return actions
+}
+
+/** Receives install progress so a platform can keep a notification or foreground service alive. All calls default to nothing. */
+interface InstallTransferHost {
+    fun onStart(tvName: String, appName: String) {}
+    fun onProgress(bytesSent: Long, totalBytes: Long, committing: Boolean) {}
+    fun onEnd() {}
+}
+
+object NoOpTransferHost : InstallTransferHost
+
+/** The store an installed app came from, when that store can replace an update later. */
+enum class InstallStoreSource { GOOGLE_PLAY, AMAZON_APPSTORE }
+
+/** What the install review shows before anything is sent. */
+data class InstallReview(
+    val appName: String,
+    val packageName: String,
+    val newVersion: String,
+    /** Null when the TV does not have the app yet. */
+    val installedVersion: String?,
+    val summaryTags: List<String>,
+    val totalBytes: Long,
+    val store: InstallStoreSource?,
+    val isSystemApp: Boolean,
+)
+
+sealed interface InstallPhase {
+    /** Cancel is refused once the TV is committing the install, because the install can no longer be rolled back. */
+    val canCancel: Boolean
+
+    data object Inspecting : InstallPhase { override val canCancel = true }
+    data class Review(val review: InstallReview) : InstallPhase { override val canCancel = true }
+    data class Transferring(val bytesSent: Long, val totalBytes: Long, val bytesPerSec: Long) : InstallPhase {
+        override val canCancel = true
+    }
+    data object Committing : InstallPhase { override val canCancel = false }
+    data object StartingCompile : InstallPhase { override val canCancel = false }
+    data class Failed(val message: UiText, val canRetry: Boolean) : InstallPhase { override val canCancel = true }
+}
+
+/** The one install in progress. [isTailnet] is true when the TV is reached over Tailscale. */
+data class InstallSessionUi(
+    val tvId: String,
+    val tvName: String,
+    val isTailnet: Boolean,
+    val phase: InstallPhase,
+    val keepOptimized: Boolean,
+    val showKeepToggle: Boolean,
+)
 
 /** Pairing a TV that speaks wireless debugging. [tvId] is set when this replaces a saved TV's link. */
 data class PairingForm(
@@ -301,6 +441,14 @@ data class CompanionUiState(
     val scanStopped: Boolean = false,
     /** What the latest finished or stopped scan concluded; null before the first one. */
     val diagnosis: Diagnosis? = null,
+    /** The install in progress, or null. Only one runs at a time. */
+    val install: InstallSessionUi? = null,
+    /** The last install result per TV id, shown on its card until dismissed. */
+    val installNotice: Map<String, UiText> = emptyMap(),
+    /** TV ids with an Optimize now request in flight. */
+    val optimizingTvIds: Set<String> = emptySet(),
+    /** The last Optimize now result per TV id. */
+    val optimizeNotice: Map<String, UiText> = emptyMap(),
 )
 
 class CompanionViewModel(
@@ -318,6 +466,10 @@ class CompanionViewModel(
     private val linkOffer: LinkOffer = LinkOffer { false },
     private val identity: TvIdentity? = null,
     private val formatText: suspend (UiText) -> String = { it.resolveSuspend(rtl = false) },
+    private val installConnector: TvConnector = connector,
+    private val transferHost: InstallTransferHost = NoOpTransferHost,
+    /** Runs every blocking ADB call of an install or optimize request. Never Main: a cancelled call closes its link on the caller's thread. */
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val overlayGate = overlay?.let(::OverlayGate)
     private val sessions = TvSessions(
@@ -328,7 +480,9 @@ class CompanionViewModel(
         clock = clock,
         relocateAllowed = { encryptedMoveAllowed(fingerprints, store, it.id) },
         identity = identity,
+        installConnector = installConnector,
     )
+    private val installer = AdbPackageInstaller(ioDispatcher = ioDispatcher)
     /** Whether a saved classic TV offered TLS the last time Home asked. Avoids asking on every refresh. */
     private val tlsOffer = mutableMapOf<String, Boolean>()
     /** Guards [tlsOffer] and [offersInFlight]. Lookups run off the refresh path, so they share this lock. */
@@ -869,6 +1023,391 @@ class CompanionViewModel(
         _state.update { s -> s.copy(tvs = s.tvs.map { if (it.id == id) it.copy(activity = activity) else it }) }
     }
 
+    /** One install, from file pick to result. [ended] flips once, when the run is over or cancelled. */
+    private class InstallRun(val tvId: String, val source: InstallSource) {
+        val ended = AtomicBoolean(false)
+        private val sourceClosed = AtomicBoolean(false)
+        @Volatile var job: Job? = null
+        @Volatile var pkg: InspectedPackage? = null
+        @Volatile var preflight: PreflightResult? = null
+
+        fun closeSource() {
+            if (sourceClosed.compareAndSet(false, true)) runCatching { source.close() }
+        }
+    }
+
+    private val run = MutableStateFlow<InstallRun?>(null)
+
+    /**
+     * Starts installing [source] on the TV [tvId]. One install runs at a time; a second is closed and ignored.
+     * The Trusted Network gate runs before the file is read and again before anything is sent.
+     * This takes ownership of [source] and always closes it.
+     */
+    fun beginInstall(tvId: String, source: InstallSource) {
+        val r = InstallRun(tvId, source)
+        if (!run.compareAndSet(null, r)) {
+            runCatching { source.close() }
+            return
+        }
+        startStage(r) { inspectStage(r) }
+    }
+
+    fun setInstallKeepOptimized(keep: Boolean) {
+        _state.update { s ->
+            val cur = s.install
+            if (cur == null || cur.phase !is InstallPhase.Review) s else s.copy(install = cur.copy(keepOptimized = keep))
+        }
+    }
+
+    /** Sends the reviewed app to the TV. Only a review can be confirmed, and only once. */
+    fun confirmInstall() {
+        val r = run.value ?: return
+        var accepted = false
+        _state.update { s ->
+            val cur = s.install
+            val review = (cur?.phase as? InstallPhase.Review)?.review
+            if (cur == null || review == null || run.value !== r) {
+                accepted = false
+                s
+            } else {
+                accepted = true
+                s.copy(install = cur.copy(phase = InstallPhase.Transferring(0L, review.totalBytes, 0L)))
+            }
+        }
+        if (accepted) startStage(r) { transferStage(r) }
+    }
+
+    /** Stops the install and drops the file. Refused once the TV is committing, when it can no longer be undone. */
+    fun cancelInstall() {
+        val r = run.value ?: return
+        var accepted = false
+        _state.update { s ->
+            val cur = s.install
+            if (cur == null || run.value !== r || !cur.phase.canCancel) {
+                accepted = false
+                s
+            } else {
+                accepted = true
+                s.copy(install = null)
+            }
+        }
+        if (!accepted) return
+        r.ended.set(true)
+        run.compareAndSet(r, null)
+        val job = r.job
+        job?.cancel()
+        // The upload may still be unwinding and abandoning its session. The file closes only after it stops.
+        if (job == null) r.closeSource() else job.invokeOnCompletion { r.closeSource() }
+    }
+
+    /** Re-checks the TV and file after a failure that can be tried again, then shows the review. */
+    fun retryInstall() {
+        val r = run.value ?: return
+        var accepted = false
+        _state.update { s ->
+            val cur = s.install
+            val failed = cur?.phase as? InstallPhase.Failed
+            if (cur == null || failed == null || !failed.canRetry || run.value !== r) {
+                accepted = false
+                s
+            } else {
+                accepted = true
+                s.copy(install = cur.copy(phase = InstallPhase.Inspecting))
+            }
+        }
+        if (accepted) startStage(r) { inspectStage(r) }
+    }
+
+    fun dismissInstallNotice(tvId: String) {
+        _state.update { it.copy(installNotice = it.installNotice - tvId) }
+    }
+
+    /**
+     * Stops any install for good, even one that is committing, because the app is closing.
+     * Waits briefly for the upload to abandon its session on the TV, then closes the file.
+     */
+    suspend fun cancelInstallForShutdown() {
+        val r = run.value ?: return
+        r.ended.set(true)
+        run.compareAndSet(r, null)
+        _state.update { it.copy(install = null) }
+        val job = r.job
+        job?.cancel()
+        withContext(NonCancellable) {
+            withTimeoutOrNull(SHUTDOWN_WAIT_MS) { job?.join() }
+            r.closeSource()
+        }
+    }
+
+    private fun startStage(r: InstallRun, body: suspend () -> Unit) {
+        val job = scope.launch(start = CoroutineStart.LAZY) { body() }
+        r.job = job
+        job.start()
+    }
+
+    /** Applies [change] to the install of [r] unless it was cancelled or replaced. */
+    private fun updateInstall(r: InstallRun, change: (InstallSessionUi) -> InstallSessionUi) {
+        _state.update { s ->
+            val cur = s.install
+            if (cur == null || r.ended.get() || run.value !== r) s else s.copy(install = change(cur))
+        }
+    }
+
+    /** The run is over: clear the install, leave [notice] on the TV's card, and close the file. */
+    private fun finishRun(r: InstallRun, notice: UiText?) {
+        r.ended.set(true)
+        if (run.compareAndSet(r, null)) {
+            _state.update { s ->
+                s.copy(
+                    install = null,
+                    installNotice = if (notice != null) s.installNotice + (r.tvId to notice) else s.installNotice,
+                )
+            }
+        }
+        r.closeSource()
+    }
+
+    private fun failRun(r: InstallRun, message: UiText, canRetry: Boolean) {
+        updateInstall(r) { it.copy(phase = InstallPhase.Failed(message, canRetry)) }
+    }
+
+    /** The saved TV [tvId], only while this computer may contact it right now. */
+    private suspend fun trustedTv(tvId: String): SavedTv? {
+        val saved = store.tvs().firstOrNull { it.id == tvId } ?: return null
+        if (saved.unproven) return null
+        return saved.takeIf { checkableHere(it, currentTrusted(), store.trustedOverlays()) }
+    }
+
+    /**
+     * Why an install cannot use [tvId] right now. An unproven TV names itself, so the screen
+     * says what is true; every other refusal stays [Copy.NOT_TRUSTED_ERROR]. Fail-closed either way.
+     */
+    private suspend fun installGateMessage(tvId: String): UiText {
+        if (store.tvs().firstOrNull { it.id == tvId }?.unproven == true) return Copy.TV_UNPROVEN
+        return Copy.NOT_TRUSTED_ERROR
+    }
+
+    /** A different device answered mid-install: record it the way upkeep does, so the card says so. */
+    private suspend fun persistWrongDevice(tvId: String) {
+        store.updateTv(tvId) {
+            it.copy(
+                status = TvStatus.WRONG_DEVICE,
+                offlineCount = it.offlineCount + 1,
+                lastCheckedEpochMs = clock(),
+            )
+        }
+    }
+
+    /** Opens [tv] and refuses the session unless its serial is the saved one. Runs on the caller's dispatcher. */
+    private suspend fun openChecked(tv: SavedTv, forInstall: Boolean): TvSession {
+        val session = if (forInstall) sessions.openForInstall(tv) else sessions.open(tv)
+        try {
+            if (session.run(TvCommands.SERIAL).trim() != tv.serial) throw TvWrongDevice()
+        } catch (e: Throwable) {
+            runCatching { session.close() }
+            throw e
+        }
+        return session
+    }
+
+    private fun openFailure(e: Throwable): UiText = when (e) {
+        is TvWrongDevice -> Copy.DIFFERENT_DEVICE
+        is TvUnproven -> Copy.TV_UNPROVEN
+        is NeedsConfirmation -> Copy.CONFIRM_TV
+        else -> Copy.INSTALL_FAILED
+    }
+
+    private fun canRetry(e: Throwable): Boolean = e !is TvWrongDevice && e !is TvUnproven && e !is NeedsConfirmation
+
+    private fun canRetry(error: InstallError?): Boolean = when (error) {
+        null, InstallError.TvUnavailable, InstallError.UntrustedNetwork -> true
+        is InstallError.InstallFailed ->
+            error.code == InstallFailureCode.UNKNOWN || error.code == InstallFailureCode.INSUFFICIENT_STORAGE
+        else -> false
+    }
+
+    /** Checks the Trusted Network, reads the file, then asks the TV what it needs. Ends at the review. */
+    private suspend fun inspectStage(r: InstallRun) {
+        try {
+            val saved = trustedTv(r.tvId)
+            if (saved == null) {
+                finishRun(r, installGateMessage(r.tvId))
+                return
+            }
+            updateOrPublish(r, saved)
+            val pkg = r.pkg ?: withContext(ioDispatcher) { ApkInspector.inspect(r.source) }.getOrElse {
+                return failRun(r, Copy.installError(it.installErrorOrNull() ?: InstallError.NotAnApk), canRetry = false)
+            }.also { r.pkg = it }
+            val pre = withContext(ioDispatcher) {
+                openChecked(saved, forInstall = true).use { installer.preflight(it, pkg) }
+            }.getOrElse {
+                val error = it.installErrorOrNull()
+                return failRun(r, error?.let(Copy::installError) ?: openFailure(it), canRetry(error ?: InstallError.TvUnavailable))
+            }
+            r.preflight = pre
+            val review = InstallReview(
+                appName = pkg.displayLabel,
+                packageName = pkg.packageName,
+                newVersion = pkg.versionName ?: pkg.versionCode.toString(),
+                installedVersion = pre.installedVersionName ?: pre.installed?.versionCode?.toString(),
+                summaryTags = pre.selection.summaryTags,
+                totalBytes = pre.selection.totalBytes,
+                store = when (pre.installerPackage) {
+                    "com.android.vending" -> InstallStoreSource.GOOGLE_PLAY
+                    "com.amazon.venezia" -> InstallStoreSource.AMAZON_APPSTORE
+                    else -> null
+                },
+                isSystemApp = pre.isSystemApp,
+            )
+            val remote = activities[saved.id]?.remoteSupported == true
+            updateInstall(r) {
+                it.copy(
+                    phase = InstallPhase.Review(review),
+                    showKeepToggle = remote && pkg.packageName !in SideSpeedPackages.ALL,
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (e is TvWrongDevice) persistWrongDevice(r.tvId)
+            failRun(r, openFailure(e), canRetry(e))
+        }
+    }
+
+    /** Shows the install screen for [saved] on the first pass; a retry only moves the phase back to checking. */
+    private fun updateOrPublish(r: InstallRun, saved: SavedTv) {
+        _state.update { s ->
+            if (r.ended.get() || run.value !== r) return@update s
+            val cur = s.install
+            s.copy(
+                install = cur?.copy(phase = InstallPhase.Inspecting) ?: InstallSessionUi(
+                    tvId = saved.id,
+                    tvName = saved.name,
+                    isTailnet = saved.overlayPeerId != null,
+                    phase = InstallPhase.Inspecting,
+                    keepOptimized = true,
+                    showKeepToggle = false,
+                ),
+            )
+        }
+    }
+
+    /** Checks the Trusted Network again, then streams the chosen files to the TV and hands the result to the card. */
+    private suspend fun transferStage(r: InstallRun) {
+        var hostStarted = false
+        try {
+            val pkg = r.pkg
+            val pre = r.preflight
+            val ui = _state.value.install
+            val saved = trustedTv(r.tvId)
+            if (pkg == null || pre == null || ui == null) return finishRun(r, null)
+            if (saved == null) {
+                val message = installGateMessage(r.tvId)
+                return failRun(r, message, canRetry = message != Copy.TV_UNPROVEN)
+            }
+            transferHost.onStart(saved.name, pkg.displayLabel)
+            hostStarted = true
+            val result = withContext(ioDispatcher) {
+                openChecked(saved, forInstall = true).use { session ->
+                    installer.install(
+                        session = session,
+                        tvSerial = saved.serial,
+                        pkg = pkg,
+                        selection = pre.selection,
+                        source = r.source,
+                        keepOptimized = ui.keepOptimized,
+                        onPhase = { onInstallPhase(r, it) },
+                        abandonOnFreshSession = { id -> abandonSession(saved, id) },
+                    )
+                }
+            }
+            val outcome = result.getOrNull()
+            if (outcome != null) return finishRun(r, Copy.installed(outcome))
+            val error = result.installErrorOrNull()
+            failRun(r, error?.let(Copy::installError) ?: Copy.INSTALL_FAILED, canRetry(error))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (e is TvWrongDevice) persistWrongDevice(r.tvId)
+            failRun(r, openFailure(e), canRetry(e))
+        } finally {
+            if (hostStarted) transferHost.onEnd()
+        }
+    }
+
+    private fun onInstallPhase(r: InstallRun, phase: InstallTransferPhase) {
+        when (phase) {
+            is InstallTransferPhase.Transferring -> {
+                updateInstall(r) {
+                    it.copy(phase = InstallPhase.Transferring(phase.bytesSent, phase.totalBytes, phase.bytesPerSec))
+                }
+                transferHost.onProgress(phase.bytesSent, phase.totalBytes, committing = false)
+            }
+            InstallTransferPhase.Committing -> {
+                updateInstall(r) { it.copy(phase = InstallPhase.Committing) }
+                val total = r.preflight?.selection?.totalBytes ?: 0L
+                transferHost.onProgress(total, total, committing = true)
+            }
+            InstallTransferPhase.StartingCompile -> {
+                updateInstall(r) { it.copy(phase = InstallPhase.StartingCompile) }
+                val total = r.preflight?.selection?.totalBytes ?: 0L
+                transferHost.onProgress(total, total, committing = true)
+            }
+        }
+    }
+
+    /** Drops a half-written install session from a fresh connection, because the first one is already closed. */
+    private suspend fun abandonSession(tv: SavedTv, sessionId: String) {
+        withContext(ioDispatcher) {
+            openChecked(tv, forInstall = true).use { session ->
+                session.openPackageCmd(*TvCommands.installAbandonArgs(sessionId)).use { it.readAllText() }
+            }
+        }
+    }
+
+    /**
+     * Asks SideSpeed on the TV to optimize its queued apps now. A second press while one is running does nothing.
+     * The result lands in [CompanionUiState.optimizeNotice].
+     */
+    fun optimizeNow(tvId: String) {
+        var accepted = false
+        _state.update { s ->
+            if (tvId in s.optimizingTvIds) {
+                accepted = false
+                s
+            } else {
+                accepted = true
+                s.copy(optimizingTvIds = s.optimizingTvIds + tvId, optimizeNotice = s.optimizeNotice - tvId)
+            }
+        }
+        if (!accepted) return
+        scope.launch {
+            var notice: UiText = Copy.OPTIMIZE_FAILED
+            try {
+                notice = requestOptimize(tvId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // The notice stays "couldn't start".
+            } finally {
+                _state.update { s ->
+                    s.copy(optimizingTvIds = s.optimizingTvIds - tvId, optimizeNotice = s.optimizeNotice + (tvId to notice))
+                }
+            }
+        }
+    }
+
+    private suspend fun requestOptimize(tvId: String): UiText {
+        val saved = trustedTv(tvId) ?: return installGateMessage(tvId)
+        val output = withContext(ioDispatcher) {
+            openChecked(saved, forInstall = false).use { it.run(TvCommands.CALL_OPTIMIZE_NOW) }
+        }
+        return when (val result = TvCommands.parseContentCallResult(output)) {
+            is ContentCallResult.Ok -> if (result.queued > 0) Copy.OPTIMIZE_STARTED else Copy.OPTIMIZE_CAUGHT_UP
+            else -> Copy.OPTIMIZE_FAILED
+        }
+    }
+
     fun updateSettings(s: CompanionSettings) {
         locked {
             store.saveSettings(s)
@@ -1351,6 +1890,9 @@ class CompanionViewModel(
         const val MAX_ACTIVITY_FAILURES = 3
         /** How long a remove waits, in the background, for the TV to forget this companion. */
         const val FORGET_TIMEOUT_MS = 5_000L
+
+        /** How long closing the app waits for an upload to abandon its session on the TV. */
+        const val SHUTDOWN_WAIT_MS = 5_000L
         /** Legacy TVs asked at once whether they can use an encrypted link. The screen does not wait for them. */
         const val OFFER_LOOKUP_LIMIT = 4
     }

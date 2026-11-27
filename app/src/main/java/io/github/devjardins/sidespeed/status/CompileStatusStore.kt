@@ -118,6 +118,9 @@ class CompileStatus(
     fun setHelperDown(down: Boolean) = mutate { setHelperDown(down) }
     fun setQueueWaiting(n: Int) = mutate { setQueueWaiting(n) }
     fun setSelfOptimized(optimized: Boolean) = mutate { setSelfOptimized(optimized) }
+    fun bumpRequestSeq(): Long = tracker.bumpRequestSeq()
+    fun requestSeq(): Long = tracker.requestSeq()
+    fun setRetrying(n: Int) = tracker.setRetrying(n)
 
     suspend fun snapshot(): StatusRow = mutex.withLock { tracker.snapshot() }
 

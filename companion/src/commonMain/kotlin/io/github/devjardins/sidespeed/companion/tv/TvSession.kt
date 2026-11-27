@@ -1,5 +1,8 @@
 package io.github.devjardins.sidespeed.companion.tv
 
+/** The ADB peer supports neither `abb_exec` nor `exec:cmd` for streamed package installs. */
+class UnsupportedInstallStreamException : Exception()
+
 /** One ADB connection to a TV. Closing it drops the connection. */
 interface TvSession : AutoCloseable {
     /**
@@ -9,6 +12,16 @@ interface TvSession : AutoCloseable {
      * @throws io.github.devjardins.sidespeed.adb.AdbConnectionLost if the connection fails or has failed.
      */
     suspend fun run(command: String): String
+
+    /**
+     * Opens a streamed `package` subcommand (`abb_exec` or `exec:cmd`).
+     *
+     * @throws UnsupportedInstallStreamException if the TV supports neither transport.
+     * @throws io.github.devjardins.sidespeed.adb.AdbConnectionLost if the connection fails or has failed.
+     */
+    suspend fun openPackageCmd(vararg args: String): InstallStream {
+        throw UnsupportedInstallStreamException()
+    }
 
     /**
      * True only when this connection's ADB transport finished a TLS handshake.

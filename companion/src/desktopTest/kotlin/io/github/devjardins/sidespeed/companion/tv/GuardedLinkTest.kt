@@ -30,6 +30,16 @@ class GuardedLinkTest {
             return "out"
         }
 
+        override fun openPackageCmd(vararg args: String): InstallStream {
+            shells += args.joinToString(" ")
+            return object : InstallStream {
+                override fun write(bytes: ByteArray, offset: Int, length: Int) = Unit
+                override fun flush() = Unit
+                override fun readAllText(): String = "Success"
+                override fun close() = Unit
+            }
+        }
+
         override val isOpen get() = open
         override fun close() {
             closeCalls++
@@ -64,5 +74,16 @@ class GuardedLinkTest {
         link.close()
         assertFailsWith<IOException> { link.shell("getprop ro.serialno") }
         assertEquals(listOf("getprop ro.serialno"), client.shells, "no silent reconnect via Kadb")
+    }
+
+    @Test
+    fun openPackageCmdAfterCloseIsRefusedWithoutTouchingKadb() {
+        val client = FakeClient().apply { allow.countDown() }
+        val link = GuardedLink(client)
+        link.connect()
+        assertEquals("Success", link.openPackageCmd("install-create", "-r").use { it.readAllText() })
+        link.close()
+        assertFailsWith<IOException> { link.openPackageCmd("install-create", "-r") }
+        assertEquals(listOf("install-create -r"), client.shells)
     }
 }

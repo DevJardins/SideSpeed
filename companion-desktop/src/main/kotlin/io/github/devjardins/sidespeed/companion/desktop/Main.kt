@@ -162,6 +162,7 @@ fun main() {
         store, fingerprints, upkeep, connector, discovery, scope,
         overlay = overlay, pairer = pairer, ports = ports, linkOffer = linkOffer,
         identity = identity,
+        installConnector = KadbTvConnector.forInstalls(DesktopDirs.keyDir()),
     )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
     val languageController = DesktopLanguageController(systemLocale, savedLanguage) { tag ->
@@ -256,7 +257,12 @@ fun main() {
                         onClick = { paused = !paused },
                     )
                     Separator()
-                    Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
+                    Item(stringResource(Res.string.tray_quit), onClick = {
+                        // Cancel a running install so the TV is not left with a half-written session.
+                        // The shutdown wait itself is bounded (SHUTDOWN_WAIT_MS), so Quit blocks ~5 s max.
+                        runBlocking { vm.cancelInstallForShutdown() }
+                        lock.close(); exitApplication()
+                    })
                 },
             )
         }
@@ -270,6 +276,9 @@ fun main() {
             resizable = true,
         ) {
             val updateState by desktopUpdater.state.collectAsState()
+            val installDrop = remember { DesktopInstallDrop { id, file -> vm.beginInstall(id, FileInstallSource(file)) } }
+            // An install owns the window while it runs: no hint or highlight is left behind from before it.
+            LaunchedEffect(state.install != null) { installDrop.clear() }
             key(epoch) {
                 CompositionLocalProvider(
                     // Layout follows the language actually shown, so English text stays
@@ -289,6 +298,12 @@ fun main() {
                             }
                         },
                         language = languageController,
+                        onPickInstallFile = { id ->
+                            DesktopInstallPicker.pickFile(window)?.let { vm.beginInstall(id, FileInstallSource(it)) }
+                        },
+                        dropHighlightTvId = installDrop.highlightTvId,
+                        dropHintVisible = installDrop.hintVisible,
+                        installDrop = installDrop,
                     )
                 }
             }

@@ -73,7 +73,9 @@ Work waits while the helper is down and picks up when it's back. SideSpeed also 
 - An out-of-date app shows **Update:** in My Apps. Its screen shows a QR code and short link to get it.
 - Only versions that are certainly newer show. Betas and test builds never do.
 - **Update now** appears when the list has a download for your TV. SideSpeed checks it's the same app, a newer version, and signed with the same key, then installs it. Your data in the app stays.
-- SideSpeed only updates apps you already have, one press at a time. It never installs new apps.
+- SideSpeed on the TV only updates apps you already have, one at a time.
+
+You can also install a single `.apk` or a split bundle (`.apks`, `.xapk`, `.apkm`, `.zip`) from SideSpeed Companion on your phone or computer. Pick **Install an app** on a saved TV's card, choose the file, review what will be sent for that TV, and confirm. Companion inspects the file on your device, picks the splits that match the TV, and streams them to the TV. After a successful install it asks SideSpeed on the TV to compile the app with `speed` next. If the app on the TV came from Google Play or Amazon Appstore, that store can still replace it later. You can also trigger **Optimize now** from the TV card to compile waiting apps.
 
 The list (`sidespeed.app/updates.json`) is built nightly from a short hand-picked list plus the F-Droid and IzzyOnDroid catalogs.
 
@@ -101,7 +103,7 @@ The list (`sidespeed.app/updates.json`) is built nightly from a short hand-picke
 
 ## SideSpeed Companion
 
-For Android phones, Windows, macOS and Linux. It starts the helper on Fire TV, so you don't need a PC. You can add Google TVs too, to see what they're compiling.
+For Android phones, Windows, macOS and Linux. It starts the helper on Fire TV, so you don't need a PC. You can add Google TVs too, to see what they're compiling. From any saved TV's card you can install a single `.apk` or a split bundle and trigger compiles.
 
 ### Install
 
@@ -145,6 +147,7 @@ The desktop installers are unsigned:
 
 ### TV cards
 
+- **Install an app** and **Optimize now** appear on a saved TV's card when the TV can be reached on a Trusted Network. **Install an app** lets you pick a single `.apk` or a split bundle (`.apks`, `.xapk`, `.apkm`, `.zip`) and compile it next. **Optimize now** asks SideSpeed on the TV to compile its waiting queue. Both use an encrypted link when the TV supports it and need the helper running to finish.
 - **Live status** (TV on 0.4.0 or later): what's compiling, how many apps wait, and the last result.
 - **Border colour:**
   - Green: reached on a Trusted Network.

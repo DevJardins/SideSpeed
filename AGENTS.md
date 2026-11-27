@@ -116,9 +116,7 @@ Delegate with T3's `delegate_task`.
 - Never tell people what to install.
   No recommendations, no browse lists of apps they do not have.
 - SideSpeed installs the apps the person picks. An update must be signed
-  with the same key as the installed app. Until Companion installs ship,
-  the code installs only updates (`install-update`), and `README.md` and
-  `SECURITY.md` say so.
+  with the same key as the installed app. The TV's helper path installs only updates (`install-update`), Companion installs send a single `.apk` or split bundle (`.apks`/`.xapk`/`.apkm`/`.zip`) over a dedicated verified ADB session with local inspection and synthetic split names, and `README.md` and `SECURITY.md` say so.
 - The feature is "Trusted Network", never "home network".
   In UI labels and titles it is "Trusted Network";
   in running prose "trusted network" is fine.
@@ -131,7 +129,7 @@ Delegate with T3's `delegate_task`.
   (`ui/tools/AnimationsCard.kt`, string `tools_animations_body`).
 - Companion UI copy lives in `companion/src/commonMain/composeResources/values/strings.xml`
   (accessed via `stringResource` / `pluralStringResource` or `UiText` resource references).
-  `companion-android/src/main/res/values/strings.xml` holds only `app_name` and `channel_restarts`.
+  `companion-android/src/main/res/values/strings.xml` holds only `app_name`, `channel_restarts` and `channel_installs`.
   Never hard-code user-visible text in Companion Kotlin (`NoHardCodedTextTest` fails the build).
 - TV copy lives in `app/src/main/res/values/strings.xml`, grouped by screen,
   with a translator note where the meaning isn't obvious.
@@ -266,6 +264,7 @@ Keep it true when you change anything below.
   that address; without one,
   exactly the same IPv4 DNS servers, ignoring IPv6 and Tailscale's
   100.64.0.0/10. A recorded hardware address is never changed.
+- `CompileStatusProvider.call()` exposes only `compile_package` and `optimize_now` and throws `SecurityException` unless `Binder.getCallingUid() == 2000` (shell). The check is the first statement of both `call()` and `dispatchCall()` (`app/.../status/CompileStatusProvider.kt`), before any argument or state is read. Non-shell callers, including apps and root (uid 0), are refused. The shell command is the fixed `content call --uri content://io.github.devjardins.sidespeed.status/now --method <method> --arg <pkg> --extra keep:b:<true|false>` built by `TvCommands.kt`; `TvSessions.openForInstall` opens that verified session with a 120 s install timeout.
 
 ## 6. Versions and releases
 
