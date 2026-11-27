@@ -72,6 +72,17 @@ interface InstallDropHook {
 /** How long an install or optimize notice stays on a card. */
 private const val NOTICE_MS = 8_000L
 
+/**
+ * Failure notices a TV card can show: [Copy.OPTIMIZE_FAILED] from a failed optimize run, and
+ * [Copy.NOT_TRUSTED_ERROR] when either an install or an optimize run finds the TV is not on a
+ * Trusted Network. Every other notice the card shows ([Copy.installed], [Copy.OPTIMIZE_STARTED],
+ * [Copy.OPTIMIZE_CAUGHT_UP]) reports success.
+ */
+private val ERROR_NOTICES: Set<UiText> = setOf(Copy.OPTIMIZE_FAILED, Copy.NOT_TRUSTED_ERROR)
+
+/** True when [notice] is a failure, shown in the error colour; success notices stay green. */
+fun noticeIsError(notice: UiText): Boolean = notice in ERROR_NOTICES
+
 /** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
 fun trustBanner(state: CompanionUiState): UiText? =
     state.trustedNetworkName?.let { UiText.Res(Res.string.home_trust_banner, listOf(UiText.Fsi(it))) }
@@ -241,8 +252,8 @@ fun HomeScreen(
                         if (highlight || dropHintVisible && tv.id in installableIds) {
                             SsText(stringResource(Res.string.home_drop_on_card), Ss.caption.copy(color = if (highlight) Ss.accent else Ss.textSecondary))
                         }
-                        state.installNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.okText)) }
-                        state.optimizeNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.okText)) }
+                        state.installNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = if (noticeIsError(it)) Ss.dangerText else Ss.okText)) }
+                        state.optimizeNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = if (noticeIsError(it)) Ss.dangerText else Ss.okText)) }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
                                 SsText(
