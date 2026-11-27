@@ -115,6 +115,8 @@ class RebootRecoveryController(
 ) {
     fun canEnable(): Boolean = !isFireOs && sdkInt >= 30 && isWifiConnected()
 
+    fun hasPendingSecureSettingsRevoke(): Boolean = permissions.hasSecureSettings()
+
     suspend fun needsPairing(): Boolean = !prefs.pairedTls.first()
 
     suspend fun enable(): EnableResult {

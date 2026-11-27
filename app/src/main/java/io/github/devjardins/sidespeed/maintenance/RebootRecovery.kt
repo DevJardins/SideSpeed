@@ -66,10 +66,10 @@ class RebootRecovery(
             Readiness.HelperReady -> recordSuccess()
             Readiness.WaitingForAllowPrompt -> recordFailure(RecoveryReason.PROMPTED)
             is Readiness.NeedsHelperStart -> {
-                if (!firstAttempt.mdnsMiss) {
-                    recordFailure(RecoveryReason.ADB_FAILED)
-                } else if (settings.getInt(SettingsReader.ADB_WIFI_ENABLED) != 1) {
+                if (settings.getInt(SettingsReader.ADB_WIFI_ENABLED) != 1) {
                     recordFailure(RecoveryReason.PROMPTED)
+                } else if (!firstAttempt.mdnsMiss) {
+                    recordFailure(RecoveryReason.ADB_FAILED)
                 } else {
                     delayFn(MDNS_RETRY_DELAY_MS)
                     if (!store.enabled.first()) return null
@@ -79,7 +79,11 @@ class RebootRecovery(
                     when (ensureReady()) {
                         Readiness.HelperReady -> recordSuccess()
                         Readiness.WaitingForAllowPrompt -> recordFailure(RecoveryReason.PROMPTED)
-                        else -> recordFailure(RecoveryReason.ADB_FAILED)
+                        else -> if (settings.getInt(SettingsReader.ADB_WIFI_ENABLED) != 1) {
+                            recordFailure(RecoveryReason.PROMPTED)
+                        } else {
+                            recordFailure(RecoveryReason.ADB_FAILED)
+                        }
                     }
                 }
             }

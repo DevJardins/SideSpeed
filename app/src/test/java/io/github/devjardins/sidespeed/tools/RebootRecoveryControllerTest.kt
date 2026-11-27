@@ -459,6 +459,42 @@ class RebootRecoveryControllerTest {
         assertTrue(sha256HexLower(BSSID_2) in store.allowedBssidHashes.first())
     }
 
+    @Test fun hasPendingSecureSettingsRevokeReflectsHelperAvailabilityOnDisable() = runTest {
+        val permsUp = FakePermissions(secureSettings = true, location = true)
+        val ctrlUp = RebootRecoveryController(
+            commands = FakeCommands(permsUp),
+            store = FakeStore(initialEnabled = true),
+            prefs = FakePrefs(tls = true),
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 1 },
+            secureWriter = SecureSettingsWriter { true },
+            permissions = permsUp,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+        )
+        assertEquals(DisableResult.Deferred, ctrlUp.disable())
+        assertFalse(ctrlUp.hasPendingSecureSettingsRevoke())
+
+        val permsDown = FakePermissions(secureSettings = true, location = true)
+        val ctrlDown = RebootRecoveryController(
+            commands = FakeCommands(permsDown, revokeSecureResult = ToolResult.HelperDown),
+            store = FakeStore(initialEnabled = true),
+            prefs = FakePrefs(tls = true),
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 1 },
+            secureWriter = SecureSettingsWriter { true },
+            permissions = permsDown,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+        )
+        assertEquals(DisableResult.Deferred, ctrlDown.disable())
+        assertTrue(ctrlDown.hasPendingSecureSettingsRevoke())
+    }
+
     private companion object {
         const val BSSID_1 = "02:15:b2:00:00:01"
         const val BSSID_2 = "aa:bb:cc:dd:ee:02"

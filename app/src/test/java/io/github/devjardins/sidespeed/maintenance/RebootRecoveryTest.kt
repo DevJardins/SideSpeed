@@ -245,6 +245,26 @@ class RebootRecoveryTest {
         assertEquals(1, ensureCalls)
     }
 
+    @Test fun wirelessOffDuringNonMdnsFailureRecordsPrompted() = runTest {
+        val store = FakeStore()
+        var writes = 0
+        var ensureCalls = 0
+        var wifiEnabled = 0
+        val r = buildRecovery(
+            store = store,
+            adbWifiSetting = { wifiEnabled },
+            writeResult = { writes++; wifiEnabled = 1; true },
+            ensureReady = {
+                ensureCalls++
+                wifiEnabled = 0
+                Readiness.NeedsHelperStart(UiText.Raw("unreachable"), StartCause.REFUSED, mdnsMiss = false)
+            },
+        ).runBootRecovery()
+        assertEquals(RecoveryOutcome.Failed(RecoveryReason.PROMPTED, NOW), r)
+        assertEquals(1, writes)
+        assertEquals(1, ensureCalls)
+    }
+
     @Test fun mdnsMissRetriesOnceAfter60sWithoutSecondWriteAndRecovers() = runTest {
         val store = FakeStore(initialDailyFailed = true)
         val delays = mutableListOf<Long>()

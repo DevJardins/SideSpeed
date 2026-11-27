@@ -62,11 +62,16 @@ fun RebootRecoverySlot(
     var canEnable by remember { mutableStateOf(controller.canEnable()) }
     var busy by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<RecoveryNotice?>(null) }
+    var pendingSecureRevoke by remember { mutableStateOf(controller.hasPendingSecureSettingsRevoke()) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(enabled, pendingRevokes, busy) {
+        pendingSecureRevoke = controller.hasPendingSecureSettingsRevoke()
+    }
 
     LaunchedEffect(enabled) {
         canEnable = controller.canEnable()
-        if (enabled) {
+        if (enabled && !busy) {
             notice = controller.syncTrustedBssidsIfEnabled()
         }
     }
@@ -99,11 +104,12 @@ fun RebootRecoverySlot(
 
     // Re-check Wi-Fi, location, and Always-allow state whenever the user returns from TV Settings.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle, enabled) {
+    DisposableEffect(lifecycle, enabled, busy) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 canEnable = controller.canEnable()
-                if (enabled) {
+                pendingSecureRevoke = controller.hasPendingSecureSettingsRevoke()
+                if (enabled && !busy) {
                     scope.launch { notice = controller.syncTrustedBssidsIfEnabled() }
                 }
             }
@@ -115,7 +121,7 @@ fun RebootRecoverySlot(
     RebootRecoveryCard(
         enabled = enabled,
         canEnable = canEnable,
-        pendingRevokes = pendingRevokes,
+        pendingRevokes = pendingRevokes && pendingSecureRevoke,
         busy = busy,
         notice = notice,
         switchFocus = switchFocus,

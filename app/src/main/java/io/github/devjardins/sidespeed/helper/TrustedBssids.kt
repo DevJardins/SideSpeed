@@ -42,31 +42,34 @@ object TrustedBssids {
     }
 
     /**
-     * Parses trusted BSSIDs strictly from the `keystore=` line of `dumpsys adb`.
+     * Parses trusted BSSIDs strictly from the `keystore=` section of `dumpsys adb`.
      * Never scans `user_keys` or `system_keys`. Deduplicates preserving order and caps at [maxEntries].
      */
     fun parse(raw: ByteArray, maxEntries: Int = MAX_TRUSTED_BSSIDS): List<String> {
         if (raw.isEmpty() || maxEntries <= 0) return emptyList()
         val text = String(raw, Charsets.UTF_8)
-        val keystoreLine = extractKeystoreLine(text) ?: return emptyList()
+        val keystoreSection = extractKeystoreSection(text) ?: return emptyList()
         val result = LinkedHashSet<String>()
-        if (keystoreLine.startsWith(ABX_MAGIC)) {
-            parseAbx(keystoreLine, maxEntries, result)
+        if (keystoreSection.startsWith(ABX_MAGIC)) {
+            parseAbx(keystoreSection, maxEntries, result)
         } else {
-            parseXml(keystoreLine, maxEntries, result)
+            parseXml(keystoreSection, maxEntries, result)
         }
         return result.toList()
     }
 
-    private fun extractKeystoreLine(text: String): String? {
+    /**
+     * Returns everything after `keystore=` in `dumpsys adb` without stopping at `\n`:
+     * Android 11 XML spans multiple lines and Android 12+ ABX timestamps can contain `0x0A`.
+     */
+    private fun extractKeystoreSection(text: String): String? {
         var idx = 0
         while (idx < text.length) {
             val lineEnd = text.indexOf('\n', idx).let { if (it < 0) text.length else it }
-            val lineStart = idx
-            var pos = lineStart
+            var pos = idx
             while (pos < lineEnd && (text[pos] == ' ' || text[pos] == '\t')) pos++
             if (text.startsWith(KEYSTORE_PREFIX, pos)) {
-                return text.substring(pos + KEYSTORE_PREFIX.length, lineEnd)
+                return text.substring(pos + KEYSTORE_PREFIX.length)
             }
             idx = lineEnd + 1
         }
@@ -109,7 +112,9 @@ object TrustedBssids {
     }
 
     private fun parseXml(keystore: String, maxEntries: Int, out: LinkedHashSet<String>) {
-        for (match in XML_WIFI_AP_BSSID.findAll(keystore)) {
+        val end = keystore.indexOf("</keyStore>").let { if (it < 0) keystore.length else it }
+        val scope = keystore.substring(0, end)
+        for (match in XML_WIFI_AP_BSSID.findAll(scope)) {
             if (out.size >= maxEntries) break
             normalizeBssid(match.groupValues[1])?.let { out.add(it) }
         }

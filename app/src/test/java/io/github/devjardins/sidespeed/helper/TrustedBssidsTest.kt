@@ -105,4 +105,37 @@ class TrustedBssidsTest {
         assertEquals("aa:bb:cc:dd:00:01", parsed.first())
         assertTrue(parsed.toSet().size == parsed.size)
     }
+
+    @Test fun parseAbxSurvivesEmbeddedNewlineInLastConnectionTimestamp() {
+        val abx = buildString {
+            append("ADB MANAGER STATE (dumpsys adb):\n{\n  debugging_manager={\n    keystore=ABX\u0000\u0010")
+            append("2\uFFFD\uFFFD\u0000\u0008keyStoreo\uFFFD\uFFFD\u0000\u0007version\u0000\u0000\u0000\u0001")
+            append("2\uFFFD\uFFFD\u0000\u0006adbKey/\uFFFD\uFFFD\u0000\u0003key\u0002\uFFFDQAAAADUMMY")
+            // lastConnection 8-byte timestamp deliberately contains 0x0A ('\n')
+            append("\uFFFD\uFFFD\u0000\u000elastConnection\u0000\u0000\u0001\n\u0000\u0000\u00013\u0000\u0002")
+            append("2\uFFFD\uFFFD\u0000\u0006wifiAP/\uFFFD\uFFFD\u0000\u0005bssid\u0000\u001102:15:b2:00:00:013\u0000\u0005")
+            append("3\u0000\u0000\u0011\n  }\n}\n")
+        }.toByteArray(Charsets.UTF_8)
+
+        assertEquals(listOf("02:15:b2:00:00:01"), TrustedBssids.parse(abx))
+    }
+
+    @Test fun parseMultilinePlainXml() {
+        val xml = (
+            "ADB MANAGER STATE (dumpsys adb):\n" +
+                "{\n" +
+                "  debugging_manager={\n" +
+                "    user_keys=QAAAASPOOF <wifiAP bssid=\"11:22:33:44:55:66\" />\n" +
+                "    keystore=<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n" +
+                "<keyStore version=\"1\">\n" +
+                "    <adbKey key=\"QAAA... bob@host\" lastConnection=\"1234\" />\n" +
+                "    <wifiAP bssid=\"AA:BB:CC:DD:EE:01\" />\n" +
+                "</keyStore>\n" +
+                "<wifiAP bssid=\"22:33:44:55:66:77\" />\n" +
+                "  }\n" +
+                "}\n"
+            ).toByteArray(Charsets.UTF_8)
+
+        assertEquals(listOf("aa:bb:cc:dd:ee:01"), TrustedBssids.parse(xml))
+    }
 }
