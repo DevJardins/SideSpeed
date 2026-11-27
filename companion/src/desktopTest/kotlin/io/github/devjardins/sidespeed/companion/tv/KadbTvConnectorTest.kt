@@ -205,4 +205,39 @@ class KadbTvConnectorTest {
         assertFailsWith<AdbConnectionLost> { session.run("getprop ro.serialno") }
         Unit
     }
+
+    @Test
+    fun emptyOrDisconnectedStreamReplyThrowsConnectionLostAndKillsSession() = runBlocking {
+        // Case 1: Kadb AdbStream.nextMessage catches EOFException/SocketTimeoutException and returns ""
+        val blankStream = object : InstallStream {
+            override fun write(bytes: ByteArray, offset: Int, length: Int) = Unit
+            override fun flush() = Unit
+            override fun readAllText(): String = ""
+            override fun close() = Unit
+        }
+        val link1 = FakeLink(onOpenPackageCmd = { blankStream })
+        val session1 = connector(link1).open("10.0.0.5")
+        val stream1 = session1.openPackageCmd("install-commit", "1")
+        assertFailsWith<AdbConnectionLost> { stream1.readAllText() }
+        assertTrue(link1.closed)
+        assertFailsWith<AdbConnectionLost> { session1.run("getprop ro.serialno") }
+
+        // Case 2: Transport dropped before/during readAllText even if buffered text was non-empty
+        lateinit var link2: FakeLink
+        val dropDuringReadStream = object : InstallStream {
+            override fun write(bytes: ByteArray, offset: Int, length: Int) = Unit
+            override fun flush() = Unit
+            override fun readAllText(): String {
+                link2.connected = false
+                return "Success"
+            }
+            override fun close() = Unit
+        }
+        link2 = FakeLink(onOpenPackageCmd = { dropDuringReadStream })
+        val session2 = connector(link2).open("10.0.0.5")
+        val stream2 = session2.openPackageCmd("install-commit", "1")
+        assertFailsWith<AdbConnectionLost> { stream2.readAllText() }
+        assertTrue(link2.closed)
+        Unit
+    }
 }

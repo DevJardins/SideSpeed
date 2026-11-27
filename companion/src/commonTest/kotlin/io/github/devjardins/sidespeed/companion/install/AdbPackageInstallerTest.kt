@@ -22,6 +22,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.Collections
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -651,5 +654,191 @@ class AdbPackageInstallerTest {
         }
         assertFalse(packageCmdDelegated)
         assertTrue(inner.closed)
+    }
+
+    @Test
+    fun cancellation_closes_session_and_stream_off_caller_thread_when_blocked_in_write_or_readAllText() = runBlocking {
+        val installer = AdbPackageInstaller()
+        val bytes = ByteArray(16 * 1024) { 9 }
+        val (pkg, selection) = singlePkg("com.example.abort", 100L, bytes)
+        val callerThread = Thread.currentThread()
+
+        // Case 1: Blocked in write() until session.close() is invoked (simulating Kadb awaitAckBytes stall)
+        val writeEntered = CountDownLatch(1)
+        val sessionClosed1 = CountDownLatch(1)
+        val closeThreads1 = Collections.synchronizedList(mutableListOf<Thread>())
+        var stream1Closed = false
+        val session1 = FakeTvSession(
+            onClose = {
+                closeThreads1 += Thread.currentThread()
+                sessionClosed1.countDown()
+            },
+            packageCmdHandler = { args ->
+                when (args.first()) {
+                    "install-create" -> RecordingInstallStream("Success: created install session [501]")
+                    "install-write" -> object : InstallStream {
+                        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                            writeEntered.countDown()
+                            if (!sessionClosed1.await(5, TimeUnit.SECONDS)) {
+                                throw AssertionError("session.close() was not called promptly")
+                            }
+                            throw IOException("socket closed")
+                        }
+                        override fun flush() = Unit
+                        override fun readAllText(): String = ""
+                        override fun close() {
+                            stream1Closed = true
+                            closeThreads1 += Thread.currentThread()
+                        }
+                    }
+                    else -> error("unexpected ${args.toList()}")
+                }
+            },
+        )
+        val abandoned1 = mutableListOf<String>()
+        val job1 = launch(Dispatchers.Default) {
+            installer.install(
+                session = session1,
+                tvSerial = "SER-1",
+                pkg = pkg,
+                selection = selection,
+                source = InstallTestFixtures.ByteArrayInstallSource("abort.apk", bytes),
+                keepOptimized = true,
+                onPhase = {},
+                abandonOnFreshSession = { abandoned1 += it },
+            )
+        }
+        assertTrue(writeEntered.await(5, TimeUnit.SECONDS))
+        job1.cancel()
+        job1.join()
+        assertTrue(session1.closed)
+        assertTrue(stream1Closed)
+        assertTrue(closeThreads1.isNotEmpty())
+        assertTrue(closeThreads1.none { it === callerThread }, "close ran on cancelling thread: $closeThreads1")
+        assertEquals(listOf("501"), abandoned1)
+
+        // Case 2: Blocked in install-commit readAllText() until session.close() (stream.close() alone wouldn't unblock)
+        val readEntered = CountDownLatch(1)
+        val sessionClosed2 = CountDownLatch(1)
+        val closeThreads2 = Collections.synchronizedList(mutableListOf<Thread>())
+        val session2 = FakeTvSession(
+            onClose = {
+                closeThreads2 += Thread.currentThread()
+                sessionClosed2.countDown()
+            },
+            packageCmdHandler = { args ->
+                when (args.first()) {
+                    "install-create" -> RecordingInstallStream("Success: created install session [502]")
+                    "install-write" -> RecordingInstallStream("Success")
+                    "install-commit" -> object : InstallStream {
+                        override fun write(bytes: ByteArray, offset: Int, length: Int) = Unit
+                        override fun flush() = Unit
+                        override fun readAllText(): String {
+                            readEntered.countDown()
+                            if (!sessionClosed2.await(5, TimeUnit.SECONDS)) {
+                                throw AssertionError("session.close() was not called promptly")
+                            }
+                            return ""
+                        }
+                        override fun close() {
+                            closeThreads2 += Thread.currentThread()
+                        }
+                    }
+                    else -> error("unexpected ${args.toList()}")
+                }
+            },
+        )
+        val abandoned2 = mutableListOf<String>()
+        val job2 = launch(Dispatchers.Default) {
+            installer.install(
+                session = session2,
+                tvSerial = "SER-1",
+                pkg = pkg,
+                selection = selection,
+                source = InstallTestFixtures.ByteArrayInstallSource("abort.apk", bytes),
+                keepOptimized = true,
+                onPhase = {},
+                abandonOnFreshSession = { abandoned2 += it },
+            )
+        }
+        assertTrue(readEntered.await(5, TimeUnit.SECONDS))
+        job2.cancel()
+        job2.join()
+        assertTrue(session2.closed)
+        assertTrue(closeThreads2.isNotEmpty())
+        assertTrue(closeThreads2.none { it === callerThread }, "close ran on cancelling thread: $closeThreads2")
+        assertEquals(listOf("502"), abandoned2)
+    }
+
+    @Test
+    fun blank_stream_reply_on_create_write_or_commit_maps_to_tv_unavailable() = runTest {
+        val installer = AdbPackageInstaller()
+        val bytes = ByteArray(128) { 4 }
+        val (pkg, selection) = singlePkg("com.example.eof", 100L, bytes)
+
+        // Blank reply on install-create -> TvUnavailable (no session to abandon)
+        val createBlankSession = FakeTvSession(
+            packageCmdHandler = { RecordingInstallStream("") },
+        )
+        val createAbandoned = mutableListOf<String>()
+        val createRes = installer.install(
+            session = createBlankSession,
+            tvSerial = "SER-1",
+            pkg = pkg,
+            selection = selection,
+            source = InstallTestFixtures.ByteArrayInstallSource("eof.apk", bytes),
+            keepOptimized = true,
+            onPhase = {},
+            abandonOnFreshSession = { createAbandoned += it },
+        )
+        assertEquals(InstallError.TvUnavailable, createRes.installErrorOrNull())
+        assertTrue(createAbandoned.isEmpty())
+
+        // Blank reply on install-write -> abandons + TvUnavailable
+        val writeBlankSession = FakeTvSession(
+            packageCmdHandler = { args ->
+                when (args.first()) {
+                    "install-create" -> RecordingInstallStream("Success: created install session [601]")
+                    else -> RecordingInstallStream("   \n")
+                }
+            },
+        )
+        val writeAbandoned = mutableListOf<String>()
+        val writeRes = installer.install(
+            session = writeBlankSession,
+            tvSerial = "SER-1",
+            pkg = pkg,
+            selection = selection,
+            source = InstallTestFixtures.ByteArrayInstallSource("eof.apk", bytes),
+            keepOptimized = true,
+            onPhase = {},
+            abandonOnFreshSession = { writeAbandoned += it },
+        )
+        assertEquals(InstallError.TvUnavailable, writeRes.installErrorOrNull())
+        assertEquals(listOf("601"), writeAbandoned)
+
+        // Blank reply on install-commit -> abandons + TvUnavailable
+        val commitBlankSession = FakeTvSession(
+            packageCmdHandler = { args ->
+                when (args.first()) {
+                    "install-create" -> RecordingInstallStream("Success: created install session [602]")
+                    "install-write" -> RecordingInstallStream("Success")
+                    else -> RecordingInstallStream("")
+                }
+            },
+        )
+        val commitAbandoned = mutableListOf<String>()
+        val commitRes = installer.install(
+            session = commitBlankSession,
+            tvSerial = "SER-1",
+            pkg = pkg,
+            selection = selection,
+            source = InstallTestFixtures.ByteArrayInstallSource("eof.apk", bytes),
+            keepOptimized = true,
+            onPhase = {},
+            abandonOnFreshSession = { commitAbandoned += it },
+        )
+        assertEquals(InstallError.TvUnavailable, commitRes.installErrorOrNull())
+        assertEquals(listOf("602"), commitAbandoned)
     }
 }

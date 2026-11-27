@@ -16,6 +16,7 @@ class FakeTvSession(
     var authPending: Boolean = false,
     var loseConnectionOn: String? = null,
     var packageCmdHandler: ((Array<out String>) -> InstallStream)? = null,
+    var onClose: (() -> Unit)? = null,
 ) : TvSession {
     val outputs: MutableMap<String, String> = outputs.toMutableMap()
 
@@ -70,5 +71,6 @@ class FakeTvSession(
 
     override fun close() {
         closed = true
+        onClose?.invoke()
     }
 }

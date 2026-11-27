@@ -160,7 +160,10 @@ internal class KadbTvSession(private val link: AdbLink, private val commandTimeo
 
     private inner class SessionInstallStream(private val delegate: InstallStream) : InstallStream {
         override fun write(bytes: ByteArray, offset: Int, length: Int) {
-            if (dead) throw AdbConnectionLost("ADB connection is closed")
+            if (dead || !link.isConnected) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost("ADB connection is closed")
+            }
             try {
                 delegate.write(bytes, offset, length)
             } catch (e: IOException) {
@@ -170,7 +173,10 @@ internal class KadbTvSession(private val link: AdbLink, private val commandTimeo
         }
 
         override fun flush() {
-            if (dead) throw AdbConnectionLost("ADB connection is closed")
+            if (dead || !link.isConnected) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost("ADB connection is closed")
+            }
             try {
                 delegate.flush()
             } catch (e: IOException) {
@@ -180,13 +186,21 @@ internal class KadbTvSession(private val link: AdbLink, private val commandTimeo
         }
 
         override fun readAllText(): String {
-            if (dead) throw AdbConnectionLost("ADB connection is closed")
-            return try {
+            if (dead || !link.isConnected) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost("ADB connection is closed")
+            }
+            val text = try {
                 delegate.readAllText()
             } catch (e: IOException) {
                 this@KadbTvSession.close()
                 throw AdbConnectionLost(e)
             }
+            if (!link.isConnected || text.isBlank()) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost("ADB connection is closed")
+            }
+            return text
         }
 
         override fun close() = delegate.close()

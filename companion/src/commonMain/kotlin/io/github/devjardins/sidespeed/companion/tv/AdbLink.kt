@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.tv
 
 import com.flyfishxu.kadb.Kadb
 import com.flyfishxu.kadb.stream.AdbStream
+import java.io.EOFException
 import java.io.IOException
 
 /** Streamed ADB `package` command handle (`abb_exec` or `exec:cmd`). */
@@ -47,7 +48,10 @@ internal interface AdbClient : AutoCloseable {
     val tlsNegotiated: Boolean get() = false
 }
 
-private class KadbInstallStream(private val stream: AdbStream) : InstallStream {
+private class KadbInstallStream(
+    private val stream: AdbStream,
+    private val isConnectionOpen: () -> Boolean,
+) : InstallStream {
     override fun write(bytes: ByteArray, offset: Int, length: Int) {
         stream.sink.write(bytes, offset, length)
     }
@@ -56,7 +60,12 @@ private class KadbInstallStream(private val stream: AdbStream) : InstallStream {
         stream.sink.flush()
     }
 
-    override fun readAllText(): String = stream.source.readUtf8()
+    override fun readAllText(): String {
+        val text = stream.source.readUtf8()
+        if (!isConnectionOpen()) throw IOException("ADB link is closed")
+        if (text.isBlank()) throw EOFException()
+        return text
+    }
 
     override fun close() = stream.close()
 }
@@ -78,7 +87,7 @@ internal class KadbClient(private val kadb: Kadb) : AdbClient {
             kadb.supportsFeature("cmd") -> kadb.execCmd("package", *args)
             else -> throw UnsupportedInstallStreamException()
         }
-        return KadbInstallStream(stream)
+        return KadbInstallStream(stream) { kadb.connectionCheck() }
     }
 
     override val isOpen: Boolean get() = kadb.connectionCheck()

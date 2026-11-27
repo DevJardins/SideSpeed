@@ -14,8 +14,10 @@ import io.github.devjardins.sidespeed.helper.PackageNames
 import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -26,6 +28,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipException
 
@@ -77,6 +80,8 @@ class AdbPackageInstaller(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    private val abortScope = CoroutineScope(SupervisorJob() + ioDispatcher)
+
     private class LocalSourceReadException(cause: Throwable? = null) : Exception(cause)
 
     suspend fun preflight(session: TvSession, pkg: InspectedPackage): Result<PreflightResult> {
@@ -179,11 +184,18 @@ class AdbPackageInstaller(
 
         try {
             coroutineScope {
+                val cleanExit = AtomicBoolean(false)
                 val cancelWatcher = launch(Dispatchers.Unconfined) {
                     try {
                         awaitCancellation()
                     } finally {
-                        runCatching { activeStream.getAndSet(null)?.close() }
+                        if (!cleanExit.get()) {
+                            val stream = activeStream.getAndSet(null)
+                            abortScope.launch {
+                                runCatching { session.close() }
+                                runCatching { stream?.close() }
+                            }
+                        }
                     }
                 }
                 try {
@@ -195,7 +207,7 @@ class AdbPackageInstaller(
                             Tokens.ARG_SIZE,
                             selection.totalBytes.toString(),
                         )
-                        withTrackedStream(ctx, stream) { it.readAllText() }
+                        withTrackedStream(ctx, stream) { readNonBlankResponse(it) }
                     }
 
                     val createdId = parseCreatedSessionId(createOut)
@@ -288,7 +300,7 @@ class AdbPackageInstaller(
                                     }
                                     ctx.ensureActive()
                                     dst.flush()
-                                    dst.readAllText()
+                                    readNonBlankResponse(dst)
                                 }
                             }
 
@@ -304,7 +316,7 @@ class AdbPackageInstaller(
                     val commitOut = withContext(ioDispatcher) {
                         val ctx = currentCoroutineContext()
                         val stream = session.openPackageCmd(Tokens.CMD_INSTALL_COMMIT, createdId)
-                        withTrackedStream(ctx, stream) { it.readAllText() }
+                        withTrackedStream(ctx, stream) { readNonBlankResponse(it) }
                     }
 
                     if (!isInstallSuccess(commitOut)) {
@@ -312,6 +324,7 @@ class AdbPackageInstaller(
                     }
                     committed = true
                 } finally {
+                    cleanExit.set(true)
                     cancelWatcher.cancel()
                 }
             }
@@ -452,6 +465,12 @@ class AdbPackageInstaller(
         val elapsedMs = nowMs - startedAtMs
         if (bytesSent <= 0L || elapsedMs <= 0L) return 0L
         return (bytesSent * 1000L) / elapsedMs
+    }
+
+    private fun readNonBlankResponse(stream: InstallStream): String {
+        val text = stream.readAllText()
+        if (text.isBlank()) throw AdbConnectionLost()
+        return text
     }
 
     private fun isInstallSuccess(output: String): Boolean =
