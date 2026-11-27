@@ -10,6 +10,7 @@ import io.github.devjardins.sidespeed.maintenance.RecoveryOutcome
 import io.github.devjardins.sidespeed.maintenance.SecureSettingsWriter
 import io.github.devjardins.sidespeed.maintenance.sha256HexLower
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -120,26 +121,265 @@ class RebootRecoveryControllerTest {
         }
     }
 
-    @Test fun enableRefusesWithoutPairing() = runTest {
+    @Test fun enableRefusesWithoutPairingWhenTlsProbeFailsWithWirelessOn() = runTest {
         val perms = FakePermissions()
         val commands = FakeCommands(perms)
         val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        var probes = 0
+        var writes = 0
         val ctrl = RebootRecoveryController(
             commands = commands,
             store = store,
-            prefs = FakePrefs(tls = false),
+            prefs = prefs,
             bssidReader = BssidReader { BssidState.Found(BSSID_1) },
             settings = SettingsReader { 1 },
+            secureWriter = SecureSettingsWriter { writes++; true },
+            permissions = perms,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; false },
+        )
+        assertEquals(EnableResult.NeedsPairing, ctrl.enable())
+        assertEquals(1, probes)
+        assertEquals(0, writes)
+        assertTrue(commands.calls.isEmpty())
+        assertFalse(perms.hasAny())
+        assertFalse(store.enabled.first())
+        assertFalse(store.pendingRevokes.first())
+        assertFalse(prefs.pairedTls.first())
+    }
+
+    @Test fun unpairedWithWirelessOnAndSuccessfulTlsProbeSetsPairedTlsAndEnables() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms)
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        val jobs = FakeJobs()
+        var probes = 0
+        var writes = 0
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 1 },
+            secureWriter = SecureSettingsWriter { writes++; true },
+            permissions = perms,
+            jobs = jobs,
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; true },
+        )
+        assertEquals(EnableResult.Enabled, ctrl.enable())
+        assertEquals(1, probes)
+        assertEquals(0, writes)
+        assertTrue(prefs.pairedTls.first())
+        assertTrue(store.enabled.first())
+        assertFalse(store.pendingRevokes.first())
+        assertEquals(1, jobs.scheduleDailyCalls)
+    }
+
+    @Test fun unpairedWithWirelessOffGrantsEnablesWifiProbesAndSetsPairedTls() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms)
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        val jobs = FakeJobs()
+        val events = mutableListOf<String>()
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
+            secureWriter = SecureSettingsWriter {
+                assertTrue(perms.hasSecureSettings())
+                events += "enable-wifi"
+                true
+            },
+            permissions = perms,
+            jobs = jobs,
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = {
+                assertTrue(store.pendingRevokes.first())
+                assertFalse(store.enabled.first())
+                events += "probe"
+                true
+            },
+        )
+        assertEquals(EnableResult.Enabled, ctrl.enable())
+        assertEquals(listOf("enable-wifi", "probe"), events)
+        assertTrue(prefs.pairedTls.first())
+        assertTrue(store.enabled.first())
+        assertFalse(store.pendingRevokes.first())
+        assertEquals(1, jobs.scheduleDailyCalls)
+    }
+
+    @Test fun unpairedWithWirelessOffAndFailedProbeRollsBackAndReturnsNeedsPairing() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms)
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        val jobs = FakeJobs()
+        var writes = 0
+        var probes = 0
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
+            secureWriter = SecureSettingsWriter { writes++; true },
+            permissions = perms,
+            jobs = jobs,
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; false },
+        )
+        assertEquals(EnableResult.NeedsPairing, ctrl.enable())
+        assertEquals(1, writes)
+        assertEquals(1, probes)
+        assertFalse(prefs.pairedTls.first())
+        assertFalse(store.enabled.first())
+        assertFalse(perms.secureSettings)
+        assertTrue(store.pendingRevokes.first())
+        assertEquals(0, jobs.scheduleDailyCalls)
+
+        // Once deferred revokes finish on stop/helper-up, zero permissions remain and pendingRevokes clears.
+        assertTrue(ctrl.runPendingRevokesIfNeeded(allowKill = true))
+        assertFalse(perms.hasAny())
+        assertFalse(store.pendingRevokes.first())
+    }
+
+    @Test fun unpairedWithWirelessOffAndRefusedWifiWriteRollsBackWithoutProbing() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms)
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        var probes = 0
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
+            secureWriter = SecureSettingsWriter { false },
+            permissions = perms,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; true },
+        )
+        assertEquals(EnableResult.NeedsPairing, ctrl.enable())
+        assertEquals(0, probes)
+        assertFalse(prefs.pairedTls.first())
+        assertFalse(store.enabled.first())
+        assertFalse(perms.secureSettings)
+        assertTrue(store.pendingRevokes.first())
+    }
+
+    @Test fun unpairedWithWirelessOffAndCancelledProbeRollsBackBeforeRethrowing() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms)
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
             secureWriter = SecureSettingsWriter { true },
             permissions = perms,
             jobs = FakeJobs(),
             isFireOs = false,
             sdkInt = 35,
             isWifiConnected = { true },
+            probeWirelessTls = { throw CancellationException("left screen") },
         )
-        assertEquals(EnableResult.NeedsPairing, ctrl.enable())
-        assertTrue(commands.calls.isEmpty())
+        var cancelled = false
+        try {
+            ctrl.enable()
+        } catch (_: CancellationException) {
+            cancelled = true
+        }
+        assertTrue(cancelled)
+        assertFalse(prefs.pairedTls.first())
         assertFalse(store.enabled.first())
+        assertFalse(perms.secureSettings)
+        assertTrue(store.pendingRevokes.first())
+    }
+
+    @Test fun unpairedWithWirelessOffAndUntrustedNetworkDoesNotDoubleWriteAdbWifi() = runTest {
+        val perms = FakePermissions()
+        val commands = FakeCommands(perms, trustedResult = ToolResult.Ok(emptyList()))
+        val store = FakeStore()
+        val prefs = FakePrefs(tls = false)
+        var writes = 0
+        val ctrl = RebootRecoveryController(
+            commands = commands,
+            store = store,
+            prefs = prefs,
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
+            secureWriter = SecureSettingsWriter { writes++; true },
+            permissions = perms,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { true },
+        )
+        assertEquals(EnableResult.NeedsAlwaysAllowToggle, ctrl.enable())
+        assertEquals(1, writes)
+        assertTrue(prefs.pairedTls.first())
+        assertTrue(store.enabled.first())
+    }
+
+    @Test fun alreadyPairedNeverProbesWirelessTls() = runTest {
+        var probes = 0
+        val permsOn = FakePermissions()
+        val ctrlOn = RebootRecoveryController(
+            commands = FakeCommands(permsOn),
+            store = FakeStore(),
+            prefs = FakePrefs(tls = true),
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 1 },
+            secureWriter = SecureSettingsWriter { true },
+            permissions = permsOn,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; true },
+        )
+        assertEquals(EnableResult.Enabled, ctrlOn.enable())
+
+        val permsOff = FakePermissions()
+        val ctrlOff = RebootRecoveryController(
+            commands = FakeCommands(permsOff),
+            store = FakeStore(),
+            prefs = FakePrefs(tls = true),
+            bssidReader = BssidReader { BssidState.Found(BSSID_1) },
+            settings = SettingsReader { 0 },
+            secureWriter = SecureSettingsWriter { true },
+            permissions = permsOff,
+            jobs = FakeJobs(),
+            isFireOs = false,
+            sdkInt = 35,
+            isWifiConnected = { true },
+            probeWirelessTls = { probes++; true },
+        )
+        assertEquals(EnableResult.Enabled, ctrlOff.enable())
+        assertEquals(0, probes)
     }
 
     @Test fun enableRefusesOnEthernetOrAndroid10() = runTest {

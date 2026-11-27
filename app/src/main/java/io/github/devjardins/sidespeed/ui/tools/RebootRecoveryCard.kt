@@ -135,15 +135,11 @@ fun RebootRecoverySlot(
                     notice = null
                 }
             } else {
-                scope.launch {
-                    canEnable = controller.canEnable()
-                    if (!canEnable) {
-                        notice = RecoveryNotice.NEEDS_WIFI_OR_ANDROID_11
-                    } else if (controller.needsPairing()) {
-                        onRequestPairing()
-                    } else {
-                        onRequestConfirm()
-                    }
+                canEnable = controller.canEnable()
+                if (!canEnable) {
+                    notice = RecoveryNotice.NEEDS_WIFI_OR_ANDROID_11
+                } else {
+                    onRequestConfirm()
                 }
             }
         },

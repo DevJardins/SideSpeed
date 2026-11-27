@@ -277,6 +277,7 @@ class AppContainer(context: Context) {
             jobs = AndroidRecoveryJobScheduler(appContext),
             isFireOs = isFireOs,
             isWifiConnected = { AndroidBssidReader.isWifiConnected(appContext) },
+            probeWirelessTls = { strategy.probeWirelessTls() },
         )
     }
 

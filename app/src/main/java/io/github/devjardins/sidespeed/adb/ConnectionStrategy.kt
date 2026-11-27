@@ -94,6 +94,29 @@ class ConnectionStrategy(
         connectAndLaunch(killFirst = true, onLaunch)
     }
 
+    /**
+     * Proves SideSpeed's own ADB key is accepted over wireless debugging (TLS).
+     * Serializes with [adbMutex] and always closes the ADB connection before returning.
+     */
+    suspend fun probeWirelessTls(probeTimeoutMs: Long = TLS_PROBE_TIMEOUT_MS): Boolean {
+        if (isFireOs) return false
+        return adbMutex.withLock {
+            try {
+                withTimeout(probeTimeoutMs) {
+                    adb.connect(AdbTarget.WirelessTls).isSuccess
+                }
+            } catch (_: TimeoutCancellationException) {
+                false
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            } finally {
+                adb.close()
+            }
+        }
+    }
+
     private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
         val targets = buildList {
             add(AdbTarget.Classic())
@@ -161,5 +184,6 @@ class ConnectionStrategy(
         const val KILL_SETTLE_MS = 500L
         const val POLL_INTERVAL_MS = 500L
         const val POLL_TOTAL_MS = 5_000L
+        const val TLS_PROBE_TIMEOUT_MS = 15_000L
     }
 }

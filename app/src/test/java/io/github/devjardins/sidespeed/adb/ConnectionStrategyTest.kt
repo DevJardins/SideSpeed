@@ -293,4 +293,83 @@ class ConnectionStrategyTest {
         assertEquals(1, adbPoll.closeCount)
         assertFalse(adbPoll.isConnected)
     }
+
+    @Test fun classicConnectDoesNotSetPairedTls() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        val prefs = FakePrefs(tls = false)
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
+        val s = ConnectionStrategy(
+            helper = HelperProbe { if (adb.commands.isNotEmpty()) HelperPing(1, apk) else null },
+            adb = adb,
+            prefs = prefs,
+            expectedApk = apk,
+            isFireOs = false,
+            pkg = SideSpeedPackages.RELEASE,
+        )
+        assertEquals(Readiness.HelperReady, s.ensureReady())
+        assertEquals(listOf<AdbTarget>(AdbTarget.Classic()), adb.connectAttempts)
+        assertFalse(prefs.tlsState.value)
+    }
+
+    @Test fun probeWirelessTlsSucceedsAndClosesAdb() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        val prefs = FakePrefs(tls = false)
+        val s = ConnectionStrategy(
+            helper = HelperProbe { null },
+            adb = adb,
+            prefs = prefs,
+            expectedApk = apk,
+            isFireOs = false,
+            pkg = SideSpeedPackages.RELEASE,
+        )
+        assertTrue(s.probeWirelessTls())
+        assertEquals(listOf<AdbTarget>(AdbTarget.WirelessTls), adb.connectAttempts)
+        assertEquals(1, adb.closeCount)
+        assertFalse(adb.isConnected)
+        assertFalse(prefs.tlsState.value)
+    }
+
+    @Test fun probeWirelessTlsReturnsFalseAndClosesOnFailureAndTimeout() = runTest(timeout = 10.seconds) {
+        val failing = FakeAdbBackend().apply {
+            failConnectFor[AdbTarget.WirelessTls] = IOException("rejected")
+        }
+        assertFalse(strategy(failing, tls = false) { null }.probeWirelessTls())
+        assertEquals(1, failing.closeCount)
+        assertFalse(failing.isConnected)
+
+        val hanging = FakeAdbBackend().apply { hangConnect = true }
+        assertFalse(strategy(hanging, tls = false) { null }.probeWirelessTls(probeTimeoutMs = 1_000))
+        assertEquals(1_000L, testScheduler.currentTime)
+        assertEquals(1, hanging.closeCount)
+        assertFalse(hanging.isConnected)
+    }
+
+    @Test fun probeWirelessTlsNeverRunsOnFireOs() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        assertFalse(strategy(adb, fire = true, tls = false) { null }.probeWirelessTls())
+        assertTrue(adb.connectAttempts.isEmpty())
+        assertEquals(0, adb.closeCount)
+    }
+
+    @Test fun probeWirelessTlsSerializesWithAdbMutex() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        val mutex = Mutex()
+        val s = ConnectionStrategy(
+            helper = HelperProbe { null },
+            adb = adb,
+            prefs = FakePrefs(tls = false),
+            expectedApk = apk,
+            isFireOs = false,
+            pkg = SideSpeedPackages.RELEASE,
+            adbMutex = mutex,
+        )
+        mutex.lock()
+        val deferred = async { s.probeWirelessTls() }
+        testScheduler.runCurrent()
+        assertTrue(adb.connectAttempts.isEmpty())
+        mutex.unlock()
+        assertTrue(deferred.await())
+        assertEquals(listOf<AdbTarget>(AdbTarget.WirelessTls), adb.connectAttempts)
+        assertEquals(1, adb.closeCount)
+    }
 }
