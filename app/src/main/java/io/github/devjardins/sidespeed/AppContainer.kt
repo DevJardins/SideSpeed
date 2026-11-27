@@ -43,10 +43,15 @@ import kotlinx.coroutines.flow.stateIn
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.maintenance.AndroidBssidReader
+import io.github.devjardins.sidespeed.maintenance.AndroidSecureSettingsWriter
 import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.DataStoreRebootRecoveryStore
 import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.RebootRecovery
+import io.github.devjardins.sidespeed.maintenance.RebootRecoveryStore
 import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.DataStoreCompileStatusStore
@@ -241,6 +246,21 @@ class AppContainer(context: Context) {
     val statusChecker: StatusChecker by lazy { StatusChecker(helper) }
 
     val maintenanceStore: MaintenanceStore by lazy { DataStoreMaintenanceStore(appContext) }
+
+    val rebootRecoveryStore: RebootRecoveryStore by lazy { DataStoreRebootRecoveryStore(appContext) }
+
+    val rebootRecovery: RebootRecovery by lazy {
+        RebootRecovery(
+            store = rebootRecoveryStore,
+            helperUp = { helper.ping() != null },
+            bssidReader = AndroidBssidReader(appContext),
+            settings = settings,
+            secureWriter = AndroidSecureSettingsWriter(appContext.contentResolver),
+            ensureReady = { strategy.ensureReady() },
+            onHelperRecovered = { maintenance.scan() },
+            isFireOs = isFireOs,
+        )
+    }
 
     /** Container-level scope: outlives screens and ViewModels, so launch sequences survive them. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> })
