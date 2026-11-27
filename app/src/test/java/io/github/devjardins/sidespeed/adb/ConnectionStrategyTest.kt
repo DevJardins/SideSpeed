@@ -48,9 +48,8 @@ class ConnectionStrategyTest {
         pkg: String = SideSpeedPackages.RELEASE,
         prefs: FakePrefs? = null,
         fingerprint: String = "build-1",
-        fireOsTimeoutMs: Long = 10_000,
         probe: HelperProbe,
-    ) = ConnectionStrategy(probe, adb, prefs ?: FakePrefs(tls), apk, fire, pkg, timeoutMs, fingerprint, fireOsTimeoutMs)
+    ) = ConnectionStrategy(probe, adb, prefs ?: FakePrefs(tls), apk, fire, pkg, timeoutMs, fingerprint)
 
     @Test fun liveMatchingHelperIsReadyWithoutAdb() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
@@ -107,14 +106,14 @@ class ConnectionStrategyTest {
         assertTrue(adb.connectAttempts.isEmpty())
     }
 
-    @Test fun fireOsTimeoutCaches() = runTest(timeout = 10.seconds) {
+    // An Allow prompt can be up on Fire OS too: a hang waits for it like Google TV and is never cached,
+    // so pressing Allow late still lets the next check start the helper.
+    @Test fun fireOsTimeoutWaitsForAllowPromptWithoutCaching() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { hangConnect = true }
         val prefs = FakePrefs()
-        val r = strategy(adb, fire = true, prefs = prefs, fireOsTimeoutMs = 1_000) { null }.ensureReady() as Readiness.NeedsHelperStart
-        assertEquals("This TV didn't allow ADB from SideSpeed", r.reason.english())
-        assertEquals(StartCause.OTHER, r.cause)
-        assertEquals("build-1", prefs.refusedBuild.value)
-        assertEquals(1_000L, testScheduler.currentTime)
+        val r = strategy(adb, fire = true, prefs = prefs, timeoutMs = 1_000) { null }.ensureReady()
+        assertEquals(Readiness.WaitingForAllowPrompt, r)
+        assertEquals(null, prefs.refusedBuild.value)
     }
 
     @Test fun googleTvTimeoutStillWaits() = runTest(timeout = 10.seconds) {

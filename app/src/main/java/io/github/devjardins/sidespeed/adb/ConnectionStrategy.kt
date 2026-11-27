@@ -71,7 +71,6 @@ class ConnectionStrategy(
     private val pkg: String,
     private val timeoutMs: Long = 30_000,
     private val buildFingerprint: String,
-    private val fireOsTimeoutMs: Long = 10_000,
 ) {
     /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
     suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness {
@@ -103,9 +102,6 @@ class ConnectionStrategy(
         Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_on_box_refused), StartCause.REFUSED)
 
     private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
-        // Wireless debugging shows an Allow prompt that hangs the connect; Fire OS has no such prompt,
-        // so a hang there is a refusal too, on a shorter timeout.
-        val connectTimeoutMs = if (isFireOs) fireOsTimeoutMs else timeoutMs
         val targets = buildList {
             add(AdbTarget.Classic())
             if (prefs.pairedTls.first()) add(AdbTarget.WirelessTls)
@@ -114,11 +110,10 @@ class ConnectionStrategy(
         var classicRefused = false
         for (t in targets) {
             val r = try {
-                withTimeout(connectTimeoutMs) { adb.connect(t) }
+                withTimeout(timeoutMs) { adb.connect(t) }
             } catch (e: TimeoutCancellationException) {
-                if (!isFireOs) return Readiness.WaitingForAllowPrompt
-                prefs.setOnBoxAdbRefusedBuild(buildFingerprint)
-                return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_on_box_refused), StartCause.OTHER)
+                // An Allow prompt is up (on Fire OS too). Never cached: a late Allow must still work.
+                return Readiness.WaitingForAllowPrompt
             }
             if (r.isSuccess) { connected = true; break }
             if (t is AdbTarget.Classic && isRefusal(r.exceptionOrNull())) classicRefused = true
