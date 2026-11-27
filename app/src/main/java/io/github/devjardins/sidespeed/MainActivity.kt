@@ -58,6 +58,8 @@ import io.github.devjardins.sidespeed.BuildConfig
 import io.github.devjardins.sidespeed.ui.tools.ExtrasCard
 import io.github.devjardins.sidespeed.ui.tools.ExtrasScreen
 import io.github.devjardins.sidespeed.ui.tools.HomeCard
+import io.github.devjardins.sidespeed.ui.tools.RebootConfirmScreen
+import io.github.devjardins.sidespeed.ui.tools.RebootRecoverySlot
 import io.github.devjardins.sidespeed.ui.tools.SpaceCard
 import io.github.devjardins.sidespeed.ui.tools.ToolsPlaceholder
 import io.github.devjardins.sidespeed.ui.tools.ToolsScreen
@@ -65,6 +67,7 @@ import io.github.devjardins.sidespeed.ui.compile.CompileScreen
 import io.github.devjardins.sidespeed.ui.compile.CompileViewModel
 import io.github.devjardins.sidespeed.updates.ApkVariant
 import io.github.devjardins.sidespeed.updates.AppUpdateUiState
+import io.github.devjardins.sidespeed.ui.setup.PairingScreen
 import io.github.devjardins.sidespeed.ui.setup.SetupScreen
 import io.github.devjardins.sidespeed.ui.setup.SetupViewModel
 import io.github.devjardins.sidespeed.ui.setup.StrategyReadier
@@ -72,12 +75,13 @@ import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.theme.SideSpeedTheme
 
 class MainActivity : ComponentActivity() {
+    private enum class ToolsFocusTarget { NONE, EXTRAS, REBOOT_RECOVERY }
     private val setupVm: SetupViewModel by lazy {
         val c = (application as SideSpeedApp).container
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp, c.settings, c.ownPackage) as T
+                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp, c.settings, c.ownPackage, adbMutex = c.adbMutex) as T
         })[SetupViewModel::class.java]
     }
 
@@ -137,12 +141,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Self-compile only while SideSpeed is in the background: compiling the foreground app may kill it.
-        // During a launch sequence (Measure / timed compile) it stays pending and runs on the next leave.
+        // Self-compile and complete any deferred permission revokes only while SideSpeed is in the background.
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
                 lifecycleScope.launch {
-                    runCatching { (application as SideSpeedApp).container.selfCompiler.maybeCompile() }
+                    val c = (application as SideSpeedApp).container
+                    runCatching { c.selfCompiler.maybeCompile() }
+                    runCatching { c.rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = true) }
                 }
             }
         })
@@ -151,6 +156,7 @@ class MainActivity : ComponentActivity() {
             if (isServiceNeeded(c.maintenanceStore, c.toolsStore)) MaintenanceService.start(applicationContext)
             // Retry a launch restore left pending by an interrupted measurement (no-op when none).
             runCatching { c.launchRunner.restorePending() }
+            runCatching { c.rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = false) }
         }
         setContent {
             val icons = (application as SideSpeedApp).container.appIcons
@@ -179,10 +185,13 @@ class MainActivity : ComponentActivity() {
                 var lastAppsPkg by rememberSaveable { mutableStateOf<String?>(null) }
                 var showAutoOptimize by rememberSaveable { mutableStateOf(false) }
                 var showExtras by rememberSaveable { mutableStateOf(false) }
-                // Set when Extras opens from Tools: Tools leaves composition while Extras
-                // shows, so this decides that its Open button takes focus on return.
-                var toolsReturnToExtras by rememberSaveable { mutableStateOf(false) }
-                val extrasOpenFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+                var showRebootConfirm by rememberSaveable { mutableStateOf(false) }
+                var showRebootPairing by rememberSaveable { mutableStateOf(false) }
+                var pendingEnableAfterConfirm by rememberSaveable { mutableStateOf(false) }
+                // Set when a sub-screen opens from Tools so focus restores to its trigger on return.
+                var toolsFocusTargetName by rememberSaveable { mutableStateOf(ToolsFocusTarget.NONE.name) }
+                val extrasOpenFocus = remember { FocusRequester() }
+                val rebootRecoveryFocus = remember { FocusRequester() }
                 val forcedExtrasListId = remember {
                     if (BuildConfig.DEBUG) intent.getStringExtra("extras_list_id") else null
                 }
@@ -224,7 +233,14 @@ class MainActivity : ComponentActivity() {
                         override fun onLost(network: Network) = refreshTvAddress()
                     }
                     val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) refreshTvAddress()
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            refreshTvAddress()
+                            if (ready) {
+                                refreshScope.launch {
+                                    runCatching { (application as SideSpeedApp).container.rebootRecoveryController.syncTrustedBssidsIfEnabled() }
+                                }
+                            }
+                        }
                     }
                     lifecycle.addObserver(observer)
                     var registered = false
@@ -241,11 +257,37 @@ class MainActivity : ComponentActivity() {
                 when {
                     !ready -> SetupScreen(setupVm, onReady = {
                         ready = true
-                        // The helper is up now: retry a pending launch restore.
+                        // The helper is up now: retry a pending launch restore, pending revokes, and trusted BSSID sync.
                         lifecycleScope.launch {
-                            runCatching { (application as SideSpeedApp).container.launchRunner.restorePending() }
+                            val c = (application as SideSpeedApp).container
+                            runCatching { c.launchRunner.restorePending() }
+                            runCatching { c.rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = false) }
+                            runCatching { c.rebootRecoveryController.syncTrustedBssidsIfEnabled() }
                         }
                     })
+                    showTools && showRebootPairing && app == null -> {
+                        val c = (application as SideSpeedApp).container
+                        PairingScreen(
+                            adb = c.adb,
+                            adbMutex = c.adbMutex,
+                            prefs = c.prefs,
+                            wifiIp = c::wifiIp,
+                            onPaired = {
+                                showRebootPairing = false
+                                showRebootConfirm = true
+                            },
+                            onCancel = { showRebootPairing = false },
+                        )
+                    }
+                    showTools && showRebootConfirm && app == null -> {
+                        RebootConfirmScreen(
+                            onTurnOn = {
+                                showRebootConfirm = false
+                                pendingEnableAfterConfirm = true
+                            },
+                            onCancel = { showRebootConfirm = false },
+                        )
+                    }
                     showTools && showExtras && app == null -> {
                         val c = (application as SideSpeedApp).container
                         ExtrasScreen(
@@ -258,9 +300,29 @@ class MainActivity : ComponentActivity() {
                     showTools && app == null -> ToolsScreen(
                         // Worker A owns space; worker C owns health + animations.
                         health = {
+                            val c = (application as SideSpeedApp).container
                             HealthCardSlot(
-                                (application as SideSpeedApp).container.deviceInfo,
-                                { (application as SideSpeedApp).container.helper.ping() != null },
+                                c.deviceInfo,
+                                { c.helper.ping() != null },
+                                rebootRecoveryStore = c.rebootRecoveryStore,
+                            )
+                        },
+                        rebootRecovery = {
+                            val c = (application as SideSpeedApp).container
+                            RebootRecoverySlot(
+                                controller = c.rebootRecoveryController,
+                                store = c.rebootRecoveryStore,
+                                switchFocus = rebootRecoveryFocus,
+                                pendingEnableAfterConfirm = pendingEnableAfterConfirm,
+                                onConsumePendingEnable = { pendingEnableAfterConfirm = false },
+                                onRequestPairing = {
+                                    toolsFocusTargetName = ToolsFocusTarget.REBOOT_RECOVERY.name
+                                    showRebootPairing = true
+                                },
+                                onRequestConfirm = {
+                                    toolsFocusTargetName = ToolsFocusTarget.REBOOT_RECOVERY.name
+                                    showRebootConfirm = true
+                                },
                             )
                         },
                         space = {
@@ -285,7 +347,10 @@ class MainActivity : ComponentActivity() {
                         },
                         extras = {
                             ExtrasCard(
-                                onOpen = { toolsReturnToExtras = true; showExtras = true },
+                                onOpen = {
+                                    toolsFocusTargetName = ToolsFocusTarget.EXTRAS.name
+                                    showExtras = true
+                                },
                                 openFocus = extrasOpenFocus,
                             )
                         },
@@ -293,8 +358,15 @@ class MainActivity : ComponentActivity() {
                             val c = (application as SideSpeedApp).container
                             HomeCard(c.homeSwitcher, icons)
                         },
-                        onBack = { showTools = false; toolsReturnToExtras = false },
-                        initialFocus = if (toolsReturnToExtras) extrasOpenFocus else null,
+                        onBack = {
+                            showTools = false
+                            toolsFocusTargetName = ToolsFocusTarget.NONE.name
+                        },
+                        initialFocus = when (ToolsFocusTarget.entries.firstOrNull { it.name == toolsFocusTargetName }) {
+                            ToolsFocusTarget.EXTRAS -> extrasOpenFocus
+                            ToolsFocusTarget.REBOOT_RECOVERY -> rebootRecoveryFocus
+                            else -> null
+                        },
                     )
                     showLanguage && app == null -> {
                         val shipped = remember { AppLanguage.shipped }
@@ -390,7 +462,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onOpenTools = {
                             lastHomeTile = io.github.devjardins.sidespeed.ui.home.HomeTile.TOOLS.name
-                            toolsReturnToExtras = false
+                            toolsFocusTargetName = ToolsFocusTarget.NONE.name
                             showTools = true
                         },
                         onOpenAbout = {

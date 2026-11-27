@@ -117,7 +117,7 @@ private fun WarningContent(vm: SetupViewModel) {
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Text(stringResource(R.string.setup_warning_title), style = SsType.Headline, color = SsColors.TextPrimary)
     SsCard(Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.setup_lan_warning), style = SsType.Body, color = SsColors.TextBody, modifier = Modifier.padding(24.dp))
+        Text(stringResource(R.string.setup_lan_warning_v2), style = SsType.Body, color = SsColors.TextBody, modifier = Modifier.padding(24.dp))
     }
     SsButton(stringResource(R.string.setup_warning_ack), onClick = vm::acknowledgeWarning, modifier = Modifier.focusRequester(focus))
 }

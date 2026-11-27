@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -16,6 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
 import io.github.devjardins.sidespeed.R
+import io.github.devjardins.sidespeed.maintenance.RebootRecoveryStore
+import io.github.devjardins.sidespeed.maintenance.RecoveryOutcome
+import io.github.devjardins.sidespeed.maintenance.RecoveryReason
 import io.github.devjardins.sidespeed.tools.DeviceInfo
 import io.github.devjardins.sidespeed.tools.DeviceSummary
 import io.github.devjardins.sidespeed.tools.MemoryInfo
@@ -33,7 +37,11 @@ import io.github.devjardins.sidespeed.ui.theme.SsType
  * Tools screen opens. [helperUp] is the suspending helper ping (true = running).
  */
 @Composable
-fun HealthCardSlot(deviceInfo: DeviceInfo, helperUp: suspend () -> Boolean) {
+fun HealthCardSlot(
+    deviceInfo: DeviceInfo,
+    helperUp: suspend () -> Boolean,
+    rebootRecoveryStore: RebootRecoveryStore? = null,
+) {
     val context = LocalContext.current
     val summary = remember { deviceInfo.summary() }
     val memory = remember { deviceInfo.memory() }
@@ -46,14 +54,42 @@ fun HealthCardSlot(deviceInfo: DeviceInfo, helperUp: suspend () -> Boolean) {
     val helperRunning by produceState<Boolean?>(initialValue = null) {
         value = runCatching { helperUp() }.getOrNull()
     }
+    val recoveryEnabled by (rebootRecoveryStore?.enabled?.collectAsState(initial = false)
+        ?: remember { androidx.compose.runtime.mutableStateOf(false) })
+    val lastRecovery by (rebootRecoveryStore?.lastRecovery?.collectAsState(initial = null)
+        ?: remember { androidx.compose.runtime.mutableStateOf<RecoveryOutcome?>(null) })
+    val dailyRefreshFailed by (rebootRecoveryStore?.dailyRefreshFailed?.collectAsState(initial = false)
+        ?: remember { androidx.compose.runtime.mutableStateOf(false) })
     HealthCard(
         summary = summary,
         memory = memory,
         storage = storage,
         helperRunning = helperRunning,
         deviceName = deviceName,
+        recoveryLine = recoveryHealthLine(recoveryEnabled, lastRecovery),
+        dailyRefreshLine = dailyRefreshHealthLine(recoveryEnabled, dailyRefreshFailed),
     )
 }
+
+fun recoveryHealthLine(enabled: Boolean, lastRecovery: RecoveryOutcome?): UiText? {
+    if (!enabled || lastRecovery == null) return null
+    return when (lastRecovery) {
+        is RecoveryOutcome.StartedAgain -> UiText.Res(R.string.tools_health_last_restart_started)
+        is RecoveryOutcome.Failed -> when (lastRecovery.reason) {
+            RecoveryReason.NEW_NETWORK -> UiText.Res(R.string.tools_health_last_restart_new_network)
+            RecoveryReason.LOCATION_OFF -> UiText.Res(R.string.tools_health_last_restart_location_off)
+            RecoveryReason.PROMPTED -> UiText.Res(R.string.tools_health_last_restart_prompted)
+            RecoveryReason.NO_PERMISSION,
+            RecoveryReason.NOT_ON_WIFI,
+            RecoveryReason.WRITE_REFUSED,
+            RecoveryReason.ADB_FAILED,
+            -> UiText.Res(R.string.tools_health_last_restart_failed)
+        }
+    }
+}
+
+fun dailyRefreshHealthLine(enabled: Boolean, failed: Boolean): UiText? =
+    if (enabled && failed) UiText.Res(R.string.tools_health_daily_refresh_failed) else null
 
 /**
  * Marketing-friendly device label: the user's own device name when set, otherwise manufacturer
@@ -85,6 +121,8 @@ fun HealthCard(
     storage: StorageInfo,
     helperRunning: Boolean?,
     deviceName: String? = null,
+    recoveryLine: UiText? = null,
+    dailyRefreshLine: UiText? = null,
 ) {
     SsCard(Modifier.fillMaxWidth()) {
         Column(
@@ -116,6 +154,12 @@ fun HealthCard(
                 style = SsType.Body,
                 color = SsColors.TextBody,
             )
+            recoveryLine?.let { line ->
+                Text(line.resolve(), style = SsType.Body, color = SsColors.TextBody)
+            }
+            dailyRefreshLine?.let { line ->
+                Text(line.resolve(), style = SsType.Body, color = SsColors.WarnPillText)
+            }
         }
     }
 }

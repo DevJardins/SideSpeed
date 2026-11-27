@@ -341,6 +341,44 @@
     <string name="tools_health_helper_not_running">Helper: Not running</string>
     <!-- Helper status line on Box health while checking. -->
     <string name="tools_health_helper_checking">Helper: …</string>
+    <!-- Box health line when "After a restart" succeeded after the last reboot. -->
+    <string name="tools_health_last_restart_started">After the last restart: Started again</string>
+    <!-- Box health line when reboot recovery skipped because the TV joined a new Wi-Fi network. Keep: SideSpeed -->
+    <string name="tools_health_last_restart_new_network">After the last restart: Couldn\'t start (new Wi-Fi network). Open SideSpeed to allow it.</string>
+    <!-- Box health line when reboot recovery skipped because the TV's location setting is off. -->
+    <string name="tools_health_last_restart_location_off">After the last restart: Couldn\'t start (location is off)</string>
+    <!-- Box health line when the TV asked for permission instead of enabling wireless debugging silently. -->
+    <string name="tools_health_last_restart_prompted">After the last restart: Couldn\'t start (the TV asked for permission)</string>
+    <!-- Box health line when reboot recovery failed for another reason. -->
+    <string name="tools_health_last_restart_failed">After the last restart: Couldn\'t start</string>
+    <!-- Box health line when the daily wireless debugging keepalive check failed. Keep: SideSpeed -->
+    <string name="tools_health_daily_refresh_failed">SideSpeed couldn\'t reach wireless debugging today.</string>
+    <!-- Card title on Tools for starting the helper automatically after a TV reboot. -->
+    <string name="tools_reboot_title">After a restart</string>
+    <!-- Switch label on the "After a restart" card in Tools. -->
+    <string name="tools_reboot_switch">Start the helper again after the TV restarts</string>
+    <!-- Status pill on the "After a restart" switch when enabled. -->
+    <string name="tools_reboot_state_on">On</string>
+    <!-- Status pill on the "After a restart" switch when disabled. -->
+    <string name="tools_reboot_state_off">Off</string>
+    <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Keep: SideSpeed -->
+    <string name="tools_reboot_caveat">SideSpeed gets permission to change system settings and to see which Wi-Fi network you\'re on. It only uses them to turn wireless debugging back on, on a network you allowed. It doesn\'t track where you are. Turn this off to take both back.</string>
+    <!-- Confirm button on the "After a restart" acknowledgment screen. -->
+    <string name="tools_reboot_turn_on">Turn on</string>
+    <!-- Note shown on the "After a restart" card when turned off while the helper is down. -->
+    <string name="tools_reboot_pending_revoke">The permissions go back the next time the helper starts.</string>
+    <!-- Shown when "After a restart" is unavailable because the TV is on Ethernet or below Android 11. Keep: Android -->
+    <string name="tools_reboot_need_wifi">Needs Wi-Fi and Android 11 or later.</string>
+    <!-- Intro shown when the user must pair with a code before turning on "After a restart". Keep: SideSpeed -->
+    <string name="tools_reboot_pair_first">SideSpeed needs to pair with this TV first.</string>
+    <!-- Error shown when granting reboot-recovery permissions through the helper fails. -->
+    <string name="tools_reboot_grant_failed">Couldn\'t get the permission.</string>
+    <!-- Note shown when location is turned off in TV settings while "After a restart" is on. Keep: SideSpeed -->
+    <string name="tools_reboot_location_off">Turn on location in the TV\'s settings so SideSpeed can tell which network it\'s on.</string>
+    <!-- Instruction shown after triggering Android's wireless debugging prompt for the current network. -->
+    <string name="tools_reboot_always_allow_prompt">Tick “Always allow on this network”, then press Allow.</string>
+    <!-- Instruction shown when wireless debugging is already on without "Always allow" for the current network. -->
+    <string name="tools_reboot_always_allow_toggle">This network isn\'t set to always allow. Turn wireless debugging off and on in the TV\'s settings, tick “Always allow on this network”, then come back.</string>
     <!-- Free up space card title on Tools. -->
     <string name="tools_space_title">Free up space</string>
     <!-- Storage summary on Free up space. %1$s is free space, %2$s is total space. -->
@@ -482,7 +520,7 @@
     <!-- Headline for the initial ADB safety warning screen. -->
     <string name="setup_warning_title">Before you start</string>
     <!-- Safety warning: translate the meaning exactly; do not soften or shorten. Keep: ADB, SideSpeed -->
-    <string name="setup_lan_warning">ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed\'s helper until you start it again.</string>
+    <string name="setup_lan_warning_v2">ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off stops SideSpeed\'s helper. After a restart it stays stopped unless you turn on “After a restart” in Tools.</string>
     <!-- Button acknowledging the initial ADB safety warning. -->
     <string name="setup_warning_ack">I understand</string>
     <!-- Subtitle on Google TV / Android TV setup screen. Keep: SideSpeed -->

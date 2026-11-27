@@ -11,6 +11,15 @@ import io.github.devjardins.sidespeed.compile.PackageName
  */
 object CommandAllowlist {
     const val PING = "ping"
+    const val GRANT_REBOOT_RECOVERY = "grant-reboot-recovery"
+    const val REVOKE_SECURE_SETTINGS = "revoke-secure-settings"
+    const val REVOKE_REBOOT_RECOVERY = "revoke-reboot-recovery"
+    const val ADB_TRUSTED_NETWORKS = "adb-trusted-networks"
+
+    private const val PERM_COARSE_LOCATION = "android.permission.ACCESS_COARSE_LOCATION"
+    private const val PERM_FINE_LOCATION = "android.permission.ACCESS_FINE_LOCATION"
+    private const val PERM_BACKGROUND_LOCATION = "android.permission.ACCESS_BACKGROUND_LOCATION"
+    private const val PERM_WRITE_SECURE_SETTINGS = "android.permission.WRITE_SECURE_SETTINGS"
 
     /** Byte cap for `install-self`, matching the 64 MiB download cap. */
     const val MAX_INSTALL_BYTES = 67_108_864L
@@ -112,6 +121,46 @@ object CommandAllowlist {
         "--pkg", pkg, "-S", size.toString(),
     )
 
+    /** True for `grant-reboot-recovery`, handled specially by [HelperServer] (never through [toArgv]). */
+    fun isGrantRebootRecovery(command: String): Boolean = command == GRANT_REBOOT_RECOVERY
+
+    /** True for `revoke-reboot-recovery`, handled specially by [HelperServer] (never through [toArgv]). */
+    fun isRevokeRebootRecovery(command: String): Boolean = command == REVOKE_REBOOT_RECOVERY
+
+    /** True for `adb-trusted-networks`, handled specially by [HelperServer] (never through [toArgv]). */
+    fun isAdbTrustedNetworks(command: String): Boolean = command == ADB_TRUSTED_NETWORKS
+
+    /**
+     * Fixed argvs for granting reboot-recovery permissions to [selfPkg].
+     * Grants `WRITE_SECURE_SETTINGS` last so any earlier failure leaves it ungranted.
+     */
+    fun grantRebootRecoveryArgvs(selfPkg: String): List<List<String>> {
+        require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
+        return listOf(
+            listOf("/system/bin/pm", "grant", selfPkg, PERM_COARSE_LOCATION),
+            listOf("/system/bin/pm", "grant", selfPkg, PERM_FINE_LOCATION),
+            listOf("/system/bin/pm", "grant", selfPkg, PERM_BACKGROUND_LOCATION),
+            listOf("/system/bin/pm", "grant", selfPkg, PERM_WRITE_SECURE_SETTINGS),
+        )
+    }
+
+    /**
+     * Fixed argvs for revoking reboot-recovery permissions from [selfPkg].
+     * Revokes `WRITE_SECURE_SETTINGS` first before revoking runtime location permissions.
+     */
+    fun revokeRebootRecoveryArgvs(selfPkg: String): List<List<String>> {
+        require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
+        return listOf(
+            listOf("/system/bin/pm", "revoke", selfPkg, PERM_WRITE_SECURE_SETTINGS),
+            listOf("/system/bin/pm", "revoke", selfPkg, PERM_BACKGROUND_LOCATION),
+            listOf("/system/bin/pm", "revoke", selfPkg, PERM_FINE_LOCATION),
+            listOf("/system/bin/pm", "revoke", selfPkg, PERM_COARSE_LOCATION),
+        )
+    }
+
+    /** Fixed argv for reading ADB's trusted-network keystore inside the helper. */
+    fun adbTrustedNetworksArgv(): List<String> = listOf("/system/bin/dumpsys", "adb")
+
     /** Maps a requested command line to a fixed argv, or null if not allowed. `ping` returns null: see [isPing]. */
     fun toArgv(command: String, selfPkg: String): List<String>? {
         require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
@@ -154,6 +203,8 @@ object CommandAllowlist {
                     "--activity-clear-top", "--activity-single-top",
                     "-n", "$selfPkg/${SideSpeedPackages.MAIN_ACTIVITY}",
                 )
+            t.size == 1 && t[0] == REVOKE_SECURE_SETTINGS ->
+                listOf("/system/bin/pm", "revoke", selfPkg, PERM_WRITE_SECURE_SETTINGS)
             t.size == 2 && t[0] == "force-stop" -> {
                 val p = pkg(t[1]) ?: return null
                 if (p in SideSpeedPackages.ALL) return null

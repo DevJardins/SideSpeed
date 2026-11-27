@@ -132,6 +132,7 @@ class MaintenanceService : Service() {
                 engine.scan()
                 runCatching { cleanup.maybeAuto() }
                 runCatching { launches.restorePending() }
+                runCatching { container.rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = true) }
                 runCatching { withContext(Dispatchers.IO) { container.appUpdateCheck.checkIfDue() } }
                 delay(6.hours)
             }

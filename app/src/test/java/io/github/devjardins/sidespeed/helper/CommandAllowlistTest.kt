@@ -512,4 +512,101 @@ class CommandAllowlistTest {
             "force_stop com.x.y",
         ).forEach { assertNull(it, CommandAllowlist.toArgv(it, release)) }
     }
+
+    @Test fun revokeSecureSettingsForm() {
+        assertEquals(
+            listOf("/system/bin/pm", "revoke", release, "android.permission.WRITE_SECURE_SETTINGS"),
+            CommandAllowlist.toArgv("revoke-secure-settings", release),
+        )
+        assertEquals(
+            listOf("/system/bin/pm", "revoke", debug, "android.permission.WRITE_SECURE_SETTINGS"),
+            CommandAllowlist.toArgv("revoke-secure-settings", debug),
+        )
+        listOf(
+            "revoke-secure-settings ",
+            " revoke-secure-settings",
+            "revoke-secure-settings extra",
+            "revoke-secure-settings $release",
+            "pm revoke $release android.permission.WRITE_SECURE_SETTINGS",
+            "pm grant $release android.permission.WRITE_SECURE_SETTINGS",
+            "REVOKE-SECURE-SETTINGS",
+        ).forEach { assertNull(it, CommandAllowlist.toArgv(it, release)) }
+    }
+
+    @Test fun rebootRecoverySpecialFormsNeverMapThroughToArgv() {
+        assertTrue(CommandAllowlist.isGrantRebootRecovery("grant-reboot-recovery"))
+        assertTrue(CommandAllowlist.isRevokeRebootRecovery("revoke-reboot-recovery"))
+        assertTrue(CommandAllowlist.isAdbTrustedNetworks("adb-trusted-networks"))
+
+        listOf(
+            "grant-reboot-recovery",
+            "revoke-reboot-recovery",
+            "adb-trusted-networks",
+        ).forEach {
+            assertNull("toArgv must return null for $it", CommandAllowlist.toArgv(it, release))
+            assertNull("toArgv must return null for $it (debug)", CommandAllowlist.toArgv(it, debug))
+        }
+
+        listOf(
+            "grant-reboot-recovery ",
+            " grant-reboot-recovery",
+            "grant-reboot-recovery extra",
+            "GRANT-REBOOT-RECOVERY",
+        ).forEach { assertEquals(it, false, CommandAllowlist.isGrantRebootRecovery(it)) }
+
+        listOf(
+            "revoke-reboot-recovery ",
+            " revoke-reboot-recovery",
+            "revoke-reboot-recovery extra",
+            "REVOKE-REBOOT-RECOVERY",
+        ).forEach { assertEquals(it, false, CommandAllowlist.isRevokeRebootRecovery(it)) }
+
+        listOf(
+            "adb-trusted-networks ",
+            " adb-trusted-networks",
+            "adb-trusted-networks extra",
+            "dumpsys adb",
+            "ADB-TRUSTED-NETWORKS",
+        ).forEach {
+            assertEquals(it, false, CommandAllowlist.isAdbTrustedNetworks(it))
+            assertNull(it, CommandAllowlist.toArgv(it, release))
+        }
+    }
+
+    @Test fun grantAndRevokeRebootRecoveryArgvOrder() {
+        val grants = CommandAllowlist.grantRebootRecoveryArgvs(release)
+        assertEquals(
+            listOf(
+                listOf("/system/bin/pm", "grant", release, "android.permission.ACCESS_COARSE_LOCATION"),
+                listOf("/system/bin/pm", "grant", release, "android.permission.ACCESS_FINE_LOCATION"),
+                listOf("/system/bin/pm", "grant", release, "android.permission.ACCESS_BACKGROUND_LOCATION"),
+                listOf("/system/bin/pm", "grant", release, "android.permission.WRITE_SECURE_SETTINGS"),
+            ),
+            grants,
+        )
+        assertEquals("android.permission.WRITE_SECURE_SETTINGS", grants.last().last())
+
+        val revokes = CommandAllowlist.revokeRebootRecoveryArgvs(debug)
+        assertEquals(
+            listOf(
+                listOf("/system/bin/pm", "revoke", debug, "android.permission.WRITE_SECURE_SETTINGS"),
+                listOf("/system/bin/pm", "revoke", debug, "android.permission.ACCESS_BACKGROUND_LOCATION"),
+                listOf("/system/bin/pm", "revoke", debug, "android.permission.ACCESS_FINE_LOCATION"),
+                listOf("/system/bin/pm", "revoke", debug, "android.permission.ACCESS_COARSE_LOCATION"),
+            ),
+            revokes,
+        )
+        assertEquals("android.permission.WRITE_SECURE_SETTINGS", revokes.first().last())
+        assertEquals(listOf("/system/bin/dumpsys", "adb"), CommandAllowlist.adbTrustedNetworksArgv())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun grantRebootRecoveryArgvsRejectsUnknownSelfPkg() {
+        CommandAllowlist.grantRebootRecoveryArgvs("com.example")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun revokeRebootRecoveryArgvsRejectsUnknownSelfPkg() {
+        CommandAllowlist.revokeRebootRecoveryArgvs("com.example")
+    }
 }

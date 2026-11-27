@@ -39,6 +39,7 @@ import io.github.devjardins.sidespeed.ui.theme.SsType
 @Composable
 fun ToolsScreen(
     health: @Composable () -> Unit,
+    rebootRecovery: @Composable () -> Unit = {},
     space: @Composable () -> Unit,
     animations: @Composable () -> Unit,
     extras: @Composable () -> Unit,
@@ -70,6 +71,7 @@ fun ToolsScreen(
                 Text(stringResource(R.string.tools_title), style = SsType.Headline, color = SsColors.TextPrimary)
             }
             health()
+            rebootRecovery()
             space()
             animations()
             extras()

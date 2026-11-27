@@ -19,7 +19,10 @@ import io.github.devjardins.sidespeed.apps.InstalledApps
 import io.github.devjardins.sidespeed.BuildConfig
 import io.github.devjardins.sidespeed.tools.AndroidDeviceInfo
 import io.github.devjardins.sidespeed.tools.AndroidExtrasQueries
+import io.github.devjardins.sidespeed.tools.AndroidRecoveryJobScheduler
+import io.github.devjardins.sidespeed.tools.AndroidRecoveryPermissions
 import io.github.devjardins.sidespeed.tools.Extras
+import io.github.devjardins.sidespeed.tools.RebootRecoveryController
 import io.github.devjardins.sidespeed.tools.loadExtrasIndex
 import io.github.devjardins.sidespeed.tools.loadExtrasList
 import io.github.devjardins.sidespeed.tools.Cleanup
@@ -43,10 +46,15 @@ import kotlinx.coroutines.flow.stateIn
 import io.github.devjardins.sidespeed.ui.setup.SettingsReader
 import io.github.devjardins.sidespeed.compile.CompileRunner
 import io.github.devjardins.sidespeed.status.StatusChecker
+import io.github.devjardins.sidespeed.maintenance.AndroidBssidReader
+import io.github.devjardins.sidespeed.maintenance.AndroidSecureSettingsWriter
 import io.github.devjardins.sidespeed.maintenance.DataStoreMaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.DataStoreRebootRecoveryStore
 import io.github.devjardins.sidespeed.maintenance.MaintenanceEngine
 import io.github.devjardins.sidespeed.maintenance.MaintenanceService
 import io.github.devjardins.sidespeed.maintenance.MaintenanceStore
+import io.github.devjardins.sidespeed.maintenance.RebootRecovery
+import io.github.devjardins.sidespeed.maintenance.RebootRecoveryStore
 import io.github.devjardins.sidespeed.maintenance.SelfCompiler
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.DataStoreCompileStatusStore
@@ -56,6 +64,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.updates.AppUpdateCheck
 import io.github.devjardins.sidespeed.updates.AppUpdateStore
@@ -81,6 +90,9 @@ class AppContainer(context: Context) {
     val ownPackage: String = appContext.packageName
 
     val adb: AdbBackend = LibAdbBackend(appContext, appContext.filesDir)
+
+    /** Serializes all libadb operations (connect, pair, daily refresh) since AbsAdbConnectionManager is not thread-safe. */
+    val adbMutex: Mutex = Mutex()
 
     /** The single shared helper client: the helper writes one ack file, so two clients could fail each other's nonce check. */
     val helper: HelperClient = HelperPaths.of(ownPackage).let { paths ->
@@ -238,6 +250,36 @@ class AppContainer(context: Context) {
 
     val maintenanceStore: MaintenanceStore by lazy { DataStoreMaintenanceStore(appContext) }
 
+    val rebootRecoveryStore: RebootRecoveryStore by lazy { DataStoreRebootRecoveryStore(appContext) }
+
+    val rebootRecovery: RebootRecovery by lazy {
+        RebootRecovery(
+            store = rebootRecoveryStore,
+            helperUp = { helper.ping() != null },
+            bssidReader = AndroidBssidReader(appContext),
+            settings = settings,
+            secureWriter = AndroidSecureSettingsWriter(appContext.contentResolver),
+            ensureReady = { strategy.ensureReady() },
+            onHelperRecovered = { maintenance.scan() },
+            isFireOs = isFireOs,
+        )
+    }
+
+    val rebootRecoveryController: RebootRecoveryController by lazy {
+        RebootRecoveryController(
+            commands = toolsCommands,
+            store = rebootRecoveryStore,
+            prefs = prefs,
+            bssidReader = AndroidBssidReader(appContext),
+            settings = settings,
+            secureWriter = AndroidSecureSettingsWriter(appContext.contentResolver),
+            permissions = AndroidRecoveryPermissions(appContext),
+            jobs = AndroidRecoveryJobScheduler(appContext),
+            isFireOs = isFireOs,
+            isWifiConnected = { AndroidBssidReader.isWifiConnected(appContext) },
+        )
+    }
+
     /** Container-level scope: outlives screens and ViewModels, so launch sequences survive them. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> })
 
@@ -297,7 +339,10 @@ class AppContainer(context: Context) {
             ownPackage = appContext.packageName,
             strings = stringLookup(appContext),
             measuring = { launchRunner.measuring.value },
-            onHelperUp = { appScope.launch { launchRunner.restorePending() } },
+            onHelperUp = {
+                appScope.launch { launchRunner.restorePending() }
+                appScope.launch { rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = true) }
+            },
             status = compileStatus,
         )
     }
@@ -354,6 +399,7 @@ class AppContainer(context: Context) {
         isFireOs = isFireOs,
         pkg = ownPackage,
         buildFingerprint = Build.FINGERPRINT,
+        adbMutex = adbMutex,
     )
 
     /** This TV's own showable addresses (LAN first, then Tailscale), or empty when unknown. */

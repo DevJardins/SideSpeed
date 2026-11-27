@@ -18,6 +18,9 @@ class AdbClosedException(cause: Throwable? = null) : IOException(cause)
 fun classicConnectFailure(e: Throwable): Throwable =
     if (e.javaClass == IOException::class.java || e is AdbAuthenticationFailedException) AdbClosedException(e) else e
 
+/** Thrown when wireless TLS connect timed out waiting for mDNS to advertise a port. */
+class AdbMdnsMissException(cause: Throwable? = null) : IOException(cause)
+
 sealed interface AdbTarget {
     data class Classic(val host: String = "127.0.0.1", val port: Int = 5555) : AdbTarget
 

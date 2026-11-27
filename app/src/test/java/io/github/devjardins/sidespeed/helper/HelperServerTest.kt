@@ -54,6 +54,7 @@ class HelperServerTest {
         installGate: InstallGate = InstallGate(),
         bodyTimeoutMs: Int = HelperServer.BODY_TIMEOUT_MS,
         packageCheck: (String) -> Boolean = { false },
+        adbDump: () -> Pair<Int, ByteArray> = { HelperProtocol.EXIT_HELPER_ERROR to ByteArray(0) },
     ) {
         val s = HelperServer(
             server = server,
@@ -77,6 +78,7 @@ class HelperServerTest {
             maxConnections = maxConnections,
             requestTimeoutMs = requestTimeoutMs,
             packageCheck = packageCheck,
+            adbDump = adbDump,
         )
         thread(isDaemon = true) { s.serve() }
     }
@@ -665,5 +667,70 @@ class HelperServerTest {
         assertFalse(HelperServer.isLoopback127(InetAddress.getByAddress(ByteArray(15) + byteArrayOf(1))))
         assertFalse(HelperServer.isLoopback127(InetAddress.getByAddress(byteArrayOf(192.toByte(), 168.toByte(), 1, 1))))
         assertFalse(HelperServer.isLoopback127(null))
+    }
+
+    @Test fun adbTrustedNetworksFiltersRawDump() {
+        val raw = javaClass.classLoader!!.getResourceAsStream("dumpsys/adb-trusted-sample.bin")!!.readBytes()
+        start(adbDump = { 0 to raw })
+        val lines = exchange("$nonce adb-trusted-networks\n")
+        assertEquals(listOf(HelperProtocol.PROVEN, "02:15:b2:00:00:01", "__END__:0"), lines)
+        assertTrue(ran.isEmpty())
+    }
+
+    @Test fun adbTrustedNetworksNonZeroExitEmitsZeroDumpBytes() {
+        val raw = javaClass.classLoader!!.getResourceAsStream("dumpsys/adb-trusted-sample.bin")!!.readBytes()
+        start(adbDump = { 1 to raw })
+        val lines = exchange("$nonce adb-trusted-networks\n")
+        assertEquals(listOf(HelperProtocol.PROVEN, "__END__:1"), lines)
+    }
+
+    @Test fun grantRebootRecoveryGrantsInOrderAndRollsBackOnFailure() {
+        start(runner = { argv, _ ->
+            ran += argv
+            if (argv.last() == "android.permission.ACCESS_BACKGROUND_LOCATION") 1 else 0
+        })
+        val lines = exchange("$nonce grant-reboot-recovery\n")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals("__END__:1", lines.last())
+        assertEquals(
+            listOf(
+                listOf("/system/bin/pm", "grant", SideSpeedPackages.RELEASE, "android.permission.ACCESS_COARSE_LOCATION"),
+                listOf("/system/bin/pm", "grant", SideSpeedPackages.RELEASE, "android.permission.ACCESS_FINE_LOCATION"),
+                listOf("/system/bin/pm", "grant", SideSpeedPackages.RELEASE, "android.permission.ACCESS_BACKGROUND_LOCATION"),
+                // WRITE_SECURE_SETTINGS was never granted; rollback revokes all 4 starting with WRITE_SECURE_SETTINGS.
+                listOf("/system/bin/pm", "revoke", SideSpeedPackages.RELEASE, "android.permission.WRITE_SECURE_SETTINGS"),
+                listOf("/system/bin/pm", "revoke", SideSpeedPackages.RELEASE, "android.permission.ACCESS_BACKGROUND_LOCATION"),
+                listOf("/system/bin/pm", "revoke", SideSpeedPackages.RELEASE, "android.permission.ACCESS_FINE_LOCATION"),
+                listOf("/system/bin/pm", "revoke", SideSpeedPackages.RELEASE, "android.permission.ACCESS_COARSE_LOCATION"),
+            ),
+            ran.toList(),
+        )
+    }
+
+    @Test fun revokeRebootRecoveryCompletesAllFourAfterClientDisconnect() {
+        val secondStarted = CountDownLatch(1)
+        val clientClosed = CountDownLatch(1)
+        val allDone = CountDownLatch(4)
+        start(runner = { argv, onLine ->
+            ran += argv
+            onLine("revoking ${argv.last()}")
+            if (ran.size == 2) {
+                secondStarted.countDown()
+                clientClosed.await(5, TimeUnit.SECONDS)
+            }
+            allDone.countDown()
+            0
+        })
+        Socket(loopback, server.localPort).use { c ->
+            c.getOutputStream().write("$nonce revoke-reboot-recovery\n".toByteArray())
+            c.getOutputStream().flush()
+            assertTrue(secondStarted.await(5, TimeUnit.SECONDS))
+        }
+        clientClosed.countDown()
+        assertTrue(allDone.await(5, TimeUnit.SECONDS))
+        assertEquals(
+            CommandAllowlist.revokeRebootRecoveryArgvs(SideSpeedPackages.RELEASE),
+            ran.toList(),
+        )
     }
 }

@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 
 sealed interface SetupUiState {
@@ -92,6 +94,7 @@ class SetupViewModel(
     private val settings: SettingsReader,
     val ownPackage: String,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val adbMutex: Mutex = Mutex(),
 ) : ViewModel() {
     private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Loading)
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
@@ -211,10 +214,12 @@ class SetupViewModel(
             updateConnecting { it.copy(pairMessage = UiText.Res(R.string.setup_pairing_in_progress)) }
             val r = try {
                 // The timeout starts only now that pairing actually begins.
-                withTimeout(PAIR_TIMEOUT_MS) {
-                    var r = adb.pair("127.0.0.1", p, code)
-                    if (r.isFailure) wifiIp()?.let { r = adb.pair(it, p, code) }
-                    r
+                adbMutex.withLock {
+                    withTimeout(PAIR_TIMEOUT_MS) {
+                        var r = adb.pair("127.0.0.1", p, code)
+                        if (r.isFailure) wifiIp()?.let { r = adb.pair(it, p, code) }
+                        r
+                    }
                 }
             } catch (_: TimeoutCancellationException) {
                 null

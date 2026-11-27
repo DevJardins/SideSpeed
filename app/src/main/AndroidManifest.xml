@@ -14,6 +14,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Self-update fallback: the system installer prompt when the helper is down. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Reboot recovery (opt-in only, granted via shell helper): used strictly for adb_wifi_enabled = 1. -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <!-- Reboot recovery (opt-in only, granted via shell helper): used strictly to check the Wi-Fi BSSID at boot. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- libadb-android's legacy manifest (no targetSdk) makes the merger imply these; SideSpeed needs none. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
@@ -62,6 +68,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps user-chosen apps compiled after updates via the local helper" />
         </service>
+
+        <service
+            android:name=".maintenance.RebootRecoveryJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
             android:name=".maintenance.BootReceiver"

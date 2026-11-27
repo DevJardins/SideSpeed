@@ -6,6 +6,7 @@ import android.content.Intent
 import io.github.devjardins.sidespeed.SideSpeedApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -21,15 +22,38 @@ fun packageEventTarget(action: String?, dataSchemeSpecificPart: String?, ownPack
     }
 }
 
-/** Restarts the service after boot, but only for users who turned a feature on. */
+internal suspend fun handleBootCompleted(
+    serviceNeeded: Boolean,
+    isFireOs: Boolean,
+    rebootRecoveryEnabled: Boolean,
+    startMaintenance: () -> Unit,
+    scheduleBoot: () -> Unit,
+    scheduleDaily: () -> Unit,
+) {
+    if (serviceNeeded) startMaintenance()
+    if (!isFireOs && rebootRecoveryEnabled) {
+        scheduleBoot()
+        scheduleDaily()
+    }
+}
+
+/** Restarts the service after boot, and schedules reboot recovery when turned on. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
-        val container = (context.applicationContext as SideSpeedApp).container
+        val appContext = context.applicationContext
+        val container = (appContext as SideSpeedApp).container
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                if (isServiceNeeded(container.maintenanceStore, container.toolsStore)) MaintenanceService.start(context.applicationContext)
+                handleBootCompleted(
+                    serviceNeeded = isServiceNeeded(container.maintenanceStore, container.toolsStore),
+                    isFireOs = container.isFireOs,
+                    rebootRecoveryEnabled = container.rebootRecoveryStore.enabled.first(),
+                    startMaintenance = { MaintenanceService.start(appContext) },
+                    scheduleBoot = { RebootRecoveryJob.scheduleBoot(appContext) },
+                    scheduleDaily = { RebootRecoveryJob.scheduleDaily(appContext) },
+                )
             } finally {
                 pending.finish()
             }
