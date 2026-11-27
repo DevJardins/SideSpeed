@@ -26,6 +26,9 @@ class KadbTvConnectorTest {
     private class FakeLink(
         val onConnect: FakeLink.() -> Unit = {},
         val onShell: FakeLink.(String) -> String = { "" },
+        val onOpenPackageCmd: FakeLink.(Array<out String>) -> InstallStream = {
+            throw UnsupportedInstallStreamException()
+        },
     ) : AdbLink {
         val closedLatch = CountDownLatch(1)
         var connected = false
@@ -46,6 +49,8 @@ class KadbTvConnectorTest {
             shellCommands += command
             return onShell(command)
         }
+
+        override fun openPackageCmd(vararg args: String): InstallStream = onOpenPackageCmd(args)
 
         override val isConnected get() = connected && !closed
         override fun close() = closedLatch.countDown()
@@ -170,5 +175,34 @@ class KadbTvConnectorTest {
             KadbTvConnector(authTimeoutMs = 20_000, connectTimeoutMs = 5_000, commandTimeoutMs = 25_000) { _, _ -> FakeLink() }
         }
         KadbTvConnector(authTimeoutMs = 20_000, connectTimeoutMs = 5_000, commandTimeoutMs = 20_000) { _, _ -> FakeLink() }
+    }
+
+    @Test
+    fun forInstallsBuildsWithLongerCommandTimeoutAndKeepsSessionAliveOnUnsupportedStream() = runBlocking {
+        KadbTvConnector.forInstalls(java.io.File("/tmp"))
+        val link = FakeLink(onShell = { "SER-1" })
+        val session = connector(link).open("10.0.0.5")
+        assertFailsWith<UnsupportedInstallStreamException> {
+            session.openPackageCmd("install-create", "-r", "-S", "10")
+        }
+        assertTrue(!link.closed)
+        assertEquals("SER-1", session.run("getprop ro.serialno"))
+    }
+
+    @Test
+    fun installStreamIoFailureKillsKadbTvSession() = runBlocking {
+        val failingStream = object : InstallStream {
+            override fun write(bytes: ByteArray, offset: Int, length: Int) = throw IOException("reset")
+            override fun flush() = Unit
+            override fun readAllText(): String = ""
+            override fun close() = Unit
+        }
+        val link = FakeLink(onOpenPackageCmd = { failingStream })
+        val session = connector(link).open("10.0.0.5")
+        val stream = session.openPackageCmd("install-write", "-S", "4", "1", "base.apk", "-")
+        assertFailsWith<AdbConnectionLost> { stream.write(byteArrayOf(1, 2, 3, 4), 0, 4) }
+        assertTrue(link.closed)
+        assertFailsWith<AdbConnectionLost> { session.run("getprop ro.serialno") }
+        Unit
     }
 }

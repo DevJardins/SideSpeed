@@ -1,7 +1,15 @@
 package io.github.devjardins.sidespeed.companion.tv
 
 import com.flyfishxu.kadb.Kadb
+import com.flyfishxu.kadb.stream.AdbStream
 import java.io.IOException
+
+/** Streamed ADB `package` command handle (`abb_exec` or `exec:cmd`). */
+interface InstallStream : AutoCloseable {
+    fun write(bytes: ByteArray, offset: Int, length: Int)
+    fun flush()
+    fun readAllText(): String
+}
 
 /**
  * The blocking ADB operations [KadbTvConnector] needs, so failure mapping can be tested without a TV.
@@ -13,6 +21,9 @@ internal interface AdbLink : AutoCloseable {
 
     /** Runs [command] on the established connection and returns its stdout. */
     fun shell(command: String): String
+
+    /** Opens a streamed `package` command (`abb_exec` or `exec:cmd`). */
+    fun openPackageCmd(vararg args: String): InstallStream
 
     /** True while the transport established by [connect] is still open. */
     val isConnected: Boolean
@@ -29,10 +40,25 @@ internal interface AdbClient : AutoCloseable {
     /** Connects lazily if needed; blocks through the handshake. */
     fun handshake()
     fun shell(command: String): String
+    fun openPackageCmd(vararg args: String): InstallStream
     val isOpen: Boolean
 
     /** True when [handshake] left a finished TLS transport. See [KadbTls]. */
     val tlsNegotiated: Boolean get() = false
+}
+
+private class KadbInstallStream(private val stream: AdbStream) : InstallStream {
+    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+        stream.sink.write(bytes, offset, length)
+    }
+
+    override fun flush() {
+        stream.sink.flush()
+    }
+
+    override fun readAllText(): String = stream.source.readUtf8()
+
+    override fun close() = stream.close()
 }
 
 internal class KadbClient(private val kadb: Kadb) : AdbClient {
@@ -45,6 +71,15 @@ internal class KadbClient(private val kadb: Kadb) : AdbClient {
     override val tlsNegotiated: Boolean get() = KadbTls.negotiated(kadb)
 
     override fun shell(command: String): String = kadb.shell(command).output
+
+    override fun openPackageCmd(vararg args: String): InstallStream {
+        val stream = when {
+            kadb.supportsFeature("abb_exec") -> kadb.abbExec("package", *args)
+            kadb.supportsFeature("cmd") -> kadb.execCmd("package", *args)
+            else -> throw UnsupportedInstallStreamException()
+        }
+        return KadbInstallStream(stream)
+    }
 
     override val isOpen: Boolean get() = kadb.connectionCheck()
 
@@ -75,6 +110,11 @@ internal class GuardedLink(private val client: AdbClient) : AdbLink {
     override fun shell(command: String): String {
         if (closed) throw IOException("ADB link is closed")
         return client.shell(command)
+    }
+
+    override fun openPackageCmd(vararg args: String): InstallStream {
+        if (closed) throw IOException("ADB link is closed")
+        return client.openPackageCmd(*args)
     }
 
     override val isConnected: Boolean get() = !closed && client.isOpen

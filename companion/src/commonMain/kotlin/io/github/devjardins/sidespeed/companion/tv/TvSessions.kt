@@ -62,38 +62,61 @@ class TvSessions(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val relocateAllowed: suspend (TvTarget) -> Boolean = { false },
     private val identity: TvIdentity? = null,
+    private val installConnector: TvConnector = connector,
 ) {
     /** Address to the instant a remembered "no encrypted offer" result expires. A positive offer is never stored. */
     private val noEncryptedOfferUntil = ConcurrentHashMap<String, Long>()
 
-    suspend fun open(tv: SavedTv, mayEnroll: Boolean = false): TvSession = open(tv.toTarget(), tv, mayEnroll)
+    suspend fun open(tv: SavedTv, mayEnroll: Boolean = false): TvSession =
+        open(tv.toTarget(), tv, mayEnroll, connector)
 
-    suspend fun open(target: TvTarget): TvSession = open(target, saved = null, mayEnroll = false)
+    /** Opens [tv] using [installConnector] (longer transfer timeout) through the same trust/identity/TLS gates. */
+    suspend fun openForInstall(tv: SavedTv, mayEnroll: Boolean = false): TvSession =
+        open(tv.toTarget(), tv, mayEnroll, installConnector)
+
+    suspend fun open(target: TvTarget): TvSession =
+        open(target, saved = null, mayEnroll = false, connector)
 
     /**
      * A parked TV is refused here, before any connection, for every caller: upkeep, the activity poll,
      * and a user action that still has the saved id.
      * A saved TV with no secret is refused the same way unless [mayEnroll] is true: nothing is dialled.
      */
-    private suspend fun open(target: TvTarget, saved: SavedTv?, mayEnroll: Boolean): TvSession {
+    private suspend fun open(
+        target: TvTarget,
+        saved: SavedTv?,
+        mayEnroll: Boolean,
+        activeConnector: TvConnector,
+    ): TvSession {
         if (saved?.unproven == true || store.tvs().any { it.id == target.id && it.unproven }) throw TvUnproven()
         if (identity != null && saved != null && saved.identitySecret == null && !mayEnroll) throw NeedsConfirmation()
-        return openLink(target, saved, mayEnroll)
+        return openLink(target, saved, mayEnroll, activeConnector)
     }
 
-    private suspend fun openLink(target: TvTarget, saved: SavedTv?, mayEnroll: Boolean): TvSession = when (val link = target.link) {
-        is TvLink.Classic -> openClassic(target, link, saved, mayEnroll)
-        is TvLink.Encrypted -> openEncrypted(target, link, saved, mayEnroll)
+    private suspend fun openLink(
+        target: TvTarget,
+        saved: SavedTv?,
+        mayEnroll: Boolean,
+        activeConnector: TvConnector,
+    ): TvSession = when (val link = target.link) {
+        is TvLink.Classic -> openClassic(target, link, saved, mayEnroll, activeConnector)
+        is TvLink.Encrypted -> openEncrypted(target, link, saved, mayEnroll, activeConnector)
     }
 
-    private suspend fun openClassic(target: TvTarget, link: TvLink.Classic, saved: SavedTv?, mayEnroll: Boolean): TvSession {
+    private suspend fun openClassic(
+        target: TvTarget,
+        link: TvLink.Classic,
+        saved: SavedTv?,
+        mayEnroll: Boolean,
+        activeConnector: TvConnector,
+    ): TvSession {
         if (link.ackAtEpochMs == null) throw ClassicNotAcknowledged()
         if (!rememberedNoEncryptedOffer(target.address)) {
             val offered = classicTls(target.address) || ports.find(target.address) != null
             if (offered) throw EncryptedAvailable()
             noEncryptedOfferUntil[target.address] = clock() + NO_ENCRYPTED_OFFER_MS
         }
-        return gate(connector.open(target.address, TvConnector.DEFAULT_PORT), saved, mayEnroll)
+        return gate(activeConnector.open(target.address, TvConnector.DEFAULT_PORT), saved, mayEnroll)
     }
 
     /** True while a recent check found no encrypted offer for [address]. A positive result is never remembered. */
@@ -107,11 +130,12 @@ class TvSessions(
         link: TvLink.Encrypted,
         saved: SavedTv?,
         mayEnroll: Boolean,
+        activeConnector: TvConnector,
     ): TvSession {
         val last = link.lastPort?.takeIf { usableEncryptedPort(it) }
         if (last != null) {
             try {
-                return gate(requireTls(connector.open(target.address, last)), saved, mayEnroll)
+                return gate(requireTls(activeConnector.open(target.address, last)), saved, mayEnroll)
             } catch (e: TvUnreachable) {
                 // The saved port is stale. Look up the one the TV is advertising now.
             }
@@ -124,7 +148,7 @@ class TvSessions(
         }
         if (found != null) {
             val session = try {
-                requireTls(connector.open(target.address, found))
+                requireTls(activeConnector.open(target.address, found))
             } catch (e: TvUnreachable) {
                 throw EncryptedPortUnknown()
             }
@@ -134,7 +158,7 @@ class TvSessions(
             return gate(session, saved, mayEnroll)
         }
         if (listed == null) throw EncryptedPortUnknown()
-        return openMovedEncrypted(target, listed, saved, mayEnroll)
+        return openMovedEncrypted(target, listed, saved, mayEnroll, activeConnector)
     }
 
     /**
@@ -146,6 +170,7 @@ class TvSessions(
         services: List<TlsConnectService>,
         hinted: SavedTv?,
         mayEnroll: Boolean,
+        activeConnector: TvConnector,
     ): TvSession {
         val saved = hinted ?: store.tvs().firstOrNull { it.id == target.id } ?: throw EncryptedPortUnknown()
         val match = serviceForSerial(saved.serial, services) ?: throw EncryptedPortUnknown()
@@ -154,7 +179,7 @@ class TvSessions(
         if (ip == null || !AddressPolicy.isPrivate(ip)) throw EncryptedPortUnknown()
         if (!relocateAllowed(target)) throw EncryptedPortUnknown()
         val session = try {
-            requireTls(connector.open(match.host, match.port))
+            requireTls(activeConnector.open(match.host, match.port))
         } catch (e: TvUnreachable) {
             throw EncryptedPortUnknown()
         }
@@ -258,6 +283,14 @@ class TvSessions(
                 throw TlsNotNegotiated()
             }
             return inner.run(command)
+        }
+
+        override suspend fun openPackageCmd(vararg args: String): InstallStream {
+            if (!inner.tlsNegotiated) {
+                inner.close()
+                throw TlsNotNegotiated()
+            }
+            return inner.openPackageCmd(*args)
         }
 
         override fun close() = inner.close()

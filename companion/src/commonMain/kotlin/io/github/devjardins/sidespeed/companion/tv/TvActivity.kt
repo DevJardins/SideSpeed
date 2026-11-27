@@ -34,10 +34,16 @@ data class TvActivity(
     val lastMs: Long = 0L,
     val self: SelfState = SelfState.PENDING,
     val version: String = "",
+    val remoteSupported: Boolean = false,
+    val reqSeq: Long = 0L,
+    val retrying: Int = 0,
 ) {
     /** The running compile is SideSpeed optimizing itself: the Self row shows a spinner. */
     val selfCompiling: Boolean get() = phase == ActivityPhase.COMPILING && pkg == SIDESPEED_PACKAGE
 }
+
+internal fun isProviderMissing(output: String): Boolean =
+    output.contains("Could not find provider") || output.contains("Error while accessing provider")
 
 /**
  * Parses `content query` stdout. Returns null when there is no usable row (blank output,
@@ -46,7 +52,7 @@ data class TvActivity(
  * [ActivityPhase.NEEDS_UPDATE] instead of null, so the update caption shows steadily.
  */
 fun parseActivityRow(output: String): TvActivity? {
-    if (output.contains("Could not find provider") || output.contains("Error while accessing provider")) {
+    if (isProviderMissing(output)) {
         return TvActivity(ActivityPhase.NEEDS_UPDATE)
     }
     val line = output.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("Row:") } ?: return null
@@ -67,6 +73,19 @@ fun parseActivityRow(output: String): TvActivity? {
         else -> return null
     }
     val lastResult = values["last_result"] ?: return null
+    val remoteSupported = when (values["remote"]) {
+        "1" -> true
+        "0", "", null -> false
+        else -> return null
+    }
+    val reqSeq = when (val raw = values["req_seq"]) {
+        null, "" -> 0L
+        else -> raw.toLongOrNull()?.takeIf { it >= 0L } ?: return null
+    }
+    val retrying = when (val raw = values["retrying"]) {
+        null, "" -> 0
+        else -> raw.toIntOrNull()?.takeIf { it >= 0 } ?: return null
+    }
     return TvActivity(
         phase = phase,
         pkg = values["pkg"] ?: return null,
@@ -90,6 +109,9 @@ fun parseActivityRow(output: String): TvActivity? {
             else -> return null
         },
         version = values["version"] ?: return null,
+        remoteSupported = remoteSupported,
+        reqSeq = reqSeq,
+        retrying = retrying,
     )
 }
 

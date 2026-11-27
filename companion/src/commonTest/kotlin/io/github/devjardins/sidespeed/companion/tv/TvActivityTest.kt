@@ -28,6 +28,27 @@ class TvActivityTest {
         assertEquals(1730999000000L, a.lastMs)
         assertEquals(SelfState.OPTIMIZED, a.self)
         assertEquals("0.2.1", a.version)
+        assertEquals(false, a.remoteSupported)
+        assertEquals(0L, a.reqSeq)
+        assertEquals(0, a.retrying)
+    }
+
+    @Test fun parsesRemoteReqSeqAndRetryingFields() {
+        val withRemote = "$row, req_seq=4, remote=1, retrying=2"
+        val a = parseActivityRow(withRemote)!!
+        assertEquals(true, a.remoteSupported)
+        assertEquals(4L, a.reqSeq)
+        assertEquals(2, a.retrying)
+
+        val disabled = "$row, req_seq=0, remote=0, retrying=0"
+        val b = parseActivityRow(disabled)!!
+        assertEquals(false, b.remoteSupported)
+        assertEquals(0L, b.reqSeq)
+        assertEquals(0, b.retrying)
+
+        assertNull(parseActivityRow("$row, remote=bogus"))
+        assertNull(parseActivityRow("$row, req_seq=-1"))
+        assertNull(parseActivityRow("$row, retrying=bad"))
     }
 
     @Test fun labelsWithCommasAndEqualsRoundTrip() {

@@ -34,6 +34,7 @@ class KadbTvConnector internal constructor(
     private val authTimeoutMs: Long,
     private val connectTimeoutMs: Long,
     private val commandTimeoutMs: Long,
+    private val socketTimeoutMs: Long = authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS,
     private val linkFactory: (host: String, port: Int) -> AdbLink,
 ) : TvConnector {
 
@@ -42,28 +43,51 @@ class KadbTvConnector internal constructor(
         authTimeoutMs: Long = 20_000,
         connectTimeoutMs: Long = 5_000,
         commandTimeoutMs: Long = 20_000,
-    ) : this(authTimeoutMs, connectTimeoutMs, commandTimeoutMs, { host, port ->
+    ) : this(
+        keyDir = keyDir,
+        authTimeoutMs = authTimeoutMs,
+        connectTimeoutMs = connectTimeoutMs,
+        commandTimeoutMs = commandTimeoutMs,
+        socketTimeoutMs = authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS,
+    )
+
+    private constructor(
+        keyDir: File,
+        authTimeoutMs: Long,
+        connectTimeoutMs: Long,
+        commandTimeoutMs: Long,
+        socketTimeoutMs: Long,
+    ) : this(authTimeoutMs, connectTimeoutMs, commandTimeoutMs, socketTimeoutMs, { host, port ->
         CompanionKeys.ensureReady(keyDir)
         // Kadb 2.1.4's close() cannot abort a handshake in progress, so a socket read timeout a little past
-        // authTimeoutMs is what ends a handshake abandoned as TvAuthPending (GuardedLink closes one that
-        // completes instead). It also bounds each command read, hence commandTimeoutMs must stay below it.
+        // authTimeoutMs/commandTimeoutMs bounds abandoned calls (GuardedLink closes one that completes instead).
         GuardedLink(KadbClient(
             Kadb.create(
                 host, port,
                 connectTimeout = connectTimeoutMs.toInt(),
-                socketTimeout = (authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS).toInt(),
+                socketTimeout = socketTimeoutMs.toInt(),
             )
         ))
     })
 
-    private companion object {
-        const val ABANDONED_HANDSHAKE_GRACE_MS = 5_000L
+    companion object {
+        private const val ABANDONED_HANDSHAKE_GRACE_MS = 5_000L
+        const val INSTALL_COMMAND_TIMEOUT_MS = 120_000L
+        const val INSTALL_SOCKET_TIMEOUT_MS = INSTALL_COMMAND_TIMEOUT_MS + ABANDONED_HANDSHAKE_GRACE_MS
+
+        fun forInstalls(keyDir: File): KadbTvConnector = KadbTvConnector(
+            keyDir = keyDir,
+            authTimeoutMs = 20_000L,
+            connectTimeoutMs = 5_000L,
+            commandTimeoutMs = INSTALL_COMMAND_TIMEOUT_MS,
+            socketTimeoutMs = INSTALL_SOCKET_TIMEOUT_MS,
+        )
     }
 
     init {
         require(connectTimeoutMs in 1 until authTimeoutMs) { "connectTimeoutMs must be > 0 and < authTimeoutMs" }
-        require(commandTimeoutMs in 1 until authTimeoutMs + ABANDONED_HANDSHAKE_GRACE_MS) {
-            "commandTimeoutMs must be > 0 and below the socket read timeout (authTimeoutMs + $ABANDONED_HANDSHAKE_GRACE_MS)"
+        require(commandTimeoutMs in 1 until socketTimeoutMs) {
+            "commandTimeoutMs must be > 0 and below the socket read timeout ($socketTimeoutMs)"
         }
     }
 
@@ -109,6 +133,63 @@ internal class KadbTvSession(private val link: AdbLink, private val commandTimeo
             throw AdbConnectionLost("Command timed out after ${commandTimeoutMs}ms", null)
         }
         return out.value.trim()
+    }
+
+    override suspend fun openPackageCmd(vararg args: String): InstallStream {
+        if (dead || !link.isConnected) {
+            close()
+            throw AdbConnectionLost("ADB connection is closed")
+        }
+        val out = try {
+            callBlocking(link, commandTimeoutMs) { link.openPackageCmd(*args) }
+        } catch (e: UnsupportedInstallStreamException) {
+            throw e
+        } catch (e: CancellationException) {
+            close()
+            throw e
+        } catch (e: Exception) {
+            close()
+            throw AdbConnectionLost(e)
+        }
+        if (out == null) {
+            close()
+            throw AdbConnectionLost("Command timed out after ${commandTimeoutMs}ms", null)
+        }
+        return SessionInstallStream(out.value)
+    }
+
+    private inner class SessionInstallStream(private val delegate: InstallStream) : InstallStream {
+        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+            if (dead) throw AdbConnectionLost("ADB connection is closed")
+            try {
+                delegate.write(bytes, offset, length)
+            } catch (e: IOException) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost(e)
+            }
+        }
+
+        override fun flush() {
+            if (dead) throw AdbConnectionLost("ADB connection is closed")
+            try {
+                delegate.flush()
+            } catch (e: IOException) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost(e)
+            }
+        }
+
+        override fun readAllText(): String {
+            if (dead) throw AdbConnectionLost("ADB connection is closed")
+            return try {
+                delegate.readAllText()
+            } catch (e: IOException) {
+                this@KadbTvSession.close()
+                throw AdbConnectionLost(e)
+            }
+        }
+
+        override fun close() = delegate.close()
     }
 
     override fun close() {
