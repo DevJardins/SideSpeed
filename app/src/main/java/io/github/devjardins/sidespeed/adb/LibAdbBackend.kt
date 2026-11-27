@@ -35,10 +35,14 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
     override suspend fun connect(target: AdbTarget): Result<Unit> = runCatchingCancellable {
         runInterruptible(Dispatchers.IO) {
             val ok = when (target) {
-                is AdbTarget.Classic -> manager.connect(target.host, target.port)
+                is AdbTarget.Classic -> try {
+                    manager.connect(target.host, target.port)
+                } catch (e: Exception) {
+                    throw classicConnectFailure(e)
+                }
                 AdbTarget.WirelessTls -> manager.connectTls(context, TLS_TIMEOUT_MS)
             }
-            if (!ok) throw IOException("ADB connection refused")
+            if (!ok) throw AdbClosedException()
         }
     }
 

@@ -156,9 +156,13 @@ class ConnectionStrategy(
         return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
     }
 
-    /** A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library). */
+    /**
+     * A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library).
+     * Fire OS keeps the port open but closes the stream before the handshake: [AdbClosedException].
+     */
     private fun isRefusal(e: Throwable?): Boolean =
-        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is ConnectException }
+        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8)
+            .any { it is ConnectException || it is AdbClosedException }
 
     companion object {
         const val SHELL_TIMEOUT_MS = 10_000L

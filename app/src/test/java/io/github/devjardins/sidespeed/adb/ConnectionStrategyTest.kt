@@ -89,6 +89,16 @@ class ConnectionStrategyTest {
         assertEquals(attempts, adb.connectAttempts.size)
     }
 
+    // Fire OS (Cube, 2026-11-27): the port is open, but adbd closes the stream before the handshake.
+    @Test fun fireOsClosedStreamCaches() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = AdbClosedException() }
+        val prefs = FakePrefs()
+        val r = strategy(adb, fire = true, prefs = prefs) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals("This TV didn't allow ADB from SideSpeed", r.reason.english())
+        assertEquals(StartCause.REFUSED, r.cause)
+        assertEquals("build-1", prefs.refusedBuild.value)
+    }
+
     @Test fun otherBuildTriesAgain() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { failConnect = ConnectException("refused") }
         val prefs = FakePrefs(refused = "old")
