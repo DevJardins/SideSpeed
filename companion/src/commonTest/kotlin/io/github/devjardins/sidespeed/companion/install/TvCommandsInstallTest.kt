@@ -147,4 +147,31 @@ class TvCommandsInstallTest {
         assertNull(TvCommands.parsePackageDump(""))
         assertNull(TvCommands.parsePackageDump("Unable to find package: com.example.missing"))
     }
+
+    @Test
+    fun parsePackageDump_stops_at_a_new_section_before_any_package_block() {
+        val strayBlock = """
+            Packages:
+            Stale section:
+              Package [com.example.decoy] (abcd):
+                versionCode=42 minSdk=26 targetSdk=34
+                versionName=9.9
+                pkgFlags=[ HAS_CODE ]
+        """.trimIndent()
+        assertNull(TvCommands.parsePackageDump(strayBlock))
+
+        val sectionAfterBlock = """
+            Packages:
+              Package [com.example.tv] (1234abcd):
+                versionCode=120 minSdk=26 targetSdk=33
+                versionName=1.2.0
+                pkgFlags=[ HAS_CODE ]
+            Hidden system packages:
+              Package [com.example.tv] (1111aaaa):
+                versionCode=10 minSdk=21 targetSdk=28
+                versionName=0.1.0
+                pkgFlags=[ SYSTEM HAS_CODE ]
+        """.trimIndent()
+        assertEquals(120L, TvCommands.parsePackageDump(sectionAfterBlock)!!.versionCode)
+    }
 }

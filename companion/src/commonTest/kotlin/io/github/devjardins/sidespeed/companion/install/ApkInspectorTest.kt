@@ -269,4 +269,26 @@ class ApkInspectorTest {
             assertEquals("Fallback Stem", inspected.displayLabel)
         }
     }
+
+    @Test
+    fun strips_iso_control_characters_from_display_labels() {
+        val apkBytes = buildApkBytes(
+            AxmlSpec(
+                packageName = "com.example.controls",
+                versionCode = 1,
+                appLabelLiteral = "Bad\u0007Label\u007F",
+            ),
+        )
+        ByteArrayInstallSource("Controls.apk", apkBytes).use {
+            assertEquals("Bad Label", ApkInspector.inspect(it).getOrThrow().displayLabel)
+        }
+
+        // A NUL reaches the filename-stem fallback when the manifest carries no label.
+        val noLabelBytes = buildApkBytes(
+            AxmlSpec(packageName = "com.example.controls", versionCode = 1),
+        )
+        ByteArrayInstallSource("A\u0000B.apk", noLabelBytes).use {
+            assertEquals("A B", ApkInspector.inspect(it).getOrThrow().displayLabel)
+        }
+    }
 }

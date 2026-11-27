@@ -39,11 +39,22 @@ object SplitSelector {
         data object Feature : SplitKind
         data class Abi(val group: String, val canonicalAbi: String) : SplitKind
         data class Density(val group: String, val tag: String, val dpi: Int?) : SplitKind
-        data class Locale(val group: String, val language: String, val region: String?, val displayTag: String) : SplitKind
+        data class Locale(
+            val group: String,
+            val language: String,
+            val script: String?,
+            val region: String?,
+            val displayTag: String,
+        ) : SplitKind
         data class UnknownConfig(val group: String) : SplitKind
     }
 
-    private data class ParsedLocale(val language: String, val region: String?, val displayTag: String)
+    private data class ParsedLocale(
+        val language: String,
+        val script: String?,
+        val region: String?,
+        val displayTag: String,
+    )
 
     fun select(pkg: InspectedPackage, device: DeviceProfile): Result<SplitSelection> {
         if (!pkg.isBundle) {
@@ -179,6 +190,20 @@ object SplitSelector {
     ): Pair<ApkEntryMeta, SplitKind.Locale>? {
         val target = parseLocale(deviceLocaleTag)
         if (target != null) {
+            if (target.script != null) {
+                if (target.region != null) {
+                    candidates.firstOrNull {
+                        it.second.language == target.language &&
+                            it.second.script == target.script &&
+                            it.second.region == target.region
+                    }?.let { return it }
+                }
+                candidates.firstOrNull {
+                    it.second.language == target.language &&
+                        it.second.script == target.script &&
+                        it.second.region == null
+                }?.let { return it }
+            }
             if (target.region != null) {
                 candidates.firstOrNull {
                     it.second.language == target.language && it.second.region == target.region
@@ -232,7 +257,7 @@ object SplitSelector {
 
         if (LOCALE_PATTERN.matches(token)) {
             parseLocale(token)?.let {
-                return SplitKind.Locale(group, it.language, it.region, it.displayTag)
+                return SplitKind.Locale(group, it.language, it.script, it.region, it.displayTag)
             }
         }
         return SplitKind.UnknownConfig(group)
@@ -257,9 +282,14 @@ object SplitSelector {
         if (rawLang.length !in 2..3 || !rawLang.all { it in 'a'..'z' }) return null
         val language = LEGACY_LANGUAGE_MAP[rawLang] ?: rawLang
 
+        var script: String? = null
         var region: String? = null
         for (i in 1 until parts.size) {
             val part = parts[i]
+            if (script == null && part.length == 4 && part.all { it in 'a'..'z' || it in 'A'..'Z' }) {
+                script = part[0].uppercaseChar() + part.substring(1).lowercase()
+                continue
+            }
             val candidate = if (ANDROID_RESOURCE_REGION.matches(part)) part.substring(1) else part
             val isRegion = (candidate.length == 2 && candidate.all { it in 'a'..'z' || it in 'A'..'Z' }) ||
                 (candidate.length == 3 && candidate.all { it in '0'..'9' })
@@ -268,7 +298,11 @@ object SplitSelector {
                 break
             }
         }
-        val displayTag = if (region != null) "$language-${region.uppercase()}" else language
-        return ParsedLocale(language = language, region = region, displayTag = displayTag)
+        val displayTag = buildString {
+            append(language)
+            if (script != null) append("-").append(script)
+            if (region != null) append("-").append(region.uppercase())
+        }
+        return ParsedLocale(language = language, script = script, region = region, displayTag = displayTag)
     }
 }

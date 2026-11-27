@@ -205,4 +205,46 @@ class SplitSelectorTest {
             srSel.splits.map { it.entry.zipEntryName },
         )
     }
+
+    @Test
+    fun prefers_the_device_script_over_a_region_only_match() {
+        val base = meta("base.apk", 1_000L)
+        val zh = meta("config.zh.apk", 100L, splitName = "config.zh")
+        val zhCn = meta("config.zh_rCN.apk", 110L, splitName = "config.zh_rCN")
+        val zhHansCn = meta("config.b+zh+Hans+CN.apk", 120L, splitName = "config.b+zh+Hans+CN")
+        val zhHant = meta("config.b+zh+Hant.apk", 130L, splitName = "config.b+zh+Hant")
+        val srLatn = meta("config.b+sr+Latn.apk", 140L, splitName = "config.b+sr+Latn")
+        val srCyrl = meta("config.b+sr+Cyrl.apk", 150L, splitName = "config.b+sr+Cyrl")
+
+        // Script and region together beat a region-only split with the wrong script.
+        val hansCn = SplitSelector.select(
+            bundle(base, zh, zhCn, zhHansCn, zhHant),
+            DeviceProfile(abiList = listOf("arm64-v8a"), densityDpi = 320, localeTag = "zh-Hans-CN"),
+        ).getOrThrow()
+        assertEquals(
+            listOf("base.apk", "config.b+zh+Hans+CN.apk"),
+            hansCn.splits.map { it.entry.zipEntryName },
+        )
+        assertTrue("zh-Hans-CN" in hansCn.summaryTags)
+
+        // Script alone disambiguates two splits that collapse to the same language.
+        val cyrl = SplitSelector.select(
+            bundle(base, srLatn, srCyrl),
+            DeviceProfile(abiList = listOf("arm64-v8a"), densityDpi = 320, localeTag = "sr-Cyrl"),
+        ).getOrThrow()
+        assertEquals(
+            listOf("base.apk", "config.b+sr+Cyrl.apk"),
+            cyrl.splits.map { it.entry.zipEntryName },
+        )
+
+        // Without a script on the device, the old order is unchanged.
+        val plainCn = SplitSelector.select(
+            bundle(base, zh, zhCn, zhHansCn),
+            DeviceProfile(abiList = listOf("arm64-v8a"), densityDpi = 320, localeTag = "zh-CN"),
+        ).getOrThrow()
+        assertEquals(
+            listOf("base.apk", "config.zh_rCN.apk"),
+            plainCn.splits.map { it.entry.zipEntryName },
+        )
+    }
 }

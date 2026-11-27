@@ -354,7 +354,7 @@ object ApkInspector {
     }
 
     private fun sanitizeLabel(raw: String): String? =
-        raw.replace(Regex("[\\r\\n\\t]+"), " ").trim().takeIf { it.isNotEmpty() }
+        raw.replace(Regex("[\\u0000-\\u001F\\u007F]+"), " ").trim().takeIf { it.isNotEmpty() }
 
     private fun measureStreamSize(source: InstallSource): Long {
         return source.openStream().use { stream ->

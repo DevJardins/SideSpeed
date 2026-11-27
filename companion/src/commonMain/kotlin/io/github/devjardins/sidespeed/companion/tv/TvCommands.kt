@@ -192,6 +192,8 @@ object TvCommands {
         for (i in searchFrom until lines.size) {
             val line = lines[i]
             if (HIDDEN_SYSTEM_PATTERN.matches(line)) break
+            // A new top-level section before any Package block: the match would be outside Packages.
+            if (line.isNotEmpty() && !line[0].isWhitespace() && line.trim().endsWith(":")) break
             if (PACKAGE_HEADER_PATTERN.containsMatchIn(line)) {
                 blockStart = i
                 break
