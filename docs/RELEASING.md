@@ -26,4 +26,4 @@ CI uploads these next to the versioned files and `SHA256SUMS.txt`.
 ## How versions are worked out
 
 - Android `versionCode` (TV and Companion): `major*10000 + minor*100 + patch`.
-- Desktop package version: `(major+1).minor.patch`.
+- Desktop package version: `(major+1).minor.patch`. jpackage needs a major of 1 or more, so the desktop number stays one major ahead. Release notes and the site show the app version.
