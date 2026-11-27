@@ -76,21 +76,24 @@ class ConnectionStrategy(
     private val isFireOs: Boolean,
     private val pkg: String,
     private val timeoutMs: Long = 30_000,
+    private val buildFingerprint: String,
     private val adbMutex: Mutex = Mutex(),
 ) {
     /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
     suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness = adbMutex.withLock {
         val ping = helper.ping()
         if (ping != null) {
-            return@withLock if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
+            if (!ping.isCurrent(expectedApk)) return@withLock Readiness.HelperNeedsRestart
+            prefs.setOnBoxAdbRefusedBuild(null)
+            return@withLock Readiness.HelperReady
         }
-        if (isFireOs) return@withLock Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        if (refusedOnThisBuild()) return@withLock refusedNow()
         connectAndLaunch(killFirst = false, onLaunch)
     }
 
-    /** Google TV only: kills the stale helper over own-ADB, then relaunches it. */
+    /** Kills the stale helper over own-ADB, then relaunches it. Skipped while this Fire OS build refuses on-box ADB. */
     suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness = adbMutex.withLock {
-        if (isFireOs) return@withLock Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        if (refusedOnThisBuild()) return@withLock refusedNow()
         connectAndLaunch(killFirst = true, onLaunch)
     }
 
@@ -117,6 +120,17 @@ class ConnectionStrategy(
         }
     }
 
+    /**
+     * Fire OS only. Google TV refuses classic ADB until wireless debugging is on or paired, so a refusal
+     * there is not final and is never cached.
+     */
+    private suspend fun refusedOnThisBuild() =
+        isFireOs && prefs.onBoxAdbRefusedBuild.first() == buildFingerprint
+
+    /** The cached refusal: no new attempt, straight to the PC instructions. */
+    private fun refusedNow() =
+        Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_on_box_refused), StartCause.REFUSED)
+
     private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
         val targets = buildList {
             add(AdbTarget.Classic())
@@ -130,6 +144,7 @@ class ConnectionStrategy(
                 val r = try {
                     withTimeout(timeoutMs) { adb.connect(t) }
                 } catch (e: TimeoutCancellationException) {
+                    // An Allow prompt is up (on Fire OS too). Never cached: a late Allow must still work.
                     return Readiness.WaitingForAllowPrompt
                 }
                 if (r.isSuccess) { connected = true; break }
@@ -138,11 +153,15 @@ class ConnectionStrategy(
                 if (t is AdbTarget.WirelessTls && isMdnsMiss(err)) tlsMdnsMiss = true
             }
             if (!connected) {
-                return Readiness.NeedsHelperStart(
-                    UiText.Res(R.string.setup_reason_adb_unreachable),
-                    if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
-                    mdnsMiss = tlsMdnsMiss,
-                )
+                if (!classicRefused || !isFireOs) {
+                    return Readiness.NeedsHelperStart(
+                        UiText.Res(R.string.setup_reason_adb_unreachable),
+                        if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
+                        mdnsMiss = tlsMdnsMiss,
+                    )
+                }
+                prefs.setOnBoxAdbRefusedBuild(buildFingerprint)
+                return refusedNow()
             }
             onLaunch()
 
@@ -161,7 +180,10 @@ class ConnectionStrategy(
             }
             var waited = 0L
             while (true) {
-                if (helper.ping()?.isCurrent(expectedApk) == true) return Readiness.HelperReady
+                if (helper.ping()?.isCurrent(expectedApk) == true) {
+                    prefs.setOnBoxAdbRefusedBuild(null)
+                    return Readiness.HelperReady
+                }
                 if (waited >= POLL_TOTAL_MS) break
                 delay(POLL_INTERVAL_MS)
                 waited += POLL_INTERVAL_MS
@@ -172,9 +194,13 @@ class ConnectionStrategy(
         }
     }
 
-    /** A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library). */
+    /**
+     * A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library).
+     * Fire OS keeps the port open but closes the stream before the handshake: [AdbClosedException].
+     */
     private fun isRefusal(e: Throwable?): Boolean =
-        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is ConnectException }
+        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8)
+            .any { it is ConnectException || it is AdbClosedException }
 
     private fun isMdnsMiss(e: Throwable?): Boolean =
         generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is AdbMdnsMissException }

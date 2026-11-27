@@ -52,6 +52,8 @@ private class FakePrefs : Prefs {
     override suspend fun setLanWarningAcked(v: Boolean) {}
     override val pairedTls: Flow<Boolean> = MutableStateFlow(false)
     override suspend fun setPairedTls(v: Boolean) {}
+    override val onBoxAdbRefusedBuild: Flow<String?> = MutableStateFlow(null)
+    override suspend fun setOnBoxAdbRefusedBuild(v: String?) {}
     override fun lastCompile(pkg: String): Flow<LastCompile?> = flow { emit(saved[pkg]) }
     override suspend fun setLastCompile(pkg: String, value: LastCompile) { saved[pkg] = value; writes += pkg to value }
     override fun lastCompiles(): Flow<Map<String, LastCompile>> = flow { emit(saved.toMap()) }

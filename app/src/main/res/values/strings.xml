@@ -615,8 +615,8 @@
     <string name="setup_pairing_failed_unknown">Pairing failed: unknown error</string>
     <!-- Pairing failure with a raw error message from the ADB library. %1$s is the exception message. -->
     <string name="setup_pairing_failed">Pairing failed: %1$s</string>
-    <!-- Short reason shown after "Last check:" on Fire OS when the helper is not running. Keep: Fire OS, ADB -->
-    <string name="setup_reason_fire_os">Fire OS blocks on-box ADB</string>
+    <!-- Short reason shown after "Last check:" when the TV refused on-box ADB. Keep: ADB -->
+    <string name="setup_reason_on_box_refused">This TV didn\'t allow ADB from SideSpeed</string>
     <!-- Short reason shown after "Last check:" when ADB connection fails. Keep: ADB -->
     <string name="setup_reason_adb_unreachable">ADB not reachable</string>
     <!-- Short reason shown after "Last check:" when the helper fails to start after ADB connects. -->

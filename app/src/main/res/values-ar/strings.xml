@@ -387,7 +387,6 @@
     <string name="setup_pairing_failed_adb">فشل الإقران: فشل إقران ADB</string>
     <string name="setup_pairing_failed_unknown">فشل الإقران: خطأ غير معروف</string>
     <string name="setup_pairing_failed">فشل الإقران: %1$s</string>
-    <string name="setup_reason_fire_os">Fire OS يمنع اتصال ADB من الجهاز نفسه</string>
     <string name="setup_reason_adb_unreachable">تعذّر الوصول إلى ADB</string>
     <string name="setup_reason_helper_not_started">لم يبدأ المساعد</string>
     <string name="home_tv_address">هذا التلفزيون: %1$s</string>

@@ -30,6 +30,9 @@ interface Prefs {
     suspend fun setLanWarningAcked(v: Boolean)
     val pairedTls: Flow<Boolean>
     suspend fun setPairedTls(v: Boolean)
+    /** The OS build on-box ADB was last refused on, or null when it was never refused (or later worked). */
+    val onBoxAdbRefusedBuild: Flow<String?>
+    suspend fun setOnBoxAdbRefusedBuild(build: String?)
     fun lastCompile(pkg: String): Flow<LastCompile?>
     suspend fun setLastCompile(pkg: String, value: LastCompile)
     /** Every stored last-compile record, keyed by package; lets the app list collect once instead of per row. */
@@ -49,6 +52,14 @@ class DataStorePrefs(context: Context) : Prefs {
     override suspend fun setLanWarningAcked(v: Boolean) { store.edit { it[lanKey] = v } }
     override val pairedTls: Flow<Boolean> = store.data.map { it[tlsKey] ?: false }
     override suspend fun setPairedTls(v: Boolean) { store.edit { it[tlsKey] = v } }
+
+    private val refusedBuildKey = stringPreferencesKey("on_box_adb_refused_build")
+
+    override val onBoxAdbRefusedBuild: Flow<String?> = store.data.map { it[refusedBuildKey] }
+
+    override suspend fun setOnBoxAdbRefusedBuild(build: String?) {
+        store.edit { if (build == null) it.remove(refusedBuildKey) else it[refusedBuildKey] = build }
+    }
 
     private fun lastKey(pkg: String) = stringPreferencesKey("$LAST_COMPILE_PREFIX$pkg")
     private val selfVersionKey = longPreferencesKey("self_compile_version")

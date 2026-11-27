@@ -30,6 +30,8 @@ private class FakeSelfCompilePrefs : Prefs {
     override suspend fun setLanWarningAcked(v: Boolean) {}
     override val pairedTls: Flow<Boolean> = MutableStateFlow(false)
     override suspend fun setPairedTls(v: Boolean) {}
+    override val onBoxAdbRefusedBuild: Flow<String?> = MutableStateFlow(null)
+    override suspend fun setOnBoxAdbRefusedBuild(v: String?) {}
     override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
     override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
     override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
