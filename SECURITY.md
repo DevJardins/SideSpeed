@@ -26,8 +26,12 @@ and the release files on GitHub.
   Your app list never leaves the TV.
 - The Companion talks to your local network, to find and check your TVs,
   and to GitHub, for its own updates. Nothing else.
-- Neither app asks for location.
+- The Companion never asks for location.
   The Trusted Network is recognised by its router, not by the Wi-Fi name.
+- The TV app asks for location only when you turn on "After a restart",
+  to see which Wi-Fi network it is on. It never reads or keeps your position,
+  and it sends nothing. It keeps only SHA-256 hashes of the networks you allowed,
+  on the TV. Turning the switch off takes the permission back.
 
 ## What protects what
 
@@ -55,6 +59,12 @@ It is kept small on purpose.
 - Its log is readable only by the shell user (`HelperLog.kt`).
 - It never uninstalls anything. Turning an app off is `pm disable-user`,
   and turning it back on is `pm enable`.
+- For "After a restart" on Google TV, the helper accepts four token-free commands
+  targeting only SideSpeed's own trusted package (`grant-reboot-recovery`,
+  `revoke-secure-settings`, `revoke-reboot-recovery`, and `adb-trusted-networks`).
+  `adb-trusted-networks` runs `/system/bin/dumpsys adb` inside the helper and
+  returns only validated lowercase Wi-Fi network addresses (BSSIDs); no keys or
+  user names leave the helper.
 
 ### Updates
 
@@ -112,6 +122,14 @@ These are known limits. Each one is a choice, and the reason is given.
   Setup says that ADB debugging must stay on,
   and that anyone on the network could ask the TV for access.
   The TV still asks you before it allows a new device.
+- **"After a restart" holds a broad system permission while it is on.**
+  While the switch is on, SideSpeed holds `WRITE_SECURE_SETTINGS` (granted only
+  after you confirm the warning in Tools) so it can turn wireless debugging back
+  on after a reboot on a network you allowed. That permission can change other
+  system settings on Android; SideSpeed's code uses it strictly for
+  `adb_wifi_enabled = 1` (enforced by a static test), and revokes it when you
+  turn the switch off. With the switch on, wireless debugging stays on after a
+  restart.
 - **The older connection is not encrypted.** Some TVs cannot use an encrypted link.
   The Companion can still reach them the older way, but only after you tick
   "I understand. Connect the older way." for that TV.

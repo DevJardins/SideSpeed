@@ -234,6 +234,19 @@ Keep it true when you change anything below.
   there is no uninstall form in `CommandAllowlist.kt`.
 - Back to stock only ever touches the recorded original Home
   (`app/.../tools/HomeScreen.kt`).
+- Reboot recovery adds four token-free helper forms (`grant-reboot-recovery`,
+  `revoke-secure-settings`, `revoke-reboot-recovery`, `adb-trusted-networks`)
+  that target only `selfPkg`. `CommandAllowlist.toArgv` stays `null` for
+  `grant-reboot-recovery`, `revoke-reboot-recovery`, and `adb-trusted-networks`.
+- `adb-trusted-networks` runs `/system/bin/dumpsys adb` inside the helper and
+  emits only validated lowercase BSSIDs (`TrustedBssids.parse`), never raw keys
+  or user names.
+- `WRITE_SECURE_SETTINGS` is used strictly for `adb_wifi_enabled = 1` inside
+  parameterless `SecureSettingsWriter.enableAdbWifi()`, enforced by
+  `SecureSettingsGuardTest`. Turning "After a restart" off persists OFF +
+  `pendingRevokes = true`, clears allowed BSSID hashes, and cancels jobs before
+  invoking helper revokes (`enabled == false && !pendingRevokes` implies zero
+  recovery permissions remain granted).
 - Helper powers may grow when a feature needs them. Each new form is an
   exact-token `CommandAllowlist.kt` entry with a fixed argv, tests for
   allowed and refused cases, and a `SECURITY.md` line, all in the same PR.
