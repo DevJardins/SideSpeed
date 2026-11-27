@@ -19,7 +19,10 @@ import io.github.devjardins.sidespeed.apps.InstalledApps
 import io.github.devjardins.sidespeed.BuildConfig
 import io.github.devjardins.sidespeed.tools.AndroidDeviceInfo
 import io.github.devjardins.sidespeed.tools.AndroidExtrasQueries
+import io.github.devjardins.sidespeed.tools.AndroidRecoveryJobScheduler
+import io.github.devjardins.sidespeed.tools.AndroidRecoveryPermissions
 import io.github.devjardins.sidespeed.tools.Extras
+import io.github.devjardins.sidespeed.tools.RebootRecoveryController
 import io.github.devjardins.sidespeed.tools.loadExtrasIndex
 import io.github.devjardins.sidespeed.tools.loadExtrasList
 import io.github.devjardins.sidespeed.tools.Cleanup
@@ -262,6 +265,21 @@ class AppContainer(context: Context) {
         )
     }
 
+    val rebootRecoveryController: RebootRecoveryController by lazy {
+        RebootRecoveryController(
+            commands = toolsCommands,
+            store = rebootRecoveryStore,
+            prefs = prefs,
+            bssidReader = AndroidBssidReader(appContext),
+            settings = settings,
+            secureWriter = AndroidSecureSettingsWriter(appContext.contentResolver),
+            permissions = AndroidRecoveryPermissions(appContext),
+            jobs = AndroidRecoveryJobScheduler(appContext),
+            isFireOs = isFireOs,
+            isWifiConnected = { AndroidBssidReader.isWifiConnected(appContext) },
+        )
+    }
+
     /** Container-level scope: outlives screens and ViewModels, so launch sequences survive them. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + kotlinx.coroutines.CoroutineExceptionHandler { _, _ -> })
 
@@ -321,7 +339,10 @@ class AppContainer(context: Context) {
             ownPackage = appContext.packageName,
             strings = stringLookup(appContext),
             measuring = { launchRunner.measuring.value },
-            onHelperUp = { appScope.launch { launchRunner.restorePending() } },
+            onHelperUp = {
+                appScope.launch { launchRunner.restorePending() }
+                appScope.launch { rebootRecoveryController.runPendingRevokesIfNeeded(allowKill = true) }
+            },
             status = compileStatus,
         )
     }
