@@ -183,6 +183,33 @@ class InstallTransferServiceLogicTest {
     }
 
     @Test
+    fun refresh_gate_drops_superseded_refresh_but_keeps_latest() {
+        val gate = RefreshStampGate()
+        val old = gate.next()
+        val new = gate.next()
+        assertFalse(gate.isLatest(old))
+        assertTrue(gate.isLatest(new))
+        // Starting or ending an install invalidates an in-flight refresh.
+        gate.invalidate()
+        assertFalse(gate.isLatest(new))
+        assertTrue(gate.isLatest(gate.next()))
+    }
+
+    @Test
+    fun refresh_gate_has_exactly_one_latest_under_concurrency() {
+        repeat(100) {
+            val gate = RefreshStampGate()
+            val stamps = java.util.Collections.synchronizedList(mutableListOf<Long>())
+            val workers = (1..8).map { thread { stamps += gate.next() } }
+            workers.forEach { it.join(5_000) }
+            assertEquals(8, stamps.size)
+            assertFalse(workers.any { it.isAlive })
+            assertEquals(1, stamps.count { gate.isLatest(it) })
+            assertEquals(stamps.max(), stamps.single { gate.isLatest(it) })
+        }
+    }
+
+    @Test
     fun foreground_handoff_agrees_under_racing_end_and_start() {
         repeat(500) {
             val h = ForegroundHandoff<String>()

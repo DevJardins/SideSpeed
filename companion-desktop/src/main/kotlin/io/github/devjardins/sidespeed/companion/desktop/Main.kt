@@ -72,7 +72,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.compose.resources.stringResource
 import java.io.File
 import java.io.RandomAccessFile
@@ -260,7 +259,8 @@ fun main() {
                     Separator()
                     Item(stringResource(Res.string.tray_quit), onClick = {
                         // Cancel a running install so the TV is not left with a half-written session.
-                        runBlocking { withTimeoutOrNull(5_000) { vm.cancelInstallForShutdown() } }
+                        // The shutdown wait itself is bounded (SHUTDOWN_WAIT_MS), so Quit blocks ~5 s max.
+                        runBlocking { vm.cancelInstallForShutdown() }
                         lock.close(); exitApplication()
                     })
                 },

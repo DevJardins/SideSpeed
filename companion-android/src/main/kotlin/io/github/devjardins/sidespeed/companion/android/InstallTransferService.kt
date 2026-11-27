@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 /** What the ongoing notification shows. [percent] is -1 when the total is not known. */
 data class InstallNotificationSnapshot(
@@ -120,10 +121,27 @@ class ForegroundHandoff<S : Any> {
     }
 }
 
+/**
+ * Sequence stamps that let an older async refresh drop itself once a newer one started.
+ * Exactly one stamp is latest at a time; starting or ending an install invalidates in-flight ones.
+ */
+internal class RefreshStampGate {
+    private val seq = AtomicLong(0)
+
+    fun next(): Long = seq.incrementAndGet()
+
+    fun invalidate() {
+        seq.incrementAndGet()
+    }
+
+    fun isLatest(stamp: Long): Boolean = stamp == seq.get()
+}
+
 /** Shared between the host (called from the install's IO thread) and the service. */
 internal object InstallTransferState {
     val model = InstallNotificationModel { System.currentTimeMillis() }
     val handoff = ForegroundHandoff<InstallTransferService>()
+    val refreshGate = RefreshStampGate()
 }
 
 /**
@@ -137,9 +155,11 @@ class InstallTransferService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ensureChannel()
-        // Must be called promptly after startForegroundService: show a plain notice first, then the real text.
+        // Must be called promptly after startForegroundService: show a plain notice first.
+        // Names wait for refresh(), which renders them through the localized uploading/committing
+        // string with RTL isolates; nothing here hard-codes a separator.
         val first = InstallTransferState.model.current()
-        val placeholder = build(first, first?.let { "${it.appName} - ${it.tvName}" } ?: getString(R.string.app_name))
+        val placeholder = build(first, getString(R.string.app_name))
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(NOTIFICATION_ID, placeholder, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
@@ -167,6 +187,7 @@ class InstallTransferService : Service() {
 
     /** Resolves the localized text off the caller's thread, then updates the notification. */
     internal fun refresh(snapshot: InstallNotificationSnapshot) {
+        val stamp = InstallTransferState.refreshGate.next()
         scope.launch {
             val rtl = resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val args = listOf(UiText.Fsi(snapshot.appName), UiText.Fsi(snapshot.tvName))
@@ -174,6 +195,8 @@ class InstallTransferService : Service() {
                 if (snapshot.committing) Res.string.notif_install_committing else Res.string.notif_install_uploading,
                 args,
             ).resolveSuspend(rtl)
+            // Superseded while the text was being resolved: a newer refresh owns the notification now.
+            if (!InstallTransferState.refreshGate.isLatest(stamp)) return@launch
             // Ended while the text was being resolved: do not repost over a cancelled notification.
             if (InstallTransferState.model.current() == null) return@launch
             getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build(snapshot, text))
@@ -214,6 +237,7 @@ class AndroidInstallTransferHost(private val context: Context) : InstallTransfer
     override fun onStart(tvName: String, appName: String) {
         model.start(tvName, appName)
         handoff.begin()
+        InstallTransferState.refreshGate.invalidate()
         // Refused when the app cannot start a foreground service right now; the install itself still runs.
         runCatching { ContextCompat.startForegroundService(context, Intent(context, InstallTransferService::class.java)) }
     }
@@ -225,6 +249,7 @@ class AndroidInstallTransferHost(private val context: Context) : InstallTransfer
 
     override fun onEnd() {
         model.end()
+        InstallTransferState.refreshGate.invalidate()
         // Never stopService here: a service still starting would be stopped before startForeground and crash the
         // app. Only a service already in the foreground is stopped, on the main thread; a pending one stops itself.
         val (service, startId) = handoff.end() ?: return
