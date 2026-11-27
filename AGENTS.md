@@ -201,6 +201,9 @@ Delegate with T3's `delegate_task`.
 `SECURITY.md` explains these rules and their known limits for readers.
 Keep it true when you change anything below.
 
+- The helper trusts only the package on its launch line (`--pkg`, release when absent),
+  only if it is SideSpeed's release or debug package and `pm path` names the APK
+  the helper runs from (`HelperIdentity.kt`).
 - The helper answers only SideSpeed's uid.
 - `HelperServer.kt` checks the caller against the allowed uid
   (via `/proc/net/tcp{,6}` in `HelperMain.kt`) before reading any request byte,
@@ -215,7 +218,7 @@ Keep it true when you change anything below.
   overlong or non-ASCII request, wrong tokens, unvalidated package
   or class names, and short install bodies all fail closed.
 - `install-self` accepts at most `MAX_INSTALL_BYTES` (64 MiB).
-- `install-self` installs only `INSTALL_SELF_PACKAGE`.
+- `install-self` installs only the package the helper trusts (`selfPkg` in `SideSpeedPackages.ALL`).
 - `install-update <pkg> <size>` updates one installed app: the helper first checks `<pkg>`
   is an installed third-party sideloaded app (never a store or system app) and refuses
   otherwise before reading any body byte; then it runs only

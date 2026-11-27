@@ -12,9 +12,6 @@ import io.github.devjardins.sidespeed.compile.PackageName
 object CommandAllowlist {
     const val PING = "ping"
 
-    /** The only package `install-self` may ever install. */
-    const val INSTALL_SELF_PACKAGE = "io.github.devjardins.sidespeed"
-
     /** Byte cap for `install-self`, matching the 64 MiB download cap. */
     const val MAX_INSTALL_BYTES = 67_108_864L
 
@@ -79,23 +76,26 @@ object CommandAllowlist {
         return size
     }
 
-    /** Fixed argv for an `install-self` of [size] bytes; [size] is the only variable token. */
-    fun installSelfArgv(size: Long): List<String> = listOf(
-        "/system/bin/cmd", "package", "install", "-r",
-        "--pkg", INSTALL_SELF_PACKAGE, "-S", size.toString(),
-    )
+    /** Fixed argv for an `install-self` of [size] bytes targeting [selfPkg]; [size] and [selfPkg] are the only variable tokens. */
+    fun installSelfArgv(size: Long, selfPkg: String): List<String> {
+        require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
+        return listOf(
+            "/system/bin/cmd", "package", "install", "-r",
+            "--pkg", selfPkg, "-S", size.toString(),
+        )
+    }
 
     /**
      * The package and byte count of an `install-update <pkg> <size>` request (1..[MAX_UPDATE_BYTES]),
      * or null. Exactly 3 tokens; [pkg] passes the same validation as every other package token
-     * (exact, untrimmed), and SideSpeed's own package is refused here: self-updates keep
+     * (exact, untrimmed), and SideSpeed's own packages are refused here: self-updates keep
      * `install-self`. A plain runner can never execute it: [toArgv] stays null for `install-update`.
      */
     fun installUpdate(command: String): Pair<String, Long>? {
         val t = command.split(' ')
         if (t.size != 3 || t[0] != "install-update") return null
         val packageName = pkg(t[1]) ?: return null
-        if (packageName == INSTALL_SELF_PACKAGE) return null
+        if (packageName in SideSpeedPackages.ALL) return null
         if (!INSTALL_UPDATE_SIZE_DIGITS.matches(t[2])) return null
         val size = t[2].toLongOrNull() ?: return null
         if (size < 1 || size > MAX_UPDATE_BYTES) return null
@@ -113,7 +113,8 @@ object CommandAllowlist {
     )
 
     /** Maps a requested command line to a fixed argv, or null if not allowed. `ping` returns null: see [isPing]. */
-    fun toArgv(command: String): List<String>? {
+    fun toArgv(command: String, selfPkg: String): List<String>? {
+        require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
         if (command.isEmpty() || command.length > HelperProtocol.MAX_REQUEST_CHARS) return null
         if (!ALLOWED_CHARS.matches(command)) return null
         val t = command.split(' ')
@@ -151,11 +152,11 @@ object CommandAllowlist {
                 listOf(
                     "/system/bin/am", "start",
                     "--activity-clear-top", "--activity-single-top",
-                    "-n", "io.github.devjardins.sidespeed/io.github.devjardins.sidespeed.MainActivity",
+                    "-n", "$selfPkg/${SideSpeedPackages.MAIN_ACTIVITY}",
                 )
             t.size == 2 && t[0] == "force-stop" -> {
                 val p = pkg(t[1]) ?: return null
-                if (p == INSTALL_SELF_PACKAGE) return null
+                if (p in SideSpeedPackages.ALL) return null
                 listOf("/system/bin/am", "force-stop", "--user", "0", p)
             }
             else -> null

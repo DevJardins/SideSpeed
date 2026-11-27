@@ -38,6 +38,7 @@ class HelperServerTest {
 
     private fun start(
         uid: Int? = allowed,
+        selfPkg: String = SideSpeedPackages.RELEASE,
         maxConnections: Int = 4,
         requestTimeoutMs: Int = 2_000,
         unreadAtCallerCheck: AtomicInteger? = null,
@@ -57,6 +58,7 @@ class HelperServerTest {
         val s = HelperServer(
             server = server,
             allowedUid = allowed,
+            selfPkg = selfPkg,
             callerUid = { sock ->
                 if (unreadAtCallerCheck != null) {
                     Thread.sleep(200) // let the client's request arrive
@@ -343,6 +345,46 @@ class HelperServerTest {
         assertEquals("__END__:0", lines.last())
     }
 
+    @Test fun server_install_self_uses_debug_self_pkg() {
+        var seenArgv: List<String>? = null
+        start(
+            selfPkg = SideSpeedPackages.DEBUG,
+            installRunner = { argv, stdin, _, onLine ->
+                seenArgv = argv
+                stdin.readBytes()
+                onLine("Success")
+                0
+            },
+        )
+        val lines = exchange("$nonce install-self 5\nhello")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals(
+            listOf(
+                "/system/bin/cmd", "package", "install", "-r",
+                "--pkg", SideSpeedPackages.DEBUG, "-S", "5",
+            ),
+            seenArgv,
+        )
+        assertEquals("__END__:0", lines.last())
+    }
+
+    @Test fun server_bring_back_uses_debug_self_pkg() {
+        start(selfPkg = SideSpeedPackages.DEBUG)
+        val lines = exchange("$nonce bring-back\n")
+        assertEquals(HelperProtocol.PROVEN, lines.first())
+        assertEquals(
+            listOf(
+                listOf(
+                    "/system/bin/am", "start",
+                    "--activity-clear-top", "--activity-single-top",
+                    "-n", "${SideSpeedPackages.DEBUG}/${SideSpeedPackages.MAIN_ACTIVITY}",
+                ),
+            ),
+            ran.toList(),
+        )
+        assertEquals("__END__:0", lines.last())
+    }
+
     @Test fun server_install_self_short_body_kills_and_skips_bring_back() {
         var gotBytes = -1
         start(
@@ -579,6 +621,10 @@ class HelperServerTest {
         assertEquals(
             "__END__:126",
             exchange("$nonce install-update io.github.devjardins.sidespeed 10\n0123456789").last(),
+        )
+        assertEquals(
+            "__END__:126",
+            exchange("$nonce install-update io.github.devjardins.sidespeed.debug 10\n0123456789").last(),
         )
         assertEquals(
             "__END__:126",

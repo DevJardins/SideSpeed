@@ -38,6 +38,9 @@ It is kept small on purpose.
 
 - It listens on 127.0.0.1 only, never on the network
   (`bind` in `app/.../helper/HelperMain.kt`).
+- It trusts only the package on its launch line (`--pkg`, release when absent),
+  only if it is SideSpeed's release or debug package and `pm path` names the APK
+  the helper runs from (`HelperIdentity.kt`).
 - It starts only when it can find SideSpeed's own uid. Otherwise it exits.
 - It answers only SideSpeed's uid. It checks the caller's socket owner in
   `/proc/net/tcp` before it reads a single byte, and closes anything else
