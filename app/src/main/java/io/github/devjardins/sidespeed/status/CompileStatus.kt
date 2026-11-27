@@ -35,9 +35,13 @@ data class StatusRow(
     val last: CompileLast?,
     val self: SelfState,
     val version: String,
+    val reqSeq: Long = 0L,
+    val remoteSupported: Boolean = true,
+    val retrying: Int = 0,
 ) {
-    /** The 13 provider columns, in order: v, state, pkg, label, mode, started_ms, queue,
-     * last_pkg, last_label, last_result, last_ms, self, version. All strings, empty when absent. */
+    /** The 16 provider columns, in order: v, state, pkg, label, mode, started_ms, queue,
+     * last_pkg, last_label, last_result, last_ms, self, version, req_seq, remote, retrying.
+     * All strings, empty when absent. */
     fun toWireMap(): List<Pair<String, String>> = listOf(
         "v" to "1",
         "state" to phase.wire,
@@ -52,6 +56,9 @@ data class StatusRow(
         "last_ms" to (last?.finishedMs?.toString() ?: ""),
         "self" to self.wire,
         "version" to version,
+        "req_seq" to reqSeq.toString(),
+        "remote" to (if (remoteSupported) "1" else "0"),
+        "retrying" to retrying.toString(),
     )
 }
 
@@ -96,6 +103,8 @@ class CompileStatusTracker(
     private var queueWaiting = 0
     private var last: CompileLast? = null
     private var selfOptimized = false
+    private var reqSeq = 0L
+    private var retrying = 0
 
     fun onStart(pkg: String, label: String, mode: String) = synchronized(lock) {
         current = CompileCurrent(pkg, label, mode, clock())
@@ -121,6 +130,12 @@ class CompileStatusTracker(
 
     fun setSelfOptimized(optimized: Boolean) = synchronized(lock) { selfOptimized = optimized }
 
+    fun bumpRequestSeq(): Long = synchronized(lock) { ++reqSeq }
+
+    fun requestSeq(): Long = synchronized(lock) { reqSeq }
+
+    fun setRetrying(n: Int) = synchronized(lock) { retrying = n.coerceAtLeast(0) }
+
     /** True while a compile is running (not merely interrupted and awaiting retry). */
     fun isActive(): Boolean = synchronized(lock) { current != null }
 
@@ -142,6 +157,9 @@ class CompileStatusTracker(
             last = last,
             self = if (debuggable) SelfState.DEBUG else if (selfOptimized) SelfState.OPTIMIZED else SelfState.PENDING,
             version = version,
+            reqSeq = reqSeq,
+            remoteSupported = true,
+            retrying = retrying,
         )
     }
 

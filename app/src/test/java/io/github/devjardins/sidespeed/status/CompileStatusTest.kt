@@ -171,6 +171,7 @@ class CompileStatusTest {
             listOf(
                 "v", "state", "pkg", "label", "mode", "started_ms", "queue",
                 "last_pkg", "last_label", "last_result", "last_ms", "self", "version",
+                "req_seq", "remote", "retrying",
             ),
             cols.map { it.first },
         )
@@ -188,6 +189,34 @@ class CompileStatusTest {
         assertEquals("1600000", byName["last_ms"])
         assertEquals("pending", byName["self"])
         assertEquals("0.2.1", byName["version"])
+        assertEquals("0", byName["req_seq"])
+        assertEquals("1", byName["remote"])
+        assertEquals("0", byName["retrying"])
+    }
+
+    @Test fun wire_map_includes_remote_req_seq_and_retrying() {
+        val t = tracker()
+        val initial = t.snapshot().toWireMap().toMap()
+        assertEquals("1", initial["remote"])
+        assertEquals("0", initial["req_seq"])
+        assertEquals("0", initial["retrying"])
+
+        assertEquals(0L, t.requestSeq())
+        assertEquals(1L, t.bumpRequestSeq())
+        assertEquals(2L, t.bumpRequestSeq())
+        assertEquals(2L, t.requestSeq())
+
+        t.setRetrying(2)
+        val updated = t.snapshot().toWireMap().toMap()
+        assertEquals("1", updated["remote"])
+        assertEquals("2", updated["req_seq"])
+        assertEquals("2", updated["retrying"])
+
+        t.setRetrying(-3)
+        assertEquals("0", t.snapshot().toWireMap().toMap()["retrying"])
+
+        val noRemote = t.snapshot().copy(remoteSupported = false).toWireMap().toMap()
+        assertEquals("0", noRemote["remote"])
     }
 
     @Test fun interruptedRowKeepsStartedMs() {
@@ -220,5 +249,20 @@ class CompileStatusTest {
         assertTrue(status.active.value)
         status.onFinish("com.example.app", "Example", true)
         assertFalse(status.active.value)
+    }
+
+    @Test fun glue_request_seq_and_retrying_are_immediately_visible() = kotlinx.coroutines.test.runTest {
+        val status = CompileStatus(
+            FakeCompileStatusStore(), "0.2.1", false,
+            scope = backgroundScope,
+        )
+        assertEquals(0L, status.requestSeq())
+        assertEquals(1L, status.bumpRequestSeq())
+        assertEquals(1L, status.requestSeq())
+        status.setRetrying(3)
+        val row = status.snapshot()
+        assertEquals(1L, row.reqSeq)
+        assertEquals(3, row.retrying)
+        assertTrue(row.remoteSupported)
     }
 }

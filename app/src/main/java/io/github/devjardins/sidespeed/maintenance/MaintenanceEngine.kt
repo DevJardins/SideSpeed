@@ -8,6 +8,7 @@ import io.github.devjardins.sidespeed.compile.CompileOutcome
 import io.github.devjardins.sidespeed.compile.PackageName
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
+import io.github.devjardins.sidespeed.helper.PackageNames
 import io.github.devjardins.sidespeed.status.CompileStatus
 import io.github.devjardins.sidespeed.status.StatusBadge
 import io.github.devjardins.sidespeed.ui.text.StringLookup
@@ -72,6 +73,9 @@ class MaintenanceEngine(
 
     private val lock = Any()
     private val queue = LinkedHashSet<String>()
+    private val priorityOneShot = LinkedHashSet<String>()
+    private val oneShotTargets = LinkedHashSet<String>()
+    private val reRequested = HashSet<String>()
     private var running: String? = null
     private var maintainedNow: Set<String> = emptySet()
     private var helperDown = false
@@ -110,6 +114,63 @@ class MaintenanceEngine(
         scan()
     }
 
+    /**
+     * Requests a priority one-shot compile for [pkg] (typically right after a remote install).
+     * When [keepOptimized] is true, also adds [pkg] to the maintained set.
+     * Never compiles [ownPackage], uninstalled packages, or a package currently under launch measurement.
+     */
+    suspend fun requestCompile(pkg: String, keepOptimized: Boolean): Boolean {
+        if (pkg == ownPackage || !PackageNames.isValid(pkg)) return false
+        if (source.find(pkg) == null) return false
+        if (pkg == measuring()) {
+            if (keepOptimized) store.setMaintained(pkg, true)
+            return false
+        }
+        synchronized(lock) {
+            failures.remove(pkg)
+            done.remove(pkg)
+            priorityOneShot.add(pkg)
+            if (running == pkg) reRequested.add(pkg)
+        }
+        enqueue(pkg)
+        if (keepOptimized) store.setMaintained(pkg, true)
+        status?.bumpRequestSeq()
+        publish()
+        return true
+    }
+
+    /**
+     * Clears retry backoffs and triggers an immediate optimization pass.
+     * When armed, compiles stale maintained/covered apps; when unarmed (`SELECTED` with no ticked apps),
+     * runs a one-shot pass over stale sideloaded apps without modifying stored mode or ticked apps.
+     */
+    suspend fun requestOptimizeNow(): Int = scanLock.withLock {
+        synchronized(lock) { failures.clear() }
+        val ticked = store.maintained.first()
+        val mode = store.mode.first()
+        var newlyEnqueued = 0
+        if (!isArmed(mode, ticked)) {
+            val skip = measuring()
+            val sideloaded = source.list().filter {
+                it.isSideloaded &&
+                    it.packageName != ownPackage &&
+                    it.packageName != skip &&
+                    PackageNames.isValid(it.packageName)
+            }
+            val badgeByPkg = fetchBadges(sideloaded.map { it.packageName }.toSet())
+            for (app in sideloaded) {
+                val last = prefs.lastCompile(app.packageName).first()
+                if (needsCompile(app, last, badgeByPkg[app.packageName]) && eligible(app)) {
+                    synchronized(lock) { oneShotTargets.add(app.packageName) }
+                    if (enqueue(app.packageName)) newlyEnqueued++
+                }
+            }
+        }
+        val scanEnqueued = scanOnce()
+        status?.bumpRequestSeq()
+        maxOf(newlyEnqueued + scanEnqueued, _state.value.queueLength)
+    }
+
     /** Storage or PackageManager errors must never kill the process; the next trigger retries. */
     private suspend fun doScan() = scanLock.withLock {
         try {
@@ -120,7 +181,7 @@ class MaintenanceEngine(
         }
     }
 
-    private suspend fun scanOnce() {
+    private suspend fun scanOnce(): Int {
         val ticked = store.maintained.first()
         val mode = store.mode.first()
         val tickedApps = ticked.mapNotNull { p -> source.find(p) ?: run { store.setMaintained(p, false); null } }
@@ -130,27 +191,60 @@ class MaintenanceEngine(
             AutoOptimizeMode.ALL -> source.list().filter { !it.isSystem }
         }
         val skip = measuring()
-        val set: List<AppEntry> = (tickedApps + covered).filter { it.packageName != ownPackage && it.packageName != skip }
+        val set: List<AppEntry> = (tickedApps + covered)
+            .filter { it.packageName != ownPackage && it.packageName != skip && PackageNames.isValid(it.packageName) }
             .distinctBy { it.packageName }
         val names = set.map { it.packageName }.toSet()
+        val extraNames = synchronized(lock) {
+            if (skip != null) {
+                priorityOneShot.remove(skip)
+                oneShotTargets.remove(skip)
+                reRequested.remove(skip)
+            }
+            priorityOneShot.remove(ownPackage)
+            oneShotTargets.remove(ownPackage)
+            reRequested.remove(ownPackage)
+            (priorityOneShot + oneShotTargets) - names
+        }
+        val extraApps = extraNames.mapNotNull { p ->
+            source.find(p) ?: run {
+                synchronized(lock) {
+                    priorityOneShot.remove(p)
+                    oneShotTargets.remove(p)
+                    reRequested.remove(p)
+                }
+                null
+            }
+        }
         synchronized(lock) {
             maintainedNow = names
-            queue.retainAll(names)
-            failures.keys.retainAll(names)
+            val retained = names + priorityOneShot + oneShotTargets
+            queue.retainAll(retained)
+            failures.keys.retainAll(retained)
         }
-        val badgeByPkg = if (set.isEmpty()) emptyMap() else try {
+        val badgeByPkg = fetchBadges(names)
+        var enqueued = 0
+        for (app in set) {
+            val last = prefs.lastCompile(app.packageName).first()
+            if (needsCompile(app, last, badgeByPkg[app.packageName]) && eligible(app)) {
+                if (enqueue(app.packageName)) enqueued++
+            }
+        }
+        for (app in extraApps) {
+            if (eligible(app) && enqueue(app.packageName)) enqueued++
+        }
+        publish()
+        return enqueued
+    }
+
+    private suspend fun fetchBadges(names: Set<String>): Map<String, StatusBadge> =
+        if (names.isEmpty()) emptyMap() else try {
             badges(names)
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             emptyMap()
         }
-        for (app in set) {
-            val last = prefs.lastCompile(app.packageName).first()
-            if (needsCompile(app, last, badgeByPkg[app.packageName]) && eligible(app)) enqueue(app.packageName)
-        }
-        publish()
-    }
 
     private fun eligible(app: AppEntry): Boolean = synchronized(lock) {
         val f = failures[app.packageName]
@@ -160,18 +254,27 @@ class MaintenanceEngine(
         done[app.packageName] != app.lastUpdateTime
     }
 
-    private fun enqueue(pkg: String) {
+    private fun enqueue(pkg: String): Boolean {
         val added = synchronized(lock) { pkg != running && queue.add(pkg) }
         if (added) wake.trySend(Unit)
+        return added
     }
 
     private suspend fun drain() {
         while (true) {
-            val pkg = synchronized(lock) { queue.firstOrNull() } ?: return
+            val pkg = synchronized(lock) {
+                priorityOneShot.firstOrNull { it in queue } ?: queue.firstOrNull()
+            } ?: return
             // A launch sequence owns this package right now: drop it (its own
             // recompile is the maintenance), a later scan re-adds it if stale.
             if (pkg == measuring()) {
-                synchronized(lock) { queue.remove(pkg) }
+                synchronized(lock) {
+                    queue.remove(pkg)
+                    priorityOneShot.remove(pkg)
+                    oneShotTargets.remove(pkg)
+                    reRequested.remove(pkg)
+                }
+                publish()
                 continue
             }
             if (!helperUp()) {
@@ -189,7 +292,11 @@ class MaintenanceEngine(
                 throw e
             } catch (_: Exception) {
             } finally {
-                synchronized(lock) { running = null }
+                val requeue = synchronized(lock) {
+                    running = null
+                    reRequested.remove(pkg)
+                }
+                if (requeue) enqueue(pkg)
                 publish()
             }
             doScan()
@@ -197,11 +304,21 @@ class MaintenanceEngine(
     }
 
     private suspend fun runJob(pkg: String) {
-        val app = source.find(pkg) ?: run { store.setMaintained(pkg, false); return }
-        val name = PackageName.parse(pkg) ?: return
+        val app = source.find(pkg) ?: run {
+            store.setMaintained(pkg, false)
+            dropOneShot(pkg, force = true)
+            return
+        }
+        val name = PackageName.parse(pkg) ?: run {
+            dropOneShot(pkg, force = true)
+            return
+        }
         val mode = prefs.lastCompile(pkg).first()?.mode ?: CompileMode.SPEED
         // A launch sequence may have started after this job was taken: never compile under it.
-        if (pkg == measuring()) return
+        if (pkg == measuring()) {
+            dropOneShot(pkg, force = true)
+            return
+        }
         val start = clock()
         status?.onStart(pkg, app.label, mode.arg)
         var finished: CompileEvent.Finished? = null
@@ -223,6 +340,7 @@ class MaintenanceEngine(
                     done[pkg] = app.lastUpdateTime
                     failures.remove(pkg)
                 }
+                dropOneShot(pkg, force = false)
                 val message = JobMessage.SUCCESS.text(null).resolve(strings, rtl = false)
                 store.addHistory(JobRecord(pkg, app.label, clock(), true, message, JobMessage.SUCCESS.name))
             }
@@ -244,8 +362,18 @@ class MaintenanceEngine(
                         synchronized(lock) { failures[pkg]?.let { failures[pkg] = Failure(it.updateTime, it.attempts, true) } }
                         scan()
                     }
+                } else {
+                    dropOneShot(pkg, force = false)
                 }
             }
+        }
+    }
+
+    private fun dropOneShot(pkg: String, force: Boolean) = synchronized(lock) {
+        if (force) reRequested.remove(pkg)
+        if (force || pkg !in reRequested) {
+            priorityOneShot.remove(pkg)
+            oneShotTargets.remove(pkg)
         }
     }
 
@@ -268,13 +396,15 @@ class MaintenanceEngine(
     }
 
     private fun publish() {
-        status?.setQueueWaiting(synchronized(lock) { queue.size })
-        _state.value = synchronized(lock) {
+        val (queueSize, nextState) = synchronized(lock) {
             val phases = LinkedHashMap<String, JobPhase>()
             queue.forEach { phases[it] = JobPhase.WAITING }
             running?.let { phases[it] = JobPhase.RUNNING }
             failures.keys.forEach { if (it !in phases) phases[it] = JobPhase.RETRY }
-            MaintenanceState(maintainedNow, phases, helperDown)
+            queue.size to MaintenanceState(maintainedNow, phases, helperDown)
         }
+        status?.setQueueWaiting(queueSize)
+        status?.setRetrying(nextState.phases.values.count { it == JobPhase.RETRY })
+        _state.value = nextState
     }
 }

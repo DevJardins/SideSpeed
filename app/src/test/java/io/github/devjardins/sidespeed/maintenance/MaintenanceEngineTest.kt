@@ -619,4 +619,175 @@ class MaintenanceEngineTest {
         assertEquals("Failure", byPkg.getValue("empty.app").message)
         assertEquals("Failure", byPkg.getValue("empty.app").display.english())
     }
+
+    @Test fun requestCompile_without_keep_compiles_under_selected_mode_and_survives_concurrent_scan() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        h.source.put("com.example.new", updated = 100)
+        h.helperUpGate = CompletableDeferred()
+
+        assertTrue(h.engine.requestCompile("com.example.new", keepOptimized = false))
+        assertEquals(1L, status.requestSeq())
+
+        // Trigger a concurrent scan while queued: SELECTED + 0 ticked must not evict it.
+        h.engine.scan()
+        runCurrent()
+        assertEquals(JobPhase.WAITING, h.phases["com.example.new"])
+        assertTrue(h.calls.isEmpty())
+
+        h.helperUpGate?.complete(Unit)
+        h.helperUpGate = null
+        runCurrent()
+
+        assertEquals(listOf("com.example.new" to CompileMode.SPEED), h.calls)
+        assertTrue(h.store.maintainedFlow.value.isEmpty())
+        assertTrue(h.phases.isEmpty())
+
+        // After completion it must drop out of priorityOneShot: a subsequent update + scan under SELECTED ignores it.
+        h.source.update("com.example.new", 900)
+        h.engine.scan()
+        runCurrent()
+        assertEquals(1, h.calls.size)
+    }
+
+    @Test fun requestCompile_with_keep_ticks_maintained_and_prioritizes_ahead_of_background_queue() = runTest {
+        val h = Harness(this)
+        val gate = CompletableDeferred<Unit>()
+        h.script = { pkg ->
+            flow {
+                if (pkg == "bg.one") gate.await()
+                emit(CompileEvent.Finished(true, false, CompileOutcome.Success))
+            }
+        }
+        h.source.put("bg.one")
+        h.source.put("bg.two")
+        h.source.put("bg.three")
+        h.source.put("com.example.urgent")
+        h.store.setMaintained("bg.one", true)
+        h.store.setMaintained("bg.two", true)
+        h.store.setMaintained("bg.three", true)
+        runCurrent()
+        assertEquals(JobPhase.RUNNING, h.phases["bg.one"])
+        assertEquals(JobPhase.WAITING, h.phases["bg.two"])
+        assertEquals(JobPhase.WAITING, h.phases["bg.three"])
+
+        assertTrue(h.engine.requestCompile("com.example.urgent", keepOptimized = true))
+        assertTrue("com.example.urgent" in h.store.maintainedFlow.value)
+
+        gate.complete(Unit)
+        runCurrent()
+
+        assertEquals(
+            listOf("bg.one", "com.example.urgent", "bg.two", "bg.three"),
+            h.calls.map { it.first },
+        )
+    }
+
+    @Test fun requestCompile_skips_own_package_and_uninstalled_and_respects_measuring() = runTest {
+        val h = Harness(this)
+        h.source.put("own.pkg")
+        h.source.put("com.example.measured")
+        h.source.put("com.example.race")
+
+        assertFalse(h.engine.requestCompile("own.pkg", keepOptimized = true))
+        assertFalse(h.engine.requestCompile("missing.pkg", keepOptimized = true))
+        assertFalse(h.engine.requestCompile("bad..pkg", keepOptimized = true))
+        assertTrue(h.store.maintainedFlow.value.isEmpty())
+
+        h.measuring = "com.example.measured"
+        assertFalse(h.engine.requestCompile("com.example.measured", keepOptimized = false))
+        runCurrent()
+        assertTrue(h.calls.isEmpty())
+
+        // Also verify measuring starting while a one-shot request is parked at helperUp skips compiling.
+        h.measuring = null
+        h.helperUpGate = CompletableDeferred()
+        assertTrue(h.engine.requestCompile("com.example.race", keepOptimized = false))
+        runCurrent()
+        assertEquals(JobPhase.WAITING, h.phases["com.example.race"])
+        h.measuring = "com.example.race"
+        h.helperUpGate?.complete(Unit)
+        h.helperUpGate = null
+        runCurrent()
+        assertTrue("measured package must never compile", h.calls.isEmpty())
+        assertNull(h.phases["com.example.race"])
+    }
+
+    @Test fun requestOptimizeNow_clears_retry_backoff_when_armed() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        var attempts = 0
+        h.script = { if (attempts++ == 0) h.failure() else h.success() }
+        h.source.put("a.a")
+        h.store.setMaintained("a.a", true)
+        runCurrent(); runCurrent()
+
+        assertEquals(1, h.calls.size)
+        assertEquals(JobPhase.RETRY, h.phases["a.a"])
+        assertEquals(1, status.snapshot().retrying)
+
+        val queued = h.engine.requestOptimizeNow()
+        assertEquals(1, queued)
+        assertEquals(1L, status.requestSeq())
+        assertEquals(0, status.snapshot().retrying)
+
+        // Compiles immediately without waiting 30 minutes.
+        runCurrent(); runCurrent()
+        assertEquals(2, h.calls.size)
+        assertTrue(h.phases.isEmpty())
+        assertEquals(0, status.snapshot().retrying)
+    }
+
+    @Test fun requestOptimizeNow_unarmed_compiles_stale_sideloaded_without_changing_mode() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        h.source.put("side.stale", installer = null)
+        h.source.put("side.fresh", updated = 100, installer = null)
+        h.prefs.saved["side.fresh"] = LastCompile(500, CompileMode.SPEED)
+        h.badges["side.fresh"] = StatusBadge.SPEED_OK
+        h.source.put("store.stale", installer = "com.android.vending")
+        h.source.apps["sys.stale"] = AppEntry("sys.stale", "SYS", null, 100, isSystem = true)
+        h.source.put("own.pkg", installer = null)
+
+        val queued = h.engine.requestOptimizeNow()
+        assertEquals(1, queued)
+        assertEquals(1L, status.requestSeq())
+        runCurrent()
+
+        assertEquals(listOf("side.stale" to CompileMode.SPEED), h.calls)
+        assertEquals(AutoOptimizeMode.SELECTED, h.store.modeFlow.value)
+        assertTrue(h.store.maintainedFlow.value.isEmpty())
+
+        // Second call when nothing left is stale returns 0 and bumps reqSeq.
+        assertEquals(0, h.engine.requestOptimizeNow())
+        assertEquals(2L, status.requestSeq())
+        runCurrent()
+        assertEquals(1, h.calls.size)
+    }
+
+    @Test fun requestCompile_without_keep_retries_failure_then_clears_retrying_when_exhausted() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        h.script = { h.failure() }
+        h.source.put("one.shot", updated = 100)
+
+        assertTrue(h.engine.requestCompile("one.shot", keepOptimized = false))
+        runCurrent(); runCurrent()
+        assertEquals(1, h.calls.size)
+        assertEquals(JobPhase.RETRY, h.phases["one.shot"])
+        assertEquals(1, status.snapshot().retrying)
+
+        // Retries 3 times (4 total attempts), then exhausts and clears retrying for unmaintained one-shot.
+        advanceTimeBy(30 * MIN); runCurrent()
+        advanceTimeBy(30 * MIN); runCurrent()
+        advanceTimeBy(30 * MIN); runCurrent()
+        runCurrent()
+        assertEquals(4, h.calls.size)
+        assertTrue(h.phases.isEmpty())
+        assertEquals(0, status.snapshot().retrying)
+    }
 }
