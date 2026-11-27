@@ -790,4 +790,93 @@ class MaintenanceEngineTest {
         assertTrue(h.phases.isEmpty())
         assertEquals(0, status.snapshot().retrying)
     }
+
+    @Test fun requestCompile_with_keep_retries_when_already_up_to_date() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        h.source.put("a.a", updated = 100)
+        h.prefs.saved["a.a"] = LastCompile(500, CompileMode.SPEED)
+        h.badges["a.a"] = StatusBadge.SPEED_OK
+        var attempts = 0
+        h.script = { if (attempts++ == 0) h.failure() else h.success() }
+
+        assertTrue(h.engine.requestCompile("a.a", keepOptimized = true))
+        runCurrent(); runCurrent()
+        assertEquals(1, h.calls.size)
+        assertEquals(JobPhase.RETRY, h.phases["a.a"])
+        assertEquals(1, status.snapshot().retrying)
+
+        advanceTimeBy(30 * MIN); runCurrent(); runCurrent()
+        assertEquals(2, h.calls.size)
+        assertTrue(h.phases.isEmpty())
+        assertEquals(0, status.snapshot().retrying)
+    }
+
+    @Test fun requestCompile_while_running_reruns_after_inflight_success() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        val gate = CompletableDeferred<Unit>()
+        var run = 0
+        h.script = {
+            flow {
+                if (run++ == 0) gate.await()
+                emit(CompileEvent.Finished(true, false, CompileOutcome.Success))
+            }
+        }
+        h.source.put("a.a", updated = 100)
+        h.store.setMaintained("a.a", true)
+        runCurrent()
+        assertEquals(JobPhase.RUNNING, h.phases["a.a"])
+        assertEquals(1, h.calls.size)
+
+        assertTrue(h.engine.requestCompile("a.a", keepOptimized = false))
+        assertEquals(1L, status.requestSeq())
+
+        gate.complete(Unit)
+        runCurrent(); runCurrent()
+        assertEquals(2, h.calls.size)
+        assertTrue(h.phases.isEmpty())
+    }
+
+    @Test fun requestCompile_while_running_ignores_inflight_failure_and_keeps_full_retry_budget() = runTest {
+        val statusStore = FakeCompileStatusStore()
+        val h = Harness(this, statusStore = statusStore)
+        val status = requireNotNull(h.status)
+        val gate = CompletableDeferred<Unit>()
+        var run = 0
+        h.script = {
+            flow {
+                if (run++ == 0) gate.await()
+                emit(CompileEvent.Finished(false, true, CompileOutcome.Failure))
+            }
+        }
+        h.source.put("a.a", updated = 100)
+        assertTrue(h.engine.requestCompile("a.a", keepOptimized = false))
+        runCurrent()
+        assertEquals(JobPhase.RUNNING, h.phases["a.a"])
+        assertEquals(1, h.calls.size)
+
+        // Second request arrives while the first compile is in flight.
+        assertTrue(h.engine.requestCompile("a.a", keepOptimized = false))
+        assertEquals(2L, status.requestSeq())
+
+        // In-flight compile fails; superseded failure must not consume retry budget or wait 30m.
+        gate.complete(Unit)
+        runCurrent(); runCurrent()
+        assertEquals(2, h.calls.size)
+        assertEquals(JobPhase.RETRY, h.phases["a.a"])
+        assertEquals(1, status.snapshot().retrying)
+
+        // The re-requested compile still gets all 3 retries (calls 3, 4, 5) before exhausting.
+        advanceTimeBy(30 * MIN); runCurrent(); runCurrent()
+        assertEquals(3, h.calls.size)
+        advanceTimeBy(30 * MIN); runCurrent(); runCurrent()
+        assertEquals(4, h.calls.size)
+        advanceTimeBy(30 * MIN); runCurrent(); runCurrent()
+        assertEquals(5, h.calls.size)
+        assertTrue(h.phases.isEmpty())
+        assertEquals(0, status.snapshot().retrying)
+    }
 }

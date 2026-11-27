@@ -226,7 +226,10 @@ class MaintenanceEngine(
         var enqueued = 0
         for (app in set) {
             val last = prefs.lastCompile(app.packageName).first()
-            if (needsCompile(app, last, badgeByPkg[app.packageName]) && eligible(app)) {
+            val isOneShot = synchronized(lock) {
+                app.packageName in priorityOneShot || app.packageName in oneShotTargets
+            }
+            if ((isOneShot || needsCompile(app, last, badgeByPkg[app.packageName])) && eligible(app)) {
                 if (enqueue(app.packageName)) enqueued++
             }
         }
@@ -337,8 +340,10 @@ class MaintenanceEngine(
                 // The start time, not the end: an update that lands mid-compile stays newer and gets compiled again.
                 prefs.setLastCompile(pkg, LastCompile(start, mode))
                 synchronized(lock) {
-                    done[pkg] = app.lastUpdateTime
-                    failures.remove(pkg)
+                    if (pkg !in reRequested) {
+                        done[pkg] = app.lastUpdateTime
+                        failures.remove(pkg)
+                    }
                 }
                 dropOneShot(pkg, force = false)
                 val message = JobMessage.SUCCESS.text(null).resolve(strings, rtl = false)
@@ -350,20 +355,31 @@ class MaintenanceEngine(
             }
             else -> {
                 status?.onFinish(pkg, app.label, false)
-                val attempts = synchronized(lock) {
-                    ((failures[pkg]?.attempts ?: 0) + 1).also { failures[pkg] = Failure(app.lastUpdateTime, it, false) }
-                }
                 val (jobMessage, detail) = classifyJobFailure(result.outcome)
                 val message = jobMessage.text(detail).resolve(strings, rtl = false)
                 store.addHistory(JobRecord(pkg, app.label, clock(), false, message, jobMessage.name, detail))
-                if (attempts <= maxRetries) {
-                    scope.launch {
-                        delay(retryDelayMs)
-                        synchronized(lock) { failures[pkg]?.let { failures[pkg] = Failure(it.updateTime, it.attempts, true) } }
-                        scan()
+                val failure = synchronized(lock) {
+                    if (pkg in reRequested) {
+                        null
+                    } else {
+                        val attempts = (failures[pkg]?.attempts ?: 0) + 1
+                        Failure(app.lastUpdateTime, attempts, false).also { failures[pkg] = it }
                     }
-                } else {
-                    dropOneShot(pkg, force = false)
+                }
+                if (failure != null) {
+                    if (failure.attempts <= maxRetries) {
+                        scope.launch {
+                            delay(retryDelayMs)
+                            synchronized(lock) {
+                                if (failures[pkg] === failure) {
+                                    failures[pkg] = Failure(failure.updateTime, failure.attempts, true)
+                                }
+                            }
+                            scan()
+                        }
+                    } else {
+                        dropOneShot(pkg, force = false)
+                    }
                 }
             }
         }
