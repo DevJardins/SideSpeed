@@ -93,7 +93,7 @@ class ConnectionStrategyTest {
     @Test fun otherBuildTriesAgain() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { failConnect = ConnectException("refused") }
         val prefs = FakePrefs(refused = "old")
-        strategy(adb, prefs = prefs, fingerprint = "new") { null }.ensureReady()
+        strategy(adb, fire = true, prefs = prefs, fingerprint = "new") { null }.ensureReady()
         assertEquals(listOf<AdbTarget>(AdbTarget.Classic()), adb.connectAttempts)
         assertEquals("new", prefs.refusedBuild.value)
     }
@@ -180,9 +180,26 @@ class ConnectionStrategyTest {
         val adb = FakeAdbBackend().apply { failConnect = ConnectException("Connection refused") }
         val prefs = FakePrefs()
         val r = strategy(adb, prefs = prefs) { null }.ensureReady()
-        assertEquals("This TV didn't allow ADB from SideSpeed", (r as Readiness.NeedsHelperStart).reason.english())
+        assertEquals("ADB not reachable", (r as Readiness.NeedsHelperStart).reason.english())
         assertEquals(StartCause.REFUSED, r.cause)
-        assertEquals("build-1", prefs.refusedBuild.value)
+    }
+
+    // Google TV refuses classic ADB until wireless debugging is on or paired: never cache it,
+    // or pairing and turning wireless debugging on would never be tried.
+    @Test fun googleTvRefusalNeverCaches() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = ConnectException("Connection refused") }
+        val prefs = FakePrefs()
+        strategy(adb, prefs = prefs) { null }.ensureReady()
+        assertEquals(null, prefs.refusedBuild.value)
+        strategy(adb, prefs = prefs) { null }.ensureReady()
+        assertEquals(2, adb.connectAttempts.size)
+    }
+
+    @Test fun googleTvIgnoresCachedRefusalAndTriesTlsAfterPairing() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnectFor[AdbTarget.Classic()] = ConnectException("refused") }
+        val prefs = FakePrefs(tls = true, refused = "build-1")
+        strategy(adb, prefs = prefs) { null }.ensureReady()
+        assertEquals(listOf<AdbTarget>(AdbTarget.Classic(), AdbTarget.WirelessTls), adb.connectAttempts)
     }
 
     @Test fun wrappedConnectExceptionIsRefused() = runTest(timeout = 10.seconds) {

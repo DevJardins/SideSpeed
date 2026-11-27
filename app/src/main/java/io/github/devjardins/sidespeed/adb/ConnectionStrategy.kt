@@ -81,15 +81,22 @@ class ConnectionStrategy(
             prefs.setOnBoxAdbRefusedBuild(null)
             return Readiness.HelperReady
         }
-        if (prefs.onBoxAdbRefusedBuild.first() == buildFingerprint) return refusedNow()
+        if (refusedOnThisBuild()) return refusedNow()
         return connectAndLaunch(killFirst = false, onLaunch)
     }
 
-    /** Kills the stale helper over own-ADB, then relaunches it. Skipped while this OS build refuses on-box ADB. */
+    /** Kills the stale helper over own-ADB, then relaunches it. Skipped while this Fire OS build refuses on-box ADB. */
     suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness {
-        if (prefs.onBoxAdbRefusedBuild.first() == buildFingerprint) return refusedNow()
+        if (refusedOnThisBuild()) return refusedNow()
         return connectAndLaunch(killFirst = true, onLaunch)
     }
+
+    /**
+     * Fire OS only. Google TV refuses classic ADB until wireless debugging is on or paired, so a refusal
+     * there is not final and is never cached.
+     */
+    private suspend fun refusedOnThisBuild() =
+        isFireOs && prefs.onBoxAdbRefusedBuild.first() == buildFingerprint
 
     /** The cached refusal: no new attempt, straight to the PC instructions. */
     private fun refusedNow() =
@@ -117,10 +124,10 @@ class ConnectionStrategy(
             if (t is AdbTarget.Classic && isRefusal(r.exceptionOrNull())) classicRefused = true
         }
         if (!connected) {
-            if (!classicRefused) {
+            if (!classicRefused || !isFireOs) {
                 return Readiness.NeedsHelperStart(
                     UiText.Res(R.string.setup_reason_adb_unreachable),
-                    StartCause.OTHER,
+                    if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
                 )
             }
             prefs.setOnBoxAdbRefusedBuild(buildFingerprint)
