@@ -67,7 +67,8 @@ These strings warn about security or data loss. Their English starts with "Safet
 
 TV app:
 
-- `setup_lan_warning`
+- `setup_lan_warning_v2`
+- `tools_reboot_caveat`
 
 Companion app:
 
