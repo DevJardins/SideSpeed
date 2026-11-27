@@ -1178,6 +1178,26 @@ class CompanionViewModel(
         return saved.takeIf { checkableHere(it, currentTrusted(), store.trustedOverlays()) }
     }
 
+    /**
+     * Why an install cannot use [tvId] right now. An unproven TV names itself, so the screen
+     * says what is true; every other refusal stays [Copy.NOT_TRUSTED_ERROR]. Fail-closed either way.
+     */
+    private suspend fun installGateMessage(tvId: String): UiText {
+        if (store.tvs().firstOrNull { it.id == tvId }?.unproven == true) return Copy.TV_UNPROVEN
+        return Copy.NOT_TRUSTED_ERROR
+    }
+
+    /** A different device answered mid-install: record it the way upkeep does, so the card says so. */
+    private suspend fun persistWrongDevice(tvId: String) {
+        store.updateTv(tvId) {
+            it.copy(
+                status = TvStatus.WRONG_DEVICE,
+                offlineCount = it.offlineCount + 1,
+                lastCheckedEpochMs = clock(),
+            )
+        }
+    }
+
     /** Opens [tv] and refuses the session unless its serial is the saved one. Runs on the caller's dispatcher. */
     private suspend fun openChecked(tv: SavedTv, forInstall: Boolean): TvSession {
         val session = if (forInstall) sessions.openForInstall(tv) else sessions.open(tv)
@@ -1211,7 +1231,7 @@ class CompanionViewModel(
         try {
             val saved = trustedTv(r.tvId)
             if (saved == null) {
-                finishRun(r, Copy.NOT_TRUSTED_ERROR)
+                finishRun(r, installGateMessage(r.tvId))
                 return
             }
             updateOrPublish(r, saved)
@@ -1249,6 +1269,7 @@ class CompanionViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            if (e is TvWrongDevice) persistWrongDevice(r.tvId)
             failRun(r, openFailure(e), canRetry(e))
         }
     }
@@ -1280,7 +1301,10 @@ class CompanionViewModel(
             val ui = _state.value.install
             val saved = trustedTv(r.tvId)
             if (pkg == null || pre == null || ui == null) return finishRun(r, null)
-            if (saved == null) return failRun(r, Copy.NOT_TRUSTED_ERROR, canRetry = true)
+            if (saved == null) {
+                val message = installGateMessage(r.tvId)
+                return failRun(r, message, canRetry = message != Copy.TV_UNPROVEN)
+            }
             transferHost.onStart(saved.name, pkg.displayLabel)
             hostStarted = true
             val result = withContext(ioDispatcher) {
@@ -1304,6 +1328,7 @@ class CompanionViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            if (e is TvWrongDevice) persistWrongDevice(r.tvId)
             failRun(r, openFailure(e), canRetry(e))
         } finally {
             if (hostStarted) transferHost.onEnd()
@@ -1373,7 +1398,7 @@ class CompanionViewModel(
     }
 
     private suspend fun requestOptimize(tvId: String): UiText {
-        val saved = trustedTv(tvId) ?: return Copy.NOT_TRUSTED_ERROR
+        val saved = trustedTv(tvId) ?: return installGateMessage(tvId)
         val output = withContext(ioDispatcher) {
             openChecked(saved, forInstall = false).use { it.run(TvCommands.CALL_OPTIMIZE_NOW) }
         }

@@ -205,6 +205,53 @@ class CompanionViewModelInstallTest {
         assertEquals(1, second.closes)
     }
 
+    @Test fun unproven_tv_names_itself_at_every_install_gate() = runTest(UnconfinedTestDispatcher()) {
+        // Inspect gate: an unproven TV ends the run with its own notice, and nothing is sent.
+        val r = Rig(this)
+        r.store.updateTv("tv-1") { it.copy(unproven = true) }
+        val first = TrackedSource("a.apk", apkBytes())
+        r.vm.beginInstall("tv-1", first)
+        runCurrent()
+        assertNull(r.vm.state.value.install)
+        assertEquals(Copy.TV_UNPROVEN, r.vm.state.value.installNotice["tv-1"])
+        assertTrue(r.sessions.isEmpty())
+        assertEquals(1, first.closes)
+
+        // Transfer gate: trust lost to an unproven TV fails without retry.
+        val gated = Rig(this)
+        val second = TrackedSource("a.apk", apkBytes())
+        gated.vm.beginInstall("tv-1", second)
+        runCurrent()
+        assertTrue(gated.vm.state.value.install?.phase is InstallPhase.Review)
+        gated.store.updateTv("tv-1") { it.copy(unproven = true) }
+        gated.vm.confirmInstall()
+        runCurrent()
+        val failed = gated.vm.state.value.install?.phase as InstallPhase.Failed
+        assertEquals(Copy.TV_UNPROVEN, failed.message)
+        assertFalse(failed.canRetry)
+        assertTrue(gated.args.none { it[0] == "install-create" })
+
+        // Optimize gate: an unproven TV names itself instead of the trust error.
+        val opt = Rig(this)
+        opt.store.updateTv("tv-1") { it.copy(unproven = true) }
+        opt.vm.optimizeNow("tv-1")
+        runCurrent()
+        assertEquals(Copy.TV_UNPROVEN, opt.vm.state.value.optimizeNotice["tv-1"])
+        assertTrue(opt.sessions.isEmpty())
+    }
+
+    @Test fun wrong_device_mid_install_persists_wrong_device_status() = runTest(UnconfinedTestDispatcher()) {
+        val r = Rig(this)
+        r.store.updateTv("tv-1") { it.copy(serial = "OTHER") }
+        val source = TrackedSource("a.apk", apkBytes())
+        r.vm.beginInstall("tv-1", source)
+        runCurrent()
+        val failed = r.vm.state.value.install?.phase as InstallPhase.Failed
+        assertEquals(Copy.DIFFERENT_DEVICE, failed.message)
+        assertFalse(failed.canRetry)
+        assertEquals(TvStatus.WRONG_DEVICE, r.store.tv("tv-1").status)
+    }
+
     @Test fun modal_install_lifecycle_and_transfer_host_callbacks() = runTest(UnconfinedTestDispatcher()) {
         val r = Rig(this)
         val bytes = apkBytes(padding = 150_000)
