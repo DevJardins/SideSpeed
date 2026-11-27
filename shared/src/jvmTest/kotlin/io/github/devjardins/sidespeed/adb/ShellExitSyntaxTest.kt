@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.adb
 
 import io.github.devjardins.sidespeed.helper.HelperLaunch
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -18,17 +19,21 @@ class ShellExitSyntaxTest {
     }
 
     @Test fun wrappedHelperLaunchIsValidShell() {
-        assertEquals(0, syntaxCheck(ShellExit.wrap(HelperLaunch.command())))
+        for (pkg in SideSpeedPackages.ALL) {
+            assertEquals(0, syntaxCheck(ShellExit.wrap(HelperLaunch.command(pkg))))
+        }
     }
 
     @Test fun wrappedKillCommandIsValidShell() {
-        assertEquals(0, syntaxCheck(ShellExit.wrap(HelperLaunch.KILL_COMMAND)))
+        for (pkg in SideSpeedPackages.ALL) {
+            assertEquals(0, syntaxCheck(ShellExit.wrap(HelperLaunch.killCommand(pkg))))
+        }
     }
 
     @Test fun oldSemicolonJoinWasInvalid() {
         // Guards the test itself: the pre-fix form must be rejected by /bin/sh.
         assumeTrue(File("/bin/sh").canExecute())
-        val code = syntaxCheck(HelperLaunch.command() + "; echo x")
+        val code = syntaxCheck(HelperLaunch.command(SideSpeedPackages.RELEASE) + "; echo x")
         assertEquals(true, code != 0)
     }
 

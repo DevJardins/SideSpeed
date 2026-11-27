@@ -21,13 +21,12 @@ import kotlin.system.exitProcess
  * under `app_process` (no Application, no Context: plain JVM plus framework classes).
  *
  * It listens on 127.0.0.1 only (first free port of [HELPER_PORT_FIRST]..[HELPER_PORT_LAST], written to
- * [HelperProtocol.PORT_FILE]), accepts only connections whose socket is owned by SideSpeed's uid (checked in
+ * [HelperPaths.portFile]), accepts only connections whose socket is owned by SideSpeed's uid (checked in
  * /proc/net/tcp{,6} before any request byte is read), and runs only [CommandAllowlist] commands, as a fixed argv
  * via ProcessBuilder. It never runs `sh -c`; the only settings it writes are the three animation scales
  * (`settings put global`). It exits when its APK is replaced.
  */
 object HelperMain {
-    private const val SIDESPEED_PACKAGE = "io.github.devjardins.sidespeed"
     private const val APK_CHECK_MS = 5_000L
     private const val LOG_MAX_BYTES = 256 * 1024L
     private const val BACKLOG = 16
@@ -41,6 +40,8 @@ object HelperMain {
 
     private val logLock = Any()
 
+    @Volatile private var logFilePath: String = HelperProtocol.LOG_FILE
+
     @JvmStatic
     fun main(args: Array<String>) {
         val code = try {
@@ -53,6 +54,14 @@ object HelperMain {
     }
 
     private fun serve(args: Array<String>): Int {
+        val pkg = HelperIdentity.packageFrom(args)
+        if (pkg == null) {
+            log("startup: invalid or repeated --pkg argument; exiting")
+            return 2
+        }
+        val paths = HelperPaths.of(pkg)
+        logFilePath = paths.logFile
+
         val apk = args.firstOrNull { it.startsWith("--apk=") }?.removePrefix("--apk=")
             ?: System.getenv("CLASSPATH")?.split(':')?.firstOrNull()
         if (apk.isNullOrBlank()) {
@@ -68,13 +77,24 @@ object HelperMain {
         val startMtime = apkFile.lastModified()
         log("startup: uid=${Process.myUid()} pid=${Process.myPid()} apk=$apk size=$startSize mtime=$startMtime")
 
-        // Never fall back to allowing everyone: no SideSpeed uid, no helper.
-        val allowedUid = lookUpSideSpeedUid()
-        if (allowedUid == null) {
-            log("startup: cannot determine SideSpeed's uid; exiting")
+        val pmPathLines = try {
+            capture(listOf("/system/bin/pm", "path", pkg))
+        } catch (t: Throwable) {
+            log("startup: pm path $pkg failed (${t::class.java.simpleName}: ${t.message}); exiting")
             return 1
         }
-        log("startup: SideSpeed uid=$allowedUid is the only allowed caller")
+        if (!HelperIdentity.ownsApk(pmPathLines, apk)) {
+            log("startup: $pkg does not own APK $apk; exiting")
+            return 1
+        }
+
+        // Never fall back to allowing everyone: no SideSpeed uid, no helper.
+        val allowedUid = lookUpSideSpeedUid(pkg)
+        if (allowedUid == null) {
+            log("startup: cannot determine $pkg uid; exiting")
+            return 1
+        }
+        log("startup: $pkg uid=$allowedUid is the only allowed caller")
 
         val server = bind() ?: run {
             log("startup: no free port in $HELPER_PORT_FIRST..$HELPER_PORT_LAST; exiting")
@@ -82,7 +102,7 @@ object HelperMain {
         }
         val port = server.localPort
         log("startup: listening on 127.0.0.1:$port")
-        writePortFile(port)
+        writePortFile(paths, port)
 
         val installGate = InstallGate()
 
@@ -104,7 +124,7 @@ object HelperMain {
                         }
                         log("self-exit: $reason")
                         try { server.close() } catch (_: Throwable) {}
-                        deletePortFileIfOurs(port)
+                        deletePortFileIfOurs(paths, port)
                         exitProcess(0)
                     }
                 } catch (t: Throwable) {
@@ -116,17 +136,18 @@ object HelperMain {
         HelperServer(
             server = server,
             allowedUid = allowedUid,
+            selfPkg = pkg,
             callerUid = { socket -> callerUid(socket, port) },
             pong = { HelperProtocol.pong(Process.myUid(), apk) },
             runner = ::runArgv,
             installRunner = ::runInstall,
-            bringBack = { runArgv(CommandAllowlist.toArgv("bring-back")!!, {}) },
+            bringBack = { runArgv(CommandAllowlist.toArgv("bring-back", pkg)!!, {}) },
             installGate = installGate,
-            writeAck = ::writeAckFile,
+            writeAck = { writeAckFile(paths, it) },
             log = ::log,
             packageCheck = ::packageCheck,
         ).serve()
-        deletePortFileIfOurs(port)
+        deletePortFileIfOurs(paths, port)
         return 0
     }
 
@@ -294,18 +315,18 @@ object HelperMain {
         return m.groupValues[1]
     }
 
-    private fun lookUpSideSpeedUid(): Int? {
+    private fun lookUpSideSpeedUid(pkg: String): Int? {
         try {
-            val lines = capture(listOf("/system/bin/pm", "list", "packages", "-U", SIDESPEED_PACKAGE))
-            SideSpeedUid.fromPmList(lines, SIDESPEED_PACKAGE)?.let { return it }
+            val lines = capture(listOf("/system/bin/pm", "list", "packages", "-U", pkg))
+            SideSpeedUid.fromPmList(lines, pkg)?.let { return it }
             log("uid lookup: pm list packages -U gave no match: ${lines.take(5)}")
         } catch (t: Throwable) {
             log("uid lookup: pm failed: ${t.message}")
         }
         try {
-            val lines = capture(listOf("/system/bin/dumpsys", "package", SIDESPEED_PACKAGE))
-            SideSpeedUid.fromDumpsys(lines, SIDESPEED_PACKAGE)?.let { return it }
-            log("uid lookup: dumpsys package gave no userId for $SIDESPEED_PACKAGE")
+            val lines = capture(listOf("/system/bin/dumpsys", "package", pkg))
+            SideSpeedUid.fromDumpsys(lines, pkg)?.let { return it }
+            log("uid lookup: dumpsys package gave no userId for $pkg")
         } catch (t: Throwable) {
             log("uid lookup: dumpsys failed: ${t.message}")
         }
@@ -319,9 +340,9 @@ object HelperMain {
     }
 
     /** Writes the port atomically and makes it world-readable (0644) so the app can read it. */
-    private fun writePortFile(port: Int) {
-        val target = File(HelperProtocol.PORT_FILE)
-        val tmp = File(HelperProtocol.PORT_FILE + ".tmp")
+    private fun writePortFile(paths: HelperPaths, port: Int) {
+        val target = File(paths.portFile)
+        val tmp = File(paths.portFile + ".tmp")
         try {
             tmp.delete()
             tmp.writeText("$port\n")
@@ -344,19 +365,19 @@ object HelperMain {
     private val ackLock = Any()
 
     /**
-     * Writes a per-request nonce proof to [HelperProtocol.ACK_DIR] (see [AckProofs]). The nonce was
+     * Writes a per-request nonce proof to [paths].ackDir (see [AckProofs]). The nonce was
      * validated by [HelperServer] via [HelperProtocol.splitNonce] (alphanumeric only). Throws on
      * failure so the request is answered with an error instead of an unproven reply.
      */
-    private fun writeAckFile(nonce: String) = synchronized(ackLock) {
-        AckProofs.write(File(HelperProtocol.ACK_DIR), nonce) { file, mode ->
+    private fun writeAckFile(paths: HelperPaths, nonce: String) = synchronized(ackLock) {
+        AckProofs.write(File(paths.ackDir), nonce) { file, mode ->
             Os.chmod(file.path, mode)
         }
     }
 
-    private fun deletePortFileIfOurs(port: Int) {
+    private fun deletePortFileIfOurs(paths: HelperPaths, port: Int) {
         try {
-            val f = File(HelperProtocol.PORT_FILE)
+            val f = File(paths.portFile)
             if (f.readText().trim() == port.toString()) f.delete()
         } catch (_: Throwable) {
         }
@@ -368,8 +389,9 @@ object HelperMain {
         synchronized(logLock) {
             println(line)
             try {
-                val f = File(HelperProtocol.LOG_FILE)
-                val rotated = File(HelperProtocol.LOG_FILE + ".1")
+                val path = logFilePath
+                val f = File(path)
+                val rotated = File("$path.1")
                 val didRotate = f.length() >= LOG_MAX_BYTES && f.renameTo(rotated)
                 val created = !f.exists()
                 FileOutputStream(f, true).use { it.write((line + "\n").toByteArray()) }

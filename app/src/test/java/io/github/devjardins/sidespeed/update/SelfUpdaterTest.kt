@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.update
 
 import io.github.devjardins.sidespeed.helper.InstallOutcome
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ class SelfUpdaterTest {
         confirmTimeoutMs: Long = 200,
         confirmPollMs: Long = 5,
         fallbackProbe: ((File) -> Unit)? = null,
+        ownPackage: String = SideSpeedPackages.RELEASE,
     ): SelfUpdater {
         val bytes = apkBytes
         val dl = UpdateDownload(open = open ?: { url ->
@@ -76,6 +78,7 @@ class SelfUpdaterTest {
             },
             cacheDir = tmp.root,
             busy = busyFlow ?: flowOf(false),
+            ownPackage = ownPackage,
             scope = scope,
             confirmTimeoutMs = confirmTimeoutMs,
             confirmPollMs = confirmPollMs,
@@ -143,6 +146,25 @@ class SelfUpdaterTest {
         awaitCalls(helperCalls)
         assertEquals(1, helperCalls.size)
         assertTrue(helperCalls.single().name == "SideSpeed.apk")
+    }
+
+    @Test fun debug_self_updater_rejects_release_apk() = runBlocking {
+        val helperCalls = Collections.synchronizedList(mutableListOf<File>())
+        val fallbackCalls = Collections.synchronizedList(mutableListOf<File>())
+        val u = updater(
+            ownPackage = SideSpeedPackages.DEBUG,
+            apkFacts = ApkFacts(SideSpeedPackages.RELEASE, 5, signer),
+            helperCalls = helperCalls,
+            fallbackCalls = fallbackCalls,
+        )
+        u.start("v0.5.0")
+        val end = u.awaitState { it is UpdateUiState.Failed }
+        assertEquals(
+            "Wrong package: ${SideSpeedPackages.RELEASE}.",
+            (end as UpdateUiState.Failed).reason.english(),
+        )
+        assertTrue(helperCalls.isEmpty())
+        assertTrue(fallbackCalls.isEmpty())
     }
 
     @Test fun verify_rejected_goes_failed_and_deletes_file() = runBlocking {

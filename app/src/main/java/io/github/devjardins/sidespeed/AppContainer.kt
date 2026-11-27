@@ -12,6 +12,8 @@ import io.github.devjardins.sidespeed.adb.LibAdbBackend
 import io.github.devjardins.sidespeed.data.DataStorePrefs
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperClient
+import io.github.devjardins.sidespeed.helper.HelperPaths
+import java.io.File
 import io.github.devjardins.sidespeed.apps.AppIcons
 import io.github.devjardins.sidespeed.apps.InstalledApps
 import io.github.devjardins.sidespeed.BuildConfig
@@ -76,10 +78,14 @@ data class SelfBuild(val versionCode: Long, val lastUpdateTime: Long, val debugg
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
+    val ownPackage: String = appContext.packageName
+
     val adb: AdbBackend = LibAdbBackend(appContext, appContext.filesDir)
 
     /** The single shared helper client: the helper writes one ack file, so two clients could fail each other's nonce check. */
-    val helper: HelperClient = HelperClient()
+    val helper: HelperClient = HelperPaths.of(ownPackage).let { paths ->
+        HelperClient(portFile = File(paths.portFile), ackDir = File(paths.ackDir))
+    }
 
     val prefs: Prefs = DataStorePrefs(appContext)
 
@@ -131,6 +137,7 @@ class AppContainer(context: Context) {
             fallbackInstall = { fallback.install(it) },
             cacheDir = appContext.cacheDir,
             busy = updateBusy,
+            ownPackage = ownPackage,
         )
     }
 
@@ -345,6 +352,7 @@ class AppContainer(context: Context) {
         prefs = prefs,
         expectedApk = appContext.applicationInfo.sourceDir,
         isFireOs = isFireOs,
+        pkg = ownPackage,
     )
 
     /** This TV's own showable addresses (LAN first, then Tailscale), or empty when unknown. */

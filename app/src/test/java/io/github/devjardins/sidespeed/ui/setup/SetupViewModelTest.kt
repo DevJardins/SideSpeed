@@ -8,6 +8,7 @@ import io.github.devjardins.sidespeed.adb.StartCause
 import io.github.devjardins.sidespeed.data.LastCompile
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.Dispatchers
@@ -109,7 +110,8 @@ class SetupViewModelTest {
         fire: Boolean = false,
         ip: String? = "10.0.0.5",
         settings: SettingsReader = FakeSettings(),
-    ) = SetupViewModel(readier, adb, prefs, fire, { ip }, settings, dispatcher).also { created += it }
+        ownPackage: String = SideSpeedPackages.RELEASE,
+    ) = SetupViewModel(readier, adb, prefs, fire, { ip }, settings, ownPackage, dispatcher).also { created += it }
 
     private val needsStart = Readiness.NeedsHelperStart(UiText.Raw("x"))
     private val refused = Readiness.NeedsHelperStart(UiText.Raw("ADB not reachable"), StartCause.REFUSED)

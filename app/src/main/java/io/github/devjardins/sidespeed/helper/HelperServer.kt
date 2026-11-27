@@ -35,6 +35,7 @@ import kotlin.concurrent.thread
 internal class HelperServer(
     private val server: ServerSocket,
     private val allowedUid: Int,
+    private val selfPkg: String,
     private val callerUid: (Socket) -> Int?,
     private val pong: () -> String,
     private val runner: (argv: List<String>, onLine: (String) -> Unit) -> Int,
@@ -58,6 +59,10 @@ internal class HelperServer(
      */
     private val packageCheck: (String) -> Boolean = { false },
 ) {
+    init {
+        require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
+    }
+
     private val slots = Semaphore(maxConnections)
 
     /** Accepts connections until [server] is closed. */
@@ -154,7 +159,7 @@ internal class HelperServer(
             handleInstallUpdate(socket, uid, out, update.first, update.second)
             return
         }
-        val argv = CommandAllowlist.toArgv(request)
+        val argv = CommandAllowlist.toArgv(request, selfPkg)
         if (argv == null) {
             log("REFUSED request from uid=$uid: '${HelperLog.sanitize(request)}'")
             out.line("error: request not allowed")
@@ -183,7 +188,7 @@ internal class HelperServer(
      */
     private fun handleInstallSelf(socket: Socket, uid: Int, out: Out, size: Long) {
         log("uid=$uid run install-self size=$size")
-        streamInstallBody(socket, uid, out, CommandAllowlist.installSelfArgv(size), size, "install-self", true)
+        streamInstallBody(socket, uid, out, CommandAllowlist.installSelfArgv(size, selfPkg), size, "install-self", true)
     }
 
     /**

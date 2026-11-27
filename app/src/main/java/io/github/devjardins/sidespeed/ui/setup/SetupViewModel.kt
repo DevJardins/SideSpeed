@@ -90,6 +90,7 @@ class SetupViewModel(
     val isFireOs: Boolean,
     private val wifiIp: () -> String?,
     private val settings: SettingsReader,
+    val ownPackage: String,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Loading)

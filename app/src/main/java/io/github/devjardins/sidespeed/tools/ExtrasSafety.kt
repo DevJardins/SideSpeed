@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
+
 /** Packages that must never be disabled by Turn off extras (mirrors the import script Core set). */
 object ExtrasSafety {
     private val exact = setOf(
@@ -27,8 +29,7 @@ object ExtrasSafety {
         "com.mediatek.tis",
         "com.mediatek.tv.service",
         "com.mediatek.tv.agent",
-        "io.github.devjardins.sidespeed",
-    )
+    ) + SideSpeedPackages.ALL
 
     private val providerOk = setOf(
         "com.android.providers.calendar",

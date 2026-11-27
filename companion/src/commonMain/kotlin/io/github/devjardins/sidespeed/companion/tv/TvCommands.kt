@@ -2,6 +2,7 @@ package io.github.devjardins.sidespeed.companion.tv
 
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperProtocol
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 
 /**
  * The only shell commands the companion ever sends to a TV. The TV trusts the companion's key, so nothing
@@ -67,8 +68,8 @@ object TvCommands {
         return "grep \"\\[pid $pid\\] startup: uid\" ${HelperProtocol.LOG_FILE}"
     }
 
-    val KILL: String = HelperLaunch.KILL_COMMAND
-    val LAUNCH: String = HelperLaunch.command()
+    val KILL: String = HelperLaunch.killCommand(SideSpeedPackages.RELEASE)
+    val LAUNCH: String = HelperLaunch.command(SideSpeedPackages.RELEASE)
 
     /** Live compile status for the TV card; parsed by `parseActivityRow` in `TvActivity.kt`. */
     const val STATUS_QUERY = "content query --uri content://io.github.devjardins.sidespeed.status/now"
