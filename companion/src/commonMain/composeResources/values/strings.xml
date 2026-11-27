@@ -116,8 +116,8 @@
     <!-- Remote install -->
     <!-- Button on a TV card to pick an app file and install it on that TV. -->
     <string name="home_install_app">Install an app</string>
-    <!-- Notice on a TV card after an install when the app was not optimized yet. %1$s is the app name. -->
-    <string name="home_compile_waiting_now">%1$s installed. It isn't optimized yet.</string>
+    <!-- Notice on a TV card after an install when nothing more is going to happen. %1$s is the app name. -->
+    <string name="home_installed_plain">%1$s installed.</string>
     <!-- Button on a TV card that asks SideSpeed on the TV to optimize its queued apps right now. -->
     <string name="home_optimize_now">Optimize now</string>
     <!-- Notice on a TV card after Optimize now when apps were queued. -->

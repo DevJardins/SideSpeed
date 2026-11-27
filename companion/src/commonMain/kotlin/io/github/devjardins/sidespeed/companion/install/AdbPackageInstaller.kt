@@ -388,7 +388,7 @@ class AdbPackageInstaller(
                     displayLabel = pkg.displayLabel,
                     compileRequested = false,
                     reqSeq = null,
-                    tvNeedsUpdate = true,
+                    tvNeedsUpdate = false,
                     helperVisit = visit,
                 ),
             )

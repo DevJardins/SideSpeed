@@ -567,6 +567,35 @@ class AdbPackageInstallerTest {
     }
 
     @Test
+    fun install_with_sidespeed_missing_on_tv_is_plain_success_without_update_note() = runTest {
+        val installer = AdbPackageInstaller()
+        val apkBytes = ByteArray(128) { 2 }
+        val (pkg, selection) = singlePkg("com.example.nospeed", 100L, apkBytes)
+        val session = FakeTvSession(
+            outputs = mapOf(TvCommands.SERIAL to "SER-1", TvCommands.PKG_PATH to ""),
+            packageCmdHandler = { args ->
+                when (args.first()) {
+                    "install-create" -> RecordingInstallStream("Success: created install session [45]")
+                    else -> RecordingInstallStream("Success")
+                }
+            },
+        )
+        val outcome = installer.install(
+            session = session,
+            tvSerial = "SER-1",
+            pkg = pkg,
+            selection = selection,
+            source = InstallTestFixtures.ByteArrayInstallSource("a.apk", apkBytes),
+            keepOptimized = true,
+            onPhase = {},
+            abandonOnFreshSession = {},
+        ).getOrThrow()
+        assertFalse(outcome.compileRequested)
+        assertFalse(outcome.tvNeedsUpdate)
+        assertTrue(session.sent.none { it.contains("compile_package") })
+    }
+
+    @Test
     fun install_treats_older_tv_without_call_as_success_with_update_note() = runTest {
         val installer = AdbPackageInstaller()
         val apkBytes = ByteArray(128) { 2 }

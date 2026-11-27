@@ -3,6 +3,7 @@ package io.github.devjardins.sidespeed.companion.ui
 import io.github.devjardins.sidespeed.companion.discovery.Discovery
 import io.github.devjardins.sidespeed.companion.discovery.FakeLan
 import io.github.devjardins.sidespeed.companion.discovery.SweepSource
+import io.github.devjardins.sidespeed.companion.install.InstallOutcome
 import io.github.devjardins.sidespeed.companion.install.InstallSource
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures
 import io.github.devjardins.sidespeed.companion.net.FingerprintSource
@@ -231,6 +232,21 @@ class CompanionViewModelInstallTest {
         assertTrue(TvCommands.callCompilePackage(pkgName, true) in r.sessions.flatMap { it.sent })
         r.vm.dismissInstallNotice("tv-1")
         assertTrue(r.vm.state.value.installNotice.isEmpty())
+    }
+
+    @Test fun installed_notice_matches_what_the_tv_will_do() {
+        fun notice(outcome: InstallOutcome) = Copy.installed(outcome).english()
+        assertEquals(
+            "Example installed. SideSpeed will optimize it next.",
+            notice(InstallOutcome("com.example", "Example", compileRequested = true, reqSeq = 1L)),
+        )
+        assertEquals(
+            "Example installed. Update SideSpeed on this TV to optimize it from here.",
+            notice(InstallOutcome("com.example", "Example", compileRequested = false, tvNeedsUpdate = true)),
+        )
+        // SideSpeed not installed on the TV, and SideSpeed updating itself: nothing is pending.
+        assertEquals("Example installed.", notice(InstallOutcome("com.example", "Example", compileRequested = false)))
+        assertEquals("SideSpeed installed.", notice(InstallOutcome("io.github.devjardins.sidespeed", "SideSpeed", compileRequested = false)))
     }
 
     @Test fun cancelInstall_aborts_transferring_but_ignores_committing() = runTest(UnconfinedTestDispatcher()) {

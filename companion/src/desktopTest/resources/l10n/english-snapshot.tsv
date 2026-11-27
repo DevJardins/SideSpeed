@@ -74,7 +74,6 @@ first_run_use_tailscale	Use Tailscale
 home_add_tv	Add a TV
 home_checked_min_ago#one	Checked %1$d min ago
 home_checked_min_ago#other	Checked %1$d min ago
-home_compile_waiting_now	%1$s installed. It isn't optimized yet.
 home_confirm_button	Confirm
 home_confirm_tv	Confirm this is your TV before SideSpeed uses it.
 home_different_device	A different device answered at that address.
@@ -83,6 +82,7 @@ home_empty_body	Add your TV. On Fire TV, Companion keeps SideSpeed's helper runn
 home_empty_title	No TVs yet
 home_install_app	Install an app
 home_installed_app	%1$s installed. SideSpeed will optimize it next.
+home_installed_plain	%1$s installed.
 home_installed_update_tv	%1$s installed. Update SideSpeed on this TV to optimize it from here.
 home_kept_alive_while_on	Kept alive while on %1$s
 home_last_seen	Last seen: %1$s

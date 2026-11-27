@@ -49,8 +49,8 @@ import io.github.devjardins.sidespeed.companion.resources.add_tv_check_not_saved
 import io.github.devjardins.sidespeed.companion.resources.add_unreachable
 import io.github.devjardins.sidespeed.companion.resources.common_try_again
 import io.github.devjardins.sidespeed.companion.resources.home_checked_min_ago
-import io.github.devjardins.sidespeed.companion.resources.home_compile_waiting_now
 import io.github.devjardins.sidespeed.companion.resources.home_installed_app
+import io.github.devjardins.sidespeed.companion.resources.home_installed_plain
 import io.github.devjardins.sidespeed.companion.resources.home_installed_update_tv
 import io.github.devjardins.sidespeed.companion.resources.home_optimize_caught_up
 import io.github.devjardins.sidespeed.companion.resources.home_optimize_failed
@@ -223,7 +223,7 @@ object Copy {
         return when {
             outcome.compileRequested -> UiText.Res(Res.string.home_installed_app, listOf(name))
             outcome.tvNeedsUpdate -> UiText.Res(Res.string.home_installed_update_tv, listOf(name))
-            else -> UiText.Res(Res.string.home_compile_waiting_now, listOf(name))
+            else -> UiText.Res(Res.string.home_installed_plain, listOf(name))
         }
     }
 
