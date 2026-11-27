@@ -64,6 +64,8 @@ class LaunchTimeStateTest {
         override suspend fun setLanWarningAcked(v: Boolean) {}
         override val pairedTls: Flow<Boolean> = MutableStateFlow(false)
         override suspend fun setPairedTls(v: Boolean) {}
+        override val onBoxAdbRefusedBuild: Flow<String?> = MutableStateFlow(null)
+        override suspend fun setOnBoxAdbRefusedBuild(v: String?) {}
         override fun lastCompile(pkg: String): Flow<LastCompile?> =
             MutableStateFlow(mode?.let { LastCompile(1L, it) })
         override suspend fun setLastCompile(pkg: String, value: LastCompile) {}

@@ -398,6 +398,7 @@ class AppContainer(context: Context) {
         expectedApk = appContext.applicationInfo.sourceDir,
         isFireOs = isFireOs,
         pkg = ownPackage,
+        buildFingerprint = Build.FINGERPRINT,
         adbMutex = adbMutex,
     )
 

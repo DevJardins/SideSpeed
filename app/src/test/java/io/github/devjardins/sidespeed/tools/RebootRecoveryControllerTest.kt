@@ -56,6 +56,8 @@ class RebootRecoveryControllerTest {
         override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
         override val selfCompile: Flow<SelfCompile?> = MutableStateFlow(null)
         override suspend fun setSelfCompile(v: SelfCompile) {}
+        override val onBoxAdbRefusedBuild: Flow<String?> = MutableStateFlow(null)
+        override suspend fun setOnBoxAdbRefusedBuild(build: String?) {}
     }
 
     private class FakePermissions(

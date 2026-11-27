@@ -47,10 +47,17 @@ class SetupViewModelTest {
     private class FakePrefs(acked: Boolean) : Prefs {
         val ack = MutableStateFlow(acked)
         val tls = MutableStateFlow(false)
+        var refusedClears = 0
+        val refusedBuild = MutableStateFlow<String?>(null)
         override val lanWarningAcked: Flow<Boolean> = ack
         override suspend fun setLanWarningAcked(v: Boolean) { ack.value = v }
         override val pairedTls: Flow<Boolean> = tls
         override suspend fun setPairedTls(v: Boolean) { tls.value = v }
+        override val onBoxAdbRefusedBuild: Flow<String?> = refusedBuild
+        override suspend fun setOnBoxAdbRefusedBuild(v: String?) {
+            if (v == null) refusedClears++
+            refusedBuild.value = v
+        }
         override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
         override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
         override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
@@ -160,18 +167,38 @@ class SetupViewModelTest {
         assertTrue(s.waiting)
     }
 
-    @Test fun staleRestartsOnGoogleTvOnly() = runSetup {
+    @Test fun staleRestarts() = runSetup {
         val tv = FakeReadier(Readiness.HelperNeedsRestart)
         val v = vm(tv)
         v.start(); settle()
         assertEquals(1, tv.restartCalls)
         assertEquals(SetupUiState.Ready, v.state.value)
+    }
 
+    @Test fun fireOsNeedsRestartRestarts() = runSetup {
         val fire = FakeReadier(Readiness.HelperNeedsRestart)
         val f = vm(fire, fire = true)
         f.start(); settle()
-        assertEquals(0, fire.restartCalls)
-        assertEquals(Readiness.HelperNeedsRestart, connecting(f).readiness)
+        assertEquals(1, fire.restartCalls)
+        assertEquals(SetupUiState.Ready, f.state.value)
+    }
+
+    @Test fun openingSetupClearsRefusal() = runSetup {
+        val prefs = FakePrefs(true)
+        val r = FakeReadier(Readiness.HelperReady)
+        vm(r, prefs = prefs)
+        settle()
+        assertEquals(1, prefs.refusedClears)
+        assertEquals(0, r.ensureCalls)
+    }
+
+    @Test fun checkAgainClearsRefusal() = runSetup {
+        val prefs = FakePrefs(true)
+        val v = vm(FakeReadier(needsStart), prefs = prefs)
+        v.start(); settle()
+        assertEquals(1, prefs.refusedClears)
+        v.checkAgain(); settle()
+        assertEquals(2, prefs.refusedClears)
     }
 
     // --- retry loop ---
