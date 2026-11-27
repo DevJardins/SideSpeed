@@ -37,7 +37,12 @@ class AndroidInstallSource(
     private var staged: File? = null
     private var zip: ZipFile? = null
     private var stageFailed = false
-    private var closed = false
+
+    /** Set by [close] before it takes the lock, so a copy in progress stops at its next read. */
+    @Volatile private var closed = false
+
+    /** The picker stream a copy is reading, so [close] can unblock a read that is waiting on the provider. */
+    @Volatile private var stagingInput: InputStream? = null
 
     @Synchronized
     override fun openStream(): InputStream = staged?.inputStream() ?: opener()
@@ -51,10 +56,11 @@ class AndroidInstallSource(
         val file = File(dir, "${UUID.randomUUID()}.zip")
         return try {
             copyCapped(file)
+            if (closed) throw IOException("Closed while staging")
             staged = file
             ZipFile(file).also { zip = it }
         } catch (_: IOException) {
-            // Too big or unreadable: the caller falls back to the stream, which reports the real error.
+            // Too big, unreadable or cancelled: the caller falls back to the stream, which reports the real error.
             stageFailed = true
             file.delete()
             null
@@ -63,23 +69,37 @@ class AndroidInstallSource(
 
     private fun copyCapped(target: File) {
         opener().use { input ->
-            target.outputStream().use { out ->
-                val buf = ByteArray(64 * 1024)
-                var total = 0L
-                while (true) {
-                    val n = input.read(buf)
-                    if (n < 0) break
-                    total += n
-                    if (total > maxBytes) throw IOException("Install file is over the size limit")
-                    out.write(buf, 0, n)
+            stagingInput = input
+            try {
+                // Closed between the check above and taking the stream: stop before reading anything.
+                if (closed) throw IOException("Closed while staging")
+                target.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (!closed) {
+                        val n = input.read(buf)
+                        if (n < 0) return
+                        total += n
+                        if (total > maxBytes) throw IOException("Install file is over the size limit")
+                        out.write(buf, 0, n)
+                    }
+                    throw IOException("Closed while staging")
                 }
+            } finally {
+                stagingInput = null
             }
         }
     }
 
-    @Synchronized
     override fun close() {
+        // Before the lock: a bundle copy holds it, and this makes the copy stop and delete its partial file.
         closed = true
+        stagingInput?.let { runCatching { it.close() } }
+        closeLocked()
+    }
+
+    @Synchronized
+    private fun closeLocked() {
         runCatching { zip?.close() }
         zip = null
         staged?.let { runCatching { it.delete() } }

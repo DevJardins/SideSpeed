@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.view.View
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import io.github.devjardins.sidespeed.companion.resources.Res
 import io.github.devjardins.sidespeed.companion.resources.notif_install_committing
@@ -75,9 +76,54 @@ class InstallNotificationModel(private val throttleMs: Long = 250, private val c
     }
 }
 
+/**
+ * Who stops the foreground service. A service started with startForegroundService must call startForeground before
+ * it stops, or Android crashes the app, so the host never stops it from outside. When a transfer ends, [end] hands
+ * back the service only if it is already in the foreground (with the start id to stop); otherwise the pending start
+ * calls [foregrounded] after its startForeground, sees nothing running and stops itself. Every call is synchronized,
+ * so an end and a start racing on different threads always agree on which side stops the service.
+ */
+class ForegroundHandoff<S : Any> {
+    private var active = false
+    private var live: S? = null
+    private var liveStartId = 0
+
+    @Synchronized
+    fun begin() {
+        active = true
+    }
+
+    /** Called by the service right after startForeground. True to keep running; false means stop now. */
+    @Synchronized
+    fun foregrounded(service: S, startId: Int): Boolean {
+        live = service
+        liveStartId = startId
+        return active
+    }
+
+    /** Ends the transfer. Returns the foreground service and its start id for the host to stop, or null when none is up. */
+    @Synchronized
+    fun end(): Pair<S, Int>? {
+        active = false
+        val s = live ?: return null
+        live = null
+        return s to liveStartId
+    }
+
+    /** The service in the foreground while a transfer runs, for notification updates. */
+    @Synchronized
+    fun current(): S? = if (active) live else null
+
+    @Synchronized
+    fun destroyed(service: S) {
+        if (live === service) live = null
+    }
+}
+
 /** Shared between the host (called from the install's IO thread) and the service. */
 internal object InstallTransferState {
     val model = InstallNotificationModel { System.currentTimeMillis() }
+    val handoff = ForegroundHandoff<InstallTransferService>()
 }
 
 /**
@@ -89,11 +135,6 @@ class InstallTransferService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        instance = this
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ensureChannel()
         // Must be called promptly after startForegroundService: show a plain notice first, then the real text.
@@ -104,17 +145,22 @@ class InstallTransferService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, placeholder)
         }
-        if (first == null) {
-            // The install ended before the service came up.
-            stopSelf()
+        if (first == null || !InstallTransferState.handoff.foregrounded(this, startId)) {
+            // The install ended before the service came up: startForeground has run, so stopping is now safe.
+            stopFromHost(startId)
             return START_NOT_STICKY
         }
         refresh(first)
         return START_NOT_STICKY
     }
 
+    /** Leaves the foreground and stops, unless a newer start has arrived since [startId]. */
+    internal fun stopFromHost(startId: Int) {
+        if (stopSelfResult(startId)) ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+    }
+
     override fun onDestroy() {
-        if (instance === this) instance = null
+        InstallTransferState.handoff.destroyed(this)
         scope.cancel()
         super.onDestroy()
     }
@@ -157,29 +203,31 @@ class InstallTransferService : Service() {
     companion object {
         const val CHANNEL_ID = "installs"
         private const val NOTIFICATION_ID = 0x5D01
-
-        @Volatile
-        internal var instance: InstallTransferService? = null
     }
 }
 
 /** Bridges the view model's install progress to [InstallTransferService]. Safe to call from any thread. */
 class AndroidInstallTransferHost(private val context: Context) : InstallTransferHost {
     private val model = InstallTransferState.model
+    private val handoff = InstallTransferState.handoff
 
     override fun onStart(tvName: String, appName: String) {
         model.start(tvName, appName)
+        handoff.begin()
         // Refused when the app cannot start a foreground service right now; the install itself still runs.
         runCatching { ContextCompat.startForegroundService(context, Intent(context, InstallTransferService::class.java)) }
     }
 
     override fun onProgress(bytesSent: Long, totalBytes: Long, committing: Boolean) {
         val snapshot = model.progress(bytesSent, totalBytes, committing) ?: return
-        InstallTransferService.instance?.refresh(snapshot)
+        handoff.current()?.refresh(snapshot)
     }
 
     override fun onEnd() {
         model.end()
-        runCatching { context.stopService(Intent(context, InstallTransferService::class.java)) }
+        // Never stopService here: a service still starting would be stopped before startForeground and crash the
+        // app. Only a service already in the foreground is stopped, on the main thread; a pending one stops itself.
+        val (service, startId) = handoff.end() ?: return
+        ContextCompat.getMainExecutor(context).execute { service.stopFromHost(startId) }
     }
 }

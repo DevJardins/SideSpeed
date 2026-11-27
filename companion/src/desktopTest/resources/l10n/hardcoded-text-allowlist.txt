@@ -126,3 +126,9 @@ companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/andro
 companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionDownload.kt|"Location"
 companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"update"
 companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/update/CompanionUpdater.kt|"SideSpeed"
+
+# never user-visible: install staging folder name and IOException messages that only make staging fall back to the stream
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/AndroidInstallSource.kt|"install-staging"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/AndroidInstallSource.kt|"Closed while staging"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/AndroidInstallSource.kt|"Install file is over the size limit"
+companion-android/src/main/kotlin/io/github/devjardins/sidespeed/companion/android/AndroidInstallSource.kt|"Cannot open $uri"

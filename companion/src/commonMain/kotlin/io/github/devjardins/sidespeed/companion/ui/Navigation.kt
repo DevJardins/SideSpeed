@@ -110,7 +110,7 @@ fun CompanionApp(
     onPickInstallFile: (tvId: String) -> Unit = {},
     dropHighlightTvId: String? = null,
     dropHintVisible: Boolean = false,
-    onCardBoundsChanged: (tvId: String, rect: CardBounds?) -> Unit = { _, _ -> },
+    installDrop: InstallDropHook? = null,
 ) {
     val state by vm.state.collectAsState()
     var page by nav::page
@@ -183,7 +183,7 @@ fun CompanionApp(
                     onDismissInstallNotice = vm::dismissInstallNotice,
                     dropHighlightTvId = dropHighlightTvId,
                     dropHintVisible = dropHintVisible,
-                    onCardBoundsChanged = onCardBoundsChanged,
+                    installDrop = installDrop,
                 )
                 Screen.INSTALL -> state.install?.let {
                     InstallScreen(it, vm::setInstallKeepOptimized, vm::confirmInstall, vm::cancelInstall, vm::retryInstall)

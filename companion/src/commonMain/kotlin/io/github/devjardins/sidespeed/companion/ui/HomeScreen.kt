@@ -26,9 +26,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.resources.Res
@@ -59,8 +56,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
 
-/** A Home card's window bounds in pixels, so a platform can tell which card a dropped file landed on. */
-data class CardBounds(val leftPx: Float, val topPx: Float, val rightPx: Float, val bottomPx: Float, val density: Float)
+/**
+ * Lets a platform make Home accept dropped app files. Both calls are composable so the platform can remember
+ * its own drop handlers. Only cards that can take an install right now are given [card], and [home] gets the
+ * ids of those cards (empty while an install is running).
+ */
+interface InstallDropHook {
+    /** The drop target for one card that can take an install now. */
+    @Composable fun card(tvId: String): Modifier
+
+    /** The drop target for the rest of Home: a file dropped outside every card lands here. */
+    @Composable fun home(installableTvIds: Set<String>): Modifier
+}
 
 /** How long an install or optimize notice stays on a card. */
 private const val NOTICE_MS = 8_000L
@@ -91,7 +98,7 @@ fun HomeScreen(
     onDismissInstallNotice: (String) -> Unit = {},
     dropHighlightTvId: String? = null,
     dropHintVisible: Boolean = false,
-    onCardBoundsChanged: (tvId: String, rect: CardBounds?) -> Unit = { _, _ -> },
+    installDrop: InstallDropHook? = null,
 ) {
     DisposableEffect(Unit) {
         onVisibleChange(true)
@@ -120,7 +127,11 @@ fun HomeScreen(
         onAcknowledgeRestart()
     }
 
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // Cards that can take a dropped file right now: none while an install is already running.
+    val installableIds = if (state.install != null) emptySet()
+    else state.tvs.filter { TvCardAction.INSTALL in cardActions(it) }.mapTo(mutableSetOf()) { it.id }
+    val homeDrop = installDrop?.home(installableIds) ?: Modifier
+    Column(Modifier.fillMaxSize().then(homeDrop).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.savedByNewerVersion) {
             SsText(
                 Copy.OLDER_COPY.resolve(),
@@ -166,19 +177,14 @@ fun HomeScreen(
                 items(state.tvs, key = { it.id }) { tv ->
                     val restarting = restartingId == tv.id
                     val parked = tv.status == TvStatus.CHECK_FAILED
-                    val density = LocalDensity.current.density
-                    DisposableEffect(tv.id) { onDispose { onCardBoundsChanged(tv.id, null) } }
+                    val cardDrop = if (installDrop != null && tv.id in installableIds) installDrop.card(tv.id) else Modifier
                     val highlight = dropHighlightTvId == tv.id
                     state.installNotice[tv.id]?.let { notice ->
                         LaunchedEffect(notice) { delay(NOTICE_MS); onDismissInstallNotice(tv.id) }
                     }
                     SsReachCard(
                         cardGlow(tv.reach, tv.checkableHere, tv.attention, parked),
-                        Modifier
-                            .onGloballyPositioned {
-                                val r = it.boundsInWindow()
-                                onCardBoundsChanged(tv.id, CardBounds(r.left, r.top, r.right, r.bottom, density))
-                            }
+                        cardDrop
                             .then(if (highlight) Modifier.border(2.dp, Ss.accent, RoundedCornerShape(16.dp)) else Modifier),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -232,7 +238,7 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        if (highlight || dropHintVisible && TvCardAction.INSTALL in actions) {
+                        if (highlight || dropHintVisible && tv.id in installableIds) {
                             SsText(stringResource(Res.string.home_drop_on_card), Ss.caption.copy(color = if (highlight) Ss.accent else Ss.textSecondary))
                         }
                         state.installNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.okText)) }

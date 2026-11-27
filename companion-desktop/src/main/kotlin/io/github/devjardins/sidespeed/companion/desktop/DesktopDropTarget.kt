@@ -1,17 +1,25 @@
 package io.github.devjardins.sidespeed.companion.desktop
 
-import io.github.devjardins.sidespeed.companion.ui.CardBounds
-import java.awt.Component
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.awtTransferable
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import io.github.devjardins.sidespeed.companion.ui.InstallDropHook
 import java.awt.datatransfer.DataFlavor
-import java.awt.dnd.DnDConstants
-import java.awt.dnd.DropTarget
-import java.awt.dnd.DropTargetAdapter
-import java.awt.dnd.DropTargetDragEvent
-import java.awt.dnd.DropTargetDropEvent
-import java.awt.dnd.DropTargetEvent
 import java.io.File
 
-/** Where a dragged file would land. */
+/** Where a dropped file lands. */
 sealed interface DropHit {
     data class Tv(val tvId: String) : DropHit
 
@@ -19,86 +27,118 @@ sealed interface DropHit {
     data object Miss : DropHit
 }
 
-object DesktopDropHitTester {
+/** The pure decisions behind a drop, kept apart from Compose so they can be tested. */
+object DesktopDrop {
+    /** The one dropped file when it is a single app file SideSpeed can install; null for anything else. */
+    fun singleInstallFile(files: List<*>?): File? {
+        val file = files?.singleOrNull() as? File ?: return null
+        return file.takeIf { it.isFile && DesktopInstallPicker.isInstallFileName(it.name) }
+    }
+
     /**
-     * [xPt] and [yPt] are AWT logical points relative to the content area. Card bounds are physical pixels, so each
-     * card is divided by its own density first. A card that cannot take an install never matches. A point outside
-     * every such card still picks the TV when exactly one can take an install; with several it is a miss.
+     * The TV a drop goes to. [cardTvId] is the card under the pointer (null outside every card). A card that cannot
+     * take an install never matches. Outside the cards, the drop still picks the TV when exactly one can take an
+     * install; with several it is a miss.
      */
-    fun hitTest(xPt: Double, yPt: Double, cards: Map<String, CardBounds>, reachableTvIds: Set<String>): DropHit {
-        for ((id, b) in cards) {
-            if (id !in reachableTvIds || b.density <= 0f) continue
-            val left = b.leftPx / b.density
-            val right = b.rightPx / b.density
-            val top = b.topPx / b.density
-            val bottom = b.bottomPx / b.density
-            if (xPt >= left && xPt <= right && yPt >= top && yPt <= bottom) return DropHit.Tv(id)
-        }
-        return reachableTvIds.singleOrNull()?.let { DropHit.Tv(it) } ?: DropHit.Miss
+    fun target(cardTvId: String?, installableTvIds: Set<String>): DropHit {
+        if (cardTvId != null && cardTvId in installableTvIds) return DropHit.Tv(cardTvId)
+        return installableTvIds.singleOrNull()?.let { DropHit.Tv(it) } ?: DropHit.Miss
     }
 }
 
-/** Accepts one dragged file on [component] and tells the window which card it is over. Runs on the AWT thread. */
-class DesktopDropTarget(
-    private val component: Component,
-    private val cards: () -> Map<String, CardBounds>,
-    private val reachableTvIds: () -> Set<String>,
-    /** The card under the pointer (null when none) and whether the "drop on a card" hint should show. */
-    private val onHover: (tvId: String?, hint: Boolean) -> Unit,
-    private val onDropFile: (tvId: String, file: File) -> Unit,
-) {
-    private val target = object : DropTargetAdapter() {
-        override fun dragEnter(e: DropTargetDragEvent) = hover(e)
-        override fun dragOver(e: DropTargetDragEvent) = hover(e)
-        override fun dragExit(e: DropTargetEvent) = onHover(null, false)
+/**
+ * Makes Home accept dropped app files through Compose's own drop targets (Compose owns the window's AWT drop
+ * target, so a frame-level one never hears a drag). A card's target sits inside the Home target, and Compose hands
+ * a drag to the innermost target under the pointer, so the Home target only sees drags outside every card.
+ * All callbacks run on the UI thread.
+ */
+class DesktopInstallDrop(private val onDropFile: (tvId: String, file: File) -> Unit) : InstallDropHook {
+    /** The card the dragged file would land on, or null. */
+    var highlightTvId by mutableStateOf<String?>(null)
+        private set
 
-        override fun drop(e: DropTargetDropEvent) {
-            val file = if (e.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                e.acceptDrop(DnDConstants.ACTION_COPY)
-                droppedFile(e)
-            } else null
-            val hit = hit(e.location.x.toDouble(), e.location.y.toDouble())
-            if (file == null || hit !is DropHit.Tv) {
-                e.dropComplete(false)
-                // Keep the hint up: the file was refused because no single card was chosen.
-                onHover(null, file != null)
-                return
+    /** Whether the "drop on a card" hint shows: several TVs and the file is outside every card. */
+    var hintVisible by mutableStateOf(false)
+        private set
+
+    fun clear() {
+        highlightTvId = null
+        hintVisible = false
+    }
+
+    private fun show(hit: DropHit) {
+        when (hit) {
+            is DropHit.Tv -> { highlightTvId = hit.tvId; hintVisible = false }
+            DropHit.Miss -> { highlightTvId = null; hintVisible = true }
+        }
+    }
+
+    @Composable
+    override fun card(tvId: String): Modifier {
+        val target = remember(tvId) {
+            object : DragAndDropTarget {
+                override fun onStarted(event: DragAndDropEvent) = clear()
+                override fun onEntered(event: DragAndDropEvent) = show(DropHit.Tv(tvId))
+                override fun onExited(event: DragAndDropEvent) { if (highlightTvId == tvId) highlightTvId = null }
+                override fun onEnded(event: DragAndDropEvent) { if (highlightTvId == tvId) highlightTvId = null }
+                override fun onDrop(event: DragAndDropEvent): Boolean {
+                    clear()
+                    val file = droppedFile(event) ?: return false
+                    onDropFile(tvId, file)
+                    return true
+                }
             }
-            e.dropComplete(true)
-            onHover(null, false)
-            onDropFile(hit.tvId, file)
         }
+        return Modifier.dragAndDropTarget(shouldStartDragAndDrop = ::carriesFiles, target = target)
     }
 
-    fun attach() {
-        component.dropTarget = DropTarget(component, DnDConstants.ACTION_COPY, target, true)
-    }
-
-    fun detach() {
-        component.dropTarget = null
-    }
-
-    private fun hover(e: DropTargetDragEvent) {
-        if (!e.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-            e.rejectDrag()
-            return
+    @Composable
+    override fun home(installableTvIds: Set<String>): Modifier {
+        val installable by rememberUpdatedState(installableTvIds)
+        val target = remember {
+            object : DragAndDropTarget {
+                override fun onStarted(event: DragAndDropEvent) = clear()
+                override fun onEntered(event: DragAndDropEvent) = show(DesktopDrop.target(null, installable))
+                override fun onMoved(event: DragAndDropEvent) = show(DesktopDrop.target(null, installable))
+                // Leaving Home for a card, or leaving the window, takes the hint down with it.
+                override fun onExited(event: DragAndDropEvent) = clear()
+                override fun onDrop(event: DragAndDropEvent): Boolean {
+                    val file = droppedFile(event)
+                    val hit = DesktopDrop.target(null, installable)
+                    if (file == null || hit !is DropHit.Tv) {
+                        // A refused drop keeps the hint up when only the choice of TV was missing.
+                        highlightTvId = null
+                        hintVisible = file != null && hit == DropHit.Miss
+                        return false
+                    }
+                    clear()
+                    onDropFile(hit.tvId, file)
+                    return true
+                }
+            }
         }
-        e.acceptDrag(DnDConstants.ACTION_COPY)
-        when (val hit = hit(e.location.x.toDouble(), e.location.y.toDouble())) {
-            is DropHit.Tv -> onHover(hit.tvId, false)
-            DropHit.Miss -> onHover(null, true)
-        }
+        return Modifier
+            .dragAndDropTarget(shouldStartDragAndDrop = { installable.isNotEmpty() && carriesFiles(it) }, target = target)
+            // A left-over hint goes away on the next press anywhere on Home. The press is only watched, never used.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val e = awaitPointerEvent(PointerEventPass.Initial)
+                        if (e.type == PointerEventType.Press && hintVisible) hintVisible = false
+                    }
+                }
+            }
     }
 
-    private fun hit(x: Double, y: Double): DropHit {
-        // Card bounds are relative to the Compose content, which sits inside the window's frame insets.
-        val insets = (component as? java.awt.Container)?.insets
-        return DesktopDropHitTester.hitTest(x - (insets?.left ?: 0), y - (insets?.top ?: 0), cards(), reachableTvIds())
-    }
+    // awtTransferable is the desktop way to read what is being dragged in Compose 1.12.
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun carriesFiles(event: DragAndDropEvent): Boolean =
+        runCatching { event.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor) }.getOrDefault(false)
 
-    private fun droppedFile(e: DropTargetDropEvent): File? = try {
-        (e.transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
-            ?.firstOrNull { it is File && it.isFile } as File?
+    /** The file list is read only on drop: some systems refuse to hand it over while the drag is still moving. */
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun droppedFile(event: DragAndDropEvent): File? = try {
+        DesktopDrop.singleInstallFile(event.awtTransferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>)
     } catch (_: Exception) {
         null
     }
