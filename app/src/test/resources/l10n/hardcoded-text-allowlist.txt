@@ -19,3 +19,6 @@ update/UpdateDownload.kt|"Redirect without Location from $current"
 update/UpdateDownload.kt|"HTTP $code from $current"
 update/UpdateDownload.kt|"Too many redirects from $url"
 ui/tools/HealthCard.kt|"Android $androidVersion"
+
+# never user-visible: Binder SecurityException message for non-shell callers
+status/CompileStatusProvider.kt|"Shell only"
