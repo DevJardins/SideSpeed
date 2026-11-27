@@ -68,11 +68,17 @@ It is kept small on purpose.
 
 ### Updates
 
-- SideSpeed installs only updates of apps already installed. It never installs new apps.
-- Before any update is installed, `app/.../update/UpdateVerify.kt` checks, in order:
+- SideSpeed on the TV installs only updates of apps already installed.
+  Companion can also install a single `.apk` or a split bundle (`.apks`, `.xapk`, `.apkm`, `.zip`) onto any saved TV over ADB.
+- Before any TV-side update is installed, `app/.../update/UpdateVerify.kt` checks, in order:
   the checksum, the package name, the version,
   and that the signing keys are exactly the same as the installed app's.
   Any mismatch stops the update.
+- Companion installs inspect the file on the Companion device before anything is sent
+  (`companion/.../install/ApkInspector.kt`): ZIP magic `PK\x03\x04`, outer bundle max 1,024 entries and 512 `.apk` entries, `AndroidManifest.xml` max 4 MiB, total selected splits max 2 GiB, reject `Android/obb/` bundles, ignore `standalones/` when `splits/` exists, and validate the package name with `PackageNames.isValid`. Each inner APK's binary manifest is parsed locally.
+- Companion picks only the splits that match the TV's ABI, density and locale (`SplitSelector.kt`), assigns synthetic names `base.apk`, `split_1.apk`, …, and never uses names from the file.
+- Companion streams the chosen splits over a dedicated verified ADB session (`TvSessions.openForInstall`) with a 120 s command timeout, through the same Trusted Network, identity proof and TLS gates as every other TV call, via `package install-create -r -S <size>`, `package install-write -S <size> <sessionId> <synthetic> -`, and `package install-commit <sessionId>` built by fixed builders in `TvCommands.kt`. There is no `-d` downgrade flag, no `-t`, `-g` or `--user`. The TV package manager still refuses incompatible signatures or version downgrades.
+- If the app on the TV came from Google Play or Amazon Appstore, that store can still replace the version Companion installed later. Companion shows that before you confirm.
 - The helper caps installs at 64 MiB for SideSpeed itself and 200 MiB for other apps.
   It updates only installed sideloaded apps, never store or system apps.
 
@@ -80,6 +86,13 @@ It is kept small on purpose.
 
 The Companion keeps the helper running over ADB. ADB is powerful,
 so the Companion is careful about where it connects and to what.
+
+It can also install apps and trigger compiles over the same ADB link:
+
+- A fresh install or an update is inspected locally first, capped and validated as described in "Updates" above, then streamed with synthetic split names. The TV's package manager still enforces signatures and version ordering.
+- The TV is compiled next over `CompileStatusProvider.call()` (`app/.../status/CompileStatusProvider.kt`), which throws `SecurityException` unless `Binder.getCallingUid() == 2000` (the ADB shell user). That check is the very first statement of both `call()` and `dispatchCall()`, before any argument is read or state is touched. The shell command is the fixed `content call --uri content://io.github.devjardins.sidespeed.status/now --method compile_package --arg <pkg> --extra keep:b:<true|false>` or `--method optimize_now`, built by `TvCommands.kt`. An older TV without the provider reports `Unsupported` and the install still succeeds with a note to update SideSpeed on the TV. The `status` provider's `query` path is gated separately by `android.permission.DUMP`.
+- The `content call` path wakes a cold TV process via `RemoteCompileJob` (`JOB_ID_REMOTE_COMPILE = 4103`, `setOverrideDeadline(0)`) and is requested with priority `speed`.
+- Companion installs and `Optimize now` both open the TV through that dedicated verified session (`TvSessions.openForInstall`): same Trusted Network check, same `TvIdentity.prepare` proof, same TLS refusal (`TlsBoundSession.openPackageCmd` fails closed when `tlsNegotiated` is false) as the helper path.
 
 - It contacts TVs only at private addresses, or at overlay addresses
   (such as Tailscale) that are listed or typed in.
