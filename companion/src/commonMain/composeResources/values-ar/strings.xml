@@ -212,7 +212,7 @@
     <string name="update_install_failed_detail">فشل التثبيت. %1$s</string>
     <string name="update_install_timeout">لم يكتمل التثبيت. حاول مرة أخرى</string>
     <string name="update_cancelled">تم إلغاء التحديث</string>
-    <string name="about_licence_text">SideSpeed Companion · GPL-3.0 تم استنساخ أو تعديل روبوت أندرويد (Android robot) استناداً إلى عمل أنشأته وشاركتْه شركة جوجل، ويُستخدم وفقاً للشروط الموضحة في رخصة "المشاع الإبداعي: النسبة - 3.0" (Creative Commons 3.0 Attribution License).</string>
+    <string name="about_licence_text">SideSpeed Companion · GPL-3.0 تم استنساخ أو تعديل روبوت أندرويد (Android robot) استناداً إلى عمل أنشأته وشاركته Google، ويُستخدم وفقاً للشروط الموضحة في رخصة المشاع الإبداعي: النسبة - 3.0 (Creative Commons 3.0 Attribution License).</string>
     <string name="notif_restarted">تمت إعادة تشغيل SideSpeed على %1$s</string>
     <string name="tray_open">افتح SideSpeed Companion</string>
 </resources>
