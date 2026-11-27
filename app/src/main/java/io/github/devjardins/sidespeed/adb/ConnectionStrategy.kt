@@ -70,24 +70,35 @@ class ConnectionStrategy(
     private val isFireOs: Boolean,
     private val pkg: String,
     private val timeoutMs: Long = 30_000,
+    private val buildFingerprint: String,
+    private val fireOsTimeoutMs: Long = 10_000,
 ) {
     /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
     suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness {
         val ping = helper.ping()
         if (ping != null) {
-            return if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
+            if (!ping.isCurrent(expectedApk)) return Readiness.HelperNeedsRestart
+            prefs.setOnBoxAdbRefusedBuild(null)
+            return Readiness.HelperReady
         }
-        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        if (prefs.onBoxAdbRefusedBuild.first() == buildFingerprint) return refusedNow()
         return connectAndLaunch(killFirst = false, onLaunch)
     }
 
-    /** Google TV only: kills the stale helper over own-ADB, then relaunches it. */
+    /** Kills the stale helper over own-ADB, then relaunches it. Skipped while this OS build refuses on-box ADB. */
     suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness {
-        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        if (prefs.onBoxAdbRefusedBuild.first() == buildFingerprint) return refusedNow()
         return connectAndLaunch(killFirst = true, onLaunch)
     }
 
+    /** The cached refusal: no new attempt, straight to the PC instructions. */
+    private fun refusedNow() =
+        Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_on_box_refused), StartCause.REFUSED)
+
     private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
+        // Wireless debugging shows an Allow prompt that hangs the connect; Fire OS has no such prompt,
+        // so a hang there is a refusal too, on a shorter timeout.
+        val connectTimeoutMs = if (isFireOs) fireOsTimeoutMs else timeoutMs
         val targets = buildList {
             add(AdbTarget.Classic())
             if (prefs.pairedTls.first()) add(AdbTarget.WirelessTls)
@@ -96,18 +107,24 @@ class ConnectionStrategy(
         var classicRefused = false
         for (t in targets) {
             val r = try {
-                withTimeout(timeoutMs) { adb.connect(t) }
+                withTimeout(connectTimeoutMs) { adb.connect(t) }
             } catch (e: TimeoutCancellationException) {
-                return Readiness.WaitingForAllowPrompt
+                if (!isFireOs) return Readiness.WaitingForAllowPrompt
+                prefs.setOnBoxAdbRefusedBuild(buildFingerprint)
+                return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_on_box_refused), StartCause.OTHER)
             }
             if (r.isSuccess) { connected = true; break }
             if (t is AdbTarget.Classic && isRefusal(r.exceptionOrNull())) classicRefused = true
         }
         if (!connected) {
-            return Readiness.NeedsHelperStart(
-                UiText.Res(R.string.setup_reason_adb_unreachable),
-                if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
-            )
+            if (!classicRefused) {
+                return Readiness.NeedsHelperStart(
+                    UiText.Res(R.string.setup_reason_adb_unreachable),
+                    StartCause.OTHER,
+                )
+            }
+            prefs.setOnBoxAdbRefusedBuild(buildFingerprint)
+            return refusedNow()
         }
         onLaunch()
 
@@ -126,7 +143,10 @@ class ConnectionStrategy(
         }
         var waited = 0L
         while (true) {
-            if (helper.ping()?.isCurrent(expectedApk) == true) return Readiness.HelperReady
+            if (helper.ping()?.isCurrent(expectedApk) == true) {
+                prefs.setOnBoxAdbRefusedBuild(null)
+                return Readiness.HelperReady
+            }
             if (waited >= POLL_TOTAL_MS) break
             delay(POLL_INTERVAL_MS)
             waited += POLL_INTERVAL_MS

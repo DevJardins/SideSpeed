@@ -23,13 +23,16 @@ import kotlin.time.Duration.Companion.seconds
 class ConnectionStrategyTest {
     private val apk = "/data/app/x/base.apk"
 
-    private class FakePrefs(tls: Boolean = false) : Prefs {
+    private class FakePrefs(tls: Boolean = false, refused: String? = null) : Prefs {
         val tlsState = MutableStateFlow(tls)
         val ack = MutableStateFlow(true)
+        val refusedBuild = MutableStateFlow(refused)
         override val lanWarningAcked: Flow<Boolean> = ack
         override suspend fun setLanWarningAcked(v: Boolean) { ack.value = v }
         override val pairedTls: Flow<Boolean> = tlsState
         override suspend fun setPairedTls(v: Boolean) { tlsState.value = v }
+        override val onBoxAdbRefusedBuild: Flow<String?> = refusedBuild
+        override suspend fun setOnBoxAdbRefusedBuild(v: String?) { refusedBuild.value = v }
         override fun lastCompile(pkg: String): Flow<LastCompile?> = MutableStateFlow(null)
         override suspend fun setLastCompile(pkg: String, value: LastCompile) {}
         override fun lastCompiles(): Flow<Map<String, LastCompile>> = MutableStateFlow(emptyMap())
@@ -43,8 +46,11 @@ class ConnectionStrategyTest {
         timeoutMs: Long = 30_000,
         tls: Boolean = false,
         pkg: String = SideSpeedPackages.RELEASE,
+        prefs: FakePrefs? = null,
+        fingerprint: String = "build-1",
+        fireOsTimeoutMs: Long = 10_000,
         probe: HelperProbe,
-    ) = ConnectionStrategy(probe, adb, FakePrefs(tls), apk, fire, pkg, timeoutMs)
+    ) = ConnectionStrategy(probe, adb, prefs ?: FakePrefs(tls), apk, fire, pkg, timeoutMs, fingerprint, fireOsTimeoutMs)
 
     @Test fun liveMatchingHelperIsReadyWithoutAdb() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
@@ -61,12 +67,81 @@ class ConnectionStrategyTest {
         assertTrue(adb.connectAttempts.isEmpty())
     }
 
-    @Test fun fireOsNeverTriesAdb() = runTest(timeout = 10.seconds) {
+    @Test fun fireOsTriesOnBoxAdb() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
-        val r = strategy(adb, fire = true) { null }.ensureReady()
-        assertTrue(r is Readiness.NeedsHelperStart)
-        assertEquals("Fire OS blocks on-box ADB", (r as Readiness.NeedsHelperStart).reason.english())
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
+        var pings = 0
+        val r = strategy(adb, fire = true) {
+            if (adb.commands.isNotEmpty() && ++pings >= 2) HelperPing(1, apk) else null
+        }.ensureReady()
+        assertEquals(Readiness.HelperReady, r)
+        assertEquals(listOf(HelperLaunch.command(SideSpeedPackages.RELEASE)), adb.commands)
+    }
+
+    @Test fun refusalCachesBuild() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = ConnectException("refused") }
+        val prefs = FakePrefs()
+        val r = strategy(adb, fire = true, prefs = prefs) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals("This TV didn't allow ADB from SideSpeed", r.reason.english())
+        assertEquals(StartCause.REFUSED, r.cause)
+        assertEquals("build-1", prefs.refusedBuild.value)
+        val attempts = adb.connectAttempts.size
+        strategy(adb, fire = true, prefs = prefs) { null }.ensureReady()
+        assertEquals(attempts, adb.connectAttempts.size)
+    }
+
+    @Test fun otherBuildTriesAgain() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { failConnect = ConnectException("refused") }
+        val prefs = FakePrefs(refused = "old")
+        strategy(adb, prefs = prefs, fingerprint = "new") { null }.ensureReady()
+        assertEquals(listOf<AdbTarget>(AdbTarget.Classic()), adb.connectAttempts)
+        assertEquals("new", prefs.refusedBuild.value)
+    }
+
+    @Test fun successClearsCache() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        val prefs = FakePrefs(refused = "build-1")
+        val r = strategy(adb, prefs = prefs) { HelperPing(1, apk) }.ensureReady()
+        assertEquals(Readiness.HelperReady, r)
+        assertEquals(null, prefs.refusedBuild.value)
         assertTrue(adb.connectAttempts.isEmpty())
+    }
+
+    @Test fun fireOsTimeoutCaches() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { hangConnect = true }
+        val prefs = FakePrefs()
+        val r = strategy(adb, fire = true, prefs = prefs, fireOsTimeoutMs = 1_000) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals("This TV didn't allow ADB from SideSpeed", r.reason.english())
+        assertEquals(StartCause.OTHER, r.cause)
+        assertEquals("build-1", prefs.refusedBuild.value)
+        assertEquals(1_000L, testScheduler.currentTime)
+    }
+
+    @Test fun googleTvTimeoutStillWaits() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { hangConnect = true }
+        val prefs = FakePrefs()
+        val r = strategy(adb, prefs = prefs, timeoutMs = 1_000) { null }.ensureReady()
+        assertEquals(Readiness.WaitingForAllowPrompt, r)
+        assertEquals(null, prefs.refusedBuild.value)
+    }
+
+    @Test fun fireOsRestartKillsAndRelaunchesWhenNotCached() = runTest(timeout = 20.seconds) {
+        val adb = FakeAdbBackend()
+        var launched = false
+        val s = strategy(adb, fire = true) { if (launched) HelperPing(1, apk) else HelperPing(1, "/old") }
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { launched = true; emptyList<String>() to 0 }
+        val r = s.restartHelper()
+        assertEquals(Readiness.HelperReady, r)
+        assertEquals(listOf(HelperLaunch.killCommand(SideSpeedPackages.RELEASE), HelperLaunch.command(SideSpeedPackages.RELEASE)), adb.commands)
+    }
+
+    @Test fun cachedBuildSkipsRestart() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend()
+        val prefs = FakePrefs(refused = "build-1")
+        val r = strategy(adb, fire = true, prefs = prefs) { HelperPing(1, "/old") }.restartHelper() as Readiness.NeedsHelperStart
+        assertEquals(StartCause.REFUSED, r.cause)
+        assertTrue(adb.connectAttempts.isEmpty())
+        assertTrue(adb.commands.isEmpty())
     }
 
     @Test fun classicConnectLaunchesHelper() = runTest(timeout = 10.seconds) {
@@ -103,9 +178,11 @@ class ConnectionStrategyTest {
 
     @Test fun closedPortIsReportedAsRefused() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend().apply { failConnect = ConnectException("Connection refused") }
-        val r = strategy(adb) { null }.ensureReady()
-        assertEquals("ADB not reachable", (r as Readiness.NeedsHelperStart).reason.english())
+        val prefs = FakePrefs()
+        val r = strategy(adb, prefs = prefs) { null }.ensureReady()
+        assertEquals("This TV didn't allow ADB from SideSpeed", (r as Readiness.NeedsHelperStart).reason.english())
         assertEquals(StartCause.REFUSED, r.cause)
+        assertEquals("build-1", prefs.refusedBuild.value)
     }
 
     @Test fun wrappedConnectExceptionIsRefused() = runTest(timeout = 10.seconds) {

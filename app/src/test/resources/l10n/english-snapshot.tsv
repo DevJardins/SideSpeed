@@ -227,8 +227,8 @@ setup_pc_fire_os_intro	From a PC on the same network, run:
 setup_pc_google_tv_intro	From a PC on the same network, using the addresses shown under Wireless debugging:
 setup_pc_or_shell_paste	Or type adb shell, then paste:
 setup_reason_adb_unreachable	ADB not reachable
-setup_reason_fire_os	Fire OS blocks on-box ADB
 setup_reason_helper_not_started	Helper did not start
+setup_reason_on_box_refused	This TV didn\\'t allow ADB from SideSpeed
 setup_refused_hint	Your TV doesn\\'t accept direct connections. Pair with a code instead.
 setup_status_helper_outdated	Last check: the helper is out of date
 setup_status_last_check	Last check: %1$s

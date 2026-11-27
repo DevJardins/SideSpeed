@@ -353,6 +353,7 @@ class AppContainer(context: Context) {
         expectedApk = appContext.applicationInfo.sourceDir,
         isFireOs = isFireOs,
         pkg = ownPackage,
+        buildFingerprint = Build.FINGERPRINT,
     )
 
     /** This TV's own showable addresses (LAN first, then Tailscale), or empty when unknown. */
