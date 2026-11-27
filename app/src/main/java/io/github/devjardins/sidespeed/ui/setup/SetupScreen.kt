@@ -46,6 +46,7 @@ import io.github.devjardins.sidespeed.adb.PcStartCommands
 import io.github.devjardins.sidespeed.adb.Readiness
 import io.github.devjardins.sidespeed.adb.pcStartCommands
 import io.github.devjardins.sidespeed.helper.HelperLaunch
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.ui.text.UiText
 import io.github.devjardins.sidespeed.ui.text.resolve
 import io.github.devjardins.sidespeed.ui.text.uiText
@@ -273,7 +274,7 @@ private fun PairingContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
                 stringResource(R.string.setup_pc_google_tv_intro),
                 style = SsType.Caption, color = SsColors.TextSecondary,
             )
-            val cmds = pcStartCommands(DeviceKind.GOOGLE_TV, vm.wifiIp(), HelperLaunch.command(), killFirst = false)
+            val cmds = pcStartCommands(DeviceKind.GOOGLE_TV, vm.wifiIp(), HelperLaunch.command(SideSpeedPackages.RELEASE), killFirst = false)
             Commands(cmds.connect)
             Text(stringResource(R.string.setup_pc_enter_code_note), style = SsType.Caption, color = SsColors.TextSecondary)
             Commands(cmds.run)
@@ -288,7 +289,7 @@ private fun FireOsContent(vm: SetupViewModel, s: SetupUiState.Connecting) {
     val settingsFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { settingsFocus.requestFocus() } }
     val stale = s.readiness == Readiness.HelperNeedsRestart
-    val cmds = pcStartCommands(DeviceKind.FIRE_OS, vm.wifiIp(), HelperLaunch.command(), killFirst = stale)
+    val cmds = pcStartCommands(DeviceKind.FIRE_OS, vm.wifiIp(), HelperLaunch.command(SideSpeedPackages.RELEASE), killFirst = stale)
     var showOther by remember { mutableStateOf(false) }
 
     Header(stringResource(R.string.setup_fire_os_subtitle), s.readiness)

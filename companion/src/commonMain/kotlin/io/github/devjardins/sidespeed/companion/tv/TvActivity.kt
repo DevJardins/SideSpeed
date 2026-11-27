@@ -6,9 +6,10 @@ import io.github.devjardins.sidespeed.companion.resources.activity_last_hour_ago
 import io.github.devjardins.sidespeed.companion.resources.activity_last_just_now
 import io.github.devjardins.sidespeed.companion.resources.activity_last_min_ago
 import io.github.devjardins.sidespeed.companion.ui.text.UiText
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 
 /** SideSpeed's own package on the TV: its self-compile shows up as a normal compiling row. */
-const val SIDESPEED_PACKAGE = "io.github.devjardins.sidespeed"
+const val SIDESPEED_PACKAGE = SideSpeedPackages.RELEASE
 
 /** What the Activity block on a TV card shows. */
 enum class ActivityPhase { COMPILING, IDLE, INTERRUPTED, WAITING_HELPER, UNAVAILABLE, NEEDS_UPDATE }

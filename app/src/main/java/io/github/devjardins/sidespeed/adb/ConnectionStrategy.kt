@@ -4,6 +4,7 @@ import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -55,7 +56,7 @@ fun pcStartCommands(kind: DeviceKind, wifiIp: String?, launch: String, killFirst
         DeviceKind.GOOGLE_TV -> listOf("adb pair $ip:<pairing port>", "adb connect $ip:<port>")
     }
     val raw = buildList {
-        if (killFirst) add(HelperLaunch.KILL_COMMAND)
+        if (killFirst) add(HelperLaunch.killCommand(SideSpeedPackages.RELEASE))
         add(launch)
     }
     return PcStartCommands(connect, raw.map { "adb shell '$it'" }, raw)
@@ -111,10 +112,10 @@ class ConnectionStrategy(
 
         try {
             if (killFirst) {
-                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.KILL_COMMAND).collect { } }
+                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.killCommand(SideSpeedPackages.RELEASE)).collect { } }
                 delay(KILL_SETTLE_MS)
             }
-            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command()).collect { } }
+            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command(SideSpeedPackages.RELEASE)).collect { } }
         } catch (e: TimeoutCancellationException) {
             return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
         } catch (e: CancellationException) {

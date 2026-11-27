@@ -10,10 +10,15 @@ package io.github.devjardins.sidespeed.helper
  */
 object HelperLaunch {
     /** Stops a running helper (matched by its process name). */
-    const val KILL_COMMAND = "kill \$(pidof sidespeed_helper)"
+    fun killCommand(pkg: String): String {
+        val paths = HelperPaths.of(pkg)
+        return "kill \$(pidof ${paths.processName})"
+    }
 
-    fun command(): String =
-        "trap \"\" HUP; P=\$(pm path io.github.devjardins.sidespeed | cut -d: -f2); " +
-            "CLASSPATH=\$P setsid nohup app_process /system/bin --nice-name=sidespeed_helper " +
-            "io.github.devjardins.sidespeed.helper.HelperMain --apk=\$P </dev/null >/dev/null 2>&1 &"
+    fun command(pkg: String): String {
+        val paths = HelperPaths.of(pkg)
+        return "trap \"\" HUP; P=\$(pm path $pkg | cut -d: -f2); " +
+            "CLASSPATH=\$P setsid nohup app_process /system/bin --nice-name=${paths.processName} " +
+            "io.github.devjardins.sidespeed.helper.HelperMain --apk=\$P --pkg=$pkg </dev/null >/dev/null 2>&1 &"
+    }
 }

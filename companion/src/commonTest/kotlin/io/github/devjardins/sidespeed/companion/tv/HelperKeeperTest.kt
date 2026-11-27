@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.companion.tv
 
 import io.github.devjardins.sidespeed.helper.HelperLaunch
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -167,7 +168,7 @@ class HelperKeeperTest {
         assertEquals("kill \$(pidof sidespeed_helper)", TvCommands.KILL)
         assertEquals("grep \"\\[pid 123\\] startup: uid\" /data/local/tmp/sidespeed_helper.log", TvCommands.startupLine(123))
         assertEquals("cat /proc/123/cmdline", TvCommands.cmdline(123))
-        assertEquals(HelperLaunch.command(), TvCommands.LAUNCH)
+        assertEquals(HelperLaunch.command(SideSpeedPackages.RELEASE), TvCommands.LAUNCH)
         assertEquals("getprop ro.product.manufacturer", TvCommands.MANUFACTURER)
         assertEquals("getprop ro.product.model", TvCommands.MODEL)
         assertEquals("getprop ro.build.version.name", TvCommands.OS_VERSION)

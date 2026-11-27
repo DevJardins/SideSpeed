@@ -5,6 +5,7 @@ import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.data.SelfCompile
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -69,13 +70,13 @@ class ConnectionStrategyTest {
 
     @Test fun classicConnectLaunchesHelper() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
-        adb.on(HelperLaunch.command()) { emptyList<String>() to 0 }
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
         var pings = 0
         val r = strategy(adb) { if (adb.commands.isNotEmpty() && ++pings >= 2) HelperPing(1, apk) else null }
             .ensureReady()
         assertEquals(Readiness.HelperReady, r)
         assertEquals(listOf<AdbTarget>(AdbTarget.Classic()), adb.connectAttempts)
-        assertEquals(listOf(HelperLaunch.command()), adb.commands)
+        assertEquals(listOf(HelperLaunch.command(SideSpeedPackages.RELEASE)), adb.commands)
     }
 
     @Test fun helperThatNeverStartsReportsNotStarted() = runTest(timeout = 20.seconds) {
@@ -123,7 +124,7 @@ class ConnectionStrategyTest {
 
     @Test fun onLaunchFiresAfterConnectBeforeLaunchCommand() = runTest(timeout = 10.seconds) {
         val adb = FakeAdbBackend()
-        adb.on(HelperLaunch.command()) { emptyList<String>() to 0 }
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
         var commandsAtLaunch: Int? = null
         strategy(adb) { if (adb.commands.isNotEmpty()) HelperPing(1, apk) else null }
             .ensureReady(onLaunch = { commandsAtLaunch = adb.commands.size })
@@ -149,28 +150,28 @@ class ConnectionStrategyTest {
         val adb = FakeAdbBackend()
         var launched = false
         val s = strategy(adb) { if (launched) HelperPing(1, apk) else HelperPing(1, "/old") }
-        adb.on(HelperLaunch.command()) { launched = true; emptyList<String>() to 0 }
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { launched = true; emptyList<String>() to 0 }
         val r = s.restartHelper()
         assertEquals(Readiness.HelperReady, r)
-        assertEquals(listOf(HelperLaunch.KILL_COMMAND, HelperLaunch.command()), adb.commands)
+        assertEquals(listOf(HelperLaunch.killCommand(SideSpeedPackages.RELEASE), HelperLaunch.command(SideSpeedPackages.RELEASE)), adb.commands)
     }
 
     @Test fun stalledLaunchStreamTimesOut() = runTest(timeout = 20.seconds) {
-        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.command() }
+        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.command(SideSpeedPackages.RELEASE) }
         val r = strategy(adb) { null }.ensureReady()
         assertEquals("Helper did not start", (r as Readiness.NeedsHelperStart).reason.english())
         assertEquals(ConnectionStrategy.SHELL_TIMEOUT_MS, testScheduler.currentTime)
     }
 
     @Test fun stalledKillTimesOutOnRestart() = runTest(timeout = 20.seconds) {
-        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.KILL_COMMAND }
+        val adb = FakeAdbBackend().apply { hangShellFor += HelperLaunch.killCommand(SideSpeedPackages.RELEASE) }
         val r = strategy(adb) { HelperPing(1, "/old") }.restartHelper()
         assertEquals("Helper did not start", (r as Readiness.NeedsHelperStart).reason.english())
-        assertEquals(listOf(HelperLaunch.KILL_COMMAND), adb.commands)
+        assertEquals(listOf(HelperLaunch.killCommand(SideSpeedPackages.RELEASE)), adb.commands)
     }
 
     @Test fun fireOsPcCommandsUseClassicAdb() {
-        val launch = HelperLaunch.command()
+        val launch = HelperLaunch.command(SideSpeedPackages.RELEASE)
         assertFalse(launch.contains("'"))
         val c = pcStartCommands(DeviceKind.FIRE_OS, "192.168.1.20", launch, killFirst = false)
         assertEquals(listOf("adb connect 192.168.1.20:5555"), c.connect)
@@ -179,15 +180,15 @@ class ConnectionStrategyTest {
     }
 
     @Test fun killFirstPrecedesLaunch() {
-        val launch = HelperLaunch.command()
+        val launch = HelperLaunch.command(SideSpeedPackages.RELEASE)
         val c = pcStartCommands(DeviceKind.FIRE_OS, null, launch, killFirst = true)
         assertEquals(listOf("adb connect <tv-ip>:5555"), c.connect)
-        assertEquals(listOf("adb shell '${HelperLaunch.KILL_COMMAND}'", "adb shell '$launch'"), c.run)
-        assertEquals(listOf(HelperLaunch.KILL_COMMAND, launch), c.shellPaste)
+        assertEquals(listOf("adb shell '${HelperLaunch.killCommand(SideSpeedPackages.RELEASE)}'", "adb shell '$launch'"), c.run)
+        assertEquals(listOf(HelperLaunch.killCommand(SideSpeedPackages.RELEASE), launch), c.shellPaste)
     }
 
     @Test fun googleTvPcCommandsUseWirelessDebuggingPorts() {
-        val launch = HelperLaunch.command()
+        val launch = HelperLaunch.command(SideSpeedPackages.RELEASE)
         val c = pcStartCommands(DeviceKind.GOOGLE_TV, "192.168.1.30", launch, killFirst = false)
         assertEquals(
             listOf("adb pair 192.168.1.30:<pairing port>", "adb connect 192.168.1.30:<port>"),
