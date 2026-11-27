@@ -212,4 +212,55 @@ class ToolsCommandsTest {
         }
         assertTrue(commands.forceStop("com.x.y") is ToolResult.Failed)
     }
+
+    @Test fun rebootRecoveryCommandsSendExactForms() = runTest {
+        val (fake, commands) = commands()
+        fake.on("grant-reboot-recovery") { emptyList<String>() to 0 }
+        fake.on("revoke-secure-settings") { emptyList<String>() to 0 }
+        fake.on("revoke-reboot-recovery") { emptyList<String>() to 0 }
+        fake.on("adb-trusted-networks") {
+            listOf(
+                "02:15:B2:00:00:01",
+                "02:00:00:00:00:00",
+                "not-a-mac",
+                "aa:bb:cc:dd:ee:ff",
+            ) to 0
+        }
+        assertEquals(ToolResult.Ok(Unit), commands.grantRebootRecovery())
+        assertEquals(ToolResult.Ok(Unit), commands.revokeSecureSettings())
+        assertEquals(ToolResult.Ok(Unit), commands.revokeRebootRecovery())
+        assertEquals(
+            ToolResult.Ok(listOf("02:15:b2:00:00:01", "aa:bb:cc:dd:ee:ff")),
+            commands.adbTrustedNetworks(),
+        )
+        assertEquals(
+            listOf(
+                "grant-reboot-recovery",
+                "revoke-secure-settings",
+                "revoke-reboot-recovery",
+                "adb-trusted-networks",
+            ),
+            fake.commands,
+        )
+    }
+
+    @Test fun rebootRecoveryCommandsHandleHelperDownAndRefused() = runTest {
+        val (downFake, downCommands) = commands(helperUp = false)
+        assertEquals(ToolResult.HelperDown, downCommands.grantRebootRecovery())
+        assertEquals(ToolResult.HelperDown, downCommands.revokeSecureSettings())
+        assertEquals(ToolResult.HelperDown, downCommands.revokeRebootRecovery())
+        assertEquals(ToolResult.HelperDown, downCommands.adbTrustedNetworks())
+        assertTrue(downFake.commands.isEmpty())
+
+        val (_, refusedCommands) = commands().also { (fake, _) ->
+            fake.on("grant-reboot-recovery") { listOf("error: request not allowed") to 126 }
+            fake.on("revoke-secure-settings") { listOf("error: request not allowed") to 126 }
+            fake.on("revoke-reboot-recovery") { listOf("error: request not allowed") to 126 }
+            fake.on("adb-trusted-networks") { listOf("error: request not allowed") to 126 }
+        }
+        assertEquals(ToolResult.Refused, refusedCommands.grantRebootRecovery())
+        assertEquals(ToolResult.Refused, refusedCommands.revokeSecureSettings())
+        assertEquals(ToolResult.Refused, refusedCommands.revokeRebootRecovery())
+        assertEquals(ToolResult.Refused, refusedCommands.adbTrustedNetworks())
+    }
 }

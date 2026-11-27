@@ -4,7 +4,9 @@ import io.github.devjardins.sidespeed.adb.AdbConnectionLost
 import io.github.devjardins.sidespeed.adb.CommandRunner
 import io.github.devjardins.sidespeed.adb.ShellEvent
 import io.github.devjardins.sidespeed.compile.PackageName
+import io.github.devjardins.sidespeed.helper.CommandAllowlist
 import io.github.devjardins.sidespeed.helper.HelperProtocol
+import io.github.devjardins.sidespeed.helper.TrustedBssids
 
 sealed interface ToolResult<out T> {
     data class Ok<T>(val value: T) : ToolResult<T>
@@ -30,7 +32,7 @@ enum class AnimationKey(val key: String) {
 class ToolsCommands(
     private val runner: CommandRunner,
     private val helperUp: suspend () -> Boolean,
-) : HomeCommands, ExtrasDisableCommands {
+) : HomeCommands, ExtrasDisableCommands, RebootRecoveryCommands {
     suspend fun trimCaches(targetFreeBytes: Long): ToolResult<Unit> =
         run("pm trim-caches $targetFreeBytes").map { }
 
@@ -88,6 +90,20 @@ class ToolsCommands(
             lines.mapNotNull { line ->
                 line.trim().removePrefix("package:").takeIf { it != line.trim() && it.isNotEmpty() }
             }.toSet()
+        }
+
+    override suspend fun grantRebootRecovery(): ToolResult<Unit> =
+        run(CommandAllowlist.GRANT_REBOOT_RECOVERY).map { }
+
+    override suspend fun revokeSecureSettings(): ToolResult<Unit> =
+        run(CommandAllowlist.REVOKE_SECURE_SETTINGS).map { }
+
+    override suspend fun revokeRebootRecovery(): ToolResult<Unit> =
+        run(CommandAllowlist.REVOKE_REBOOT_RECOVERY).map { }
+
+    override suspend fun adbTrustedNetworks(): ToolResult<List<String>> =
+        run(CommandAllowlist.ADB_TRUSTED_NETWORKS).map { lines ->
+            lines.mapNotNull { TrustedBssids.normalizeBssid(it.trim()) }
         }
 
     private fun <T, R> ToolResult<T>.map(f: (T) -> R): ToolResult<R> = when (this) {

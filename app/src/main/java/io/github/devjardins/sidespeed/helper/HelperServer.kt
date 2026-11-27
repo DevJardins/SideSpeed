@@ -58,6 +58,11 @@ internal class HelperServer(
      * `install-update` is read; false refuses the request.
      */
     private val packageCheck: (String) -> Boolean = { false },
+    /**
+     * Captures `/system/bin/dumpsys adb` inside the helper for `adb-trusted-networks`.
+     * Raw output never leaves the helper; only [TrustedBssids.parse] MAC lines are emitted.
+     */
+    private val adbDump: () -> Pair<Int, ByteArray> = { HelperProtocol.EXIT_HELPER_ERROR to ByteArray(0) },
 ) {
     init {
         require(selfPkg in SideSpeedPackages.ALL) { "unknown SideSpeed package: $selfPkg" }
@@ -159,6 +164,18 @@ internal class HelperServer(
             handleInstallUpdate(socket, uid, out, update.first, update.second)
             return
         }
+        if (CommandAllowlist.isGrantRebootRecovery(request)) {
+            handleGrantRebootRecovery(uid, out)
+            return
+        }
+        if (CommandAllowlist.isRevokeRebootRecovery(request)) {
+            handleRevokeRebootRecovery(uid, out)
+            return
+        }
+        if (CommandAllowlist.isAdbTrustedNetworks(request)) {
+            handleAdbTrustedNetworks(uid, out)
+            return
+        }
         val argv = CommandAllowlist.toArgv(request, selfPkg)
         if (argv == null) {
             log("REFUSED request from uid=$uid: '${HelperLog.sanitize(request)}'")
@@ -209,6 +226,86 @@ internal class HelperServer(
             socket, uid, out,
             CommandAllowlist.installUpdateArgv(pkg, size), size, "install-update pkg=$pkg", false,
         )
+    }
+
+    /**
+     * Grants reboot-recovery permissions in order (`WRITE_SECURE_SETTINGS` last). On any failure,
+     * rolls back all four permissions in reverse order (`WRITE_SECURE_SETTINGS` first).
+     */
+    private fun handleGrantRebootRecovery(uid: Int, out: Out) {
+        log("uid=$uid run grant-reboot-recovery")
+        val start = System.currentTimeMillis()
+        var failureExit: Int? = null
+        for (argv in CommandAllowlist.grantRebootRecoveryArgvs(selfPkg)) {
+            val code = try {
+                runner(argv, out::line)
+            } catch (t: Throwable) {
+                log("uid=$uid grant $argv failed: ${t::class.java.simpleName}: ${t.message}")
+                out.line("error: helper could not run the command: ${t.message}")
+                HelperProtocol.EXIT_HELPER_ERROR
+            }
+            if (code != 0) {
+                failureExit = code
+                break
+            }
+        }
+        if (failureExit != null) {
+            log("uid=$uid grant-reboot-recovery failed exit=$failureExit; rolling back")
+            runAllRevokes(uid, out)
+            out.end(failureExit)
+            log("uid=$uid finished grant-reboot-recovery exit=$failureExit in ${System.currentTimeMillis() - start} ms")
+            return
+        }
+        out.end(0)
+        log("uid=$uid finished grant-reboot-recovery exit=0 in ${System.currentTimeMillis() - start} ms")
+    }
+
+    /**
+     * Revokes all four reboot-recovery permissions (`WRITE_SECURE_SETTINGS` first), continuing past
+     * individual non-zero exits and client disconnects (revoking runtime permissions may kill the app).
+     */
+    private fun handleRevokeRebootRecovery(uid: Int, out: Out) {
+        log("uid=$uid run revoke-reboot-recovery")
+        val start = System.currentTimeMillis()
+        val exit = runAllRevokes(uid, out)
+        out.end(exit)
+        log("uid=$uid finished revoke-reboot-recovery exit=$exit in ${System.currentTimeMillis() - start} ms")
+    }
+
+    private fun runAllRevokes(uid: Int, out: Out): Int {
+        var firstError = 0
+        for (argv in CommandAllowlist.revokeRebootRecoveryArgvs(selfPkg)) {
+            val code = try {
+                runner(argv, out::line)
+            } catch (t: Throwable) {
+                log("uid=$uid revoke $argv failed: ${t::class.java.simpleName}: ${t.message}")
+                HelperProtocol.EXIT_HELPER_ERROR
+            }
+            if (code != 0 && firstError == 0) firstError = code
+        }
+        return firstError
+    }
+
+    /**
+     * Runs `/system/bin/dumpsys adb` inside the helper and emits only validated lowercase MACs.
+     * On non-zero exit or error, emits zero dump bytes.
+     */
+    private fun handleAdbTrustedNetworks(uid: Int, out: Out) {
+        log("uid=$uid run adb-trusted-networks")
+        val start = System.currentTimeMillis()
+        val (exit, bytes) = try {
+            adbDump()
+        } catch (t: Throwable) {
+            log("uid=$uid adb-trusted-networks failed: ${t::class.java.simpleName}: ${t.message}")
+            HelperProtocol.EXIT_HELPER_ERROR to ByteArray(0)
+        }
+        if (exit == 0) {
+            for (mac in TrustedBssids.parse(bytes)) {
+                out.line(mac)
+            }
+        }
+        out.end(exit)
+        log("uid=$uid finished adb-trusted-networks exit=$exit in ${System.currentTimeMillis() - start} ms")
     }
 
     /**

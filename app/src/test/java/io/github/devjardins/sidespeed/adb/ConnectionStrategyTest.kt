@@ -8,8 +8,10 @@ import io.github.devjardins.sidespeed.helper.HelperPing
 import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.testing.english
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -235,5 +237,60 @@ class ConnectionStrategyTest {
     @Test fun deviceKindFromFlag() {
         assertEquals(DeviceKind.FIRE_OS, DeviceKind.of(isFireOs = true))
         assertEquals(DeviceKind.GOOGLE_TV, DeviceKind.of(isFireOs = false))
+    }
+
+    @Test fun concurrentEnsureReadyRunsOnce() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply { connectDelayMs = 200 }
+        adb.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
+        val s = ConnectionStrategy(
+            helper = HelperProbe { if (adb.commands.isNotEmpty()) HelperPing(1, apk) else null },
+            adb = adb,
+            prefs = FakePrefs(),
+            expectedApk = apk,
+            isFireOs = false,
+            pkg = SideSpeedPackages.RELEASE,
+            adbMutex = Mutex(),
+        )
+        val first = async { s.ensureReady() }
+        val second = async { s.ensureReady() }
+        assertEquals(Readiness.HelperReady, first.await())
+        assertEquals(Readiness.HelperReady, second.await())
+        assertEquals(1, adb.connectAttempts.size)
+        assertEquals(1, adb.closeCount)
+        assertFalse(adb.isConnected)
+    }
+
+    @Test fun classicRefusedWithTlsMdnsMissSetsMdnsMissWhileKeepingRefusedCause() = runTest(timeout = 10.seconds) {
+        val adb = FakeAdbBackend().apply {
+            failConnectFor[AdbTarget.Classic()] = ConnectException("refused")
+            failConnectFor[AdbTarget.WirelessTls] = AdbMdnsMissException()
+        }
+        val r = strategy(adb, tls = true) { null }.ensureReady() as Readiness.NeedsHelperStart
+        assertEquals(StartCause.REFUSED, r.cause)
+        assertTrue(r.mdnsMiss)
+    }
+
+    @Test fun adbClosedOnSuccessShellFailureAndPollTimeout() = runTest(timeout = 20.seconds) {
+        // (a) HelperReady
+        val adbOk = FakeAdbBackend()
+        adbOk.on(HelperLaunch.command(SideSpeedPackages.RELEASE)) { emptyList<String>() to 0 }
+        assertEquals(
+            Readiness.HelperReady,
+            strategy(adbOk) { if (adbOk.commands.isNotEmpty()) HelperPing(1, apk) else null }.ensureReady(),
+        )
+        assertEquals(1, adbOk.closeCount)
+        assertFalse(adbOk.isConnected)
+
+        // (b) hangShellFor timeout
+        val adbHang = FakeAdbBackend().apply { hangShellFor += HelperLaunch.command(SideSpeedPackages.RELEASE) }
+        assertTrue(strategy(adbHang) { null }.ensureReady() is Readiness.NeedsHelperStart)
+        assertEquals(1, adbHang.closeCount)
+        assertFalse(adbHang.isConnected)
+
+        // (c) helper.ping() == null poll timeout
+        val adbPoll = FakeAdbBackend()
+        assertTrue(strategy(adbPoll) { null }.ensureReady() is Readiness.NeedsHelperStart)
+        assertEquals(1, adbPoll.closeCount)
+        assertFalse(adbPoll.isConnected)
     }
 }

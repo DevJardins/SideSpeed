@@ -48,9 +48,9 @@ Fire TV can't start the helper itself. SideSpeed Companion starts it from your p
 
 Restarting the TV, turning ADB off, or updating SideSpeed stops the helper.
 
-- **Google TV:** open SideSpeed.
+- **Google TV:** open SideSpeed. Or turn on **After a restart** in **Tools** (Android 11+ on Wi-Fi) so the helper starts on its own after a reboot.
 - **Fire TV:** open the Companion.
-- **onn:** it turns Wireless debugging off after a reboot. Turn it back on first.
+- **onn:** it turns Wireless debugging off after a reboot. Turn it back on first, or turn on **After a restart** in **Tools**.
 
 ## Keeping apps optimized
 
@@ -79,7 +79,8 @@ The list (`sidespeed.app/updates.json`) is built nightly from a short hand-picke
 
 ## Tools
 
-- **Box health:** device name, Android version, memory, storage, and whether the helper is running.
+- **Box health:** device name, Android version, memory, storage, and whether the helper is running. When **After a restart** is on, it also shows the result of the last restart.
+- **After a restart** (Google TV and Android TV 11+ on Wi-Fi): starts the helper again on its own after the TV restarts. Off by default. Uses permission to change system settings and to see which Wi-Fi network the TV is on, strictly to turn wireless debugging back on for networks you allowed. It never tracks where you are or sends network details anywhere. Turn it off to take both permissions back.
 - **Free up space:** **Clean up now** clears app caches. Apps keep their data but may download artwork again. **Automatic cleanup** keeps 500 MB, 1 GB or 2 GB free, checking every few hours while the helper runs. Off by default.
 - **Animations:** Normal, Faster or Off. Menus move faster. It does not make apps load faster. **Restore original** puts your old values back. On Fire TV, app animations stay normal so Settings keeps working.
 - **Turn off extras:** disables (never uninstalls) apps your TV maker added, from a list for your exact model. **Turn on selected** and **Restore everything** undo it. If only a close match exists, SideSpeed asks: **Use this list** or **Not my TV**. Lists come from [CleanYourTV](https://github.com/Gathin23/cleanyourtv) (MIT).

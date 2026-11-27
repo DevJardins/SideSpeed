@@ -38,6 +38,9 @@ object HelperMain {
     /** Deadline for an in-flight install before apk-watch exits anyway on an APK change. */
     internal const val APK_EXIT_WAIT_MS = 240_000L
 
+    private const val ADB_DUMP_MAX_BYTES = 2 * 1024 * 1024
+    private const val ADB_DUMP_TIMEOUT_MS = 15_000L
+
     private val logLock = Any()
 
     @Volatile private var logFilePath: String = HelperProtocol.LOG_FILE
@@ -146,6 +149,7 @@ object HelperMain {
             writeAck = { writeAckFile(paths, it) },
             log = ::log,
             packageCheck = ::packageCheck,
+            adbDump = ::captureAdbDump,
         ).serve()
         deletePortFileIfOurs(paths, port)
         return 0
@@ -337,6 +341,64 @@ object HelperMain {
         val lines = mutableListOf<String>()
         runArgv(argv) { lines += it }
         return lines
+    }
+
+    /**
+     * Captures `/system/bin/dumpsys adb` stdout up to [ADB_DUMP_MAX_BYTES] with a [ADB_DUMP_TIMEOUT_MS]
+     * deadline. Destroys and reaps the child if it hangs; never forwards stderr or raw bytes outside.
+     */
+    private fun captureAdbDump(): Pair<Int, ByteArray> {
+        val p = ProcessBuilder(CommandAllowlist.adbTrustedNetworksArgv()).start()
+        val out = java.io.ByteArrayOutputStream()
+        val stdoutPump = thread(isDaemon = true) {
+            try {
+                p.inputStream.use { input ->
+                    val buf = ByteArray(8 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        val remaining = ADB_DUMP_MAX_BYTES - out.size()
+                        if (remaining > 0) out.write(buf, 0, minOf(n, remaining))
+                    }
+                }
+            } catch (_: Throwable) {
+            }
+        }
+        val stderrDrain = thread(isDaemon = true) {
+            try {
+                p.errorStream.use { input ->
+                    val buf = ByteArray(1024)
+                    while (input.read(buf) >= 0) {
+                        // Discard stderr so it cannot block the child or contaminate stdout.
+                    }
+                }
+            } catch (_: Throwable) {
+            }
+        }
+        var done = false
+        try {
+            p.outputStream.close()
+            val code = waitInstallExit(p, ADB_DUMP_TIMEOUT_MS) { child ->
+                if (android.os.Build.VERSION.SDK_INT >= 26) child.destroyForcibly() else child.destroy()
+            }
+            if (code == null) {
+                log("adb-trusted-networks: dumpsys adb timed out after ${ADB_DUMP_TIMEOUT_MS}ms")
+                return HelperProtocol.EXIT_HELPER_ERROR to ByteArray(0)
+            }
+            done = true
+            stdoutPump.join(2_000)
+            stderrDrain.join(1_000)
+            return code to out.toByteArray()
+        } finally {
+            if (!done) {
+                p.destroy()
+                try {
+                    p.waitFor()
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            }
+        }
     }
 
     /** Writes the port atomically and makes it world-readable (0644) so the app can read it. */

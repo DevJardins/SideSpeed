@@ -340,7 +340,6 @@
     <string name="setup_headline">منح SideSpeed الإذن على هذا التلفزيون</string>
     <string name="setup_checking">جارٍ التحقق…</string>
     <string name="setup_warning_title">قبل أن تبدأ</string>
-    <string name="setup_lan_warning">يجب أن يبقى تصحيح ADB مفعّلًا ليعمل SideSpeed. أي شخص على شبكتك قد يطلب الوصول إلى تلفزيونك؛ SideSpeed يستخدمه فقط لتحسين التطبيقات. إيقاف ADB أو إعادة تشغيل التلفزيون يوقف مساعد SideSpeed حتى تعيد تشغيله.</string>
     <string name="setup_warning_ack">فهمت</string>
     <string name="setup_google_tv_subtitle">يتصل SideSpeed تلقائيًا بمجرد أن يسمح له التلفزيون.</string>
     <string name="setup_refused_hint">التلفزيون لا يقبل الاتصالات المباشرة. استخدم الإقران برمز بدلًا من ذلك.</string>

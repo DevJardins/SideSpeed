@@ -9,6 +9,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import java.net.ConnectException
 
@@ -22,7 +24,11 @@ enum class StartCause { REFUSED, OTHER }
 sealed interface Readiness {
     data object HelperReady : Readiness
     data object HelperNeedsRestart : Readiness
-    data class NeedsHelperStart(val reason: UiText, val cause: StartCause = StartCause.OTHER) : Readiness
+    data class NeedsHelperStart(
+        val reason: UiText,
+        val cause: StartCause = StartCause.OTHER,
+        val mdnsMiss: Boolean = false,
+    ) : Readiness
     data object WaitingForAllowPrompt : Readiness
 }
 
@@ -70,21 +76,22 @@ class ConnectionStrategy(
     private val isFireOs: Boolean,
     private val pkg: String,
     private val timeoutMs: Long = 30_000,
+    private val adbMutex: Mutex = Mutex(),
 ) {
     /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
-    suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness {
+    suspend fun ensureReady(onLaunch: () -> Unit = {}): Readiness = adbMutex.withLock {
         val ping = helper.ping()
         if (ping != null) {
-            return if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
+            return@withLock if (ping.isCurrent(expectedApk)) Readiness.HelperReady else Readiness.HelperNeedsRestart
         }
-        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
-        return connectAndLaunch(killFirst = false, onLaunch)
+        if (isFireOs) return@withLock Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        connectAndLaunch(killFirst = false, onLaunch)
     }
 
     /** Google TV only: kills the stale helper over own-ADB, then relaunches it. */
-    suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness {
-        if (isFireOs) return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
-        return connectAndLaunch(killFirst = true, onLaunch)
+    suspend fun restartHelper(onLaunch: () -> Unit = {}): Readiness = adbMutex.withLock {
+        if (isFireOs) return@withLock Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_fire_os))
+        connectAndLaunch(killFirst = true, onLaunch)
     }
 
     private suspend fun connectAndLaunch(killFirst: Boolean, onLaunch: () -> Unit): Readiness {
@@ -94,49 +101,60 @@ class ConnectionStrategy(
         }
         var connected = false
         var classicRefused = false
-        for (t in targets) {
-            val r = try {
-                withTimeout(timeoutMs) { adb.connect(t) }
-            } catch (e: TimeoutCancellationException) {
-                return Readiness.WaitingForAllowPrompt
-            }
-            if (r.isSuccess) { connected = true; break }
-            if (t is AdbTarget.Classic && isRefusal(r.exceptionOrNull())) classicRefused = true
-        }
-        if (!connected) {
-            return Readiness.NeedsHelperStart(
-                UiText.Res(R.string.setup_reason_adb_unreachable),
-                if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
-            )
-        }
-        onLaunch()
-
+        var tlsMdnsMiss = false
         try {
-            if (killFirst) {
-                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.killCommand(pkg)).collect { } }
-                delay(KILL_SETTLE_MS)
+            for (t in targets) {
+                val r = try {
+                    withTimeout(timeoutMs) { adb.connect(t) }
+                } catch (e: TimeoutCancellationException) {
+                    return Readiness.WaitingForAllowPrompt
+                }
+                if (r.isSuccess) { connected = true; break }
+                val err = r.exceptionOrNull()
+                if (t is AdbTarget.Classic && isRefusal(err)) classicRefused = true
+                if (t is AdbTarget.WirelessTls && isMdnsMiss(err)) tlsMdnsMiss = true
             }
-            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command(pkg)).collect { } }
-        } catch (e: TimeoutCancellationException) {
+            if (!connected) {
+                return Readiness.NeedsHelperStart(
+                    UiText.Res(R.string.setup_reason_adb_unreachable),
+                    if (classicRefused) StartCause.REFUSED else StartCause.OTHER,
+                    mdnsMiss = tlsMdnsMiss,
+                )
+            }
+            onLaunch()
+
+            try {
+                if (killFirst) {
+                    withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.killCommand(pkg)).collect { } }
+                    delay(KILL_SETTLE_MS)
+                }
+                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command(pkg)).collect { } }
+            } catch (e: TimeoutCancellationException) {
+                return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
+            }
+            var waited = 0L
+            while (true) {
+                if (helper.ping()?.isCurrent(expectedApk) == true) return Readiness.HelperReady
+                if (waited >= POLL_TOTAL_MS) break
+                delay(POLL_INTERVAL_MS)
+                waited += POLL_INTERVAL_MS
+            }
             return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
+        } finally {
+            if (connected) adb.close()
         }
-        var waited = 0L
-        while (true) {
-            if (helper.ping()?.isCurrent(expectedApk) == true) return Readiness.HelperReady
-            if (waited >= POLL_TOTAL_MS) break
-            delay(POLL_INTERVAL_MS)
-            waited += POLL_INTERVAL_MS
-        }
-        return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
     }
 
     /** A closed port fails fast with [ConnectException] (possibly wrapped by the ADB library). */
     private fun isRefusal(e: Throwable?): Boolean =
         generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is ConnectException }
+
+    private fun isMdnsMiss(e: Throwable?): Boolean =
+        generateSequence(e) { it.cause.takeIf { c -> c !== it } }.take(8).any { it is AdbMdnsMissException }
 
     companion object {
         const val SHELL_TIMEOUT_MS = 10_000L

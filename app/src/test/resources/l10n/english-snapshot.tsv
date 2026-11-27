@@ -202,7 +202,7 @@ setup_headline	Allow SideSpeed on this TV
 setup_hide_pairing	Hide pairing
 setup_keypad_clr	Clr
 setup_keypad_del	Del
-setup_lan_warning	ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off, or restarting the TV, stops SideSpeed\\'s helper until you start it again.
+setup_lan_warning_v2	ADB debugging must stay on for SideSpeed to work. Anyone on your network could ask your TV for access; SideSpeed only uses it to compile apps. Turning ADB off stops SideSpeed\\'s helper. After a restart it stays stopped unless you turn on “After a restart” in Tools.
 setup_open_dev_settings	Open developer settings
 setup_other_ways_hide	Hide other ways
 setup_other_ways_show	Other ways to run it
@@ -260,10 +260,16 @@ tools_animations_unreadable	Current values couldn\\'t be read — the helper may
 tools_bytes_gb	%1$s GB
 tools_bytes_mb	%1$s MB
 tools_cancel	Cancel
+tools_health_daily_refresh_failed	SideSpeed couldn\\'t reach wireless debugging today.
 tools_health_device_line	%1$s · %2$s
 tools_health_helper_checking	Helper: …
 tools_health_helper_not_running	Helper: Not running
 tools_health_helper_running	Helper: Running
+tools_health_last_restart_failed	After the last restart: Couldn\\'t start
+tools_health_last_restart_location_off	After the last restart: Couldn\\'t start (location is off)
+tools_health_last_restart_new_network	After the last restart: Couldn\\'t start (new Wi-Fi network). Open SideSpeed to allow it.
+tools_health_last_restart_prompted	After the last restart: Couldn\\'t start (the TV asked for permission)
+tools_health_last_restart_started	After the last restart: Started again
 tools_health_ram	%1$s free of %2$s RAM
 tools_health_storage	%1$s free of %2$s storage
 tools_health_title	Box health
@@ -292,6 +298,19 @@ tools_home_restored	Back to your first home screen.
 tools_home_stock_disabled_elsewhere	Your first home screen was turned off by something else, so SideSpeed can\\'t turn it back on.
 tools_home_title	Home screen
 tools_placeholder	%1$s — coming soon
+tools_reboot_always_allow_prompt	Tick “Always allow on this network”, then press Allow.
+tools_reboot_always_allow_toggle	This network isn\\'t set to always allow. Turn wireless debugging off and on in the TV\\'s settings, tick “Always allow on this network”, then come back.
+tools_reboot_caveat	SideSpeed gets permission to change system settings and to see which Wi-Fi network you\\'re on. It only uses them to turn wireless debugging back on, on a network you allowed. It doesn\\'t track where you are. Turn this off to take both back.
+tools_reboot_grant_failed	Couldn\\'t get the permission.
+tools_reboot_location_off	Turn on location in the TV\\'s settings so SideSpeed can tell which network it\\'s on.
+tools_reboot_need_wifi	Needs Wi-Fi and Android 11 or later.
+tools_reboot_pair_first	SideSpeed needs to pair with this TV first.
+tools_reboot_pending_revoke	The permissions go back the next time the helper starts.
+tools_reboot_state_off	Off
+tools_reboot_state_on	On
+tools_reboot_switch	Start the helper again after the TV restarts
+tools_reboot_title	After a restart
+tools_reboot_turn_on	Turn on
 tools_selected	✓ %1$s
 tools_skip_helper_down	Helper not running
 tools_skip_helper_outdated	Restart the helper to use this

@@ -8,13 +8,22 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.runInterruptible
 import java.io.File
 import java.io.IOException
 import java.security.PrivateKey
 import java.security.cert.Certificate
+import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+internal fun mapTlsConnectFailure(e: Throwable, coroutineActive: Boolean): Throwable = when {
+    e is InterruptedException && coroutineActive -> AdbMdnsMissException(e)
+    e is IOException && (e.message?.lowercase(Locale.ROOT)?.contains("valid host address") == true) ->
+        AdbMdnsMissException(e)
+    else -> e
+}
 
 class LibAdbBackend(private val context: Context, identityDir: File) : AdbBackend {
     private val manager = object : AbsAdbConnectionManager() {
@@ -33,10 +42,15 @@ class LibAdbBackend(private val context: Context, identityDir: File) : AdbBacken
     override val isConnected: Boolean get() = manager.isConnected
 
     override suspend fun connect(target: AdbTarget): Result<Unit> = runCatchingCancellable {
+        val ctx = currentCoroutineContext()
         runInterruptible(Dispatchers.IO) {
             val ok = when (target) {
                 is AdbTarget.Classic -> manager.connect(target.host, target.port)
-                AdbTarget.WirelessTls -> manager.connectTls(context, TLS_TIMEOUT_MS)
+                AdbTarget.WirelessTls -> try {
+                    manager.connectTls(context, TLS_TIMEOUT_MS)
+                } catch (e: Throwable) {
+                    throw mapTlsConnectFailure(e, ctx.isActive)
+                }
             }
             if (!ok) throw IOException("ADB connection refused")
         }
