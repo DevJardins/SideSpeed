@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import io.github.devjardins.sidespeed.status.TvAddress
 import io.github.devjardins.sidespeed.updates.AppUpdateCheck
 import io.github.devjardins.sidespeed.updates.AppUpdateStore
@@ -81,6 +82,9 @@ class AppContainer(context: Context) {
     val ownPackage: String = appContext.packageName
 
     val adb: AdbBackend = LibAdbBackend(appContext, appContext.filesDir)
+
+    /** Serializes all libadb operations (connect, pair, daily refresh) since AbsAdbConnectionManager is not thread-safe. */
+    val adbMutex: Mutex = Mutex()
 
     /** The single shared helper client: the helper writes one ack file, so two clients could fail each other's nonce check. */
     val helper: HelperClient = HelperPaths.of(ownPackage).let { paths ->
@@ -353,6 +357,7 @@ class AppContainer(context: Context) {
         expectedApk = appContext.applicationInfo.sourceDir,
         isFireOs = isFireOs,
         pkg = ownPackage,
+        adbMutex = adbMutex,
     )
 
     /** This TV's own showable addresses (LAN first, then Tailscale), or empty when unknown. */

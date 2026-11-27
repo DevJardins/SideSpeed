@@ -1,6 +1,7 @@
 package io.github.devjardins.sidespeed.adb
 
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -32,6 +33,12 @@ class FakeAdbBackend : AdbBackend {
     /** When true, [connect] suspends forever (for timeout tests). */
     var hangConnect = false
 
+    /** Optional virtual delay inside [connect] (for concurrency tests). */
+    var connectDelayMs: Long = 0
+
+    /** Number of times [close] has been called. */
+    var closeCount: Int = 0
+
     /** Commands whose [shell] flow suspends forever after recording (for timeout tests). */
     val hangShellFor = mutableSetOf<String>()
 
@@ -61,6 +68,7 @@ class FakeAdbBackend : AdbBackend {
 
     override suspend fun connect(target: AdbTarget): Result<Unit> {
         connectAttempts += target
+        if (connectDelayMs > 0) delay(connectDelayMs)
         if (hangConnect) awaitCancellation()
         val failure = failConnectFor[target] ?: failConnect
         if (failure != null) return Result.failure(failure)
@@ -104,6 +112,7 @@ class FakeAdbBackend : AdbBackend {
         services[service] ?: defaultServiceResult
 
     override fun close() {
+        closeCount++
         connected = false
     }
 }

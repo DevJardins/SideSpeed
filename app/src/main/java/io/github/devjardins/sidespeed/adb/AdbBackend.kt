@@ -6,6 +6,9 @@ import java.io.IOException
 /** Thrown when ADB wireless pairing returns false without a more specific library exception. */
 class AdbPairingFailedException : IOException()
 
+/** Thrown when wireless TLS connect timed out waiting for mDNS to advertise a port. */
+class AdbMdnsMissException(cause: Throwable? = null) : IOException(cause)
+
 sealed interface AdbTarget {
     data class Classic(val host: String = "127.0.0.1", val port: Int = 5555) : AdbTarget
 

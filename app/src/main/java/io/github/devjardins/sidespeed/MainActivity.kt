@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp, c.settings, c.ownPackage) as T
+                SetupViewModel(StrategyReadier(c.strategy), c.adb, c.prefs, c.isFireOs, c::wifiIp, c.settings, c.ownPackage, adbMutex = c.adbMutex) as T
         })[SetupViewModel::class.java]
     }
 
