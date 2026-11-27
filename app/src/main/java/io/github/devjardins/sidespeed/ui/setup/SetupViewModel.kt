@@ -96,6 +96,11 @@ class SetupViewModel(
     private val _state = MutableStateFlow<SetupUiState>(SetupUiState.Loading)
     val state: StateFlow<SetupUiState> = _state.asStateFlow()
 
+    init {
+        // A fresh setup run always probes on-box ADB once: forget a refusal cached by an earlier run.
+        viewModelScope.launch { prefs.setOnBoxAdbRefusedBuild(null) }
+    }
+
     /** The one running loop / pairing job. Replaced only through [launchExclusive]. */
     private var job: Job? = null
     private var refusals = 0
@@ -125,7 +130,10 @@ class SetupViewModel(
     /** Leaves a stale Ready at once (so the screen does not bounce back), then restarts the loop. */
     fun checkAgain() {
         _state.update { it as? SetupUiState.Connecting ?: SetupUiState.Connecting() }
-        launchExclusive { retryLoop() }
+        launchExclusive {
+            prefs.setOnBoxAdbRefusedBuild(null)
+            retryLoop()
+        }
     }
 
     /** Called when the setup screen leaves composition. A pending attempt finishes on its own. */
@@ -174,7 +182,7 @@ class SetupViewModel(
             val before = detected()
             updateConnecting { it.copy(detected = before, waiting = true, launching = false) }
             var r = strategy.ensureReady(markLaunching)
-            if (r == Readiness.HelperNeedsRestart && !isFireOs) r = strategy.restartHelper(markLaunching)
+            if (r == Readiness.HelperNeedsRestart) r = strategy.restartHelper(markLaunching)
             if (r == Readiness.HelperReady) {
                 refusals = 0
                 _state.value = SetupUiState.Ready
