@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.update
 
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.testing.EnglishStrings
 import io.github.devjardins.sidespeed.testing.english
 import io.github.devjardins.sidespeed.ui.text.resolve
@@ -39,7 +40,7 @@ class UpdateVerifyTest {
     @Test fun verify_ok_when_all_match() {
         val hash = "d".repeat(64)
         val apk = ApkFacts(
-            packageName = "io.github.devjardins.sidespeed",
+            packageName = SideSpeedPackages.RELEASE,
             versionCode = 5,
             signerSha256 = setOf("e".repeat(64)),
         )
@@ -51,27 +52,52 @@ class UpdateVerifyTest {
                 apk = apk,
                 installedVersionCode = 4,
                 installedSignerSha256 = setOf("e".repeat(64)),
+                expectedPackage = SideSpeedPackages.RELEASE,
             ),
+        )
+    }
+
+    @Test fun debugRejectsReleaseApk() {
+        val hash = "d".repeat(64)
+        val signer = setOf("e".repeat(64))
+        val releaseApk = ApkFacts(
+            packageName = SideSpeedPackages.RELEASE,
+            versionCode = 5,
+            signerSha256 = signer,
+        )
+        val result = verifyUpdate(
+            fileSha256 = hash,
+            expectedSha256 = hash,
+            apk = releaseApk,
+            installedVersionCode = 4,
+            installedSignerSha256 = signer,
+            expectedPackage = SideSpeedPackages.DEBUG,
+        )
+        assertTrue(result is VerifyResult.Rejected)
+        assertEquals(
+            "Wrong package: ${SideSpeedPackages.RELEASE}.",
+            (result as VerifyResult.Rejected).reason.english(),
         )
     }
 
     @Test fun verify_rejects() {
         val hash = "d".repeat(64)
         val signer = setOf("e".repeat(64))
+        val pkg = SideSpeedPackages.RELEASE
         fun okApk() = ApkFacts(
-            packageName = "io.github.devjardins.sidespeed",
+            packageName = pkg,
             versionCode = 5,
             signerSha256 = signer,
         )
         val cases = listOf(
-            "sha mismatch" to verifyUpdate("f".repeat(64), hash, okApk(), 4, signer),
-            "null expected" to verifyUpdate(hash, null, okApk(), 4, signer),
-            "null apk" to verifyUpdate(hash, hash, null, 4, signer),
-            "wrong package" to verifyUpdate(hash, hash, okApk().copy(packageName = "com.evil.app"), 4, signer),
-            "same version" to verifyUpdate(hash, hash, okApk().copy(versionCode = 4), 4, signer),
-            "older version" to verifyUpdate(hash, hash, okApk().copy(versionCode = 3), 4, signer),
-            "signer differs" to verifyUpdate(hash, hash, okApk().copy(signerSha256 = setOf("0".repeat(64))), 4, signer),
-            "signer subset" to verifyUpdate(hash, hash, okApk().copy(signerSha256 = signer + "0".repeat(64)), 4, signer),
+            "sha mismatch" to verifyUpdate("f".repeat(64), hash, okApk(), 4, signer, pkg),
+            "null expected" to verifyUpdate(hash, null, okApk(), 4, signer, pkg),
+            "null apk" to verifyUpdate(hash, hash, null, 4, signer, pkg),
+            "wrong package" to verifyUpdate(hash, hash, okApk().copy(packageName = "com.evil.app"), 4, signer, pkg),
+            "same version" to verifyUpdate(hash, hash, okApk().copy(versionCode = 4), 4, signer, pkg),
+            "older version" to verifyUpdate(hash, hash, okApk().copy(versionCode = 3), 4, signer, pkg),
+            "signer differs" to verifyUpdate(hash, hash, okApk().copy(signerSha256 = setOf("0".repeat(64))), 4, signer, pkg),
+            "signer subset" to verifyUpdate(hash, hash, okApk().copy(signerSha256 = signer + "0".repeat(64)), 4, signer, pkg),
         )
         for ((name, result) in cases) {
             assertTrue(name, result is VerifyResult.Rejected)
@@ -93,12 +119,12 @@ class UpdateVerifyTest {
 
     @Test fun verify_rejects_empty_signer_sets() {
         val hash = "d".repeat(64)
-        val pkg = "io.github.devjardins.sidespeed"
+        val pkg = SideSpeedPackages.RELEASE
         val signer = setOf("e".repeat(64))
         val cases = listOf(
-            "both empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, emptySet()),
-            "apk empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, signer),
-            "installed empty (lookup failed)" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, signer), 4, emptySet()),
+            "both empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, emptySet(), pkg),
+            "apk empty" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, emptySet()), 4, signer, pkg),
+            "installed empty (lookup failed)" to verifyUpdate(hash, hash, ApkFacts(pkg, 5, signer), 4, emptySet(), pkg),
         )
         for ((name, result) in cases) {
             assertTrue(name, result is VerifyResult.Rejected)
@@ -140,8 +166,8 @@ class UpdateVerifyTest {
         // Self-updates accept any newer version: no listed version is passed.
         val hash = "d".repeat(64)
         val signer = setOf("e".repeat(64))
-        val apk = ApkFacts("io.github.devjardins.sidespeed", 9, signer)
-        assertEquals(VerifyResult.Ok, verifyUpdate(hash, hash, apk, 4, signer))
+        val apk = ApkFacts(SideSpeedPackages.RELEASE, 9, signer)
+        assertEquals(VerifyResult.Ok, verifyUpdate(hash, hash, apk, 4, signer, SideSpeedPackages.RELEASE))
     }
 
     @Test fun sha256_hex_matches_file_bytes() {

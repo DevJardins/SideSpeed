@@ -21,7 +21,7 @@ import kotlin.system.exitProcess
  * under `app_process` (no Application, no Context: plain JVM plus framework classes).
  *
  * It listens on 127.0.0.1 only (first free port of [HELPER_PORT_FIRST]..[HELPER_PORT_LAST], written to
- * [HelperProtocol.PORT_FILE]), accepts only connections whose socket is owned by SideSpeed's uid (checked in
+ * [HelperPaths.portFile]), accepts only connections whose socket is owned by SideSpeed's uid (checked in
  * /proc/net/tcp{,6} before any request byte is read), and runs only [CommandAllowlist] commands, as a fixed argv
  * via ProcessBuilder. It never runs `sh -c`; the only settings it writes are the three animation scales
  * (`settings put global`). It exits when its APK is replaced.

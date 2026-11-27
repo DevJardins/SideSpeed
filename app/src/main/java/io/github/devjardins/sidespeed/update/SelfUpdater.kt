@@ -59,6 +59,7 @@ class SelfUpdater(
     private val fallbackInstall: suspend (File) -> InstallOutcome,
     private val cacheDir: File,
     private val busy: Flow<Boolean>,
+    private val ownPackage: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val confirmTimeoutMs: Long = CONFIRM_TIMEOUT_MS,
     private val confirmPollMs: Long = CONFIRM_POLL_MS,
@@ -133,7 +134,7 @@ class SelfUpdater(
             _state.value = UpdateUiState.Downloading(it)
         }).getOrElse { return fail(UiText.Res(R.string.update_error_download_failed)) }
         val (installedVersion, installedSigners) = installed()
-        when (val verdict = verifyUpdate(sha256Hex(apk), expected, readApkFacts(apk), installedVersion, installedSigners, SELF_UPDATE_PACKAGE)) {
+        when (val verdict = verifyUpdate(sha256Hex(apk), expected, readApkFacts(apk), installedVersion, installedSigners, ownPackage)) {
             is VerifyResult.Ok -> Unit
             is VerifyResult.Rejected -> return fail(verdict.reason)
         }

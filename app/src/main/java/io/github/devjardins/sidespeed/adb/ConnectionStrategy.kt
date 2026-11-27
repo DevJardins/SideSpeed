@@ -4,7 +4,6 @@ import io.github.devjardins.sidespeed.R
 import io.github.devjardins.sidespeed.data.Prefs
 import io.github.devjardins.sidespeed.helper.HelperLaunch
 import io.github.devjardins.sidespeed.helper.HelperPing
-import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import io.github.devjardins.sidespeed.ui.text.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -48,7 +47,8 @@ enum class DeviceKind {
  */
 data class PcStartCommands(val connect: List<String>, val run: List<String>, val shellPaste: List<String>)
 
-fun pcStartCommands(kind: DeviceKind, wifiIp: String?, launch: String, killFirst: Boolean): PcStartCommands {
+fun pcStartCommands(kind: DeviceKind, wifiIp: String?, pkg: String, killFirst: Boolean): PcStartCommands {
+    val launch = HelperLaunch.command(pkg)
     require(!launch.contains('\'')) { "launch command must not contain single quotes" }
     val ip = wifiIp ?: "<tv-ip>"
     val connect = when (kind) {
@@ -56,7 +56,7 @@ fun pcStartCommands(kind: DeviceKind, wifiIp: String?, launch: String, killFirst
         DeviceKind.GOOGLE_TV -> listOf("adb pair $ip:<pairing port>", "adb connect $ip:<port>")
     }
     val raw = buildList {
-        if (killFirst) add(HelperLaunch.killCommand(SideSpeedPackages.RELEASE))
+        if (killFirst) add(HelperLaunch.killCommand(pkg))
         add(launch)
     }
     return PcStartCommands(connect, raw.map { "adb shell '$it'" }, raw)
@@ -68,6 +68,7 @@ class ConnectionStrategy(
     private val prefs: Prefs,
     private val expectedApk: String,
     private val isFireOs: Boolean,
+    private val pkg: String,
     private val timeoutMs: Long = 30_000,
 ) {
     /** [onLaunch] is called once ADB is connected, just before the helper launch command is sent. */
@@ -112,10 +113,10 @@ class ConnectionStrategy(
 
         try {
             if (killFirst) {
-                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.killCommand(SideSpeedPackages.RELEASE)).collect { } }
+                withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.killCommand(pkg)).collect { } }
                 delay(KILL_SETTLE_MS)
             }
-            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command(SideSpeedPackages.RELEASE)).collect { } }
+            withTimeout(SHELL_TIMEOUT_MS) { adb.shell(HelperLaunch.command(pkg)).collect { } }
         } catch (e: TimeoutCancellationException) {
             return Readiness.NeedsHelperStart(UiText.Res(R.string.setup_reason_helper_not_started))
         } catch (e: CancellationException) {

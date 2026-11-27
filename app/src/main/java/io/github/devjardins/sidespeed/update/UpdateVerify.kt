@@ -7,8 +7,6 @@ import java.io.File
 import java.security.MessageDigest
 
 private val HEX64 = Regex("^[0-9a-fA-F]{64}$")
-/** SideSpeed's own package: the only package a self-update may install. */
-const val SELF_UPDATE_PACKAGE = "io.github.devjardins.sidespeed"
 
 /** A parsed APK's identity: package, version, and signing-certificate SHA-256 set. */
 data class ApkFacts(val packageName: String, val versionCode: Long, val signerSha256: Set<String>)
@@ -51,7 +49,7 @@ fun verifyUpdate(
     apk: ApkFacts?,
     installedVersionCode: Long,
     installedSignerSha256: Set<String>,
-    expectedPackage: String = SELF_UPDATE_PACKAGE,
+    expectedPackage: String,
     expectedVersionCode: Long? = null,
 ): VerifyResult {
     if (expectedSha256 == null) return VerifyResult.Rejected(UiText.Res(R.string.update_verify_no_checksum))

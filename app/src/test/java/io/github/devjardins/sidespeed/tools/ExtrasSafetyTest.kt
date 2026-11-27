@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.tools
 
+import io.github.devjardins.sidespeed.helper.SideSpeedPackages
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,7 +9,8 @@ class ExtrasSafetyTest {
     @Test fun coreExactPackages() {
         assertTrue(ExtrasSafety.isCore("android"))
         assertTrue(ExtrasSafety.isCore("com.android.systemui"))
-        assertTrue(ExtrasSafety.isCore("io.github.devjardins.sidespeed"))
+        assertTrue(ExtrasSafety.isCore(SideSpeedPackages.RELEASE))
+        assertTrue(ExtrasSafety.isCore(SideSpeedPackages.DEBUG))
     }
 
     @Test fun overlayPrefix() {
