@@ -24,7 +24,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.devjardins.sidespeed.companion.resources.Res
@@ -36,7 +40,10 @@ import io.github.devjardins.sidespeed.companion.resources.common_remove
 import io.github.devjardins.sidespeed.companion.resources.home_add_tv
 import io.github.devjardins.sidespeed.companion.resources.home_empty_body
 import io.github.devjardins.sidespeed.companion.resources.home_empty_title
+import io.github.devjardins.sidespeed.companion.resources.home_drop_on_card
+import io.github.devjardins.sidespeed.companion.resources.home_install_app
 import io.github.devjardins.sidespeed.companion.resources.home_not_trusted
+import io.github.devjardins.sidespeed.companion.resources.home_optimize_now
 import io.github.devjardins.sidespeed.companion.resources.home_remove_confirm
 import io.github.devjardins.sidespeed.companion.resources.home_remove_tv
 import io.github.devjardins.sidespeed.companion.resources.home_restart_now
@@ -51,6 +58,12 @@ import io.github.devjardins.sidespeed.companion.ui.text.resolve
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
+
+/** A Home card's window bounds in pixels, so a platform can tell which card a dropped file landed on. */
+data class CardBounds(val leftPx: Float, val topPx: Float, val rightPx: Float, val bottomPx: Float, val density: Float)
+
+/** How long an install or optimize notice stays on a card. */
+private const val NOTICE_MS = 8_000L
 
 /** The Home banner: the current Trusted Network, else a trusted tailnet Tailscale is on; null when neither. */
 fun trustBanner(state: CompanionUiState): UiText? =
@@ -73,6 +86,12 @@ fun HomeScreen(
     onSubmitConnectPort: (String) -> Unit = {},
     onCancelPair: () -> Unit = {},
     onConfirm: (String) -> Unit = {},
+    onInstall: (String) -> Unit = {},
+    onOptimize: (String) -> Unit = {},
+    onDismissInstallNotice: (String) -> Unit = {},
+    dropHighlightTvId: String? = null,
+    dropHintVisible: Boolean = false,
+    onCardBoundsChanged: (tvId: String, rect: CardBounds?) -> Unit = { _, _ -> },
 ) {
     DisposableEffect(Unit) {
         onVisibleChange(true)
@@ -147,7 +166,21 @@ fun HomeScreen(
                 items(state.tvs, key = { it.id }) { tv ->
                     val restarting = restartingId == tv.id
                     val parked = tv.status == TvStatus.CHECK_FAILED
-                    SsReachCard(cardGlow(tv.reach, tv.checkableHere, tv.attention, parked)) {
+                    val density = LocalDensity.current.density
+                    DisposableEffect(tv.id) { onDispose { onCardBoundsChanged(tv.id, null) } }
+                    val highlight = dropHighlightTvId == tv.id
+                    state.installNotice[tv.id]?.let { notice ->
+                        LaunchedEffect(notice) { delay(NOTICE_MS); onDismissInstallNotice(tv.id) }
+                    }
+                    SsReachCard(
+                        cardGlow(tv.reach, tv.checkableHere, tv.attention, parked),
+                        Modifier
+                            .onGloballyPositioned {
+                                val r = it.boundsInWindow()
+                                onCardBoundsChanged(tv.id, CardBounds(r.left, r.top, r.right, r.bottom, density))
+                            }
+                            .then(if (highlight) Modifier.border(2.dp, Ss.accent, RoundedCornerShape(16.dp)) else Modifier),
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SsStatusDot(cardDot(tv.status, tv.checkableHere, tv.attention, parked), pulsing = restarting)
                             SsText(tv.name, Ss.heading, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -186,6 +219,24 @@ fun HomeScreen(
                                 }
                             }
                         }
+                        val actions = cardActions(tv)
+                        val optimizing = tv.id in state.optimizingTvIds
+                        if (TvCardAction.INSTALL in actions || TvCardAction.OPTIMIZE in actions) {
+                            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (TvCardAction.INSTALL in actions) {
+                                    SsButton(stringResource(Res.string.home_install_app), { onInstall(tv.id) }, enabled = state.install == null)
+                                }
+                                if (TvCardAction.OPTIMIZE in actions) {
+                                    SsButton(stringResource(Res.string.home_optimize_now), { onOptimize(tv.id) }, enabled = !optimizing)
+                                    if (optimizing) SsSpinner()
+                                }
+                            }
+                        }
+                        if (highlight || dropHintVisible && TvCardAction.INSTALL in actions) {
+                            SsText(stringResource(Res.string.home_drop_on_card), Ss.caption.copy(color = if (highlight) Ss.accent else Ss.textSecondary))
+                        }
+                        state.installNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.okText)) }
+                        state.optimizeNotice[tv.id]?.let { SsText(it.resolve(), Ss.body.copy(color = Ss.okText)) }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (confirmRemoveId == tv.id) {
                                 SsText(
