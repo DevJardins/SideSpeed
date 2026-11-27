@@ -123,6 +123,14 @@ object TvCommands {
 
     const val CALL_OPTIMIZE_NOW = "content call --uri $STATUS_URI --method optimize_now"
 
+    private val SESSION_ID = Regex("^[0-9]{1,10}$")
+
+    /** Arguments for `cmd package install-abandon`, run on a fresh session to drop a half-written install session. */
+    fun installAbandonArgs(sessionId: String): Array<String> {
+        require(SESSION_ID.matches(sessionId)) { "invalid install session id" }
+        return arrayOf("install-abandon", sessionId)
+    }
+
     fun packagePath(pkg: String): String {
         requirePackage(pkg)
         return "${Tokens.CMD_PM_PATH_PREFIX}$pkg"

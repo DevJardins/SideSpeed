@@ -74,11 +74,16 @@ first_run_use_tailscale	Use Tailscale
 home_add_tv	Add a TV
 home_checked_min_ago#one	Checked %1$d min ago
 home_checked_min_ago#other	Checked %1$d min ago
+home_compile_waiting_now	%1$s installed. It isn't optimized yet.
 home_confirm_button	Confirm
 home_confirm_tv	Confirm this is your TV before SideSpeed uses it.
 home_different_device	A different device answered at that address.
+home_drop_on_card	Drop an app file here to install it on this TV.
 home_empty_body	Add your TV. On Fire TV, Companion keeps SideSpeed's helper running. On Google TV it's optional and shows what's compiling.
 home_empty_title	No TVs yet
+home_install_app	Install an app
+home_installed_app	%1$s installed. SideSpeed will optimize it next.
+home_installed_update_tv	%1$s installed. Update SideSpeed on this TV to optimize it from here.
 home_kept_alive_while_on	Kept alive while on %1$s
 home_last_seen	Last seen: %1$s
 home_not_checked_here	Not checked: not on its network
@@ -86,6 +91,10 @@ home_not_contacted	SideSpeed isn't checking this TV until you choose.
 home_not_fire_tv_note	Not a Fire TV: SideSpeed on this TV handles setup itself, and the companion can't reach it after restarts. On Google TV the helper is optional; Home shows what's compiling.
 home_not_trusted	Not on a Trusted Network
 home_older_copy	This copy of SideSpeed Companion is older than the one that saved your TVs. Changes won't be saved; open the newest copy instead.
+home_optimize_caught_up	Nothing to optimize right now.
+home_optimize_failed	Couldn't start optimizing. Try again in a moment.
+home_optimize_now	Optimize now
+home_optimize_started	Started. Apps are queued to be optimized.
 home_pair_offer	This TV can use an encrypted connection. Pair it to keep checking it.
 home_remove_confirm	Remove %1$s?
 home_remove_tv	Remove TV
@@ -108,7 +117,33 @@ home_tv_unproven	This TV didn't prove it's the one you added, so SideSpeed stopp
 home_type_the_port	Type the port
 home_waiting_for_you	Waiting for you
 home_wireless_off	Turn wireless debugging back on to keep this TV up to date.
+install_button	Install
+install_checking	Checking the file…
+install_committing	Finishing the install on the TV…
+install_err_downgrade	The TV already has a newer version of this app.
+install_err_failed	The install didn't finish. Check that the TV is on, then try again.
+install_err_failed_code	The TV refused the install. Reason: %1$s
+install_err_incompatible_abi	This app has no version for this TV's processor.
+install_err_no_space	The TV doesn't have enough free space.
+install_err_not_apk	That file isn't an app SideSpeed can install.
+install_err_obb	This app needs extra data files. SideSpeed can't install those.
+install_err_older_android	This app needs a newer version of Android than the TV has.
+install_err_too_large	That file is too large to install.
+install_err_wrong_key	The TV has this app from a different publisher. This file can't update it.
+install_fresh	%1$s, version %2$s. Not installed on this TV yet.
+install_keep_optimized	Keep this app optimized
+install_progress_line	%1$s of %2$s MB sent
+install_splits_summary	Includes: %1$s
+install_starting_compile	Asking SideSpeed to optimize it…
+install_store_warning_amazon	This app came from Amazon Appstore. Amazon Appstore can replace this version later.
+install_store_warning_play	This app came from Google Play. Google Play can replace this version later.
+install_system_warning	This is a system app. The TV may not accept the update.
+install_tailscale_note	This TV is reached over Tailscale. Large apps can take a while.
+install_title	Install on %1$s
+install_update_from	%1$s will update from version %2$s to version %3$s.
 network_default_name	Trusted Network %1$d
+notif_install_committing	Finishing %1$s on %2$s
+notif_install_uploading	Sending %1$s to %2$s
 notif_restarted	SideSpeed restarted on %1$s
 pair_bad_code	Enter the 6-digit pairing code from the TV.
 pair_bad_connect_port	Enter the port shown on the TV's Wireless debugging screen.

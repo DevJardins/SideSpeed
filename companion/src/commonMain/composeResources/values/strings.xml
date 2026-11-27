@@ -112,6 +112,79 @@
     <!-- Button on a TV card asking to remove the saved TV. -->
     <string name="home_remove_tv">Remove TV</string>
 
+
+    <!-- Remote install -->
+    <!-- Button on a TV card to pick an app file and install it on that TV. -->
+    <string name="home_install_app">Install an app</string>
+    <!-- Notice on a TV card after an install when the app was not optimized yet. %1$s is the app name. -->
+    <string name="home_compile_waiting_now">%1$s installed. It isn't optimized yet.</string>
+    <!-- Button on a TV card that asks SideSpeed on the TV to optimize its queued apps right now. -->
+    <string name="home_optimize_now">Optimize now</string>
+    <!-- Notice on a TV card after Optimize now when apps were queued. -->
+    <string name="home_optimize_started">Started. Apps are queued to be optimized.</string>
+    <!-- Notice on a TV card after Optimize now when nothing was waiting. -->
+    <string name="home_optimize_caught_up">Nothing to optimize right now.</string>
+    <!-- Notice on a TV card when Optimize now could not reach the TV or was refused. -->
+    <string name="home_optimize_failed">Couldn't start optimizing. Try again in a moment.</string>
+    <!-- Notice on a TV card after an install. %1$s is the app name. -->
+    <string name="home_installed_app">%1$s installed. SideSpeed will optimize it next.</string>
+    <!-- Notice on a TV card after an install when SideSpeed on the TV is too old to optimize remotely. %1$s is the app name. -->
+    <string name="home_installed_update_tv">%1$s installed. Update SideSpeed on this TV to optimize it from here.</string>
+    <!-- Hint on a TV card on desktop: the user can drop an app file onto the card. -->
+    <string name="home_drop_on_card">Drop an app file here to install it on this TV.</string>
+    <!-- Heading of the install review screen. %1$s is the TV name. -->
+    <string name="install_title">Install on %1$s</string>
+    <!-- Status line while the chosen file and the TV are being checked. -->
+    <string name="install_checking">Checking the file…</string>
+    <!-- Review line for an app the TV does not have yet. %1$s is the app name, %2$s the version. -->
+    <string name="install_fresh">%1$s, version %2$s. Not installed on this TV yet.</string>
+    <!-- Review line for an update. %1$s is the app name, %2$s the installed version, %3$s the new version. -->
+    <string name="install_update_from">%1$s will update from version %2$s to version %3$s.</string>
+    <!-- Review line listing which parts of a split app will be sent. %1$s is a list such as arm64-v8a, xxhdpi, en. -->
+    <string name="install_splits_summary">Includes: %1$s</string>
+    <!-- Warning on review when the installed app came from Google Play. Keep: Google Play -->
+    <string name="install_store_warning_play">This app came from Google Play. Google Play can replace this version later.</string>
+    <!-- Warning on review when the installed app came from Amazon Appstore. Keep: Amazon Appstore -->
+    <string name="install_store_warning_amazon">This app came from Amazon Appstore. Amazon Appstore can replace this version later.</string>
+    <!-- Warning on review when the installed app is part of the TV's system. -->
+    <string name="install_system_warning">This is a system app. The TV may not accept the update.</string>
+    <!-- Checkbox on review: keep the installed app optimized. -->
+    <string name="install_keep_optimized">Keep this app optimized</string>
+    <!-- Button that starts the install. -->
+    <string name="install_button">Install</string>
+    <!-- Progress line while sending. %1$s is megabytes sent, %2$s is total megabytes. -->
+    <string name="install_progress_line">%1$s of %2$s MB sent</string>
+    <!-- Note on review when the TV is reached over Tailscale. Keep: Tailscale -->
+    <string name="install_tailscale_note">This TV is reached over Tailscale. Large apps can take a while.</string>
+    <!-- Status line while the TV finishes the install. -->
+    <string name="install_committing">Finishing the install on the TV…</string>
+    <!-- Status line while SideSpeed on the TV is asked to optimize the new app. -->
+    <string name="install_starting_compile">Asking SideSpeed to optimize it…</string>
+    <!-- Error: the chosen file is not an installable app. -->
+    <string name="install_err_not_apk">That file isn't an app SideSpeed can install.</string>
+    <!-- Error: the app comes with extra data files (OBB). -->
+    <string name="install_err_obb">This app needs extra data files. SideSpeed can't install those.</string>
+    <!-- Error: the file is bigger than the install limit. -->
+    <string name="install_err_too_large">That file is too large to install.</string>
+    <!-- Error: no version of the app fits the TV's processor. -->
+    <string name="install_err_incompatible_abi">This app has no version for this TV's processor.</string>
+    <!-- Error: the TV has a newer version of the app. -->
+    <string name="install_err_downgrade">The TV already has a newer version of this app.</string>
+    <!-- Error: the installed app was signed by someone else. -->
+    <string name="install_err_wrong_key">The TV has this app from a different publisher. This file can't update it.</string>
+    <!-- Error: the TV is out of storage. -->
+    <string name="install_err_no_space">The TV doesn't have enough free space.</string>
+    <!-- Error: the app needs a newer Android than the TV runs. -->
+    <string name="install_err_older_android">This app needs a newer version of Android than the TV has.</string>
+    <!-- Error: the install stopped without a known reason. -->
+    <string name="install_err_failed">The install didn't finish. Check that the TV is on, then try again.</string>
+    <!-- Error: the TV refused the install. %1$s is the TV's own reason code. -->
+    <string name="install_err_failed_code">The TV refused the install. Reason: %1$s</string>
+    <!-- Notification text while an app is being sent to a TV. %1$s is the app name, %2$s the TV name. -->
+    <string name="notif_install_uploading">Sending %1$s to %2$s</string>
+    <!-- Notification text while a TV finishes an install. %1$s is the app name, %2$s the TV name. -->
+    <string name="notif_install_committing">Finishing %1$s on %2$s</string>
+
     <!-- Live activity -->
     <!-- Caption under an idle TV card when the last compile finished under a minute ago. %1$s is the app name. -->
     <string name="activity_last_just_now">Last: %1$s · just now</string>
