@@ -1,5 +1,7 @@
 package io.github.devjardins.sidespeed.compile
 
+import io.github.devjardins.sidespeed.helper.PackageNames
+
 enum class CompileMode(val arg: String) {
     SPEED("speed"),
     SPEED_PROFILE("speed-profile"),
@@ -9,9 +11,7 @@ enum class CompileMode(val arg: String) {
 @JvmInline
 value class PackageName private constructor(val value: String) {
     companion object {
-        private val PATTERN = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$")
-
-        fun parse(raw: String): PackageName? = raw.trim().takeIf { PATTERN.matches(it) }?.let(::PackageName)
+        fun parse(raw: String): PackageName? = raw.trim().takeIf(PackageNames::isValid)?.let(::PackageName)
     }
 }
 
