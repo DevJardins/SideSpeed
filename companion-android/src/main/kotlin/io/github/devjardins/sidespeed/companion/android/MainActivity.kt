@@ -14,7 +14,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
 import io.github.devjardins.sidespeed.companion.android.update.AndroidUpdateAction
 import io.github.devjardins.sidespeed.companion.android.l10n.AndroidLanguage
@@ -54,6 +57,15 @@ class MainActivity : ComponentActivity() {
                     askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
+            // Which TV the picker was opened for; kept across a recreated Activity while the picker is up.
+            var pickingForTvId by rememberSaveable { mutableStateOf<String?>(null) }
+            val pickInstall = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                val tvId = pickingForTvId
+                pickingForTvId = null
+                if (uri != null && tvId != null) {
+                    vm.beginInstall(tvId, AndroidInstallSource.fromUri(contentResolver, uri, cacheDir))
+                }
+            }
             val interval = state.settings.intervalMinutes
             val first = remember { booleanArrayOf(true) }
             LaunchedEffect(interval, state.loaded) {
@@ -78,6 +90,10 @@ class MainActivity : ComponentActivity() {
                     // Back goes up one page; on Home it isn't handled, so it leaves the app.
                     systemBack = { enabled, onBack -> BackHandler(enabled, onBack) },
                     language = language,
+                    onPickInstallFile = { tvId ->
+                        pickingForTvId = tvId
+                        pickInstall.launch(arrayOf("application/vnd.android.package-archive", "application/zip", "application/octet-stream", "*/*"))
+                    },
                 )
             }
         }

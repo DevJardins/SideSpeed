@@ -1,12 +1,14 @@
 package io.github.devjardins.sidespeed.companion.desktop
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -56,7 +58,10 @@ import io.github.devjardins.sidespeed.companion.resources.tray_open
 import io.github.devjardins.sidespeed.companion.resources.tray_pause
 import io.github.devjardins.sidespeed.companion.resources.tray_quit
 import io.github.devjardins.sidespeed.companion.resources.tray_resume
+import io.github.devjardins.sidespeed.companion.ui.CardBounds
 import io.github.devjardins.sidespeed.companion.ui.CompanionApp
+import io.github.devjardins.sidespeed.companion.ui.TvCardAction
+import io.github.devjardins.sidespeed.companion.ui.cardActions
 import io.github.devjardins.sidespeed.companion.ui.rememberCompanionNav
 import io.github.devjardins.sidespeed.companion.ui.CompanionViewModel
 import io.github.devjardins.sidespeed.companion.ui.SsButton
@@ -72,6 +77,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.compose.resources.stringResource
 import java.io.File
 import java.io.RandomAccessFile
@@ -162,6 +168,7 @@ fun main() {
         store, fingerprints, upkeep, connector, discovery, scope,
         overlay = overlay, pairer = pairer, ports = ports, linkOffer = linkOffer,
         identity = identity,
+        installConnector = KadbTvConnector.forInstalls(DesktopDirs.keyDir()),
     )
     val desktopUpdater = DesktopUpdater(CompanionVersion.APP_VERSION, scope = scope)
     val languageController = DesktopLanguageController(systemLocale, savedLanguage) { tag ->
@@ -256,7 +263,11 @@ fun main() {
                         onClick = { paused = !paused },
                     )
                     Separator()
-                    Item(stringResource(Res.string.tray_quit), onClick = { lock.close(); exitApplication() })
+                    Item(stringResource(Res.string.tray_quit), onClick = {
+                        // Cancel a running install so the TV is not left with a half-written session.
+                        runBlocking { withTimeoutOrNull(5_000) { vm.cancelInstallForShutdown() } }
+                        lock.close(); exitApplication()
+                    })
                 },
             )
         }
@@ -270,6 +281,25 @@ fun main() {
             resizable = true,
         ) {
             val updateState by desktopUpdater.state.collectAsState()
+            // Card bounds arrive on every layout pass: a plain map, so storing them never recomposes.
+            val cardBounds = remember { java.util.concurrent.ConcurrentHashMap<String, CardBounds>() }
+            var dropHighlightTvId by remember { mutableStateOf<String?>(null) }
+            var dropHintVisible by remember { mutableStateOf(false) }
+            val installableIds by rememberUpdatedState(
+                state.tvs.filter { TvCardAction.INSTALL in cardActions(it) }.map { it.id }.toSet(),
+            )
+            val installBusy by rememberUpdatedState(state.install != null)
+            DisposableEffect(window) {
+                val target = DesktopDropTarget(
+                    component = window,
+                    cards = { cardBounds },
+                    reachableTvIds = { if (installBusy) emptySet() else installableIds },
+                    onHover = { id, hint -> dropHighlightTvId = id; dropHintVisible = hint },
+                    onDropFile = { id, file -> vm.beginInstall(id, FileInstallSource(file)) },
+                )
+                target.attach()
+                onDispose { target.detach() }
+            }
             key(epoch) {
                 CompositionLocalProvider(
                     // Layout follows the language actually shown, so English text stays
@@ -289,6 +319,12 @@ fun main() {
                             }
                         },
                         language = languageController,
+                        onPickInstallFile = { id ->
+                            DesktopInstallPicker.pickFile(window)?.let { vm.beginInstall(id, FileInstallSource(it)) }
+                        },
+                        dropHighlightTvId = dropHighlightTvId,
+                        dropHintVisible = dropHintVisible,
+                        onCardBoundsChanged = { id, b -> if (b == null) cardBounds.remove(id) else cardBounds[id] = b },
                     )
                 }
             }

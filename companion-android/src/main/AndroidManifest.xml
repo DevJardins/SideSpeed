@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Self-update through a PackageInstaller session. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Keeps a long transfer to the TV alive while the app is in the background. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".CompanionApplication"
@@ -25,6 +28,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".InstallTransferService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <!-- Receives the self-update session's confirmation screen intent. -->
         <receiver
             android:name=".update.CompanionInstallStatusReceiver"
