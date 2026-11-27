@@ -75,20 +75,25 @@ fun RebootRecoverySlot(
         if (!pendingEnableAfterConfirm) return@LaunchedEffect
         onConsumePendingEnable()
         busy = true
-        val result = controller.enable()
-        busy = false
-        notice = when (result) {
-            EnableResult.Enabled -> null
-            EnableResult.NeedsPairing -> {
-                onRequestPairing()
-                null
+        scope.launch {
+            try {
+                val result = controller.enable()
+                notice = when (result) {
+                    EnableResult.Enabled -> null
+                    EnableResult.NeedsPairing -> {
+                        onRequestPairing()
+                        null
+                    }
+                    EnableResult.NeedsLocationSetting -> RecoveryNotice.NEEDS_LOCATION_SETTING
+                    EnableResult.NeedsAlwaysAllowPrompt -> RecoveryNotice.NEEDS_ALWAYS_ALLOW_PROMPT
+                    EnableResult.NeedsAlwaysAllowToggle -> RecoveryNotice.NEEDS_ALWAYS_ALLOW_TOGGLE
+                    EnableResult.NoWifiOrOldAndroid -> RecoveryNotice.NEEDS_WIFI_OR_ANDROID_11
+                    EnableResult.HelperDown -> RecoveryNotice.HELPER_DOWN
+                    EnableResult.GrantFailed -> RecoveryNotice.GRANT_FAILED
+                }
+            } finally {
+                busy = false
             }
-            EnableResult.NeedsLocationSetting -> RecoveryNotice.NEEDS_LOCATION_SETTING
-            EnableResult.NeedsAlwaysAllowPrompt -> RecoveryNotice.NEEDS_ALWAYS_ALLOW_PROMPT
-            EnableResult.NeedsAlwaysAllowToggle -> RecoveryNotice.NEEDS_ALWAYS_ALLOW_TOGGLE
-            EnableResult.NoWifiOrOldAndroid -> RecoveryNotice.NEEDS_WIFI_OR_ANDROID_11
-            EnableResult.HelperDown -> RecoveryNotice.HELPER_DOWN
-            EnableResult.GrantFailed -> RecoveryNotice.GRANT_FAILED
         }
     }
 

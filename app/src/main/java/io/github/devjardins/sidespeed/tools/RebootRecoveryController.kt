@@ -38,11 +38,12 @@ class AndroidRecoveryPermissions(private val context: Context) : RecoveryPermiss
     override fun hasSecureSettings(): Boolean = isGranted(Manifest.permission.WRITE_SECURE_SETTINGS)
 
     override fun revokeLocationOnKill() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            runCatching {
-                context.revokeSelfPermissionsOnKill(LOCATION_PERMISSIONS)
-            }
-        }
+        // Intentionally a no-op: verified on Android 15 (sidespeed-pixel35) that
+        // Context.revokeSelfPermissionsOnKill sets FLAG_PERMISSION_ONE_TIME on the location
+        // permissions, and neither `pm revoke` nor `pm grant` clears ONE_TIME afterward—which
+        // permanently breaks re-enabling "After a restart" across future reboots.
+        // Location permissions are revoked cleanly via the helper's `revoke-reboot-recovery`
+        // on ON_STOP / MaintenanceService / onHelperUp without setting ONE_TIME.
     }
 
     private fun isGranted(permission: String): Boolean =
