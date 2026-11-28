@@ -336,6 +336,32 @@ class ApkInspectorTest {
     }
 
     @Test
+    fun multi_variant_version_name_comes_from_the_base_not_the_first_entry() {
+        val archive = buildMultiVariantApks(bundletoolOrder = true)
+        TempZipInstallSource.fromBytes("multi.apks", archive).use { source ->
+            val inspected = ApkInspector.inspect(source).getOrThrow()
+            assertEquals("5.0.0", inspected.versionName)
+            assertEquals("5.0.0", ApkInspector.selectVariant(inspected, 28).getOrThrow().versionName)
+        }
+    }
+
+    @Test
+    fun suffix_fallback_keeps_x86_64_splits_in_their_own_variant() {
+        // "base-x86_64.apk" ends in "_64" but belongs to the first variant, not a variant "64".
+        val archive = buildMultiVariantApks(includeToc = false, includeX86_64 = true)
+        TempZipInstallSource.fromBytes("multi.apks", archive).use { source ->
+            val inspected = ApkInspector.inspect(source).getOrThrow()
+            assertEquals(listOf(21, 28, 33), inspected.variants?.map { it.minSdk })
+            val for21 = ApkInspector.selectVariant(inspected, 21).getOrThrow()
+            assertEquals("splits/base-master.apk", for21.base.zipEntryName)
+            assertTrue(for21.splits.any { it.zipEntryName == "splits/base-x86_64.apk" })
+            val for28 = ApkInspector.selectVariant(inspected, 28).getOrThrow()
+            assertTrue(for28.splits.any { it.zipEntryName == "splits/base-x86_64_2.apk" })
+            assertEquals(3, for28.splits.size)
+        }
+    }
+
+    @Test
     fun refuses_multi_variant_bundle_without_a_safe_choice() {
         // Several bases with no toc and no bundletool suffixes: nothing to choose with.
         val ambiguous = buildZipBytes(

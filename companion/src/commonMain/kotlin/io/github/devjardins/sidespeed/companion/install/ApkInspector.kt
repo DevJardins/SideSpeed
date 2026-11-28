@@ -169,7 +169,8 @@ object ApkInspector {
                 packageName = first.manifest.packageName,
                 displayLabel = label,
                 versionCode = first.manifest.versionCode,
-                versionName = first.manifest.versionName,
+                // Split manifests carry no versionName; the base does.
+                versionName = representative.base.manifest.versionName,
                 isBundle = true,
                 base = representative.base,
                 splits = representative.splits,
@@ -231,11 +232,20 @@ object ApkInspector {
      * Null when a group has no single base, a floor is missing, or two floors collide.
      */
     private fun groupByVariantSuffix(inspectedEntries: List<ApkEntryMeta>): List<InspectedVariant>? {
-        val groups = LinkedHashMap<String, MutableList<ApkEntryMeta>>()
-        for (entry in inspectedEntries) {
+        fun suffixOf(entry: ApkEntryMeta): String? {
             val name = normalizeZipPath(entry.zipEntryName ?: return null)
             val stem = name.substringBeforeLast('.', name)
-            val suffix = VARIANT_SUFFIX_PATTERN.find(stem)?.groupValues?.get(1) ?: ""
+            return VARIANT_SUFFIX_PATTERN.find(stem)?.groupValues?.get(1) ?: ""
+        }
+        // Only suffixes carried by a base count as variants, so "base-x86_64.apk" is not variant "64".
+        val variantSuffixes = HashSet<String>()
+        for (entry in inspectedEntries) {
+            if (entry.manifest.splitName == null) variantSuffixes += suffixOf(entry) ?: return null
+        }
+        val groups = LinkedHashMap<String, MutableList<ApkEntryMeta>>()
+        for (entry in inspectedEntries) {
+            val raw = suffixOf(entry) ?: return null
+            val suffix = if (raw in variantSuffixes) raw else ""
             groups.getOrPut(suffix) { ArrayList() } += entry
         }
         val seenFloors = HashSet<Int>()

@@ -464,6 +464,8 @@ internal object InstallTestFixtures {
         tocBytes: ByteArray? = null,
         includeToc: Boolean = true,
         manifestMinSdks: List<Int?>? = null,
+        includeX86_64: Boolean = false,
+        bundletoolOrder: Boolean = false,
     ): ByteArray {
         val entries = ArrayList<Pair<String, ByteArray>>()
         val variantPaths = ArrayList<List<String>>()
@@ -474,7 +476,7 @@ internal object InstallTestFixtures {
                 "splits/base-master$suffix.apk",
                 "splits/base-en$suffix.apk",
                 "splits/base-arm64_v8a$suffix.apk",
-            )
+            ) + if (includeX86_64) listOf("splits/base-x86_64$suffix.apk") else emptyList()
             variantPaths += paths
             entries += paths[0] to buildApkBytes(
                 AxmlSpec(
@@ -489,7 +491,7 @@ internal object InstallTestFixtures {
                 AxmlSpec(
                     packageName = "com.example.multi",
                     versionCode = 500,
-                    versionName = "5.0.0",
+                    versionName = if (bundletoolOrder) null else "5.0.0",
                     splitName = "config.en",
                     minSdkVersion = floors[index],
                 ),
@@ -498,16 +500,32 @@ internal object InstallTestFixtures {
                 AxmlSpec(
                     packageName = "com.example.multi",
                     versionCode = 500,
-                    versionName = "5.0.0",
+                    versionName = if (bundletoolOrder) null else "5.0.0",
                     splitName = "config.arm64_v8a",
                     minSdkVersion = floors[index],
                 ),
             )
+            if (includeX86_64) {
+                entries += paths[3] to buildApkBytes(
+                    AxmlSpec(
+                        packageName = "com.example.multi",
+                        versionCode = 500,
+                        versionName = if (bundletoolOrder) null else "5.0.0",
+                        splitName = "config.x86_64",
+                        minSdkVersion = floors[index],
+                    ),
+                )
+            }
         }
         val toc = tocBytes ?: if (includeToc) {
             buildTocBytes(minSdks.mapIndexed { index, sdk -> TocVariantSpec(sdk, variantPaths[index]) })
         } else {
             null
+        }
+        if (bundletoolOrder) {
+            // Real bundletool archives list entries alphabetically, so a split comes first,
+            // and split manifests carry no versionName.
+            entries.sortBy { it.first }
         }
         if (toc != null) entries.add(0, "toc.pb" to toc)
         return buildZipBytes(entries)
