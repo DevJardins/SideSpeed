@@ -2,8 +2,11 @@ package io.github.devjardins.sidespeed.companion.install
 
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.AxmlSpec
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ByteArrayInstallSource
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ArscEntrySpec
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ArscValue
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.TempZipInstallSource
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildApkBytes
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildArsc
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildAxml
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildMultiVariantApks
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildTocBytes
@@ -143,6 +146,109 @@ class ApkInspectorTest {
             val inspected = ApkInspector.inspect(source).getOrThrow()
             assertEquals("Hinted From XAPK", inspected.displayLabel)
             assertEquals("com.example.hinted", inspected.packageName)
+        }
+    }
+
+    @Test
+    fun resolves_resource_label_for_single_apk_in_zip_and_stream() {
+        val arsc = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("Resolved App"))))
+        val spec = AxmlSpec(
+            packageName = "com.example.resolved",
+            versionCode = 7,
+            appLabelResId = 0x7f010000,
+        )
+
+        TempZipInstallSource.fromBytes("companion-single.apk", buildApkBytes(spec, arscBytes = arsc)).use {
+            assertEquals("Resolved App", ApkInspector.inspect(it).getOrThrow().displayLabel)
+        }
+
+        // Streamed inspection reads entries in order; arsc may come before or after the manifest.
+        for (arscFirst in listOf(false, true)) {
+            ByteArrayInstallSource(
+                "companion-single.apk",
+                buildApkBytes(spec, arscBytes = arsc, arscBeforeManifest = arscFirst),
+            ).use {
+                assertEquals("Resolved App", ApkInspector.inspect(it).getOrThrow().displayLabel)
+            }
+        }
+    }
+
+    @Test
+    fun prefers_resolved_resource_label_over_json_hint_and_caps_length() {
+        val arsc = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("From Arsc"))))
+        val baseApk = buildApkBytes(
+            AxmlSpec(packageName = "com.example.hinted", versionCode = 10, appLabelResId = 0x7f010000),
+            arscBytes = arsc,
+        )
+        val bundleBytes = buildZipBytes(
+            listOf(
+                "base.apk" to baseApk,
+                "info.json" to """{"app_name":"From Hint","pname":"com.example.hinted"}""".encodeToByteArray(),
+            ),
+        )
+        TempZipInstallSource.fromBytes("ignored-filename.apkm", bundleBytes).use {
+            assertEquals("From Arsc", ApkInspector.inspect(it).getOrThrow().displayLabel)
+        }
+
+        val longArsc = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("L".repeat(150)))))
+        ByteArrayInstallSource(
+            "long.apk",
+            buildApkBytes(
+                AxmlSpec(packageName = "com.example.long", versionCode = 1, appLabelResId = 0x7f010000),
+                arscBytes = longArsc,
+            ),
+        ).use {
+            val label = ApkInspector.inspect(it).getOrThrow().displayLabel
+            assertEquals(100, label.length)
+            assertEquals("L".repeat(100), label)
+        }
+    }
+
+    @Test
+    fun falls_back_to_file_stem_when_arsc_is_malformed() {
+        val spec = AxmlSpec(
+            packageName = "com.example.broken",
+            versionCode = 3,
+            appLabelResId = 0x7f010000,
+        )
+        val valid = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("Resolved App"))))
+        for (broken in listOf(valid.copyOf(valid.size / 2), "garbage".encodeToByteArray())) {
+            TempZipInstallSource.fromBytes("Fallback Stem.apk", buildApkBytes(spec, arscBytes = broken)).use {
+                assertEquals("Fallback Stem", ApkInspector.inspect(it).getOrThrow().displayLabel)
+            }
+            ByteArrayInstallSource("Fallback Stem.apk", buildApkBytes(spec, arscBytes = broken)).use {
+                assertEquals("Fallback Stem", ApkInspector.inspect(it).getOrThrow().displayLabel)
+            }
+        }
+    }
+
+    @Test
+    fun resolves_resource_label_for_bundle_base_and_multi_variant() {
+        val arsc = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("Bundle App"))))
+        val baseApk = buildApkBytes(
+            AxmlSpec(packageName = "com.example.bundle", versionCode = 9, appLabelResId = 0x7f010000),
+            arscBytes = arsc,
+        )
+        val splitApk = buildApkBytes(
+            AxmlSpec(packageName = "com.example.bundle", versionCode = 9, splitName = "config.en"),
+        )
+        TempZipInstallSource.fromBytes(
+            "bundle.apks",
+            buildZipBytes(listOf("base.apk" to baseApk, "split.apk" to splitApk)),
+        ).use {
+            val inspected = ApkInspector.inspect(it).getOrThrow()
+            assertTrue(inspected.isBundle)
+            assertEquals("Bundle App", inspected.displayLabel)
+        }
+
+        val variantArsc = buildArsc(listOf(ArscEntrySpec("app_name", default = ArscValue.Str("Variant App"))))
+        TempZipInstallSource.fromBytes(
+            "multi.apks",
+            buildMultiVariantApks(baseLabelResId = 0x7f010000, baseArscBytes = variantArsc),
+        ).use {
+            val inspected = ApkInspector.inspect(it).getOrThrow()
+            assertEquals("Variant App", inspected.displayLabel)
+            assertEquals("Variant App", ApkInspector.selectVariant(inspected, 28).getOrThrow().displayLabel)
         }
     }
 

@@ -22,6 +22,8 @@ object ApkInspector {
     const val MAX_MANIFEST_BYTES = 4_194_304
     private const val MAX_METADATA_BYTES = 1_048_576
     private const val MANIFEST_ENTRY = "AndroidManifest.xml"
+    private const val ARSC_ENTRY = "resources.arsc"
+    private const val MAX_LABEL_CHARS = 100
     private const val STREAM_BUFFER_BYTES = 64 * 1024
     private val VARIANT_SUFFIX_PATTERN = Regex("""_(\d+)$""")
 
@@ -124,7 +126,7 @@ object ApkInspector {
 
         val jsonHint = readJsonLabelHint(zipFile, apkmInfoEntry, "app_name")
             ?: readJsonLabelHint(zipFile, xapkManifestEntry, "name")
-        val label = pickDisplayLabel(base.manifest, jsonHint, source.displayName)
+        val label = pickDisplayLabel(base.manifest, base.resourceLabel, jsonHint, source.displayName)
 
         return Result.success(
             InspectedPackage(
@@ -163,7 +165,12 @@ object ApkInspector {
             ?: return InstallError.MixedBundle.asFailure()
         val ordered = variants.sortedBy { it.minSdk }
         val representative = ordered.first()
-        val label = pickDisplayLabel(representative.base.manifest, null, displayName)
+        val label = pickDisplayLabel(
+            representative.base.manifest,
+            representative.base.resourceLabel,
+            null,
+            displayName,
+        )
         return Result.success(
             InspectedPackage(
                 packageName = first.manifest.packageName,
@@ -291,11 +298,17 @@ object ApkInspector {
             }
         }
 
-        val base = ApkEntryMeta(zipEntryName = null, sizeBytes = apkSize, manifest = manifest)
+        val resourceLabel = resolveResourceLabel(manifest.labelResId, readArscFromZip(zipFile))
+        val base = ApkEntryMeta(
+            zipEntryName = null,
+            sizeBytes = apkSize,
+            manifest = manifest,
+            resourceLabel = resourceLabel,
+        )
         return Result.success(
             InspectedPackage(
                 packageName = manifest.packageName,
-                displayLabel = pickDisplayLabel(manifest, null, source.displayName),
+                displayLabel = pickDisplayLabel(manifest, resourceLabel, null, source.displayName),
                 versionCode = manifest.versionCode,
                 versionName = manifest.versionName,
                 isBundle = false,
@@ -318,10 +331,12 @@ object ApkInspector {
                 }
                 pushback.unread(magic, 0, magicRead)
 
-                val manifestBytes = readManifestFromZipStream(pushback)
+                val blobs = readManifestAndArscFromZipStream(pushback)
+                val manifestBytes = blobs.manifest
                     ?: return InstallError.CorruptArchive.asFailure()
                 val manifest = AxmlManifestParser.parse(manifestBytes)
                     ?: return InstallError.CorruptArchive.asFailure()
+                val resourceLabel = resolveResourceLabel(manifest.labelResId, blobs.arsc)
                 val entrySize = if (entry.size >= 0L) {
                     entry.size
                 } else {
@@ -333,6 +348,7 @@ object ApkInspector {
                         zipEntryName = entry.name,
                         sizeBytes = entrySize,
                         manifest = manifest,
+                        resourceLabel = resourceLabel,
                     ),
                 )
             }
@@ -351,10 +367,15 @@ object ApkInspector {
                 val bounded = CountingBoundedInputStream(rawStream, MAX_INSTALL_BYTES)
                 val zis = ZipInputStream(bounded)
                 var manifestBytes: ByteArray? = null
+                var arscBytes: ByteArray? = null
+                var arscDone = false
                 var sawObb = false
                 var sawApkEntry = false
                 var scannedUncompressed = 0L
 
+                // Entries arrive in order and resources.arsc may sit on either side of the
+                // manifest, so keep scanning until both are found. Only the manifest and the
+                // bounded arsc table are retained; everything else is drained and forgotten.
                 while (true) {
                     val entry = zis.nextEntry ?: break
                     val normalized = normalizeZipPath(entry.name)
@@ -364,15 +385,16 @@ object ApkInspector {
                     if (!entry.isDirectory && normalized.endsWith(".apk", ignoreCase = true)) {
                         sawApkEntry = true
                     }
-                    if (!entry.isDirectory && entry.name == MANIFEST_ENTRY) {
+                    if (!entry.isDirectory && entry.name == MANIFEST_ENTRY && manifestBytes == null) {
                         if (entry.size > MAX_MANIFEST_BYTES) {
                             return InstallError.TooLarge.asFailure()
                         }
                         manifestBytes = readBoundedBytes(zis, MAX_MANIFEST_BYTES)
                             ?: return InstallError.TooLarge.asFailure()
-                        break
-                    }
-                    if (!entry.isDirectory) {
+                    } else if (!entry.isDirectory && entry.name == ARSC_ENTRY && !arscDone) {
+                        arscDone = true
+                        arscBytes = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+                    } else if (!entry.isDirectory) {
                         if (entry.size > MAX_INSTALL_BYTES) {
                             return InstallError.TooLarge.asFailure()
                         }
@@ -381,6 +403,7 @@ object ApkInspector {
                             MAX_INSTALL_BYTES - scannedUncompressed,
                         )
                     }
+                    if (manifestBytes != null && arscDone) break
                 }
 
                 if (manifestBytes == null) {
@@ -399,11 +422,17 @@ object ApkInspector {
                     drainBounded(bounded)
                     bounded.bytesRead
                 }
-                val base = ApkEntryMeta(zipEntryName = null, sizeBytes = apkSize, manifest = manifest)
+                val resourceLabel = resolveResourceLabel(manifest.labelResId, arscBytes)
+                val base = ApkEntryMeta(
+                    zipEntryName = null,
+                    sizeBytes = apkSize,
+                    manifest = manifest,
+                    resourceLabel = resourceLabel,
+                )
                 Result.success(
                     InspectedPackage(
                         packageName = manifest.packageName,
-                        displayLabel = pickDisplayLabel(manifest, null, source.displayName),
+                        displayLabel = pickDisplayLabel(manifest, resourceLabel, null, source.displayName),
                         versionCode = manifest.versionCode,
                         versionName = manifest.versionName,
                         isBundle = false,
@@ -421,24 +450,75 @@ object ApkInspector {
         }
     }
 
-    /** Returns null when [MANIFEST_ENTRY] is missing; throws [SizeLimitExceededException] if over cap. */
-    private fun readManifestFromZipStream(stream: InputStream): ByteArray? {
+    private data class InnerApkBlobs(val manifest: ByteArray?, val arsc: ByteArray?)
+
+    /**
+     * Scans one inner APK for its manifest and `resources.arsc` in a single pass; either entry
+     * may come first, so both are collected without retaining anything else. The manifest is
+     * null when missing (the caller reports [InstallError.CorruptArchive]); a missing or
+     * oversized arsc table is null and only loses the resource-label lookup. Throws
+     * [SizeLimitExceededException] if over cap.
+     */
+    private fun readManifestAndArscFromZipStream(stream: InputStream): InnerApkBlobs {
         val zis = ZipInputStream(stream)
         var scannedUncompressed = 0L
+        var manifest: ByteArray? = null
+        var arsc: ByteArray? = null
+        var arscDone = false
         while (true) {
-            val entry = zis.nextEntry ?: return null
-            if (!entry.isDirectory && entry.name == MANIFEST_ENTRY) {
+            val entry = zis.nextEntry ?: break
+            if (!entry.isDirectory && entry.name == MANIFEST_ENTRY && manifest == null) {
                 if (entry.size > MAX_MANIFEST_BYTES) throw SizeLimitExceededException()
-                return readBoundedBytes(zis, MAX_MANIFEST_BYTES) ?: throw SizeLimitExceededException()
-            }
-            if (!entry.isDirectory) {
+                manifest = readBoundedBytes(zis, MAX_MANIFEST_BYTES) ?: throw SizeLimitExceededException()
+            } else if (!entry.isDirectory && entry.name == ARSC_ENTRY && !arscDone) {
+                arscDone = true
+                arsc = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+            } else if (!entry.isDirectory) {
                 if (entry.size > MAX_INSTALL_BYTES) throw SizeLimitExceededException()
                 scannedUncompressed += drainEntryWithinBudget(
                     zis,
                     MAX_INSTALL_BYTES - scannedUncompressed,
                 )
             }
+            if (manifest != null && arscDone) break
         }
+        return InnerApkBlobs(manifest, arsc)
+    }
+
+    /** Reads one seekable `resources.arsc` entry, bounded; null when missing, oversized, or unreadable. */
+    private fun readArscFromZip(zipFile: ZipFile): ByteArray? {
+        val entry = try {
+            zipFile.getEntry(ARSC_ENTRY)
+        } catch (_: Exception) {
+            return null
+        } ?: return null
+        if (entry.isDirectory || entry.size > ArscLabelResolver.MAX_ARSC_BYTES) return null
+        return try {
+            zipFile.getInputStream(entry).use { readBoundedBytes(it, ArscLabelResolver.MAX_ARSC_BYTES) }
+        } catch (_: IOException) {
+            null
+        }
+    }
+
+    /**
+     * Reads the current [ZipInputStream] entry as an arsc table when it fits the cap; a larger
+     * table is drained and skipped (the label falls back) without failing the inspection.
+     */
+    private fun readArscOrSkip(stream: InputStream, entrySize: Long, budgetLeft: Long): ByteArray? {
+        if (entrySize > ArscLabelResolver.MAX_ARSC_BYTES) {
+            if (entrySize > budgetLeft) throw SizeLimitExceededException()
+            drainEntryWithinBudget(stream, budgetLeft)
+            return null
+        }
+        return readBoundedBytes(stream, ArscLabelResolver.MAX_ARSC_BYTES) ?: run {
+            drainEntryWithinBudget(stream, budgetLeft)
+            null
+        }
+    }
+
+    private fun resolveResourceLabel(labelResId: Int?, arscBytes: ByteArray?): String? {
+        if (labelResId == null || arscBytes == null) return null
+        return ArscLabelResolver.resolve(arscBytes, labelResId)
     }
 
     private fun drainEntryWithinBudget(stream: InputStream, remainingBudget: Long): Long {
@@ -470,14 +550,16 @@ object ApkInspector {
 
     private fun pickDisplayLabel(
         manifest: ApkManifestInfo,
+        resourceLabel: String?,
         jsonHint: String?,
         displayName: String,
     ): String {
-        manifest.literalLabel?.let(::sanitizeLabel)?.let { return it }
-        jsonHint?.let(::sanitizeLabel)?.let { return it }
+        manifest.literalLabel?.let(::sanitizeLabel)?.let { return it.take(MAX_LABEL_CHARS) }
+        resourceLabel?.let(::sanitizeLabel)?.let { return it.take(MAX_LABEL_CHARS) }
+        jsonHint?.let(::sanitizeLabel)?.let { return it.take(MAX_LABEL_CHARS) }
         val fileName = displayName.substringAfterLast('/').substringAfterLast('\\').trim()
         val stem = if ('.' in fileName) fileName.substringBeforeLast('.').trim() else fileName
-        return sanitizeLabel(stem) ?: manifest.packageName
+        return sanitizeLabel(stem)?.take(MAX_LABEL_CHARS) ?: manifest.packageName
     }
 
     private fun sanitizeLabel(raw: String): String? =

@@ -287,6 +287,164 @@ internal object InstallTestFixtures {
 
     private fun leBuffer(size: Int): ByteBuffer = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN)
 
+    /** A value for one config slot of a string resource: plain text, an entry reference, or a raw typed value. */
+    sealed interface ArscValue {
+        data class Str(val text: String) : ArscValue
+        data class Ref(val entryIndex: Int) : ArscValue
+        data class Raw(val type: Int, val data: Int) : ArscValue
+    }
+
+    /** One string type entry; entry index N carries `(packageId, typeId, N)` (real labels are not always type 1). */
+    data class ArscEntrySpec(
+        val name: String,
+        val default: ArscValue? = null,
+        val en: ArscValue? = null,
+        val other: ArscValue? = null,
+    )
+
+    /**
+     * Builds a minimal `resources.arsc`: table header, one global string pool, one package with
+     * a `string` type (id 1), one `TypeSpec`, and one `Type` chunk per config slot in use
+     * (default, `en`, `other` as `fr`). Mirrors the `ResTable_*` wire layout the parser reads.
+     */
+    fun buildArsc(
+        entries: List<ArscEntrySpec>,
+        packageId: Int = 0x7f,
+        utf8: Boolean = false,
+        typeId: Int = 1,
+    ): ByteArray {
+        val stringList = ArrayList<String>()
+        fun intern(s: String): Int {
+            val existing = stringList.indexOf(s)
+            if (existing >= 0) return existing
+            stringList += s
+            return stringList.lastIndex
+        }
+        entries.forEach { entry ->
+            listOfNotNull(entry.default, entry.en, entry.other).forEach { value ->
+                if (value is ArscValue.Str) intern(value.text)
+            }
+        }
+        val globalPool = encodeStringPool(stringList, utf8)
+        val typePool = encodeStringPool(listOf("string"), utf8)
+        val keyPool = encodeStringPool(entries.map { it.name }, utf8)
+
+        fun valueFor(entry: ArscEntrySpec, kind: Int): ArscValue? = when (kind) {
+            0 -> entry.default
+            1 -> entry.en
+            else -> entry.other
+        }
+        val kindsInUse = (0..2).filter { kind -> entries.any { valueFor(it, kind) != null } }
+
+        fun configBytes(kind: Int): ByteArray {
+            val buf = leBuffer(64)
+            buf.putInt(0, 64)
+            if (kind == 1) {
+                buf.put(8, 'e'.code.toByte())
+                buf.put(9, 'n'.code.toByte())
+            } else if (kind == 2) {
+                buf.put(8, 'f'.code.toByte())
+                buf.put(9, 'r'.code.toByte())
+            }
+            return buf.array()
+        }
+
+        fun encodeTypeChunk(kind: Int): ByteArray {
+            val count = entries.size
+            val headerSize = 20 + 64
+            // The offsets array starts at the header size; entriesStart points past it to
+            // the entry data, and each offset is relative to entriesStart (real arsc layout).
+            val entriesStart = headerSize + count * 4
+            val offsets = IntArray(count) { -1 }
+            val entryBlobs = ArrayList<ByteArray>()
+            var dataCursor = 0
+            for (i in entries.indices) {
+                val value = valueFor(entries[i], kind) ?: continue
+                offsets[i] = dataCursor
+                val ebuf = leBuffer(16)
+                ebuf.putShort(8) // ResTable_entry header size; the Res_value follows it
+                ebuf.putShort(0) // flags: plain value, not complex
+                ebuf.putInt(i) // key index
+                ebuf.putShort(8) // Res_value size
+                ebuf.put(0) // res0
+                when (value) {
+                    is ArscValue.Str -> {
+                        ebuf.put(0x03.toByte()) // TYPE_STRING
+                        ebuf.putInt(stringList.indexOf(value.text))
+                    }
+                    is ArscValue.Ref -> {
+                        ebuf.put(0x01.toByte()) // TYPE_REFERENCE
+                        ebuf.putInt((packageId shl 24) or (typeId shl 16) or value.entryIndex)
+                    }
+                    is ArscValue.Raw -> {
+                        ebuf.put(value.type.toByte())
+                        ebuf.putInt(value.data)
+                    }
+                }
+                entryBlobs += ebuf.array()
+                dataCursor += 16
+            }
+            val size = entriesStart + entryBlobs.sumOf { it.size }
+            val buf = leBuffer(size)
+            buf.putShort(0x0201) // RES_TABLE_TYPE_TYPE
+            buf.putShort(headerSize.toShort())
+            buf.putInt(size)
+            buf.put(typeId.toByte()) // type id
+            buf.put(0)
+            buf.putShort(0)
+            buf.putInt(count)
+            buf.putInt(entriesStart) // offset from the chunk start to the entry data
+            buf.put(configBytes(kind))
+            for (offset in offsets) buf.putInt(offset)
+            entryBlobs.forEach { buf.put(it) }
+            return buf.array()
+        }
+
+        val count = entries.size
+        val specBuf = leBuffer(16 + count * 4)
+        specBuf.putShort(0x0202) // RES_TABLE_TYPE_SPEC_TYPE
+        specBuf.putShort(16)
+        specBuf.putInt(16 + count * 4)
+        specBuf.put(typeId.toByte())
+        specBuf.put(0)
+        specBuf.putShort(0)
+        specBuf.putInt(count)
+        repeat(count) { specBuf.putInt(0) }
+        val specChunk = specBuf.array()
+
+        val typeChunks = kindsInUse.map { encodeTypeChunk(it) }
+        val packageHeaderSize = 288
+        val typeStringsOff = packageHeaderSize
+        val keyStringsOff = packageHeaderSize + typePool.size
+        val packageSize = packageHeaderSize + typePool.size + keyPool.size +
+            specChunk.size + typeChunks.sumOf { it.size }
+        val pkgBuf = leBuffer(packageSize)
+        pkgBuf.putShort(0x0200) // RES_TABLE_PACKAGE_TYPE
+        pkgBuf.putShort(packageHeaderSize.toShort())
+        pkgBuf.putInt(packageSize)
+        pkgBuf.putInt(packageId)
+        repeat(128) { pkgBuf.putShort(0) } // package name
+        pkgBuf.putInt(typeStringsOff)
+        pkgBuf.putInt(0) // lastPublicType
+        pkgBuf.putInt(keyStringsOff)
+        pkgBuf.putInt(0) // lastPublicKey
+        pkgBuf.putInt(0) // typeIdOffset
+        pkgBuf.put(typePool)
+        pkgBuf.put(keyPool)
+        pkgBuf.put(specChunk)
+        typeChunks.forEach { pkgBuf.put(it) }
+
+        val totalSize = 12 + globalPool.size + packageSize
+        val buf = leBuffer(totalSize)
+        buf.putShort(0x0002) // RES_TABLE_TYPE
+        buf.putShort(12)
+        buf.putInt(totalSize)
+        buf.putInt(1) // packageCount
+        buf.put(globalPool)
+        buf.put(pkgBuf.array())
+        return buf.array()
+    }
+
     fun buildZipBytes(
         entries: List<Pair<String, ByteArray>>,
         storedUncompressed: Boolean = false,
@@ -320,13 +478,21 @@ internal object InstallTestFixtures {
         dummyEntriesAfterManifest: Int = 0,
         rawManifestOverride: ByteArray? = null,
         storedManifest: Boolean = false,
+        arscBytes: ByteArray? = null,
+        arscBeforeManifest: Boolean = false,
     ): ByteArray {
         val entries = ArrayList<Pair<String, ByteArray>>()
         val dummyPayload = byteArrayOf(1, 2, 3, 4)
         for (i in 0 until dummyEntriesBeforeManifest) {
             entries += "res/raw/r_$i.bin" to dummyPayload
         }
+        if (arscBytes != null && arscBeforeManifest) {
+            entries += "resources.arsc" to arscBytes
+        }
         entries += "AndroidManifest.xml" to (rawManifestOverride ?: buildAxml(spec))
+        if (arscBytes != null && !arscBeforeManifest) {
+            entries += "resources.arsc" to arscBytes
+        }
         for (i in 0 until dummyEntriesAfterManifest) {
             entries += "res/raw/a_$i.bin" to dummyPayload
         }
@@ -466,6 +632,8 @@ internal object InstallTestFixtures {
         manifestMinSdks: List<Int?>? = null,
         includeX86_64: Boolean = false,
         bundletoolOrder: Boolean = false,
+        baseLabelResId: Int? = null,
+        baseArscBytes: ByteArray? = null,
     ): ByteArray {
         val entries = ArrayList<Pair<String, ByteArray>>()
         val variantPaths = ArrayList<List<String>>()
@@ -484,8 +652,10 @@ internal object InstallTestFixtures {
                     versionCode = 500,
                     versionName = "5.0.0",
                     minSdkVersion = floors[index],
-                    appLabelLiteral = "Multi App",
+                    appLabelLiteral = if (baseLabelResId == null) "Multi App" else null,
+                    appLabelResId = baseLabelResId,
                 ),
+                arscBytes = baseArscBytes,
             )
             entries += paths[1] to buildApkBytes(
                 AxmlSpec(

@@ -61,12 +61,14 @@ data class ApkManifestInfo(
     val isFeatureSplit: Boolean,
     val literalLabel: String?,
     val minSdkVersion: Int? = null,
+    val labelResId: Int? = null,
 )
 
 data class ApkEntryMeta(
     val zipEntryName: String?,
     val sizeBytes: Long,
     val manifest: ApkManifestInfo,
+    val resourceLabel: String? = null,
 )
 
 /** One SDK variant inside a multi-variant bundletool `.apks`: disjoint base plus splits. */
