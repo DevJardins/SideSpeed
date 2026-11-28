@@ -125,14 +125,29 @@ class AdbPackageInstallerTest {
         localeFallback: String = "",
         pmPath: String = "",
         dump: String = "",
+        wmDensity: String? = null,
     ): Map<String, String> = buildMap {
         put(TvCommands.PROP_ABILIST, abiList)
         if (abiList.isBlank()) put(TvCommands.PROP_ABI, abiFallback)
         put(TvCommands.PROP_DENSITY, density)
+        if (wmDensity != null) put(TvCommands.WM_DENSITY, wmDensity)
         put(TvCommands.PROP_LOCALE, locale)
         if (locale.isBlank()) put(TvCommands.PROP_LOCALE_FALLBACK, localeFallback)
         put(TvCommands.packagePath(pkg), pmPath)
         if (pmPath.isNotBlank()) put(TvCommands.packageDump(pkg), dump)
+    }
+
+    @Test
+    fun preflight_reads_wm_density_when_the_density_prop_is_empty() = runTest {
+        val installer = AdbPackageInstaller()
+        val (pkg, _) = singlePkg(versionCode = 120L, bytes = ByteArray(64) { it.toByte() })
+        val session = FakeTvSession(preflightOutputs(density = "", wmDensity = "Physical density: 320"))
+        assertEquals(320, installer.preflight(session, pkg).getOrThrow().device.densityDpi)
+
+        // The prop wins when set; wm is not asked.
+        val withProp = FakeTvSession(preflightOutputs(density = "213", wmDensity = "Physical density: 320"))
+        assertEquals(213, installer.preflight(withProp, pkg).getOrThrow().device.densityDpi)
+        assertFalse(TvCommands.WM_DENSITY in withProp.sent)
     }
 
     @Test

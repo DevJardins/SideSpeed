@@ -118,6 +118,23 @@ object TvCommands {
     const val PROP_ABILIST = "getprop ro.product.cpu.abilist"
     const val PROP_ABI = "getprop ro.product.cpu.abi"
     const val PROP_DENSITY = "getprop ro.sf.lcd_density"
+
+    /** Fallback when [PROP_DENSITY] is empty (some emulators and boxes leave it unset). */
+    const val WM_DENSITY = "wm density"
+
+    private val WM_DENSITY_LINE = Regex("""^(?:(Physical)|Override) density:\s*(\d{1,4})\s*$""")
+
+    /** Parses [WM_DENSITY] output: the override when present, else the physical density; null when unusable. */
+    fun parseWmDensity(output: String): Int? {
+        var physical: Int? = null
+        var override: Int? = null
+        for (line in output.lineSequence()) {
+            val m = WM_DENSITY_LINE.find(line.trim()) ?: continue
+            val dpi = m.groupValues[2].toIntOrNull()?.takeIf { it in 1..2000 } ?: continue
+            if (m.groupValues[1].isEmpty()) override = dpi else physical = dpi
+        }
+        return override ?: physical
+    }
     const val PROP_LOCALE = "getprop persist.sys.locale"
     const val PROP_LOCALE_FALLBACK = "getprop ro.product.locale"
 

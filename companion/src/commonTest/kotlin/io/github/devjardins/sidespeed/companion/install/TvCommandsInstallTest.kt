@@ -12,6 +12,17 @@ import kotlin.test.assertTrue
 
 class TvCommandsInstallTest {
     @Test
+    fun wm_density_parses_override_first_then_physical() {
+        assertEquals("wm density", TvCommands.WM_DENSITY)
+        assertEquals(320, TvCommands.parseWmDensity("Physical density: 320\n"))
+        assertEquals(240, TvCommands.parseWmDensity("Physical density: 320\nOverride density: 240\n"))
+        assertNull(TvCommands.parseWmDensity(""))
+        assertNull(TvCommands.parseWmDensity("Physical density: abc"))
+        assertNull(TvCommands.parseWmDensity("Physical density: 0"))
+        assertNull(TvCommands.parseWmDensity("Physical density: 99999"))
+    }
+
+    @Test
     fun package_commands_build_exact_strings_and_reject_invalid_packages() {
         assertEquals("pm path com.example.app", TvCommands.packagePath("com.example.app"))
         assertEquals("dumpsys package com.example.app", TvCommands.packageDump("com.example.app"))
