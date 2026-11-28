@@ -29,8 +29,8 @@ Before starting a task, write one line so the owner can redirect it:
 | --- | --- | --- |
 | 1–2 | Trivial: a typo, a few lines, a config value, a single check. | The orchestrator. A brief and a review cost more than the fix. |
 | 3–6 | Scoped: one feature or area, tests, a refactor that isn't sensitive. | Muse for the app, Cursor for sidespeed-site. Split independent parts across several workers. |
-| 7–8 | Hard: crosses modules, holds state, or a tricky TV focus flow. | Antigravity. |
-| 9–10 | Expert: new architecture, races, a root cause nobody has found. | The orchestrator plans and decides; it may hand the build to Antigravity. |
+| 7–8 | Hard: crosses modules, holds state, or a tricky TV focus flow. | Antigravity or Codex. |
+| 9–10 | Expert: new architecture, races, a root cause nobody has found. | The orchestrator plans and decides; it may hand the build to Codex or Antigravity. |
 | Review | Every worker PR. | The orchestrator. Cursor or Copilot may add a read-only second review. |
 
 ### Sensitive work
@@ -47,7 +47,8 @@ Rules for sensitive work:
 
 - Never hand it to Muse or Cursor to build.
 - Score 1–2: the orchestrator does it.
-- Score 3–8: Antigravity builds it; the orchestrator does a security review before merging.
+- Score 3–8: Codex builds it (Antigravity when Codex is unavailable);
+  the orchestrator does a security review before merging.
 - Score 9–10: the orchestrator.
 - A release the owner approved in this session is run by the orchestrator:
   tag, check the draft, publish, update the site. No delegation.
@@ -59,7 +60,8 @@ Delegate with T3's `delegate_task`.
 | Worker | Provider and model | Use for | Notes |
 | --- | --- | --- | --- |
 | Muse | `muse`, `muse-spark-1.3`, `reasoningEffort` high | App builds | Not Wonder: it drains the quota. Give it the emulator path (§7). |
-| Antigravity | `antigravity`, `gemini-4-neon`, `thought_level` high | Hard and sensitive builds | The orchestrator may pick another model for the task. |
+| Codex | `codex`, `gpt-6.2-sol`, `reasoningEffort` xhigh | Sensitive builds first, hard builds | The owner's pick for sensitive work. Use `high` for routine work. |
+| Antigravity | `antigravity`, `gemini-4-neon`, `thought_level` high | Hard builds; sensitive builds when Codex is unavailable | The orchestrator may pick another model for the task. |
 | Cursor | `cursor`, `composer-2.5`, `fastMode` false; `grok-4.7` xhigh for hard work | sidespeed-site builds, second reviews | The plan has no Claude models. It adds a `Co-authored-by` line: say not to, and check before merging. |
 | Copilot | `acpRegistry_github_copilot` | Fallback when Muse is out of quota | Set `allow_all` to on for unattended work. |
 
@@ -334,5 +336,5 @@ Keep it true when you change anything below.
   and they know of no bugs in it. If a check fails or a known bug remains,
   ask the owner before merging. Weblate PRs still use a merge commit.
 - Never tag or publish unless the owner asked for it in this session.
-- Delegated workers (Muse, Antigravity, Cursor) stop at opening the PR;
+- Delegated workers (Muse, Codex, Antigravity, Cursor) stop at opening the PR;
   the agent that delegated reviews it and decides whether to merge.
