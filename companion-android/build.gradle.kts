@@ -101,6 +101,9 @@ android {
         // gradle.properties, computed by the root build script (0.7.0 -> 700).
         versionCode = rootProject.extra["sidespeedVersionCode"] as Int
         versionName = providers.gradleProperty("sidespeed.versionName").get()
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     // Ships only English plus the languages at or above the gate; debug adds the
@@ -132,8 +135,10 @@ android {
             isPseudoLocalesEnabled = true
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfigs.findByName("release")?.let { signingConfig = it }
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -146,6 +151,7 @@ android {
         // bcprov/bcpkix/bcutil-jdk18on 1.85 jars each carry META-INF/LICENSE.md.
         resources {
             excludes += "META-INF/LICENSE.md"
+            excludes += "org/bouncycastle/pqc/legacy/picnic/*.properties"
         }
     }
 }

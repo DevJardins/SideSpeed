@@ -129,6 +129,9 @@ android {
         versionName = providers.gradleProperty("sidespeed.versionName").get()
         buildConfigField("String", "UPDATE_BASE_URL", "\"https://github.com/DevJardins/SideSpeed/releases/download\"")
         buildConfigField("String", "APP_UPDATES_URL", "\"https://sidespeed.app/updates-v2.json\"")
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {
@@ -186,6 +189,12 @@ android {
     // which wants qualifier syntax (en-rXA), not BCP-47 (en-XA).
     androidResources {
         localeFilters += LanguageGate.releaseLocaleFilters(gateResult)
+    }
+
+    packaging {
+        resources {
+            excludes += "org/bouncycastle/pqc/legacy/picnic/*.properties"
+        }
     }
 
     compileOptions {
