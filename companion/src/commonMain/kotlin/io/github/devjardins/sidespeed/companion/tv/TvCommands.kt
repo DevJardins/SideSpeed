@@ -121,6 +121,12 @@ object TvCommands {
     const val PROP_LOCALE = "getprop persist.sys.locale"
     const val PROP_LOCALE_FALLBACK = "getprop ro.product.locale"
 
+    /** Android SDK level for picking one variant out of a multi-variant bundletool `.apks`. */
+    const val PROP_SDK = "getprop ro.build.version.sdk"
+
+    /** Parses [PROP_SDK] output; null when missing or malformed. */
+    fun parseSdkLevel(output: String): Int? = output.trim().toIntOrNull()?.takeIf { it > 0 }
+
     const val CALL_OPTIMIZE_NOW = "content call --uri $STATUS_URI --method optimize_now"
 
     private val SESSION_ID = Regex("^[0-9]{1,10}$")

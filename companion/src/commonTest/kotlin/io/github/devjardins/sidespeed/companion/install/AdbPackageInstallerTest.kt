@@ -230,6 +230,45 @@ class AdbPackageInstallerTest {
     }
 
     @Test
+    fun preflight_selects_bundletool_variant_matching_tv_sdk() = runTest {
+        val installer = AdbPackageInstaller()
+        InstallTestFixtures.TempZipInstallSource.fromBytes(
+            "multi.apks",
+            InstallTestFixtures.buildMultiVariantApks(),
+        ).use { source ->
+            val pkg = ApkInspector.inspect(source).getOrThrow()
+
+            val sdk28Session = FakeTvSession(preflightOutputs(pkg = "com.example.multi") + (TvCommands.PROP_SDK to "28"))
+            val pre28 = installer.preflight(sdk28Session, pkg).getOrThrow()
+            assertTrue(pre28.selection.splits.map { it.entry.zipEntryName }.contains("splits/base-master_2.apk"))
+            assertTrue(pre28.selection.splits.all { it.entry.zipEntryName!!.endsWith("_2.apk") })
+            assertNull(pre28.pkg.variants)
+            assertEquals("splits/base-master_2.apk", pre28.pkg.base.zipEntryName)
+
+            val sdk34Session = FakeTvSession(preflightOutputs(pkg = "com.example.multi") + (TvCommands.PROP_SDK to "34"))
+            val pre34 = installer.preflight(sdk34Session, pkg).getOrThrow()
+            assertTrue(pre34.selection.splits.all { it.entry.zipEntryName!!.endsWith("_3.apk") })
+
+            val oldSession = FakeTvSession(preflightOutputs(pkg = "com.example.multi") + (TvCommands.PROP_SDK to "19"))
+            assertEquals(InstallError.OlderSdk, installer.preflight(oldSession, pkg).installErrorOrNull())
+
+            val garbageSession = FakeTvSession(preflightOutputs(pkg = "com.example.multi") + (TvCommands.PROP_SDK to "not-a-sdk"))
+            assertEquals(InstallError.MixedBundle, installer.preflight(garbageSession, pkg).installErrorOrNull())
+
+            // A single-variant bundle never asks the TV for its SDK level.
+            val singleBytes = InstallTestFixtures.buildApkBytes(
+                InstallTestFixtures.AxmlSpec(packageName = "com.example.single", versionCode = 7),
+            )
+            InstallTestFixtures.TempZipInstallSource.fromBytes("single.apks", singleBytes).use { singleSource ->
+                val single = ApkInspector.inspect(singleSource).getOrThrow()
+                val singleSession = FakeTvSession(preflightOutputs(pkg = "com.example.single"))
+                installer.preflight(singleSession, single).getOrThrow()
+                assertTrue(singleSession.sent.none { it == TvCommands.PROP_SDK })
+            }
+        }
+    }
+
+    @Test
     fun install_streams_single_and_split_apks_with_synthetic_names_and_progress() = runTest {
         var now = 1_000L
         val installer = AdbPackageInstaller(clock = { now })
@@ -424,6 +463,34 @@ class AdbPackageInstallerTest {
         assertFalse(selfOutcome.compileRequested)
         assertFalse(selfOutcome.tvNeedsUpdate)
         assertTrue(selfSession.sent.none { it.contains("compile_package") })
+    }
+
+    @Test
+    fun install_refuses_unresolved_multi_variant_package() = runTest {
+        val installer = AdbPackageInstaller()
+        val bytes = ByteArray(64) { it.toByte() }
+        val (single, selection) = singlePkg("com.example.multi", 500L, bytes)
+        val unresolved = single.copy(
+            isBundle = true,
+            variants = listOf(
+                InspectedVariant(
+                    minSdk = 21,
+                    base = single.base,
+                    splits = emptyList(),
+                ),
+            ),
+        )
+        val result = installer.install(
+            session = FakeTvSession(),
+            tvSerial = "SER-1",
+            pkg = unresolved,
+            selection = selection,
+            source = InstallTestFixtures.ByteArrayInstallSource("multi.apks", bytes),
+            keepOptimized = true,
+            onPhase = {},
+            abandonOnFreshSession = {},
+        )
+        assertEquals(InstallError.CorruptArchive, result.installErrorOrNull())
     }
 
     @Test

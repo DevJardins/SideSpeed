@@ -37,6 +37,8 @@ data class PreflightResult(
     val device: DeviceProfile,
     val selection: SplitSelection,
     val installed: InstalledPackageInfo?,
+    /** The inspected file with exactly one SDK variant selected; [InspectedPackage.variants] is null. */
+    val pkg: InspectedPackage,
 ) {
     val isInstalled: Boolean get() = installed != null
     val installedVersionName: String? get() = installed?.versionName
@@ -101,16 +103,23 @@ class AdbPackageInstaller(
                 densityDpi = densityDpi,
                 localeTag = localeTag,
             )
-            val selection = SplitSelector.select(pkg, device).getOrElse { return Result.failure(it) }
+            val effectivePkg = if (pkg.variants != null) {
+                val tvSdk = TvCommands.parseSdkLevel(session.run(TvCommands.PROP_SDK))
+                    ?: return InstallError.MixedBundle.asFailure()
+                ApkInspector.selectVariant(pkg, tvSdk).getOrElse { return Result.failure(it) }
+            } else {
+                pkg
+            }
+            val selection = SplitSelector.select(effectivePkg, device).getOrElse { return Result.failure(it) }
 
-            val pathOut = session.run(TvCommands.packagePath(pkg.packageName))
+            val pathOut = session.run(TvCommands.packagePath(effectivePkg.packageName))
             val pathPresent = pathOut.lineSequence().any { it.trim().startsWith(Tokens.PM_PATH_PREFIX) }
             val installed = if (pathPresent) {
-                TvCommands.parsePackageDump(session.run(TvCommands.packageDump(pkg.packageName)))
+                TvCommands.parsePackageDump(session.run(TvCommands.packageDump(effectivePkg.packageName)))
             } else {
                 null
             }
-            if (installed != null && pkg.versionCode < installed.versionCode) {
+            if (installed != null && effectivePkg.versionCode < installed.versionCode) {
                 return InstallError.DowngradeNotAllowed(installed.versionName).asFailure()
             }
 
@@ -119,6 +128,7 @@ class AdbPackageInstaller(
                     device = device,
                     selection = selection,
                     installed = installed,
+                    pkg = effectivePkg,
                 ),
             )
         } catch (e: CancellationException) {
@@ -143,6 +153,9 @@ class AdbPackageInstaller(
         abandonOnFreshSession: suspend (String) -> Unit,
     ): Result<InstallOutcome> {
         if (!PackageNames.isValid(pkg.packageName)) return InstallError.NotAnApk.asFailure()
+        // Never install from an unresolved multi-variant file: the caller must pick one
+        // variant with ApkInspector.selectVariant (preflight does) and hand that down.
+        if (pkg.variants != null) return InstallError.CorruptArchive.asFailure()
         if (selection.splits.isEmpty() ||
             selection.totalBytes <= 0L ||
             selection.totalBytes > ApkInspector.MAX_INSTALL_BYTES

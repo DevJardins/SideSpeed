@@ -32,6 +32,7 @@ sealed interface InstallError {
     data object MixedBundle : InstallError
     data object MissingBaseApk : InstallError
     data object IncompatibleAbi : InstallError
+    data object OlderSdk : InstallError
     data class DowngradeNotAllowed(val installedVersion: String?) : InstallError
     data object UnsupportedStreamTransport : InstallError
     data object UntrustedNetwork : InstallError
@@ -59,12 +60,20 @@ data class ApkManifestInfo(
     val configForSplit: String?,
     val isFeatureSplit: Boolean,
     val literalLabel: String?,
+    val minSdkVersion: Int? = null,
 )
 
 data class ApkEntryMeta(
     val zipEntryName: String?,
     val sizeBytes: Long,
     val manifest: ApkManifestInfo,
+)
+
+/** One SDK variant inside a multi-variant bundletool `.apks`: disjoint base plus splits. */
+data class InspectedVariant(
+    val minSdk: Int,
+    val base: ApkEntryMeta,
+    val splits: List<ApkEntryMeta>,
 )
 
 data class InspectedPackage(
@@ -75,6 +84,12 @@ data class InspectedPackage(
     val isBundle: Boolean,
     val base: ApkEntryMeta,
     val splits: List<ApkEntryMeta>,
+    /**
+     * Set when the archive holds several SDK variants. [base] and [splits] then describe only
+     * the first variant for review display; callers must resolve one variant with
+     * [ApkInspector.selectVariant] before selecting splits or installing.
+     */
+    val variants: List<InspectedVariant>? = null,
 )
 
 data class DeviceProfile(

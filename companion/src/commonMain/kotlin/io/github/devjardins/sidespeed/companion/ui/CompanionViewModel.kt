@@ -234,6 +234,7 @@ object Copy {
         InstallError.ObbNotSupported -> UiText.Res(Res.string.install_err_obb)
         InstallError.TooLarge -> UiText.Res(Res.string.install_err_too_large)
         InstallError.IncompatibleAbi -> UiText.Res(Res.string.install_err_incompatible_abi)
+        InstallError.OlderSdk -> UiText.Res(Res.string.install_err_older_android)
         is InstallError.DowngradeNotAllowed -> UiText.Res(Res.string.install_err_downgrade)
         InstallError.UntrustedNetwork -> NOT_TRUSTED_ERROR
         InstallError.UnsupportedStreamTransport, InstallError.TvUnavailable, InstallError.Cancelled -> INSTALL_FAILED
@@ -1245,10 +1246,12 @@ class CompanionViewModel(
                 return failRun(r, error?.let(Copy::installError) ?: openFailure(it), canRetry(error ?: InstallError.TvUnavailable))
             }
             r.preflight = pre
+            r.pkg = pre.pkg
+            val resolved = pre.pkg
             val review = InstallReview(
-                appName = pkg.displayLabel,
-                packageName = pkg.packageName,
-                newVersion = pkg.versionName ?: pkg.versionCode.toString(),
+                appName = resolved.displayLabel,
+                packageName = resolved.packageName,
+                newVersion = resolved.versionName ?: resolved.versionCode.toString(),
                 installedVersion = pre.installedVersionName ?: pre.installed?.versionCode?.toString(),
                 summaryTags = pre.selection.summaryTags,
                 totalBytes = pre.selection.totalBytes,
@@ -1263,7 +1266,7 @@ class CompanionViewModel(
             updateInstall(r) {
                 it.copy(
                     phase = InstallPhase.Review(review),
-                    showKeepToggle = remote && pkg.packageName !in SideSpeedPackages.ALL,
+                    showKeepToggle = remote && resolved.packageName !in SideSpeedPackages.ALL,
                 )
             }
         } catch (e: CancellationException) {

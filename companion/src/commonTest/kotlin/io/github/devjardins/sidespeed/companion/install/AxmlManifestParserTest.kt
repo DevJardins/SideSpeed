@@ -94,6 +94,15 @@ class AxmlManifestParserTest {
     }
 
     @Test
+    fun parses_uses_sdk_min_sdk_version() {
+        val withMin = buildAxml(AxmlSpec(packageName = "com.example.app", versionCode = 1, minSdkVersion = 28))
+        assertEquals(28, AxmlManifestParser.parse(withMin)!!.minSdkVersion)
+
+        val without = buildAxml(AxmlSpec(packageName = "com.example.app", versionCode = 1))
+        assertNull(AxmlManifestParser.parse(without)!!.minSdkVersion)
+    }
+
+    @Test
     fun rejects_invalid_package_name() {
         val badPackages = listOf(
             "",
