@@ -393,7 +393,9 @@ object ApkInspector {
                             ?: return InstallError.TooLarge.asFailure()
                     } else if (!entry.isDirectory && entry.name == ARSC_ENTRY && !arscDone) {
                         arscDone = true
-                        arscBytes = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+                        val (bytes, consumed) = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+                        arscBytes = bytes
+                        scannedUncompressed += consumed
                     } else if (!entry.isDirectory) {
                         if (entry.size > MAX_INSTALL_BYTES) {
                             return InstallError.TooLarge.asFailure()
@@ -472,7 +474,9 @@ object ApkInspector {
                 manifest = readBoundedBytes(zis, MAX_MANIFEST_BYTES) ?: throw SizeLimitExceededException()
             } else if (!entry.isDirectory && entry.name == ARSC_ENTRY && !arscDone) {
                 arscDone = true
-                arsc = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+                val (bytes, consumed) = readArscOrSkip(zis, entry.size, MAX_INSTALL_BYTES - scannedUncompressed)
+                arsc = bytes
+                scannedUncompressed += consumed
             } else if (!entry.isDirectory) {
                 if (entry.size > MAX_INSTALL_BYTES) throw SizeLimitExceededException()
                 scannedUncompressed += drainEntryWithinBudget(
@@ -503,17 +507,18 @@ object ApkInspector {
     /**
      * Reads the current [ZipInputStream] entry as an arsc table when it fits the cap; a larger
      * table is drained and skipped (the label falls back) without failing the inspection.
+     * Returns the table (or null) and the uncompressed bytes consumed, which count against the
+     * caller's scan budget like any other entry.
      */
-    private fun readArscOrSkip(stream: InputStream, entrySize: Long, budgetLeft: Long): ByteArray? {
+    private fun readArscOrSkip(stream: InputStream, entrySize: Long, budgetLeft: Long): Pair<ByteArray?, Long> {
         if (entrySize > ArscLabelResolver.MAX_ARSC_BYTES) {
             if (entrySize > budgetLeft) throw SizeLimitExceededException()
-            drainEntryWithinBudget(stream, budgetLeft)
-            return null
+            return null to drainEntryWithinBudget(stream, budgetLeft)
         }
-        return readBoundedBytes(stream, ArscLabelResolver.MAX_ARSC_BYTES) ?: run {
-            drainEntryWithinBudget(stream, budgetLeft)
-            null
-        }
+        val bytes = readBoundedBytes(stream, ArscLabelResolver.MAX_ARSC_BYTES)
+        if (bytes != null) return bytes to bytes.size.toLong()
+        val rest = drainEntryWithinBudget(stream, budgetLeft - ArscLabelResolver.MAX_ARSC_BYTES)
+        return null to ArscLabelResolver.MAX_ARSC_BYTES + rest
     }
 
     private fun resolveResourceLabel(labelResId: Int?, arscBytes: ByteArray?): String? {

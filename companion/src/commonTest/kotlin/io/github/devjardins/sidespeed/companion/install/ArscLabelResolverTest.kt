@@ -1,5 +1,6 @@
 package io.github.devjardins.sidespeed.companion.install
 
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ArscEncoding
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ArscEntrySpec
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.ArscValue
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildArsc
@@ -141,5 +142,22 @@ class ArscLabelResolverTest {
         bytes[offset + 1] = ((value ushr 8) and 0xFF).toByte()
         bytes[offset + 2] = ((value ushr 16) and 0xFF).toByte()
         bytes[offset + 3] = ((value ushr 24) and 0xFF).toByte()
+    }
+
+    @Test
+    fun resolves_sparse_offset16_and_compact_type_chunks() {
+        val entries = listOf(
+            ArscEntrySpec("other_one", default = ArscValue.Str("Wrong One")),
+            ArscEntrySpec("other_two", en = ArscValue.Str("Wrong Two")),
+            ArscEntrySpec("app_name", default = ArscValue.Str("Packed App")),
+            ArscEntrySpec("alias", default = ArscValue.Ref(2)),
+        )
+        for (encoding in ArscEncoding.entries) {
+            val arsc = buildArsc(entries, encoding = encoding)
+            assertEquals("Packed App", ArscLabelResolver.resolve(arsc, 0x7f010002), "direct, $encoding")
+            assertEquals("Packed App", ArscLabelResolver.resolve(arsc, 0x7f010003), "reference, $encoding")
+            assertEquals("Wrong Two", ArscLabelResolver.resolve(arsc, 0x7f010001), "english only, $encoding")
+            assertNull(ArscLabelResolver.resolve(arsc, 0x7f010009), "missing, $encoding")
+        }
     }
 }

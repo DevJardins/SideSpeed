@@ -294,6 +294,9 @@ internal object InstallTestFixtures {
         data class Raw(val type: Int, val data: Int) : ArscValue
     }
 
+    /** Type chunk layouts aapt2 can write: plain, sparse, 16-bit offsets, compact entries. */
+    enum class ArscEncoding { STANDARD, SPARSE, OFFSET16, COMPACT }
+
     /** One string type entry; entry index N carries `(packageId, typeId, N)` (real labels are not always type 1). */
     data class ArscEntrySpec(
         val name: String,
@@ -312,6 +315,7 @@ internal object InstallTestFixtures {
         packageId: Int = 0x7f,
         utf8: Boolean = false,
         typeId: Int = 1,
+        encoding: ArscEncoding = ArscEncoding.STANDARD,
     ): ByteArray {
         val stringList = ArrayList<String>()
         fun intern(s: String): Int {
@@ -349,53 +353,82 @@ internal object InstallTestFixtures {
             return buf.array()
         }
 
+        fun valueTypeAndData(value: ArscValue): Pair<Int, Int> = when (value) {
+            is ArscValue.Str -> 0x03 to stringList.indexOf(value.text) // TYPE_STRING
+            is ArscValue.Ref -> 0x01 to ((packageId shl 24) or (typeId shl 16) or value.entryIndex)
+            is ArscValue.Raw -> value.type to value.data
+        }
+
         fun encodeTypeChunk(kind: Int): ByteArray {
             val count = entries.size
             val headerSize = 20 + 64
-            // The offsets array starts at the header size; entriesStart points past it to
-            // the entry data, and each offset is relative to entriesStart (real arsc layout).
-            val entriesStart = headerSize + count * 4
-            val offsets = IntArray(count) { -1 }
             val entryBlobs = ArrayList<ByteArray>()
+            val present = ArrayList<Pair<Int, Int>>() // entry index to byte offset from entriesStart
             var dataCursor = 0
             for (i in entries.indices) {
                 val value = valueFor(entries[i], kind) ?: continue
-                offsets[i] = dataCursor
-                val ebuf = leBuffer(16)
-                ebuf.putShort(8) // ResTable_entry header size; the Res_value follows it
-                ebuf.putShort(0) // flags: plain value, not complex
-                ebuf.putInt(i) // key index
-                ebuf.putShort(8) // Res_value size
-                ebuf.put(0) // res0
-                when (value) {
-                    is ArscValue.Str -> {
-                        ebuf.put(0x03.toByte()) // TYPE_STRING
-                        ebuf.putInt(stringList.indexOf(value.text))
-                    }
-                    is ArscValue.Ref -> {
-                        ebuf.put(0x01.toByte()) // TYPE_REFERENCE
-                        ebuf.putInt((packageId shl 24) or (typeId shl 16) or value.entryIndex)
-                    }
-                    is ArscValue.Raw -> {
-                        ebuf.put(value.type.toByte())
-                        ebuf.putInt(value.data)
-                    }
+                val (dataType, data) = valueTypeAndData(value)
+                present += i to dataCursor
+                val blob = if (encoding == ArscEncoding.COMPACT) {
+                    // Compact entry: key index, flags (FLAG_COMPACT | dataType << 8), data.
+                    val ebuf = leBuffer(8)
+                    ebuf.putShort(i.toShort())
+                    ebuf.putShort((0x0008 or (dataType shl 8)).toShort())
+                    ebuf.putInt(data)
+                    ebuf.array()
+                } else {
+                    val ebuf = leBuffer(16)
+                    ebuf.putShort(8) // ResTable_entry header size; the Res_value follows it
+                    ebuf.putShort(0) // flags: plain value, not complex
+                    ebuf.putInt(i) // key index
+                    ebuf.putShort(8) // Res_value size
+                    ebuf.put(0) // res0
+                    ebuf.put(dataType.toByte())
+                    ebuf.putInt(data)
+                    ebuf.array()
                 }
-                entryBlobs += ebuf.array()
-                dataCursor += 16
+                entryBlobs += blob
+                dataCursor += blob.size
             }
+            val offsetsBytes = when (encoding) {
+                ArscEncoding.SPARSE -> present.size * 4
+                ArscEncoding.OFFSET16 -> (count * 2 + 3) / 4 * 4
+                else -> count * 4
+            }
+            // The offsets array starts at the header size; entriesStart points past it to
+            // the entry data, and each offset is relative to entriesStart (real arsc layout).
+            val entriesStart = headerSize + offsetsBytes
             val size = entriesStart + entryBlobs.sumOf { it.size }
             val buf = leBuffer(size)
             buf.putShort(0x0201) // RES_TABLE_TYPE_TYPE
             buf.putShort(headerSize.toShort())
             buf.putInt(size)
             buf.put(typeId.toByte()) // type id
-            buf.put(0)
+            buf.put(
+                when (encoding) {
+                    ArscEncoding.SPARSE -> 0x01
+                    ArscEncoding.OFFSET16 -> 0x02
+                    else -> 0x00
+                }.toByte(),
+            )
             buf.putShort(0)
-            buf.putInt(count)
+            buf.putInt(if (encoding == ArscEncoding.SPARSE) present.size else count)
             buf.putInt(entriesStart) // offset from the chunk start to the entry data
             buf.put(configBytes(kind))
-            for (offset in offsets) buf.putInt(offset)
+            val offsetOf = present.toMap()
+            when (encoding) {
+                ArscEncoding.SPARSE -> present.forEach { (index, offset) ->
+                    buf.putShort(index.toShort())
+                    buf.putShort((offset / 4).toShort())
+                }
+                ArscEncoding.OFFSET16 -> {
+                    for (i in 0 until count) {
+                        buf.putShort((offsetOf[i]?.let { it / 4 } ?: 0xFFFF).toShort())
+                    }
+                    if (count % 2 == 1) buf.putShort(0)
+                }
+                else -> for (i in 0 until count) buf.putInt(offsetOf[i] ?: -1)
+            }
             entryBlobs.forEach { buf.put(it) }
             return buf.array()
         }

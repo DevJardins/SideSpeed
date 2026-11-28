@@ -31,6 +31,10 @@ object ArscLabelResolver {
     private const val TYPE_STRING = 0x03
     private const val TYPE_REFERENCE = 0x01
     private const val ENTRY_FLAG_COMPLEX = 0x0001
+    private const val ENTRY_FLAG_COMPACT = 0x0008
+
+    private const val TYPE_FLAG_SPARSE = 0x01
+    private const val TYPE_FLAG_OFFSET16 = 0x02
 
     fun resolve(arscBytes: ByteArray, resId: Int): String? {
         if (resId == 0) return null
@@ -77,8 +81,9 @@ object ArscLabelResolver {
                 CHUNK_PACKAGE -> {
                     packagesSeen++
                     if (packagesSeen > MAX_PACKAGES) return null
-                    collectCandidates(bytes, pos, headerSize, chunkEnd, packageId, typeId, entryIndex, candidates)
-                        ?: return null
+                    if (!collectCandidates(bytes, pos, headerSize, chunkEnd, packageId, typeId, entryIndex, candidates)) {
+                        return null
+                    }
                 }
             }
             pos = chunkEnd
@@ -161,28 +166,52 @@ object ArscLabelResolver {
     ): EntryLookup {
         if (headerSize < 20 || chunkStart + 20 > chunkEnd) return EntryLookup.SKIP
         if ((bytes[chunkStart + 8].toInt() and 0xFF) != typeId) return EntryLookup.SKIP
+        val typeFlags = bytes[chunkStart + 9].toInt() and 0xFF
+        val sparse = (typeFlags and TYPE_FLAG_SPARSE) != 0
+        val offset16 = (typeFlags and TYPE_FLAG_OFFSET16) != 0
+        if (sparse && offset16) return EntryLookup.SKIP
         val entryCount = i32(bytes, chunkStart + 12)
         val entriesStart = i32(bytes, chunkStart + 16)
         if (entryCount < 0 || entryCount > MAX_ENTRIES_PER_TYPE) return EntryLookup.BROKEN
         // The offsets array starts at the header size; entriesStart points past it to the
         // entry data, and each offset is relative to entriesStart.
-        val offsetsBytes = entryCount.toLong() * 4L
+        val offsetsBytes = entryCount.toLong() * (if (offset16) 2L else 4L)
         if (headerSize.toLong() + offsetsBytes > (chunkEnd - chunkStart).toLong()) {
             return EntryLookup.BROKEN
         }
         if (entriesStart.toLong() < headerSize.toLong() + offsetsBytes) return EntryLookup.BROKEN
         if (entriesStart > chunkEnd - chunkStart) return EntryLookup.BROKEN
         val offsetsStart = chunkStart + headerSize
-        if (entryIndex >= entryCount) return EntryLookup.SKIP
+        val rawOffset: Long = when {
+            // Sparse: (u16 entry index, u16 offset / 4) pairs sorted by index.
+            sparse -> sparseOffset(bytes, offsetsStart, entryCount, entryIndex) ?: return EntryLookup.SKIP
+            // 16-bit offsets: u16 offset / 4 per entry, 0xFFFF for none.
+            offset16 -> {
+                if (entryIndex >= entryCount) return EntryLookup.SKIP
+                val half = u16(bytes, offsetsStart + entryIndex * 2)
+                if (half == 0xFFFF) return EntryLookup.SKIP
+                half.toLong() * 4L
+            }
+            else -> {
+                if (entryIndex >= entryCount) return EntryLookup.SKIP
+                u32(bytes, offsetsStart + entryIndex * 4).takeIf { it != NO_ENTRY } ?: return EntryLookup.SKIP
+            }
+        }
 
         val configLen = headerSize - 20
         val order = localeOrder(bytes, chunkStart + 20, configLen, chunkEnd)
 
-        val rawOffset = u32(bytes, offsetsStart + entryIndex * 4)
-        if (rawOffset == NO_ENTRY) return EntryLookup.SKIP
         val entryPos = chunkStart.toLong() + entriesStart.toLong() + rawOffset
-        if (entryPos < offsetsStart.toLong() || entryPos + 16 > chunkEnd.toLong()) return EntryLookup.SKIP
+        if (entryPos < offsetsStart.toLong() || entryPos + 8 > chunkEnd.toLong()) return EntryLookup.SKIP
         val at = entryPos.toInt()
+        val entryFlags = u16(bytes, at + 2)
+        if ((entryFlags and ENTRY_FLAG_COMPACT) != 0) {
+            // Compact entry: u16 key, u16 flags (value type in the high byte), u32 data.
+            if ((entryFlags and ENTRY_FLAG_COMPLEX) != 0) return EntryLookup.SKIP
+            candidates += Candidate(order, (entryFlags ushr 8) and 0xFF, i32(bytes, at + 4))
+            return EntryLookup.DONE
+        }
+        if (entryPos + 16 > chunkEnd.toLong()) return EntryLookup.SKIP
         // ResTable_entry.size covers the 8-byte entry header only; the Res_value follows it.
         if (u16(bytes, at) < 8) return EntryLookup.SKIP
         if ((u16(bytes, at + 2) and ENTRY_FLAG_COMPLEX) != 0) return EntryLookup.SKIP
@@ -191,6 +220,22 @@ object ArscLabelResolver {
         val data = i32(bytes, at + 12)
         candidates += Candidate(order, dataType, data)
         return EntryLookup.DONE
+    }
+
+    /** Binary search of a sparse type chunk's sorted (index, offset / 4) pairs; null when absent. */
+    private fun sparseOffset(bytes: ByteArray, offsetsStart: Int, entryCount: Int, entryIndex: Int): Long? {
+        var lo = 0
+        var hi = entryCount - 1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            val index = u16(bytes, offsetsStart + mid * 4)
+            when {
+                index < entryIndex -> lo = mid + 1
+                index > entryIndex -> hi = mid - 1
+                else -> return u16(bytes, offsetsStart + mid * 4 + 2).toLong() * 4L
+            }
+        }
+        return null
     }
 
     private fun localeOrder(bytes: ByteArray, configStart: Int, configLen: Int, chunkEnd: Int): Int {
@@ -253,8 +298,9 @@ object ArscLabelResolver {
                 CHUNK_PACKAGE -> {
                     packagesSeen++
                     if (packagesSeen > MAX_PACKAGES) return null
-                    collectCandidates(bytes, pos, headerSize, chunkEnd, packageId, typeId, entryIndex, found)
-                        ?: return null
+                    if (!collectCandidates(bytes, pos, headerSize, chunkEnd, packageId, typeId, entryIndex, found)) {
+                        return null
+                    }
                 }
             }
             pos = chunkEnd
