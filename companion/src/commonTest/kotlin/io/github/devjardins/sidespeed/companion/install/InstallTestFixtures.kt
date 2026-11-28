@@ -21,6 +21,7 @@ internal object InstallTestFixtures {
         val splitName: String? = null,
         val configForSplit: String? = null,
         val isFeatureSplit: Boolean? = null,
+        val minSdkVersion: Int? = null,
         val appLabelLiteral: String? = null,
         val appLabelResId: Int? = null,
         val nestedActivityLabel: String? = null,
@@ -43,6 +44,7 @@ internal object InstallTestFixtures {
         val versionCodeMajorNameIdx = addAttrName("versionCodeMajor", 0x01010576)
         val versionNameNameIdx = addAttrName("versionName", 0x0101021c)
         val isFeatureSplitNameIdx = addAttrName("isFeatureSplit", 0x0101055b)
+        val minSdkNameIdx = addAttrName("minSdkVersion", 0x0101020c)
         val labelNameIdx = addAttrName("label", 0x01010001)
 
         fun intern(s: String): Int {
@@ -55,6 +57,7 @@ internal object InstallTestFixtures {
         val androidPrefixIdx = intern("android")
         val androidNsIdx = intern("http://schemas.android.com/apk/res/android")
         val manifestTagIdx = intern("manifest")
+        val usesSdkTagIdx = intern("uses-sdk")
         val applicationTagIdx = intern("application")
         val activityTagIdx = intern("activity")
         val packageNameAttrIdx = intern("package")
@@ -128,6 +131,15 @@ internal object InstallTestFixtures {
         body.write(resMapChunk)
         body.write(startNsChunk)
         body.write(startManifest)
+        if (spec.minSdkVersion != null) {
+            body.write(
+                encodeStartElement(
+                    usesSdkTagIdx,
+                    listOf(listOf(androidNsIdx, minSdkNameIdx, -1, 0x10, spec.minSdkVersion)),
+                ),
+            )
+            body.write(encodeEndElement(usesSdkTagIdx))
+        }
         if (appAttrs.isNotEmpty() || activityAttrs.isNotEmpty()) {
             body.write(encodeStartElement(applicationTagIdx, appAttrs.map { listOf(it.ns, it.name, it.rawValue, it.dataType, it.data) }))
             if (activityAttrs.isNotEmpty()) {
@@ -371,5 +383,133 @@ internal object InstallTestFixtures {
                 return TempZipInstallSource(displayName, file, ZipFile(file), sizeOverride)
             }
         }
+    }
+
+    /** One bundletool `toc.pb` variant: SDK floor plus the archive paths it covers. */
+    data class TocVariantSpec(
+        val minSdk: Int?,
+        val paths: List<String>,
+    )
+
+    /**
+     * Encodes a bundletool `BuildApksResult` table of contents with the real wire layout
+     * (variant/targeting/sdk_version_targeting/min plus apk_set/apks_description paths).
+     */
+    fun buildTocBytes(variants: List<TocVariantSpec>): ByteArray {
+        val out = ByteArrayOutputStream()
+        for (variant in variants) {
+            val variantBody = ByteArrayOutputStream()
+            if (variant.minSdk != null) {
+                // SdkVersion.min is an Int32Value wrapper message, hence one more length level.
+                val intValue = ByteArrayOutputStream().also { writeVarintField(it, 1, variant.minSdk.toLong()) }.toByteArray()
+                val minWrapper = ByteArrayOutputStream().also { writeLenField(it, 1, intValue) }.toByteArray()
+                val sdkVersion = ByteArrayOutputStream().also { writeLenField(it, 1, minWrapper) }.toByteArray()
+                val sdkTargeting = ByteArrayOutputStream().also { writeLenField(it, 1, sdkVersion) }.toByteArray()
+                writeLenField(variantBody, 1, sdkTargeting)
+            }
+            val apkSetBody = ByteArrayOutputStream()
+            for (path in variant.paths) {
+                val description = ByteArrayOutputStream().also { writeStringField(it, 2, path) }.toByteArray()
+                writeLenField(apkSetBody, 2, description)
+            }
+            writeLenField(variantBody, 2, apkSetBody.toByteArray())
+            writeLenField(out, 1, variantBody.toByteArray())
+        }
+        return out.toByteArray()
+    }
+
+    private fun writeVarintField(out: ByteArrayOutputStream, fieldNumber: Int, value: Long) {
+        out.write((fieldNumber shl 3) or 0)
+        var remaining = value
+        while (true) {
+            val bits = (remaining and 0x7FL).toInt()
+            remaining = remaining ushr 7
+            if (remaining == 0L) {
+                out.write(bits)
+                return
+            }
+            out.write(bits or 0x80)
+        }
+    }
+
+    private fun writeLenField(out: ByteArrayOutputStream, fieldNumber: Int, bytes: ByteArray) {
+        out.write((fieldNumber shl 3) or 2)
+        writeRawVarint(out, bytes.size.toLong())
+        out.write(bytes)
+    }
+
+    private fun writeStringField(out: ByteArrayOutputStream, fieldNumber: Int, value: String) {
+        writeLenField(out, fieldNumber, value.encodeToByteArray())
+    }
+
+    private fun writeRawVarint(out: ByteArrayOutputStream, value: Long) {
+        var remaining = value
+        while (true) {
+            val bits = (remaining and 0x7FL).toInt()
+            remaining = remaining ushr 7
+            if (remaining == 0L) {
+                out.write(bits)
+                return
+            }
+            out.write(bits or 0x80)
+        }
+    }
+
+    /**
+     * Builds a default-mode bundletool `.apks`: one base plus locale/ABI config splits per
+     * SDK variant, with bundletool's `_N` file suffixes and (unless disabled) a matching toc.pb.
+     */
+    fun buildMultiVariantApks(
+        minSdks: List<Int> = listOf(21, 28, 33),
+        tocBytes: ByteArray? = null,
+        includeToc: Boolean = true,
+        manifestMinSdks: List<Int?>? = null,
+    ): ByteArray {
+        val entries = ArrayList<Pair<String, ByteArray>>()
+        val variantPaths = ArrayList<List<String>>()
+        val floors: List<Int?> = manifestMinSdks ?: minSdks
+        for (index in minSdks.indices) {
+            val suffix = if (index == 0) "" else "_${index + 1}"
+            val paths = listOf(
+                "splits/base-master$suffix.apk",
+                "splits/base-en$suffix.apk",
+                "splits/base-arm64_v8a$suffix.apk",
+            )
+            variantPaths += paths
+            entries += paths[0] to buildApkBytes(
+                AxmlSpec(
+                    packageName = "com.example.multi",
+                    versionCode = 500,
+                    versionName = "5.0.0",
+                    minSdkVersion = floors[index],
+                    appLabelLiteral = "Multi App",
+                ),
+            )
+            entries += paths[1] to buildApkBytes(
+                AxmlSpec(
+                    packageName = "com.example.multi",
+                    versionCode = 500,
+                    versionName = "5.0.0",
+                    splitName = "config.en",
+                    minSdkVersion = floors[index],
+                ),
+            )
+            entries += paths[2] to buildApkBytes(
+                AxmlSpec(
+                    packageName = "com.example.multi",
+                    versionCode = 500,
+                    versionName = "5.0.0",
+                    splitName = "config.arm64_v8a",
+                    minSdkVersion = floors[index],
+                ),
+            )
+        }
+        val toc = tocBytes ?: if (includeToc) {
+            buildTocBytes(minSdks.mapIndexed { index, sdk -> TocVariantSpec(sdk, variantPaths[index]) })
+        } else {
+            null
+        }
+        if (toc != null) entries.add(0, "toc.pb" to toc)
+        return buildZipBytes(entries)
     }
 }

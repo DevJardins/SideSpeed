@@ -49,6 +49,17 @@ class TvCommandsInstallTest {
     }
 
     @Test
+    fun sdk_prop_builds_fixed_command_and_parses_levels() {
+        assertEquals("getprop ro.build.version.sdk", TvCommands.PROP_SDK)
+        assertEquals(28, TvCommands.parseSdkLevel("28"))
+        assertEquals(34, TvCommands.parseSdkLevel("  34\n"))
+        assertNull(TvCommands.parseSdkLevel(""))
+        assertNull(TvCommands.parseSdkLevel("abc"))
+        assertNull(TvCommands.parseSdkLevel("0"))
+        assertNull(TvCommands.parseSdkLevel("-1"))
+    }
+
+    @Test
     fun parseContentCallResult_handles_ok_error_and_older_tv_responses() {
         assertEquals(
             ContentCallResult.Ok(queued = 1, reqSeq = 5L),

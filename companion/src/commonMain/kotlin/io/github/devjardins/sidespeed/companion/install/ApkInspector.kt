@@ -23,6 +23,7 @@ object ApkInspector {
     private const val MAX_METADATA_BYTES = 1_048_576
     private const val MANIFEST_ENTRY = "AndroidManifest.xml"
     private const val STREAM_BUFFER_BYTES = 64 * 1024
+    private val VARIANT_SUFFIX_PATTERN = Regex("""_(\d+)$""")
 
     private class SizeLimitExceededException : IOException()
 
@@ -109,7 +110,7 @@ object ApkInspector {
 
         val bases = inspectedEntries.filter { it.manifest.splitName == null }
         if (bases.isEmpty()) return InstallError.MissingBaseApk.asFailure()
-        if (bases.size > 1) return InstallError.MixedBundle.asFailure()
+        if (bases.size > 1) return inspectMultiVariant(zipFile, inspectedEntries, source.displayName)
         val base = bases.single()
         val splits = inspectedEntries.filter { it !== base }
 
@@ -136,6 +137,122 @@ object ApkInspector {
                 splits = splits,
             ),
         )
+    }
+
+    /**
+     * Resolves a default-mode bundletool `.apks`, which holds one base plus splits per SDK
+     * variant (`splits/base-master.apk`, `splits/base-master_2.apk`, ... plus `toc.pb`).
+     * Returns one [InspectedPackage] carrying every variant; callers must pick exactly one with
+     * [selectVariant] before selecting splits or installing. Refuses when no safe choice exists.
+     */
+    private fun inspectMultiVariant(
+        zipFile: ZipFile,
+        inspectedEntries: List<ApkEntryMeta>,
+        displayName: String,
+    ): Result<InspectedPackage> {
+        val first = inspectedEntries.first()
+        for (entry in inspectedEntries) {
+            if (entry.manifest.packageName != first.manifest.packageName ||
+                entry.manifest.versionCode != first.manifest.versionCode
+            ) {
+                return InstallError.MixedBundle.asFailure()
+            }
+        }
+        val variants = groupByToc(zipFile, inspectedEntries)
+            ?: groupByVariantSuffix(inspectedEntries)
+            ?: return InstallError.MixedBundle.asFailure()
+        val ordered = variants.sortedBy { it.minSdk }
+        val representative = ordered.first()
+        val label = pickDisplayLabel(representative.base.manifest, null, displayName)
+        return Result.success(
+            InspectedPackage(
+                packageName = first.manifest.packageName,
+                displayLabel = label,
+                versionCode = first.manifest.versionCode,
+                versionName = first.manifest.versionName,
+                isBundle = true,
+                base = representative.base,
+                splits = representative.splits,
+                variants = ordered,
+            ),
+        )
+    }
+
+    /**
+     * Picks the variant a TV can install: the highest SDK floor at or below [tvSdk].
+     * Fails closed: a TV older than every floor reports [InstallError.OlderSdk], and a floor
+     * shared by two variants reports [InstallError.MixedBundle] instead of guessing.
+     */
+    fun selectVariant(pkg: InspectedPackage, tvSdk: Int): Result<InspectedPackage> {
+        val variants = pkg.variants ?: return Result.success(pkg)
+        val eligible = variants.filter { it.minSdk <= tvSdk }
+        if (eligible.isEmpty()) return InstallError.OlderSdk.asFailure()
+        val bestFloor = eligible.maxOf { it.minSdk }
+        val best = eligible.filter { it.minSdk == bestFloor }
+        if (best.size != 1) return InstallError.MixedBundle.asFailure()
+        val chosen = best.single()
+        return Result.success(
+            pkg.copy(base = chosen.base, splits = chosen.splits, variants = null),
+        )
+    }
+
+    /** Groups archive entries by the variant path sets in `toc.pb`; null when it cannot. */
+    private fun groupByToc(
+        zipFile: ZipFile,
+        inspectedEntries: List<ApkEntryMeta>,
+    ): List<InspectedVariant>? {
+        val tocEntry = zipFile.getEntry("toc.pb") ?: return null
+        if (tocEntry.isDirectory || tocEntry.size < 0 || tocEntry.size > MAX_METADATA_BYTES) return null
+        val tocBytes = try {
+            zipFile.getInputStream(tocEntry).use { readBoundedBytes(it, MAX_METADATA_BYTES) }
+        } catch (_: IOException) {
+            null
+        } ?: return null
+        val toc = BundletoolToc.parse(tocBytes) ?: return null
+        if (toc.isEmpty() || toc.none { it.minSdk != null }) return null
+        val normalized = toc.map { variant ->
+            variant.copy(paths = variant.paths.mapTo(LinkedHashSet()) { normalizeZipPath(it) })
+        }
+        val byVariant = LinkedHashMap<BundletoolToc.TocVariant, MutableList<ApkEntryMeta>>()
+        for (entry in inspectedEntries) {
+            val name = normalizeZipPath(entry.zipEntryName ?: return null)
+            val match = normalized.filter { name in it.paths }
+            if (match.size != 1) return null
+            byVariant.getOrPut(match.single()) { ArrayList() } += entry
+        }
+        return byVariant.map { (variant, group) ->
+            toVariant(variant.minSdk ?: 1, group) ?: return null
+        }
+    }
+
+    /**
+     * Fallback when `toc.pb` is missing or unreadable: groups entries by bundletool's `_N`
+     * file suffix, taking each variant base manifest's `minSdkVersion` as the floor.
+     * Null when a group has no single base, a floor is missing, or two floors collide.
+     */
+    private fun groupByVariantSuffix(inspectedEntries: List<ApkEntryMeta>): List<InspectedVariant>? {
+        val groups = LinkedHashMap<String, MutableList<ApkEntryMeta>>()
+        for (entry in inspectedEntries) {
+            val name = normalizeZipPath(entry.zipEntryName ?: return null)
+            val stem = name.substringBeforeLast('.', name)
+            val suffix = VARIANT_SUFFIX_PATTERN.find(stem)?.groupValues?.get(1) ?: ""
+            groups.getOrPut(suffix) { ArrayList() } += entry
+        }
+        val seenFloors = HashSet<Int>()
+        return groups.values.map { group ->
+            val bases = group.filter { it.manifest.splitName == null }
+            if (bases.size != 1) return null
+            val floor = bases.single().manifest.minSdkVersion ?: return null
+            if (!seenFloors.add(floor)) return null
+            toVariant(floor, group) ?: return null
+        }
+    }
+
+    private fun toVariant(minSdk: Int, group: List<ApkEntryMeta>): InspectedVariant? {
+        val bases = group.filter { it.manifest.splitName == null }
+        if (bases.size != 1) return null
+        val base = bases.single()
+        return InspectedVariant(minSdk = minSdk, base = base, splits = group.filter { it !== base })
     }
 
     private fun inspectSingleApkInZipFile(

@@ -5,7 +5,10 @@ import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.Byte
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.TempZipInstallSource
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildApkBytes
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildAxml
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildMultiVariantApks
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildTocBytes
 import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.buildZipBytes
+import io.github.devjardins.sidespeed.companion.install.InstallTestFixtures.TocVariantSpec
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -267,6 +270,100 @@ class ApkInspectorTest {
         TempZipInstallSource.fromBytes("Fallback Stem.apkm", badJsonBundle).use {
             val inspected = ApkInspector.inspect(it).getOrThrow()
             assertEquals("Fallback Stem", inspected.displayLabel)
+        }
+    }
+
+    @Test
+    fun inspects_multi_variant_bundletool_apks_and_selects_variant_for_tv_sdk() {
+        TempZipInstallSource.fromBytes("multi.apks", buildMultiVariantApks()).use { source ->
+            val inspected = ApkInspector.inspect(source).getOrThrow()
+            assertTrue(inspected.isBundle)
+            assertEquals("com.example.multi", inspected.packageName)
+            assertEquals(3, inspected.variants?.size)
+
+            val for21 = ApkInspector.selectVariant(inspected, 21).getOrThrow()
+            assertEquals("splits/base-master.apk", for21.base.zipEntryName)
+            assertNull(for21.variants)
+
+            val for28 = ApkInspector.selectVariant(inspected, 28).getOrThrow()
+            assertEquals("splits/base-master_2.apk", for28.base.zipEntryName)
+            assertEquals(2, for28.splits.size)
+            assertTrue(for28.splits.all { it.zipEntryName!!.endsWith("_2.apk") })
+
+            val for34 = ApkInspector.selectVariant(inspected, 34).getOrThrow()
+            assertEquals("splits/base-master_3.apk", for34.base.zipEntryName)
+            assertTrue(for34.splits.all { it.zipEntryName!!.endsWith("_3.apk") })
+
+            // A TV older than every variant floor cannot install the file.
+            assertEquals(InstallError.OlderSdk, ApkInspector.selectVariant(inspected, 19).installErrorOrNull())
+        }
+    }
+
+    @Test
+    fun selects_variant_from_toc_alone_without_manifest_floors() {
+        // No manifest carries minSdkVersion, so only the toc.pb floors can resolve this.
+        val archive = buildMultiVariantApks(manifestMinSdks = listOf(null, null, null))
+        TempZipInstallSource.fromBytes("multi.apks", archive).use { source ->
+            val inspected = ApkInspector.inspect(source).getOrThrow()
+            assertEquals(listOf(21, 28, 33), inspected.variants?.map { it.minSdk })
+            val for28 = ApkInspector.selectVariant(inspected, 28).getOrThrow()
+            assertEquals("splits/base-master_2.apk", for28.base.zipEntryName)
+        }
+    }
+
+    @Test
+    fun falls_back_to_suffix_grouping_when_toc_is_missing_or_unreadable() {
+        val fullToc = buildTocBytes(
+            listOf(
+                TocVariantSpec(21, listOf("splits/base-master.apk")),
+                TocVariantSpec(28, listOf("splits/base-master_2.apk")),
+                TocVariantSpec(33, listOf("splits/base-master_3.apk")),
+            ),
+        )
+
+        for (archive in listOf(
+            buildMultiVariantApks(includeToc = false),
+            buildMultiVariantApks(tocBytes = byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0x01)),
+            buildMultiVariantApks(tocBytes = fullToc.copyOf(fullToc.size / 2)),
+        )) {
+            TempZipInstallSource.fromBytes("multi.apks", archive).use { source ->
+                val inspected = ApkInspector.inspect(source).getOrThrow()
+                assertEquals(3, inspected.variants?.size)
+                val resolved = ApkInspector.selectVariant(inspected, 28).getOrThrow()
+                assertEquals("splits/base-master_2.apk", resolved.base.zipEntryName)
+            }
+        }
+    }
+
+    @Test
+    fun refuses_multi_variant_bundle_without_a_safe_choice() {
+        // Several bases with no toc and no bundletool suffixes: nothing to choose with.
+        val ambiguous = buildZipBytes(
+            listOf(
+                "splits/base-one.apk" to buildApkBytes(AxmlSpec(packageName = "com.example.multi", versionCode = 1)),
+                "splits/base-two.apk" to buildApkBytes(AxmlSpec(packageName = "com.example.multi", versionCode = 1)),
+            ),
+        )
+        TempZipInstallSource.fromBytes("ambiguous.apks", ambiguous).use {
+            assertEquals(InstallError.MixedBundle, ApkInspector.inspect(it).installErrorOrNull())
+        }
+
+        // Garbage toc, no suffixes, no manifest floors: the fallback also has nothing to use.
+        val garbageToc = buildZipBytes(
+            listOf(
+                "toc.pb" to byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0x01),
+                "splits/base-one.apk" to buildApkBytes(AxmlSpec(packageName = "com.example.multi", versionCode = 1)),
+                "splits/base-two.apk" to buildApkBytes(AxmlSpec(packageName = "com.example.multi", versionCode = 1)),
+            ),
+        )
+        TempZipInstallSource.fromBytes("garbage.apks", garbageToc).use {
+            assertEquals(InstallError.MixedBundle, ApkInspector.inspect(it).installErrorOrNull())
+        }
+
+        // Two variants sharing one floor stay ambiguous even for a TV that matches it.
+        TempZipInstallSource.fromBytes("tied.apks", buildMultiVariantApks(minSdks = listOf(21, 28, 28))).use { source ->
+            val inspected = ApkInspector.inspect(source).getOrThrow()
+            assertEquals(InstallError.MixedBundle, ApkInspector.selectVariant(inspected, 28).installErrorOrNull())
         }
     }
 

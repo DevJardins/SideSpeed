@@ -15,6 +15,7 @@ object AxmlManifestParser {
 
     private const val FLAG_UTF8 = 0x00000100
 
+    private const val ATTR_MIN_SDK = 0x0101020c
     private const val ATTR_LABEL = 0x01010001
     private const val ATTR_VERSION_CODE = 0x0101021b
     private const val ATTR_VERSION_NAME = 0x0101021c
@@ -53,6 +54,7 @@ object AxmlManifestParser {
         var splitName: String? = null
         var configForSplit: String? = null
         var isFeatureSplit = false
+        var minSdkVersion: Int? = null
         var literalLabel: String? = null
 
         while (pos + 8 <= xmlEnd) {
@@ -93,8 +95,9 @@ object AxmlManifestParser {
                     val inspectManifest = depth == 1 && elemName == "manifest"
                     val inspectApplication = depth == 2 && elemName == "application" && !seenApplication
                     if (inspectApplication) seenApplication = true
+                    val inspectUsesSdk = depth == 2 && elemName == "uses-sdk"
 
-                    if (inspectManifest || inspectApplication) {
+                    if (inspectManifest || inspectApplication || inspectUsesSdk) {
                         if (attrCount > 0 && attrSize < 20) return null
                         val attrsEnd = attrExt.toLong() + attrStart.toLong() + attrCount.toLong() * attrSize.toLong()
                         if (attrsEnd > chunkEnd.toLong()) return null
@@ -148,6 +151,15 @@ object AxmlManifestParser {
                                         }
                                     }
                                 }
+                            } else if (inspectUsesSdk) {
+                                if (resId == ATTR_MIN_SDK || (resId == 0 && ns == ANDROID_NAMESPACE && attrName == "minSdkVersion")) {
+                                    when (dataType) {
+                                        TYPE_INT_DEC, TYPE_INT_HEX -> if (data > 0) minSdkVersion = data
+                                        TYPE_STRING -> pool.get(data)?.toIntOrNull()?.takeIf { it > 0 }?.let {
+                                            minSdkVersion = it
+                                        }
+                                    }
+                                }
                             } else {
                                 if (resId == ATTR_LABEL || (resId == 0 && ns == ANDROID_NAMESPACE && attrName == "label")) {
                                     if (dataType == TYPE_STRING) {
@@ -187,6 +199,7 @@ object AxmlManifestParser {
             configForSplit = configForSplit,
             isFeatureSplit = isFeatureSplit,
             literalLabel = literalLabel,
+            minSdkVersion = minSdkVersion,
         )
     }
 
