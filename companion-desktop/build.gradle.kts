@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import sidespeed.l10n.includeLocalesArg
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -134,6 +135,21 @@ compose.desktop {
             }
         }
     }
+}
+
+/**
+ * The locale data jlink keeps in the desktop runtime: English plus every language the
+ * :companion language gate ships (its own configuration-time result, so the bar and inputs
+ * cannot drift). jdk.localedata stays in modules(...) above; this only trims the locales inside it.
+ */
+evaluationDependsOn(":companion")
+
+@Suppress("UNCHECKED_CAST")
+val shippedLocaleTags = project(":companion").extra["sidespeed.shippedLanguageTags"] as List<String>
+logger.lifecycle("SideSpeed desktop locales: ${includeLocalesArg(shippedLocaleTags)}")
+
+tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJLinkTask>().configureEach {
+    freeArgs.add(includeLocalesArg(shippedLocaleTags))
 }
 
 tasks.test {

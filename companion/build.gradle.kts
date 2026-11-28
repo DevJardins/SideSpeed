@@ -33,6 +33,9 @@ val gateResult = LanguageGate.evaluate(
     LANGUAGE_BAR,
 ).also { logger.lifecycle(LanguageGate.summary("companion", it, LANGUAGE_BAR)) }
 
+// The desktop app reads this to keep locale data for exactly these languages in its runtime.
+extra["sidespeed.shippedLanguageTags"] = gateResult.included.map { it.tag }
+
 /**
  * Copies the compose resources, leaving out every `values-*` folder whose language
  * is below the gate. The Compose plugin reads this copy instead of the source tree.
