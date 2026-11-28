@@ -91,3 +91,34 @@ subprojects {
         }
     }
 }
+
+/**
+ * Release size budget: fails when a release file grows past its limit (trimmed size + ~10%,
+ * rounded up to the next MiB; lean-builds, 2026-11-27). Run after the release builds.
+ * CI jobs pass -PsizeBudget.only=<keys> to check only the files that job builds.
+ */
+val sizeBudgets = listOf(
+    sidespeed.size.Budget("tvApk", "app/build/outputs/apk/release", "apk", 9 * sidespeed.size.SizeBudget.MIB),
+    sidespeed.size.Budget("companionApk", "companion-android/build/outputs/apk/release", "apk", 9 * sidespeed.size.SizeBudget.MIB),
+    sidespeed.size.Budget("dmg", "companion-desktop/build/compose/binaries/main/dmg", "dmg", 92 * sidespeed.size.SizeBudget.MIB),
+    sidespeed.size.Budget("msi", "companion-desktop/build/compose/binaries/main/msi", "msi", 80 * sidespeed.size.SizeBudget.MIB),
+    sidespeed.size.Budget("deb", "companion-desktop/build/compose/binaries/main/deb", "deb", 74 * sidespeed.size.SizeBudget.MIB),
+    sidespeed.size.Budget("rpm", "companion-desktop/build/compose/binaries/main/rpm", "rpm", 74 * sidespeed.size.SizeBudget.MIB),
+)
+tasks.register("checkSizeBudget") {
+    group = "verification"
+    description = "Fails when a release file is over its size budget. Build the release files first."
+    val selected = sidespeed.size.SizeBudget.select(sizeBudgets, providers.gradleProperty("sizeBudget.only").orNull)
+    val root = layout.projectDirectory.asFile
+    doLast {
+        val found = selected.associate { budget ->
+            val files = root.resolve(budget.dir).listFiles().orEmpty()
+                .filter { it.isFile && it.extension == budget.extension }
+                .map { it.name to it.length() }
+            budget.key to files
+        }
+        found.forEach { (key, files) -> files.forEach { (name, size) -> logger.lifecycle("$key: $name ${"%.1f".format(java.util.Locale.ROOT, size / 1048576.0)} MiB") } }
+        val problems = sidespeed.size.SizeBudget.check(selected, found)
+        if (problems.isNotEmpty()) throw GradleException("Size budget:\n" + problems.joinToString("\n"))
+    }
+}
