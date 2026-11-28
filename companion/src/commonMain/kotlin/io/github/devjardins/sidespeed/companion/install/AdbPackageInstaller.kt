@@ -93,7 +93,9 @@ class AdbPackageInstaller(
                 session.run(TvCommands.PROP_ABI)
             }
             val abiList = abiRaw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-            val densityDpi = session.run(TvCommands.PROP_DENSITY).trim().toIntOrNull()?.takeIf { it > 0 } ?: 0
+            val densityDpi = session.run(TvCommands.PROP_DENSITY).trim().toIntOrNull()?.takeIf { it > 0 }
+                ?: TvCommands.parseWmDensity(session.run(TvCommands.WM_DENSITY))
+                ?: 0
             val localeTag = session.run(TvCommands.PROP_LOCALE).ifBlank {
                 session.run(TvCommands.PROP_LOCALE_FALLBACK)
             }.trim()
