@@ -1,12 +1,10 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import sidespeed.l10n.LanguageGate
 import sidespeed.l10n.includeLocalesArg
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.jetbrains.compose)
-    id("sidespeed.l10n")
 }
 
 kotlin {
@@ -140,19 +138,15 @@ compose.desktop {
 }
 
 /**
- * The locale data jlink keeps in the desktop runtime: English plus every shipped language
- * tag from the language gate, evaluated at configuration time from the same inputs
- * `GenerateShippedLanguages` in :companion uses (never a hand-written list).
- * The bar must match LANGUAGE_BAR in companion/build.gradle.kts.
- * jdk.localedata stays in modules(...) above; this only trims the locales inside it.
+ * The locale data jlink keeps in the desktop runtime: English plus every language the
+ * :companion language gate ships (its own configuration-time result, so the bar and inputs
+ * cannot drift). jdk.localedata stays in modules(...) above; this only trims the locales inside it.
  */
-val shippedLocaleTags = LanguageGate.evaluate(
-    rootProject.file("companion/src/commonMain/composeResources/values/strings.xml"),
-    rootProject.file("companion/src/commonMain/composeResources"),
-    0.70,
-).included.map { it.tag }.also {
-    logger.lifecycle("SideSpeed desktop locales: ${includeLocalesArg(it)}")
-}
+evaluationDependsOn(":companion")
+
+@Suppress("UNCHECKED_CAST")
+val shippedLocaleTags = project(":companion").extra["sidespeed.shippedLanguageTags"] as List<String>
+logger.lifecycle("SideSpeed desktop locales: ${includeLocalesArg(shippedLocaleTags)}")
 
 tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJLinkTask>().configureEach {
     freeArgs.add(includeLocalesArg(shippedLocaleTags))
