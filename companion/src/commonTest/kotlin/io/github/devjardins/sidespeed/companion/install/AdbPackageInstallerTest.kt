@@ -22,7 +22,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.util.Collections
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
@@ -777,7 +777,7 @@ class AdbPackageInstallerTest {
         // Case 1: Blocked in write() until session.close() is invoked (simulating Kadb awaitAckBytes stall)
         val writeEntered = CountDownLatch(1)
         val sessionClosed1 = CountDownLatch(1)
-        val closeThreads1 = Collections.synchronizedList(mutableListOf<Thread>())
+        val closeThreads1 = CopyOnWriteArrayList<Thread>()
         var stream1Closed = false
         val session1 = FakeTvSession(
             onClose = {
@@ -831,7 +831,7 @@ class AdbPackageInstallerTest {
         // Case 2: Blocked in install-commit readAllText() until session.close() (stream.close() alone wouldn't unblock)
         val readEntered = CountDownLatch(1)
         val sessionClosed2 = CountDownLatch(1)
-        val closeThreads2 = Collections.synchronizedList(mutableListOf<Thread>())
+        val closeThreads2 = CopyOnWriteArrayList<Thread>()
         val session2 = FakeTvSession(
             onClose = {
                 closeThreads2 += Thread.currentThread()
