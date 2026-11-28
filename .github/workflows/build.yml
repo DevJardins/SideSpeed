@@ -27,7 +27,7 @@ jobs:
             echo "SIDESPEED_KEY_PASSWORD=${{ secrets.SIDESPEED_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
       - run: ./gradlew :shared:allTests :companion:allTests :app:testDebugUnitTest :companion-desktop:test :companion-android:assembleRelease :app:assembleRelease :companion-desktop:packageDeb :companion-desktop:packageRpm
-      - run: ./gradlew checkSizeBudget -PsizeBudget.only=tvApk,companionApk,deb,rpm
+      - run: ./gradlew checkSizeBudget "-PsizeBudget.only=tvApk,companionApk,deb,rpm"
       - run: ./gradlew -p build-logic test
       # Cheap when no translations exist. On pull requests it also compares with the
       # base branch. The summary goes to the job summary, not a PR comment, because
@@ -59,7 +59,7 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew :companion-desktop:packageDmg
-      - run: ./gradlew checkSizeBudget -PsizeBudget.only=dmg
+      - run: ./gradlew checkSizeBudget "-PsizeBudget.only=dmg"
       - uses: actions/upload-artifact@v7
         with:
           name: macos
@@ -74,7 +74,7 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew :companion-desktop:packageMsi
-      - run: ./gradlew checkSizeBudget -PsizeBudget.only=msi
+      - run: ./gradlew checkSizeBudget "-PsizeBudget.only=msi"
       - uses: actions/upload-artifact@v7
         with:
           name: windows
