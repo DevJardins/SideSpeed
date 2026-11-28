@@ -76,6 +76,23 @@ class AxmlManifestParserTest {
     }
 
     @Test
+    fun captures_label_resource_id_for_reference_labels() {
+        val withRef = buildAxml(
+            AxmlSpec(packageName = "com.example.app", versionCode = 1, appLabelResId = 0x7f010000),
+        )
+        val parsed = AxmlManifestParser.parse(withRef)!!
+        assertNull(parsed.literalLabel)
+        assertEquals(0x7f010000, parsed.labelResId)
+
+        val withLiteral = buildAxml(
+            AxmlSpec(packageName = "com.example.app", versionCode = 1, appLabelLiteral = "Literal App"),
+        )
+        val literalParsed = AxmlManifestParser.parse(withLiteral)!!
+        assertEquals("Literal App", literalParsed.literalLabel)
+        assertNull(literalParsed.labelResId)
+    }
+
+    @Test
     fun rejects_truncated_or_non_axml_bytes() {
         assertNull(AxmlManifestParser.parse(byteArrayOf()))
         assertNull(AxmlManifestParser.parse("<manifest package=\"com.example.app\"/>".encodeToByteArray()))

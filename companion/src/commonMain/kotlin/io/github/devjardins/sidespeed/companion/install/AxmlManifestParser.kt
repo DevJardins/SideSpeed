@@ -23,6 +23,7 @@ object AxmlManifestParser {
     private const val ATTR_VERSION_CODE_MAJOR = 0x01010576
 
     private const val TYPE_STRING = 0x03
+    private const val TYPE_REFERENCE = 0x01
     private const val TYPE_INT_DEC = 0x10
     private const val TYPE_INT_HEX = 0x11
     private const val TYPE_INT_BOOLEAN = 0x12
@@ -56,6 +57,7 @@ object AxmlManifestParser {
         var isFeatureSplit = false
         var minSdkVersion: Int? = null
         var literalLabel: String? = null
+        var labelResId: Int? = null
 
         while (pos + 8 <= xmlEnd) {
             val chunkType = u16(bytes, pos)
@@ -164,6 +166,8 @@ object AxmlManifestParser {
                                 if (resId == ATTR_LABEL || (resId == 0 && ns == ANDROID_NAMESPACE && attrName == "label")) {
                                     if (dataType == TYPE_STRING) {
                                         literalLabel = pool.get(data)?.trim()?.takeIf { it.isNotEmpty() }
+                                    } else if (dataType == TYPE_REFERENCE && data != 0) {
+                                        labelResId = data
                                     }
                                 }
                             }
@@ -200,6 +204,7 @@ object AxmlManifestParser {
             isFeatureSplit = isFeatureSplit,
             literalLabel = literalLabel,
             minSdkVersion = minSdkVersion,
+            labelResId = labelResId,
         )
     }
 
